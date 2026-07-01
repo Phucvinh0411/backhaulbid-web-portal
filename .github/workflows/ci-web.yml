@@ -1,6 +1,10 @@
-name: CI - Web Portal (Next.js)
+name: CI - Web Portal (Vite/React)
 
 on:
+  push:
+    branches:
+      - main
+      - develop
   pull_request:
     branches:
       - main
@@ -27,5 +31,6 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-      - name: Build Next.js project
+      - name: Build Vite project
         run: npm run build
+
