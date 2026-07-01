@@ -1,3 +1,5 @@
+"use client";
+
 // ============================================
 // src/theme/theme.jsx - MUI v5 Theme Configuration
 // Theme: Xanh dương (Primary) + Trắng (Surface)

@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Box from "@mui/material/Box";
-import Toolbar from "@mui/material/Toolbar";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import Sidebar, { SIDEBAR_WIDTH } from "./Sidebar";
 import Header from "./Header";
+import Footer from "./Footer";
 
 export default function DashboardLayout({ children }) {
   const theme = useTheme();
@@ -18,8 +18,19 @@ export default function DashboardLayout({ children }) {
   };
 
   return (
-    <Box className="flex min-h-screen bg-slate-50">
-      {/* Sidebar - permanent on desktop, temporary on mobile */}
+    <Box 
+      className="flex min-h-screen relative"
+      sx={{
+        backgroundColor: "#F6F8FC", // Premium soft gray-blue
+        backgroundImage: `
+          radial-gradient(circle at 5% 10%, rgba(98, 182, 203, 0.08) 0%, transparent 35%),
+          radial-gradient(circle at 95% 85%, rgba(27, 73, 101, 0.07) 0%, transparent 35%),
+          radial-gradient(circle at 50% 50%, rgba(248, 250, 252, 0.8) 0%, transparent 100%)
+        `,
+        backgroundAttachment: "fixed",
+      }}
+    >
+      {/* Sidebar - permanent on desktop (floating), temporary on mobile */}
       {isMobile ? (
         <Sidebar
           variant="temporary"
@@ -30,20 +41,45 @@ export default function DashboardLayout({ children }) {
         <Sidebar variant="permanent" />
       )}
 
-      {/* Header */}
+      {/* Header - Floating next to sidebar */}
       <Header onMenuToggle={handleDrawerToggle} />
 
-      {/* Main content */}
+      {/* Main content area */}
       <Box
         component="main"
         className="flex-1 flex flex-col min-h-screen"
         sx={{
-          width: { md: `calc(100% - ${SIDEBAR_WIDTH}px)` },
+          width: { 
+            md: `calc(100% - ${SIDEBAR_WIDTH}px)` 
+          },
+          pl: { 
+            md: 0.5 // Subtle gap between sidebar and content
+          },
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
-        <Toolbar /> {/* Spacer for fixed AppBar */}
-        <Box className="flex-1 p-4 md:p-6">
+        {/* Spacer for floating AppBar (AppBar height is 64px + top margin 20px + bottom spacing 16px) */}
+        <Box sx={{ height: { xs: "100px", md: "104px" } }} />
+
+        {/* Content canvas */}
+        <Box 
+          className="flex-1"
+          sx={{
+            px: { xs: 2, md: 2.5 },
+            pb: 2.5,
+          }}
+        >
           {children}
+        </Box>
+
+        {/* Footer - aligned with right content grid */}
+        <Box 
+          sx={{ 
+            px: { xs: 2, md: 2.5 }, 
+            pb: 2.5 
+          }}
+        >
+          <Footer />
         </Box>
       </Box>
     </Box>
