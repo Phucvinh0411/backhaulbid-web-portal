@@ -1,4 +1,6 @@
-"use client";
+// ============================================
+// src/theme/ThemeProvider.jsx
+// ============================================
 
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";

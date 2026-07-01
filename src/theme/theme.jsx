@@ -1,4 +1,7 @@
-"use client";
+// ============================================
+// src/theme/theme.jsx - MUI v5 Theme Configuration
+// Theme: Xanh dương (Primary) + Trắng (Surface)
+// ============================================
 
 import { createTheme } from "@mui/material/styles";
 
@@ -41,49 +44,16 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: "var(--font-geist-sans), 'Inter', 'Roboto', sans-serif",
-    h1: {
-      fontSize: "2.25rem",
-      fontWeight: 700,
-      lineHeight: 1.2,
-    },
-    h2: {
-      fontSize: "1.875rem",
-      fontWeight: 700,
-      lineHeight: 1.3,
-    },
-    h3: {
-      fontSize: "1.5rem",
-      fontWeight: 600,
-      lineHeight: 1.4,
-    },
-    h4: {
-      fontSize: "1.25rem",
-      fontWeight: 600,
-      lineHeight: 1.4,
-    },
-    h5: {
-      fontSize: "1.125rem",
-      fontWeight: 600,
-      lineHeight: 1.5,
-    },
-    h6: {
-      fontSize: "1rem",
-      fontWeight: 600,
-      lineHeight: 1.5,
-    },
-    body1: {
-      fontSize: "0.9375rem",
-      lineHeight: 1.6,
-    },
-    body2: {
-      fontSize: "0.875rem",
-      lineHeight: 1.6,
-    },
-    button: {
-      textTransform: "none",
-      fontWeight: 600,
-    },
+    fontFamily: "'Inter', 'Roboto', sans-serif",
+    h1: { fontSize: "2.25rem", fontWeight: 700, lineHeight: 1.2 },
+    h2: { fontSize: "1.875rem", fontWeight: 700, lineHeight: 1.3 },
+    h3: { fontSize: "1.5rem", fontWeight: 600, lineHeight: 1.4 },
+    h4: { fontSize: "1.25rem", fontWeight: 600, lineHeight: 1.4 },
+    h5: { fontSize: "1.125rem", fontWeight: 600, lineHeight: 1.5 },
+    h6: { fontSize: "1rem", fontWeight: 600, lineHeight: 1.5 },
+    body1: { fontSize: "0.9375rem", lineHeight: 1.6 },
+    body2: { fontSize: "0.875rem", lineHeight: 1.6 },
+    button: { textTransform: "none", fontWeight: 600 },
   },
   shape: {
     borderRadius: 10,
@@ -95,7 +65,9 @@ const theme = createTheme({
     "0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.06)",
     "0px 6px 16px rgba(0, 0, 0, 0.08), 0px 3px 6px rgba(0, 0, 0, 0.06)",
     "0px 8px 24px rgba(0, 0, 0, 0.09), 0px 4px 8px rgba(0, 0, 0, 0.06)",
-    ...Array(19).fill("0px 10px 32px rgba(0, 0, 0, 0.1), 0px 5px 10px rgba(0, 0, 0, 0.06)"),
+    ...Array(19).fill(
+      "0px 10px 32px rgba(0, 0, 0, 0.1), 0px 5px 10px rgba(0, 0, 0, 0.06)"
+    ),
   ],
   components: {
     MuiButton: {
