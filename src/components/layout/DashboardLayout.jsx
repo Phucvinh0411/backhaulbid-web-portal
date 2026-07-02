@@ -26,7 +26,7 @@ export default function DashboardLayout({ children, role, userInfo }) {
     <Box 
       className="flex min-h-screen relative"
       sx={{
-        backgroundColor: "#F6F8FC", // Premium soft gray-blue
+        backgroundColor: "#F6F8FC",
         backgroundImage: `
           radial-gradient(circle at 5% 15%, rgba(98, 182, 203, 0.16) 0%, transparent 35%),
           radial-gradient(circle at 95% 80%, rgba(27, 73, 101, 0.12) 0%, transparent 40%),
@@ -50,7 +50,7 @@ export default function DashboardLayout({ children, role, userInfo }) {
       )}
 
       {/* Header - Floating next to sidebar */}
-      <Header onMenuToggle={handleDrawerToggle} userInfo={userInfo} />
+      <Header onMenuToggle={handleDrawerToggle} userInfo={userInfo} role={role} />
 
       {/* Main content area */}
       <Box
@@ -64,7 +64,7 @@ export default function DashboardLayout({ children, role, userInfo }) {
             md: `calc(100% - ${SIDEBAR_WIDTH}px)`
           },
           ml: {
-            // md: `${SIDEBAR_WIDTH}px`
+            md: 0
           },
           pl: { 
             md: 0.5 // Subtle gap between sidebar and content

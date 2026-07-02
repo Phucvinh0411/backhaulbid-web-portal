@@ -12,7 +12,7 @@ const shipperNavigation = [
     title: "TỔNG QUAN",
     items: [
       {
-        title: "Dashboard",
+        title: "Bảng điều khiển",
         path: "/shipper/dashboard",
         icon: DashboardIcon,
       },

@@ -1,0 +1,606 @@
+
+> backhaulbid-web-portal@0.1.0 dev
+> next dev -p 3000
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.8s
+ ○ Compiling /_not-found ...
+ ✓ Compiled /admin in 10.7s (1746 modules)
+ GET /admin 200 in 9934ms
+ GET /admin/dashboard 404 in 11539ms
+ ○ Compiling /admin/users ...
+ ✓ Compiled /favicon.ico in 4s (1830 modules)
+ GET /favicon.ico 200 in 3220ms
+ GET /admin/users 200 in 4626ms
+ ○ Compiling /admin/operations ...
+ ✓ Compiled /admin/operations in 3.5s (2786 modules)
+ GET /admin/operations 200 in 4324ms
+ ○ Compiling /admin/complaints ...
+ ✓ Compiled /admin/complaints in 1179ms (2800 modules)
+ GET /admin/complaints 200 in 1572ms
+ ○ Compiling /admin/settings ...
+ ✓ Compiled /admin/settings in 1892ms (2858 modules)
+ GET /admin/settings 200 in 2263ms
+ GET /admin/dashboard 404 in 47ms
+ GET /favicon.ico 200 in 33ms
+ GET /admin 200 in 207ms
+ ✓ Compiled in 3.4s (2360 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /admin/settings 200 in 566ms
+ GET /admin 200 in 365ms
+ GET /admin/users 200 in 274ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 551ms (985 modules)
+ GET /favicon.ico 200 in 752ms
+ ○ Compiling /admin/operations ...
+ ✓ Compiled /admin/operations in 584ms (1462 modules)
+ GET /admin/operations 200 in 1510ms
+ GET /admin/complaints 200 in 231ms
+ GET /admin/settings 200 in 191ms
+ ✓ Compiled in 2.6s (2360 modules)
+ GET /admin/users 200 in 406ms
+ ✓ Compiled /favicon.ico in 252ms (985 modules)
+ GET /favicon.ico 200 in 349ms
+ ✓ Compiled in 862ms (1407 modules)
+ ○ Compiling /admin/operations ...
+ ✓ Compiled /admin/operations in 897ms (1462 modules)
+ ⨯ ./src/app/admin/complaints/page.jsx
+Error: 
+  [31mx[0m Expected corresponding JSX closing tag for <AdminSectionCard>
+     ,-[[36;1;4mD:\KLTN\backhaulbid-web-portal\src\app\admin\complaints\page.jsx[0m:367:1]
+ [2m367[0m |                   })}
+ [2m368[0m |                 </Box>
+ [2m369[0m |               </Box>
+ [2m370[0m |             </Box>
+     : [31;1m            ^^^^^^[0m
+ [2m371[0m | 
+ [2m372[0m |             <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider", bgcolor: "rgba(27, 73, 101, 0.02)" }}>
+ [2m373[0m |               <Typography variant="subtitle2" sx={{ color: "text.primary", fontWeight: 700, mb: 1 }}>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/admin/complaints/page.jsx
+ ○ Compiling /_error ...
+ ⨯ ./src/app/admin/complaints/page.jsx
+Error: 
+  [31mx[0m Expected corresponding JSX closing tag for <AdminSectionCard>
+     ,-[[36;1;4mD:\KLTN\backhaulbid-web-portal\src\app\admin\complaints\page.jsx[0m:367:1]
+ [2m367[0m |                   })}
+ [2m368[0m |                 </Box>
+ [2m369[0m |               </Box>
+ [2m370[0m |             </Box>
+     : [31;1m            ^^^^^^[0m
+ [2m371[0m | 
+ [2m372[0m |             <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider", bgcolor: "rgba(27, 73, 101, 0.02)" }}>
+ [2m373[0m |               <Typography variant="subtitle2" sx={{ color: "text.primary", fontWeight: 700, mb: 1 }}>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/admin/complaints/page.jsx
+ GET /admin/operations 500 in 23ms
+ ⨯ ./src/app/admin/complaints/page.jsx
+Error: 
+  [31mx[0m Expected corresponding JSX closing tag for <AdminSectionCard>
+     ,-[[36;1;4mD:\KLTN\backhaulbid-web-portal\src\app\admin\complaints\page.jsx[0m:367:1]
+ [2m367[0m |                   })}
+ [2m368[0m |                 </Box>
+ [2m369[0m |               </Box>
+ [2m370[0m |             </Box>
+     : [31;1m            ^^^^^^[0m
+ [2m371[0m | 
+ [2m372[0m |             <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider", bgcolor: "rgba(27, 73, 101, 0.02)" }}>
+ [2m373[0m |               <Typography variant="subtitle2" sx={{ color: "text.primary", fontWeight: 700, mb: 1 }}>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/admin/complaints/page.jsx
+ GET /_next/static/webpack/3dc1f8575588de66.webpack.hot-update.json 500 in 2873ms
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /admin/operations 200 in 29ms
+ GET /admin/operations 500 in 26ms
+ ⨯ ./src/app/admin/complaints/page.jsx
+Error: 
+  [31mx[0m Expected corresponding JSX closing tag for <AdminSectionCard>
+     ,-[[36;1;4mD:\KLTN\backhaulbid-web-portal\src\app\admin\complaints\page.jsx[0m:367:1]
+ [2m367[0m |                   })}
+ [2m368[0m |                 </Box>
+ [2m369[0m |               </Box>
+ [2m370[0m |             </Box>
+     : [31;1m            ^^^^^^[0m
+ [2m371[0m | 
+ [2m372[0m |             <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider", bgcolor: "rgba(27, 73, 101, 0.02)" }}>
+ [2m373[0m |               <Typography variant="subtitle2" sx={{ color: "text.primary", fontWeight: 700, mb: 1 }}>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/admin/complaints/page.jsx
+ GET /_next/static/webpack/3dc1f8575588de66.webpack.hot-update.json 500 in 1020ms
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /favicon.ico 500 in 1054ms
+ GET /admin/operations 500 in 20ms
+ GET /favicon.ico 500 in 17ms
+ ⨯ ./src/app/admin/complaints/page.jsx
+Error: 
+  [31mx[0m Expected corresponding JSX closing tag for <AdminSectionCard>
+     ,-[[36;1;4mD:\KLTN\backhaulbid-web-portal\src\app\admin\complaints\page.jsx[0m:367:1]
+ [2m367[0m |                   })}
+ [2m368[0m |                 </Box>
+ [2m369[0m |               </Box>
+ [2m370[0m |             </Box>
+     : [31;1m            ^^^^^^[0m
+ [2m371[0m | 
+ [2m372[0m |             <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider", bgcolor: "rgba(27, 73, 101, 0.02)" }}>
+ [2m373[0m |               <Typography variant="subtitle2" sx={{ color: "text.primary", fontWeight: 700, mb: 1 }}>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/admin/complaints/page.jsx
+ GET /_next/static/webpack/3dc1f8575588de66.webpack.hot-update.json 500 in 1730ms
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /admin/operations 500 in 142ms
+ GET /favicon.ico 500 in 27ms
+ GET /admin 500 in 65ms
+ GET /admin/operations 500 in 117ms
+ GET /admin/complaints 500 in 61ms
+ GET /admin/users 500 in 55ms
+ GET /admin/settings 500 in 181ms
+ GET /admin/operations 500 in 21ms
+ GET /favicon.ico 500 in 29ms
+ ✓ Compiled /_not-found in 5.4s (3084 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /admin/operations 200 in 1854ms
+ GET /admin/settings 200 in 1921ms
+ GET /favicon.ico 200 in 86ms
+ GET /favicon.ico 200 in 34ms
+ GET /admin 200 in 177ms
+ GET /admin/operations 200 in 420ms
+ GET /admin/complaints 200 in 870ms
+ GET /admin/users 200 in 766ms
+ GET /admin/settings 200 in 1396ms
+ ✓ Compiled in 2.3s (3063 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /admin 200 in 1536ms
+ GET /admin/operations 200 in 1570ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 590ms (1502 modules)
+ GET /favicon.ico 200 in 757ms
+ GET /favicon.ico 200 in 18ms
+ ✓ Compiled in 1147ms (3095 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 2.4s (3071 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 1919ms (3881 modules)
+ GET / 200 in 2154ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 806ms (3884 modules)
+ GET /admin/dashboard 404 in 137ms
+ ✓ Compiled in 1564ms (3898 modules)
+ GET /admin/settings 200 in 322ms
+ GET /admin/settings 200 in 122ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 1292ms (1508 modules)
+ GET /favicon.ico 200 in 1441ms
+ ✓ Compiled /admin in 478ms (1514 modules)
+ ○ Compiling /carrier ...
+ ✓ Compiled /carrier in 2.2s (3522 modules)
+ ○ Compiling /carrier/dashboard ...
+ ✓ Compiled /carrier/dashboard in 3.4s (3594 modules)
+ ○ Compiling /carrier/auctions ...
+ ✓ Compiled /carrier/auctions in 2.8s (3626 modules)
+ ○ Compiling /carrier/contracts ...
+ ✓ Compiled /carrier/contracts in 2.4s (3658 modules)
+ ○ Compiling /carrier/wallet ...
+ ✓ Compiled /carrier/wallet in 1650ms (3633 modules)
+ ✓ Compiled in 2.7s (3647 modules)
+ ○ Compiling /carrier/settings ...
+ ✓ Compiled /carrier/settings in 1186ms (3632 modules)
+ ✓ Compiled in 2.6s (3632 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 989ms (1551 modules)
+ ○ Compiling /shipper ...
+ ✓ Compiled /shipper in 1591ms (3650 modules)
+ ○ Compiling /shipper/dashboard ...
+ ✓ Compiled /shipper/dashboard in 1189ms (3692 modules)
+ ✓ Compiled in 2.9s (3692 modules)
+ ○ Compiling /shipper/wallet/overview ...
+ ✓ Compiled /shipper/wallet/overview in 2.8s (3714 modules)
+ ✓ Compiled in 2.5s (3728 modules)
+ ○ Compiling /shipper/fleet/routes ...
+ ✓ Compiled /shipper/fleet/routes in 1642ms (3720 modules)
+ ✓ Compiled in 461ms (2128 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ src\components\layout\Sidebar.jsx (69:44) @ split
+ ⨯ TypeError: Cannot read properties of undefined (reading 'split')
+    at isRootSectionPath (./src/components/layout/Sidebar.jsx:98:44)
+    at isActivePath (./src/components/layout/Sidebar.jsx:100:13)
+    at isItemActive (./src/components/layout/Sidebar.jsx:105:34)
+    at eval (./src/components/layout/Sidebar.jsx:193:60)
+    at Array.map (<anonymous>)
+    at eval (./src/components/layout/Sidebar.jsx:191:55)
+    at Array.map (<anonymous>)
+    at Sidebar (./src/components/layout/Sidebar.jsx:176:38)
+digest: "1413775499"
+[0m [90m 67 |[39m   }[33m;[39m[0m
+[0m [90m 68 |[39m[0m
+[0m[31m[1m>[22m[39m[90m 69 |[39m   [36mconst[39m isRootSectionPath [33m=[39m (path) [33m=>[39m path[33m.[39msplit([32m"/"[39m)[33m.[39mfilter([33mBoolean[39m)[33m.[39mlength [33m===[39m [35m1[39m[33m;[39m[0m
+[0m [90m    |[39m                                            [31m[1m^[22m[39m[0m
+[0m [90m 70 |[39m   [36mconst[39m isActivePath [33m=[39m (path) [33m=>[39m {[0m
+[0m [90m 71 |[39m     [36mif[39m (isRootSectionPath(path)) {[0m
+[0m [90m 72 |[39m       [36mreturn[39m pathname [33m===[39m path[33m;[39m[0m
+ GET /admin 500 in 831ms
+ ✓ Compiled /favicon.ico in 401ms (1521 modules)
+ GET /favicon.ico 200 in 570ms
+ ○ Compiling /admin/settings ...
+ ✓ Compiled /admin/settings in 1123ms (1100 modules)
+ ⨯ src\components\layout\Sidebar.jsx (69:44) @ split
+ ⨯ TypeError: Cannot read properties of undefined (reading 'split')
+    at isRootSectionPath (./src/components/layout/Sidebar.jsx:98:44)
+    at isActivePath (./src/components/layout/Sidebar.jsx:100:13)
+    at isItemActive (./src/components/layout/Sidebar.jsx:105:34)
+    at eval (./src/components/layout/Sidebar.jsx:193:60)
+    at Array.map (<anonymous>)
+    at eval (./src/components/layout/Sidebar.jsx:191:55)
+    at Array.map (<anonymous>)
+    at Sidebar (./src/components/layout/Sidebar.jsx:176:38)
+digest: "1413775499"
+[0m [90m 67 |[39m   }[33m;[39m[0m
+[0m [90m 68 |[39m[0m
+[0m[31m[1m>[22m[39m[90m 69 |[39m   [36mconst[39m isRootSectionPath [33m=[39m (path) [33m=>[39m path[33m.[39msplit([32m"/"[39m)[33m.[39mfilter([33mBoolean[39m)[33m.[39mlength [33m===[39m [35m1[39m[33m;[39m[0m
+[0m [90m    |[39m                                            [31m[1m^[22m[39m[0m
+[0m [90m 70 |[39m   [36mconst[39m isActivePath [33m=[39m (path) [33m=>[39m {[0m
+[0m [90m 71 |[39m     [36mif[39m (isRootSectionPath(path)) {[0m
+[0m [90m 72 |[39m       [36mreturn[39m pathname [33m===[39m path[33m;[39m[0m
+ GET /admin/settings 500 in 1480ms
+ ⨯ src\components\layout\Sidebar.jsx (69:44) @ split
+ ⨯ TypeError: Cannot read properties of undefined (reading 'split')
+    at isRootSectionPath (./src/components/layout/Sidebar.jsx:98:44)
+    at isActivePath (./src/components/layout/Sidebar.jsx:100:13)
+    at isItemActive (./src/components/layout/Sidebar.jsx:105:34)
+    at eval (./src/components/layout/Sidebar.jsx:193:60)
+    at Array.map (<anonymous>)
+    at eval (./src/components/layout/Sidebar.jsx:191:55)
+    at Array.map (<anonymous>)
+    at Sidebar (./src/components/layout/Sidebar.jsx:176:38)
+digest: "1413775499"
+[0m [90m 67 |[39m   }[33m;[39m[0m
+[0m [90m 68 |[39m[0m
+[0m[31m[1m>[22m[39m[90m 69 |[39m   [36mconst[39m isRootSectionPath [33m=[39m (path) [33m=>[39m path[33m.[39msplit([32m"/"[39m)[33m.[39mfilter([33mBoolean[39m)[33m.[39mlength [33m===[39m [35m1[39m[33m;[39m[0m
+[0m [90m    |[39m                                            [31m[1m^[22m[39m[0m
+[0m [90m 70 |[39m   [36mconst[39m isActivePath [33m=[39m (path) [33m=>[39m {[0m
+[0m [90m 71 |[39m     [36mif[39m (isRootSectionPath(path)) {[0m
+[0m [90m 72 |[39m       [36mreturn[39m pathname [33m===[39m path[33m;[39m[0m
+ GET /admin/settings 500 in 247ms
+ ○ Compiling /admin/settings/payment ...
+ ✓ Compiled /admin/settings/payment in 1344ms (3184 modules)
+ ⨯ src\components\layout\Sidebar.jsx (69:44) @ split
+ ⨯ TypeError: Cannot read properties of undefined (reading 'split')
+    at isRootSectionPath (./src/components/layout/Sidebar.jsx:98:44)
+    at isActivePath (./src/components/layout/Sidebar.jsx:100:13)
+    at isItemActive (./src/components/layout/Sidebar.jsx:105:34)
+    at eval (./src/components/layout/Sidebar.jsx:193:60)
+    at Array.map (<anonymous>)
+    at eval (./src/components/layout/Sidebar.jsx:191:55)
+    at Array.map (<anonymous>)
+    at Sidebar (./src/components/layout/Sidebar.jsx:176:38)
+digest: "1413775499"
+[0m [90m 67 |[39m   }[33m;[39m[0m
+[0m [90m 68 |[39m[0m
+[0m[31m[1m>[22m[39m[90m 69 |[39m   [36mconst[39m isRootSectionPath [33m=[39m (path) [33m=>[39m path[33m.[39msplit([32m"/"[39m)[33m.[39mfilter([33mBoolean[39m)[33m.[39mlength [33m===[39m [35m1[39m[33m;[39m[0m
+[0m [90m    |[39m                                            [31m[1m^[22m[39m[0m
+[0m [90m 70 |[39m   [36mconst[39m isActivePath [33m=[39m (path) [33m=>[39m {[0m
+[0m [90m 71 |[39m     [36mif[39m (isRootSectionPath(path)) {[0m
+[0m [90m 72 |[39m       [36mreturn[39m pathname [33m===[39m path[33m;[39m[0m
+ GET /admin/settings/payment 500 in 1833ms
+ GET /favicon.ico 200 in 143ms
+ ⨯ src\components\layout\Sidebar.jsx (69:44) @ split
+ ⨯ TypeError: Cannot read properties of undefined (reading 'split')
+    at isRootSectionPath (./src/components/layout/Sidebar.jsx:98:44)
+    at isActivePath (./src/components/layout/Sidebar.jsx:100:13)
+    at isItemActive (./src/components/layout/Sidebar.jsx:105:34)
+    at eval (./src/components/layout/Sidebar.jsx:193:60)
+    at Array.map (<anonymous>)
+    at eval (./src/components/layout/Sidebar.jsx:191:55)
+    at Array.map (<anonymous>)
+    at Sidebar (./src/components/layout/Sidebar.jsx:176:38)
+digest: "1413775499"
+[0m [90m 67 |[39m   }[33m;[39m[0m
+[0m [90m 68 |[39m[0m
+[0m[31m[1m>[22m[39m[90m 69 |[39m   [36mconst[39m isRootSectionPath [33m=[39m (path) [33m=>[39m path[33m.[39msplit([32m"/"[39m)[33m.[39mfilter([33mBoolean[39m)[33m.[39mlength [33m===[39m [35m1[39m[33m;[39m[0m
+[0m [90m    |[39m                                            [31m[1m^[22m[39m[0m
+[0m [90m 70 |[39m   [36mconst[39m isActivePath [33m=[39m (path) [33m=>[39m {[0m
+[0m [90m 71 |[39m     [36mif[39m (isRootSectionPath(path)) {[0m
+[0m [90m 72 |[39m       [36mreturn[39m pathname [33m===[39m path[33m;[39m[0m
+ GET /admin 500 in 280ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 1090ms (3171 modules)
+ GET /admin 200 in 1695ms
+ GET /favicon.ico 200 in 37ms
+ GET /admin/settings 200 in 135ms
+ ○ Compiling /admin/complaints ...
+ ✓ Compiled /admin/complaints in 9.2s (1050 modules)
+ ○ Compiling /admin/settings/auction ...
+ ✓ Compiled /admin/settings/auction in 3.2s (3178 modules)
+ ○ Compiling /admin/settings/notification ...
+ ✓ Compiled /admin/settings/notification in 1416ms (3126 modules)
+ ○ Compiling /admin/operations ...
+ ✓ Compiled /admin/operations in 2.1s (1454 modules)
+ ○ Compiling /admin/users ...
+ ✓ Compiled /admin/users in 1375ms (1468 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled in 1501ms (3585 modules)
+ GET /admin/users 200 in 2302ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 1352ms (1480 modules)
+ GET /favicon.ico 200 in 32ms
+ ○ Compiling /admin/complaints ...
+ ✓ Compiled /admin/complaints in 929ms (1488 modules)
+ ✓ Compiled in 1341ms (3625 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled in 997ms (3621 modules)
+ GET /admin/complaints 200 in 1177ms
+ GET /favicon.ico 200 in 37ms
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 904ms (1492 modules)
+ ○ Compiling /admin/settings/notification ...
+ ✓ Compiled /admin/settings/notification in 764ms (1492 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled in 1317ms (3629 modules)
+ GET /admin/settings/notification 200 in 1829ms
+ GET /favicon.ico 200 in 53ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1274ms (1888 modules)
+ GET /favicon.ico 200 in 105ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1960ms (4014 modules)
+ GET /admin/dashboard 404 in 100ms
+ GET /admin/dashboard 404 in 34ms
+ GET /favicon.ico 200 in 31ms
+ GET /admin/dashboard 404 in 56ms
+ GET /favicon.ico 200 in 24ms
+ GET /admin/settings/notification 200 in 218ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1082ms (1907 modules)
+ GET / 200 in 140ms
+ ✓ Compiled in 3.6s (3520 modules)
+ ○ Compiling /shipper ...
+ ✓ Compiled /shipper in 1138ms (1401 modules)
+ ○ Compiling /shipper/dashboard ...
+ ✓ Compiled /shipper/dashboard in 1705ms (1441 modules)
+ ○ Compiling /shipper/bidding/sessions ...
+ ✓ Compiled /shipper/bidding/sessions in 875ms (3561 modules)
+ ○ Compiling /shipper/fleet/routes ...
+ ✓ Compiled /shipper/fleet/routes in 1651ms (1449 modules)
+ ○ Compiling /carrier ...
+ ✓ Compiled /carrier in 790ms (1454 modules)
+ ○ Compiling /carrier/dashboard ...
+ ✓ Compiled /carrier/dashboard in 1705ms (1959 modules)
+ ○ Compiling /carrier/transports ...
+ ✓ Compiled /carrier/transports in 3.6s (4081 modules)
+ ○ Compiling /carrier/wallet ...
+ ✓ Compiled /carrier/wallet in 757ms (1963 modules)
+ ✓ Compiled /admin in 455ms (1972 modules)
+ ○ Compiling /admin/complaints ...
+ ✓ Compiled /admin/complaints in 1291ms (1921 modules)
+ ○ Compiling /admin/settings ...
+ ✓ Compiled /admin/settings in 775ms (1446 modules)
+ ✓ Compiled / in 347ms (1843 modules)
+ GET / 200 in 616ms
+ GET / 200 in 262ms
+ ✓ Compiled in 6.6s (3526 modules)
+ ✓ Compiled /carrier in 313ms (1391 modules)
+ ○ Compiling /carrier/dashboard ...
+ ✓ Compiled /carrier/dashboard in 1882ms (1899 modules)
+ ○ Compiling /shipper ...
+ ✓ Compiled /shipper in 869ms (1911 modules)
+ ○ Compiling /shipper/dashboard ...
+ ✓ Compiled /shipper/dashboard in 2s (1949 modules)
+ ⨯ ./src/components/public/LandingPage.jsx
+Error: 
+  [31mx[0m Expected corresponding JSX closing tag for <motion.h1>
+    ,-[[36;1;4mD:\KLTN\backhaulbid-web-portal\src\components\public\LandingPage.jsx[0m:91:1]
+ [2m91[0m |               <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#bee9e8] to-[#62B6CB]">
+ [2m92[0m |                 chiều về tối ưu
+ [2m93[0m |               </span>
+ [2m94[0m |             </nav>
+    : [31;1m            ^^^^^^[0m
+ [2m95[0m |             </motion.h1>
+ [2m96[0m | 
+ [2m96[0m |             <motion.p 
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/public/LandingPage.jsx
+./src/app/page.jsx
+ ⨯ ./src/components/public/LandingPage.jsx
+Error: 
+  [31mx[0m Expected corresponding JSX closing tag for <motion.h1>
+    ,-[[36;1;4mD:\KLTN\backhaulbid-web-portal\src\components\public\LandingPage.jsx[0m:91:1]
+ [2m91[0m |               <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#bee9e8] to-[#62B6CB]">
+ [2m92[0m |                 chiều về tối ưu
+ [2m93[0m |               </span>
+ [2m94[0m |             </nav>
+    : [31;1m            ^^^^^^[0m
+ [2m95[0m |             </motion.h1>
+ [2m96[0m | 
+ [2m96[0m |             <motion.p 
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/public/LandingPage.jsx
+./src/app/page.jsx
+ ○ Compiling /_not-found ...
+ ⨯ ./src/components/public/LandingPage.jsx
+Error: 
+  [31mx[0m Expected corresponding JSX closing tag for <motion.h1>
+    ,-[[36;1;4mD:\KLTN\backhaulbid-web-portal\src\components\public\LandingPage.jsx[0m:91:1]
+ [2m91[0m |               <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#bee9e8] to-[#62B6CB]">
+ [2m92[0m |                 chiều về tối ưu
+ [2m93[0m |               </span>
+ [2m94[0m |             </nav>
+    : [31;1m            ^^^^^^[0m
+ [2m95[0m |             </motion.h1>
+ [2m96[0m | 
+ [2m96[0m |             <motion.p 
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/public/LandingPage.jsx
+./src/app/page.jsx
+ GET / 500 in 2677ms
+ ✓ Compiled /_not-found in 5.1s (4038 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /_next/static/webpack/3dc1f8575588de66.webpack.hot-update.json 404 in 4605ms
+ GET / 200 in 517ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 1927ms (1936 modules)
+ GET /favicon.ico 200 in 2867ms
+ GET / 200 in 222ms
+ GET / 200 in 244ms
+ GET / 200 in 223ms
+ GET /favicon.ico 200 in 73ms
+ GET /shipper/dashboard 200 in 551ms
+ GET /favicon.ico 200 in 62ms
+ GET / 200 in 59ms
+ ○ Compiling /register ...
+ ✓ Compiled /register in 3.9s (4091 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 696ms (3539 modules)
+ GET /auth/login 404 in 120ms
+ GET /auth/login 404 in 65ms
+ ✓ Compiled /favicon.ico in 289ms (1433 modules)
+ GET /favicon.ico 200 in 462ms
+ GET /register 200 in 229ms
+ GET /auth/register 404 in 57ms
+ GET /login 200 in 133ms
+ GET /auth/register 404 in 55ms
+ GET /auth/register 404 in 55ms
+ GET /favicon.ico 200 in 37ms
+ ✓ Compiled in 3.3s (3550 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1001ms (3553 modules)
+ GET /auth/register 404 in 534ms
+ ✓ Compiled in 2.1s (3553 modules)
+ GET /auth/register 404 in 117ms
+ ✓ Compiled in 1739ms (3553 modules)
+ GET /auth/register 404 in 63ms
+ ✓ Compiled in 561ms (2152 modules)
+ GET /auth/register 404 in 54ms
+ ✓ Compiled in 6.4s (3553 modules)
+ GET /auth/register 404 in 179ms
+ ✓ Compiled in 1322ms (3553 modules)
+ GET /auth/register 404 in 130ms
+ ✓ Compiled in 547ms (2152 modules)
+ GET /auth/register 404 in 52ms
+ ✓ Compiled in 423ms (2152 modules)
+ GET /auth/register 404 in 47ms
+ GET / 200 in 155ms
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 11.1s (1450 modules)
+ GET /admin 200 in 12253ms
+ ✓ Compiled in 5.7s (3588 modules)
+ ○ Compiling /admin/users ...
+ ✓ Compiled /admin/operations in 2.7s (1450 modules)
+ ✓ Compiled /admin/complaints in 1ms (1927 modules)
+ ✓ Compiled in 1ms (1935 modules)
+ ✓ Compiled in 1ms (1935 modules)
+ ✓ Compiled in 0ms (1935 modules)
+ ✓ Compiled in 5.5s (3592 modules)
+ ○ Compiling /admin/operations ...
+ ✓ Compiled /admin/operations in 695ms (1919 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1717ms (1885 modules)
+ ✓ Compiled /shipper in 413ms (1497 modules)
+ ✓ Compiled /shipper/dashboard in 407ms (1533 modules)
+ ○ Compiling /shipper/bidding/sessions ...
+ ✓ Compiled /shipper/bidding/sessions in 1986ms (1537 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 866ms (1943 modules)
+ GET / 200 in 1137ms
+ ✓ Compiled in 2.8s (2150 modules)
+ ✓ Compiled in 747ms (2150 modules)
+ ✓ Compiled in 694ms (2150 modules)
+ ✓ Compiled in 1242ms (2150 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 3.6s (4009 modules)
+ GET /dashboard 404 in 3948ms
+ ✓ Compiled in 2.5s (2152 modules)
+ GET /dashboard 404 in 68ms
+ ✓ Compiled in 638ms (2152 modules)
+ GET /dashboard 404 in 75ms
+ ✓ Compiled in 2.9s (2152 modules)
+ GET /dashboard 404 in 126ms
+ ✓ Compiled in 2.9s (4023 modules)
+ GET /dashboard 404 in 222ms
+ ✓ Compiled in 1342ms (4023 modules)
+ GET /dashboard 404 in 101ms
+ GET /dashboard 404 in 68ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 2.1s (1903 modules)
+ GET /favicon.ico 200 in 2421ms
+ ○ Compiling /shipper ...
+ ✓ Compiled /shipper in 3.3s (1911 modules)
+ GET /shipper 307 in 3827ms
+ GET /shipper/dashboard 200 in 291ms
+ ○ Compiling /shipper/bidding/create ...
+ ✓ Compiled /shipper/bidding/create in 5.8s (4105 modules)
+ ○ Compiling /shipper/bidding/history ...
+ ✓ Compiled /shipper/bidding/history in 5s (3671 modules)
+ ○ Compiling /shipper/contracts/active ...
+ ✓ Compiled /shipper/contracts/active in 1722ms (3691 modules)
+ ○ Compiling /shipper/settings ...
+ ✓ Compiled /shipper/settings in 13.2s (3257 modules)
+ ○ Compiling /shipper/fleet/routes ...
+ ✓ Compiled /shipper/fleet/routes in 1827ms (1077 modules)
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 2.8s (1098 modules)
+ ○ Compiling /admin/settings ...
+ ✓ Compiled /admin/settings in 1568ms (1089 modules)
+ ○ Compiling /admin/settings/auction ...
+ ✓ Compiled /admin/settings/auction in 4.5s (1044 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 11.4s (3243 modules)
+ ○ Compiling /carrier/dashboard ...
+ ✓ Compiled /carrier/dashboard in 11.8s (3737 modules)
+ ✓ Compiled in 1206ms (2211 modules)
+ ✓ Compiled /shipper/dashboard in 365ms (1541 modules)
+ GET /admin/settings 200 in 656ms
+ ○ Compiling /admin/settings/payment ...
+ ✓ Compiled /admin/settings/payment in 8.6s (1546 modules)
+ ○ Compiling /admin/settings/notification ...
+ ✓ Compiled /admin/settings/notification in 4.5s (1528 modules)
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 1746ms (1536 modules)
+ ✓ Compiled in 9s (3747 modules)
+ ✓ Compiled in 6.3s (3736 modules)
+ ✓ Compiled in 6.1s (3736 modules)
+ ✓ Compiled in 4.3s (3736 modules)
+ ○ Compiling /admin/users ...

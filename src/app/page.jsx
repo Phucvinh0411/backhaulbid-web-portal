@@ -12,7 +12,11 @@ export default function Home() {
     if (typeof window !== "undefined") {
       const role = localStorage.getItem("userRole");
       if (role) {
-        router.replace(`/${role}/dashboard`);
+        if (role === "admin") {
+          router.replace("/admin");
+        } else {
+          router.replace(`/${role}/dashboard`);
+        }
       } else {
         setIsRedirecting(false);
       }

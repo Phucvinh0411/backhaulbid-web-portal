@@ -28,6 +28,7 @@ import Grid from "@mui/material/Grid";
 import CardContent from "@mui/material/CardContent";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import { PageHeader, ViewModeToggle, DetailDrawer } from "@/components/common";
+import CarrierTransportItem from "@/components/carrier/CarrierTransportItem";
 
 const mockTransports = [
   {
@@ -178,56 +179,11 @@ export default function TransportsPage() {
         <Grid container spacing={3} className="mt-2">
           {mockTransports.map((row) => (
             <Grid item xs={12} sm={6} md={4} key={row.id}>
-              <Card variant="outlined" className="hover:shadow-md transition-shadow rounded-2xl h-full flex flex-col border-slate-200">
-                <CardContent className="flex-1">
-                  <Box className="flex justify-between items-start mb-3">
-                    <Box className="flex items-center gap-2">
-                      <LocalShippingIcon sx={{ color: "#1B4965" }} />
-                      <Typography variant="h6" className="font-mono font-bold text-[#1B4965] text-lg">{row.id}</Typography>
-                    </Box>
-                    {getStatusChip(row.status)}
-                  </Box>
-                  
-                  <Box className="space-y-2 mb-4 mt-4">
-                    <Box className="flex justify-between">
-                      <Typography variant="body2" className="text-slate-500">Tuyến:</Typography>
-                      <Typography variant="body2" className="font-semibold text-slate-800">{row.route}</Typography>
-                    </Box>
-                    <Box className="flex justify-between">
-                      <Typography variant="body2" className="text-slate-500">Phương tiện:</Typography>
-                      <Typography variant="body2" className="font-semibold text-slate-800">{row.vehicle}</Typography>
-                    </Box>
-                    <Box className="flex justify-between">
-                      <Typography variant="body2" className="text-slate-500">Tài xế:</Typography>
-                      <Typography variant="body2" className="font-semibold text-slate-800">{row.driver || <span className="italic text-slate-400">Chưa gán</span>}</Typography>
-                    </Box>
-                    <Box className="flex justify-between">
-                      <Typography variant="body2" className="text-slate-500">Mã PIN:</Typography>
-                      {row.pin ? (
-                        <Typography variant="body2" className="font-mono font-semibold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                          {row.pin}
-                        </Typography>
-                      ) : (
-                        <Typography variant="body2" className="text-slate-400">-</Typography>
-                      )}
-                    </Box>
-                  </Box>
-                </CardContent>
-                <Box className="p-3 pt-0 border-t border-slate-100 flex gap-2 justify-end">
-                  <Button size="small" variant="text" color="inherit" startIcon={<InfoOutlinedIcon />} onClick={() => handleOpenDetails(row)}>
-                    Chi tiết
-                  </Button>
-                  {row.status === "WAITING_DRIVER" ? (
-                    <Button size="small" variant="contained" color="primary" onClick={() => handleOpenAssign(row)}>
-                      Điều phối
-                    </Button>
-                  ) : (
-                    <Button size="small" variant="text" color="primary" startIcon={<PinDropIcon />} component={Link} href={`/carrier/transports/${row.id}`}>
-                      Theo dõi
-                    </Button>
-                  )}
-                </Box>
-              </Card>
+              <CarrierTransportItem
+                transport={row}
+                onAssign={handleOpenAssign}
+                onViewDetail={handleOpenDetails}
+              />
             </Grid>
           ))}
         </Grid>

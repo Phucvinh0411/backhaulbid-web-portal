@@ -10,7 +10,7 @@ export default function ForgotPasswordPage() {
         <p className="text-slate-600 mb-8">
           Vui lòng nhập email đăng ký để nhận liên kết khôi phục mật khẩu.
         </p>
-        <Link href="/auth/login" className="text-blue-600 font-medium hover:underline">
+        <Link href="/login" className="text-blue-600 font-medium hover:underline">
           &larr; Quay lại trang đăng nhập
         </Link>
       </div>

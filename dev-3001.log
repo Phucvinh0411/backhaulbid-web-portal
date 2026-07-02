@@ -1,0 +1,27 @@
+
+> backhaulbid-web-portal@0.1.0 dev
+> next dev -p 3000 -p 3001
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3001
+
+ ✓ Starting...
+ ✓ Ready in 2.9s
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 7.5s (1757 modules)
+ GET /admin 200 in 8234ms
+ ○ Compiling /admin/users ...
+ ✓ Compiled /admin/users in 4.5s (1809 modules)
+ GET /admin/users 200 in 5334ms
+ ○ Compiling /admin/operations ...
+ ✓ Compiled /admin/operations in 3.3s (2751 modules)
+ GET /admin/operations 200 in 3938ms
+ ○ Compiling /admin/settings ...
+ ✓ Compiled /admin/settings in 2.8s (2823 modules)
+ GET /admin/complaints 200 in 3618ms
+ GET /admin/settings 200 in 3495ms
+ GET /admin/settings 200 in 190ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 839ms (1462 modules)
+ GET /favicon.ico 200 in 979ms
+[?25h

@@ -79,7 +79,7 @@ export default function DriversPage() {
         title="Quản lý Tài xế" 
         subtitle="Danh sách nhân sự lái xe và kiểm soát bằng lái"
         breadcrumbs={[
-          { label: "Trang chủ", path: "/carrier" },
+          { label: "Trang chủ", path: "/carrier/dashboard" },
           { label: "Vận hành", path: "#" },
           { label: "Tài xế", path: "/carrier/drivers" }
         ]}

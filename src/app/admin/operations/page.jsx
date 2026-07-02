@@ -2,166 +2,334 @@
 
 import { useState } from "react";
 import Box from "@mui/material/Box";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import TablePagination from "@mui/material/TablePagination";
-import Button from "@mui/material/Button";
-import Chip from "@mui/material/Chip";
-import IconButton from "@mui/material/IconButton";
-import StopCircleIcon from "@mui/icons-material/StopCircle";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
-import { PageHeader } from "@/components/common";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import BlockIcon from "@mui/icons-material/Block";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import GavelIcon from "@mui/icons-material/Gavel";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  AdminPageHeader,
+  AdminPageShell,
+  AdminPrimaryButton,
+  AdminSearchField,
+  AdminSecondaryButton,
+  AdminSectionCard,
+  AdminStatusChip,
+} from "@/components/admin/AdminUI";
 
-const operationsData = [
-  { id: "BID-2454", route: "Hà Nội → Hải Phòng", shipper: "Hoàng Phát Logistics", status: "Chờ duyệt", price: "2.400.000 đ", date: "02/07/2026", participants: 0 },
-  { id: "BID-2455", route: "TP.HCM → Bình Dương", shipper: "Kho Lạnh Nam Việt", status: "Đang diễn ra", price: "1.250.000 đ", date: "02/07/2026", participants: 5 },
-  { id: "BID-2456", route: "Đà Nẵng → Quảng Nam", shipper: "CP XNK Việt Tín", status: "Hoàn thành", price: "3.500.000 đ", date: "01/07/2026", participants: 12 },
-  { id: "BID-2457", route: "Hà Nội → Bắc Ninh", shipper: "Hoàng Phát Logistics", status: "Vi phạm", price: "1.800.000 đ", date: "01/07/2026", participants: 3 },
-  { id: "BID-2458", route: "TP.HCM → Đồng Nai", shipper: "Kho Lạnh Nam Việt", status: "Chờ duyệt", price: "1.500.000 đ", date: "30/06/2026", participants: 0 },
-  { id: "BID-2459", route: "Hải Phòng → Quảng Ninh", shipper: "CP XNK Việt Tín", status: "Đang diễn ra", price: "2.100.000 đ", date: "30/06/2026", participants: 8 },
-  { id: "BID-2460", route: "Đà Nẵng → Huế", shipper: "Hoàng Phát Logistics", status: "Hoàn thành", price: "1.900.000 đ", date: "29/06/2026", participants: 4 },
-  { id: "BID-2461", route: "TP.HCM → Vũng Tàu", shipper: "Kho Lạnh Nam Việt", status: "Chờ duyệt", price: "2.800.000 đ", date: "29/06/2026", participants: 0 },
-  { id: "BID-2462", route: "Hà Nội → Vĩnh Phúc", shipper: "CP XNK Việt Tín", status: "Đang diễn ra", price: "1.600.000 đ", date: "28/06/2026", participants: 6 },
-  { id: "BID-2463", route: "Hải Phòng → Nam Định", shipper: "Hoàng Phát Logistics", status: "Hoàn thành", price: "2.200.000 đ", date: "28/06/2026", participants: 9 },
-  { id: "BID-2464", route: "Đồng Nai → Vũng Tàu", shipper: "Kho Lạnh Nam Việt", status: "Vi phạm", price: "1.100.000 đ", date: "27/06/2026", participants: 2 },
+const liveSessions = [
+  {
+    id: "BID-2454",
+    route: "Hà Nội → Hải Phòng",
+    vehicleType: "Thùng kín",
+    timeRemaining: "04:12",
+    currentBid: 1850000,
+    activeBidders: 8,
+    status: "ACTIVE",
+  },
+  {
+    id: "BID-2455",
+    route: "TP.HCM → Bình Dương",
+    vehicleType: "Đông lạnh",
+    timeRemaining: "12:45",
+    currentBid: 2400000,
+    activeBidders: 3,
+    status: "ACTIVE",
+  },
+  {
+    id: "BID-2456",
+    route: "Đà Nẵng → Quảng Nam",
+    vehicleType: "Mui bạt",
+    timeRemaining: "28:18",
+    currentBid: 3150000,
+    activeBidders: 5,
+    status: "ACTIVE",
+  },
+  {
+    id: "BID-2457",
+    route: "Hải Phòng → Quảng Ninh",
+    vehicleType: "Thùng kín",
+    lastBid: 1900000,
+    status: "SUSPENDED",
+  },
 ];
 
-export default function AdminOperationsPage() {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+const mockBidHistory = [
+  { time: "10:00", bid: 2500000 },
+  { time: "10:05", bid: 2200000 },
+  { time: "10:12", bid: 2200000 },
+  { time: "10:15", bid: 2100000 },
+  { time: "10:20", bid: 2100000 },
+  { time: "10:22", bid: 1950000 },
+  { time: "10:30", bid: 1950000 },
+  { time: "10:35", bid: 1850000 },
+];
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
+const formatCurrency = (amount) => `${new Intl.NumberFormat("vi-VN").format(amount)} đ`;
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Chờ duyệt": return "warning";
-      case "Đang diễn ra": return "info";
-      case "Hoàn thành": return "success";
-      case "Vi phạm": return "error";
-      default: return "default";
-    }
-  };
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) {
+    return null;
+  }
 
   return (
-    <Box className="animate-fade-in-up">
-      <PageHeader 
-        title="Giám sát Đấu giá & Giao dịch" 
-        subtitle="Quản lý và giám sát các phiên đấu giá theo thời gian thực"
+    <Box sx={{ bgcolor: "background.paper", p: 1.5, border: "1px solid", borderColor: "divider", borderRadius: "8px", boxShadow: 2 }}>
+      <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 0.5 }}>
+        Thời gian: {label}
+      </Typography>
+      <Typography variant="body2" sx={{ color: "primary.main", fontWeight: 700 }}>
+        Giá thầu: {formatCurrency(payload[0].value)}
+      </Typography>
+    </Box>
+  );
+}
+
+function SessionStatus({ status, timeRemaining }) {
+  if (status === "ACTIVE") {
+    return <AdminStatusChip label={timeRemaining} tone="warning" icon={<AccessTimeIcon />} />;
+  }
+  return <AdminStatusChip label="Tạm dừng" tone="danger" />;
+}
+
+export default function AdminOperationsPage() {
+  const [selectedSession, setSelectedSession] = useState(liveSessions[0]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [openStopDialog, setOpenStopDialog] = useState(false);
+
+  const filteredSessions = liveSessions.filter((session) => {
+    const query = searchQuery.trim().toLocaleLowerCase("vi");
+    return query.length === 0 || session.id.toLocaleLowerCase("vi").includes(query) || session.route.toLocaleLowerCase("vi").includes(query);
+  });
+
+  const activeCount = liveSessions.filter((session) => session.status === "ACTIVE").length;
+  const selectedBid = selectedSession.currentBid || selectedSession.lastBid;
+
+  return (
+    <AdminPageShell>
+      <AdminPageHeader
+        title="Giám sát đấu giá"
+        subtitle="Theo dõi phiên đang diễn ra, diễn biến giá và các thao tác can thiệp của quản trị viên."
         breadcrumbs={[
           { label: "Admin", path: "/admin" },
           { label: "Vận hành", path: "/admin/operations" },
-          { label: "Giám sát Đấu giá" },
+          { label: "Đấu giá" },
         ]}
+        action={
+          <Box sx={{ display: "flex", gap: 1.5, width: { xs: "100%", md: "auto" }, flexWrap: "wrap" }}>
+            <AdminSearchField
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Tìm mã phiên, tuyến..."
+            />
+            <AdminSecondaryButton startIcon={<FilterListIcon />}>Lọc</AdminSecondaryButton>
+          </Box>
+        }
       />
 
-      <Card 
-        className="glass mt-6"
-        sx={{
-          borderRadius: "16px",
-          boxShadow: "0 8px 32px 0 rgba(27, 73, 101, 0.02)",
-        }}
-      >
-        <CardContent className="!p-0">
-          <Box className="p-6 border-b border-slate-100 flex justify-between items-center bg-white/50">
-            <div>
-              <Typography variant="h6" className="!font-bold text-slate-700 leading-none mb-1">
-                Danh sách Phiên thầu & Giao dịch
-              </Typography>
-            </div>
+      <Grid container spacing={2.5}>
+        <Grid item xs={12} md={5} lg={4}>
+          <AdminSectionCard
+            title="Phiên đang theo dõi"
+            subtitle={`${activeCount} phiên đang hoạt động`}
+            sx={{ height: "100%" }}
+          >
+            <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1.5 }}>
+              {filteredSessions.map((session) => {
+                const isSelected = selectedSession.id === session.id;
+                const isActive = session.status === "ACTIVE";
+
+                return (
+                  <Box
+                    key={session.id}
+                    component="button"
+                    type="button"
+                    onClick={() => setSelectedSession(session)}
+                    sx={{
+                      width: "100%",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      border: "1px solid",
+                      borderColor: isSelected ? "primary.main" : "divider",
+                      bgcolor: isSelected ? "rgba(27, 73, 101, 0.08)" : "background.paper",
+                      borderRadius: "10px",
+                      p: 2,
+                      transition: "all 0.2s ease",
+                      "&:hover": { borderColor: "primary.main", bgcolor: isSelected ? "rgba(27, 73, 101, 0.08)" : "rgba(27, 73, 101, 0.04)" },
+                    }}
+                  >
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1.5 }}>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: isSelected ? "primary.main" : "text.secondary", fontWeight: 700 }}>
+                          {session.id}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: "text.primary", fontWeight: 600, mt: 0.25 }}>
+                          {session.route}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                          {session.vehicleType}
+                        </Typography>
+                      </Box>
+                      <SessionStatus status={session.status} timeRemaining={session.timeRemaining} />
+                    </Box>
+
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", mt: 2 }}>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+                          {isActive ? "Giá thấp nhất" : "Giá cuối cùng"}
+                        </Typography>
+                        <Typography variant="h6" sx={{ color: "primary.main", fontWeight: 800, lineHeight: 1.1 }}>
+                          {formatCurrency(session.currentBid || session.lastBid)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: "right" }}>
+                        <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+                          Tham gia
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: "text.primary", fontWeight: 600 }}>
+                          {isActive ? `${session.activeBidders} nhà xe` : "--"}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
+          </AdminSectionCard>
+        </Grid>
+
+        <Grid item xs={12} md={7} lg={8}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, height: "100%" }}>
+            <AdminSectionCard
+              title="Biểu đồ giá thầu realtime"
+              subtitle={`Phiên ${selectedSession.id} • Giá khởi điểm ${formatCurrency(2500000)}`}
+              action={<AdminStatusChip label="-26% so với ban đầu" tone="success" />}
+              sx={{ flex: 1, minHeight: 420 }}
+            >
+              <Box sx={{ p: 2.5, height: 360 }}>
+                {selectedSession.status === "ACTIVE" ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={mockBidHistory} margin={{ top: 20, right: 24, left: 12, bottom: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fill: "#64748B", fontSize: 12 }} dy={10} />
+                      <YAxis
+                        domain={["dataMin - 100000", "dataMax + 100000"]}
+                        tickFormatter={(value) => `${value / 1000}k`}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "#64748B", fontSize: 12 }}
+                        dx={-10}
+                      />
+                      <RechartsTooltip content={<ChartTooltip />} />
+                      <Line
+                        type="stepAfter"
+                        dataKey="bid"
+                        stroke="#1B4965"
+                        strokeWidth={3}
+                        dot={{ r: 4, fill: "#1B4965", strokeWidth: 2, stroke: "#FFFFFF" }}
+                        activeDot={{ r: 6, fill: "#62B6CB", strokeWidth: 0 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <Box sx={{ height: "100%", display: "grid", placeItems: "center", textAlign: "center", color: "text.secondary" }}>
+                    <Box>
+                      <BlockIcon sx={{ fontSize: 46, color: "text.disabled", mb: 1 }} />
+                      <Typography variant="body2">Phiên đấu giá đã bị tạm dừng, biểu đồ không khả dụng.</Typography>
+                    </Box>
+                  </Box>
+                )}
+              </Box>
+            </AdminSectionCard>
+
+            <AdminSectionCard title="Thao tác giám sát" subtitle={`Phiên hiện tại: ${selectedSession.id} • ${formatCurrency(selectedBid)}`}>
+              <Box sx={{ p: 2.5 }}>
+                <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 1.5 }}>
+                  <AdminSecondaryButton startIcon={<GavelIcon />} sx={{ flex: 1, borderColor: "warning.main", color: "warning.dark" }}>
+                    Cảnh báo gian lận
+                  </AdminSecondaryButton>
+                  <AdminPrimaryButton
+                    startIcon={<BlockIcon />}
+                    onClick={() => setOpenStopDialog(true)}
+                    disabled={selectedSession.status !== "ACTIVE"}
+                    sx={{ flex: 1, bgcolor: "error.main", "&:hover": { bgcolor: "error.dark" } }}
+                  >
+                    Dừng phiên khẩn cấp
+                  </AdminPrimaryButton>
+                </Box>
+
+                <Box
+                  sx={{
+                    mt: 2,
+                    p: 1.5,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: "10px",
+                    bgcolor: "rgba(27, 73, 101, 0.02)",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 1,
+                    color: "text.secondary",
+                  }}
+                >
+                  <InfoOutlinedIcon fontSize="small" sx={{ mt: 0.2 }} />
+                  <Typography variant="body2">
+                    Dừng khẩn cấp sẽ tạm ngưng phiên và thông báo cho các nhà xe đang tham gia. Cảnh báo gian lận chỉ
+                    đánh dấu phiên để kiểm tra sau khi kết thúc.
+                  </Typography>
+                </Box>
+              </Box>
+            </AdminSectionCard>
           </Box>
-          <TableContainer>
-            <Table aria-label="operations table">
-              <TableHead sx={{ backgroundColor: "rgba(241, 245, 249, 0.5)" }}>
-                <TableRow>
-                  <TableCell className="!font-bold">Mã Phiên</TableCell>
-                  <TableCell className="!font-bold">Tuyến đường</TableCell>
-                  <TableCell className="!font-bold">Người đăng</TableCell>
-                  <TableCell className="!font-bold">Người tham gia</TableCell>
-                  <TableCell className="!font-bold">Giá hiện tại</TableCell>
-                  <TableCell className="!font-bold">Ngày tạo</TableCell>
-                  <TableCell className="!font-bold">Trạng thái</TableCell>
-                  <TableCell className="!font-bold text-right">Thao tác</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {operationsData
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row) => (
-                    <TableRow 
-                      key={row.id} 
-                      hover
-                      sx={{ "&:last-child td, &:last-child th": { border: 0 }, transition: "all 0.2s" }}
-                    >
-                      <TableCell component="th" scope="row" className="font-semibold text-[#1B4965]">
-                        {row.id}
-                      </TableCell>
-                      <TableCell>{row.route}</TableCell>
-                      <TableCell>{row.shipper}</TableCell>
-                      <TableCell>
-                        <Typography variant="body2" className="font-bold">{row.participants} xe</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" className="text-emerald-600 font-bold">{row.price}</Typography>
-                      </TableCell>
-                      <TableCell>{row.date}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={row.status} 
-                          color={getStatusColor(row.status)} 
-                          size="small" 
-                          className={row.status === "Đang diễn ra" ? "animate-pulse-glow !font-semibold" : "!font-semibold"}
-                          variant={row.status === "Đang diễn ra" ? "filled" : "outlined"}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton size="small" color="primary" title="Xem chi tiết">
-                          <VisibilityOutlinedIcon fontSize="small" />
-                        </IconButton>
-                        {row.status === "Đang diễn ra" && (
-                          <IconButton size="small" color="error" title="Dừng phiên">
-                            <StopCircleIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                        {(row.status === "Vi phạm" || row.status === "Chờ duyệt") && (
-                          <IconButton size="small" color="error" title="Khóa/Từ chối">
-                            <BlockOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
-            component="div"
-            count={operationsData.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            labelRowsPerPage="Số dòng mỗi trang:"
-            labelDisplayedRows={({ from, to, count }) => `${from}-${to} trên ${count}`}
-            sx={{ borderTop: "1px solid rgba(226, 232, 240, 0.5)" }}
-          />
-        </CardContent>
-      </Card>
-    </Box>
+        </Grid>
+      </Grid>
+
+      <Dialog
+        open={openStopDialog}
+        onClose={() => setOpenStopDialog(false)}
+        PaperProps={{ sx: { borderRadius: "12px", maxWidth: 460 } }}
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1, color: "error.dark", fontWeight: 700 }}>
+          <ErrorOutlineIcon color="error" /> Xác nhận dừng khẩn cấp
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            Bạn có chắc chắn muốn dừng phiên đấu giá <strong>{selectedSession.id}</strong> không?
+          </Typography>
+          <Box sx={{ mt: 2, p: 1.5, border: "1px solid", borderColor: "error.light", borderRadius: "10px", bgcolor: "rgba(211, 47, 47, 0.04)" }}>
+            <Typography variant="caption" sx={{ color: "error.dark", fontWeight: 600 }}>
+              Hành động này sẽ hủy mọi kết quả đang diễn ra và gửi thông báo đến toàn bộ nhà xe đang tham gia.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <AdminSecondaryButton onClick={() => setOpenStopDialog(false)}>Hủy bỏ</AdminSecondaryButton>
+          <AdminPrimaryButton
+            onClick={() => {
+              setOpenStopDialog(false);
+              alert("Đã dừng phiên khẩn cấp.");
+            }}
+            sx={{ bgcolor: "error.main", "&:hover": { bgcolor: "error.dark" } }}
+          >
+            Đồng ý dừng
+          </AdminPrimaryButton>
+        </DialogActions>
+      </Dialog>
+    </AdminPageShell>
   );
 }

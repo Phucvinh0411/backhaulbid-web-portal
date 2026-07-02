@@ -28,6 +28,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { PageHeader, ViewModeToggle, DetailDrawer } from "@/components/common";
+import CarrierVehicleItem from "@/components/carrier/CarrierVehicleItem";
 
 const mockVehicles = [
   { id: "V1", plate: "29H-123.45", capacity: "15 Tấn", type: "Xe tải thùng kín", active: true, verification: "VERIFIED" },
@@ -78,7 +79,7 @@ export default function VehiclesPage() {
         title="Quản lý Phương tiện" 
         subtitle="Quản lý danh sách xe tải, thông số kỹ thuật và giấy tờ kiểm định"
         breadcrumbs={[
-          { label: "Trang chủ", path: "/carrier" },
+          { label: "Trang chủ", path: "/carrier/dashboard" },
           { label: "Vận hành", path: "#" },
           { label: "Đội xe", path: "/carrier/vehicles" }
         ]}
@@ -137,39 +138,10 @@ export default function VehiclesPage() {
         <Grid container spacing={3}>
           {filteredVehicles.map((v) => (
             <Grid item xs={12} sm={6} md={4} key={v.id}>
-              <Card variant="outlined" className={`hover:shadow-md transition-shadow rounded-2xl h-full flex flex-col ${v.verification === 'PENDING' ? 'border-amber-200' : 'border-slate-200'}`}>
-                <CardContent className="flex-1">
-                  <Box className="flex justify-between items-start mb-3">
-                    <Box className="flex items-center gap-2">
-                      <DirectionsCarIcon sx={{ color: "#1B4965" }} />
-                      <Typography variant="h6" className="font-mono font-bold text-[#1B4965] text-lg">{v.plate}</Typography>
-                    </Box>
-                    {getVerificationChip(v.verification)}
-                  </Box>
-                  
-                  <Box className="space-y-1 mb-4 mt-4">
-                    <Box className="flex justify-between">
-                      <Typography variant="body2" className="text-slate-500">Tải trọng:</Typography>
-                      <Typography variant="body2" className="font-semibold text-slate-800">{v.capacity}</Typography>
-                    </Box>
-                    <Box className="flex justify-between">
-                      <Typography variant="body2" className="text-slate-500">Loại xe:</Typography>
-                      <Typography variant="body2" className="font-semibold text-slate-800">{v.type}</Typography>
-                    </Box>
-                    <Box className="flex justify-between">
-                      <Typography variant="body2" className="text-slate-500">Trạng thái xe:</Typography>
-                      <Typography variant="body2" className={`font-semibold ${v.active ? 'text-emerald-600' : 'text-slate-500'}`}>
-                        {v.active ? 'Sẵn sàng hoạt động' : 'Đang bảo trì'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-                <Box className="p-3 pt-0 border-t border-slate-100 flex gap-2 justify-end">
-                  <Button size="small" variant="text" color="primary" startIcon={<SettingsIcon />} onClick={() => handleOpenDetails(v)}>
-                    Xem chi tiết
-                  </Button>
-                </Box>
-              </Card>
+              <CarrierVehicleItem
+                vehicle={v}
+                onViewDetail={handleOpenDetails}
+              />
             </Grid>
           ))}
         </Grid>

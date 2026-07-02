@@ -71,7 +71,7 @@ export default function RegisterPage() {
       {/* Right Form */}
       <div className="flex-1 flex flex-col justify-center p-8 sm:p-16 lg:p-24 overflow-y-auto relative">
         <div className="max-w-md w-full mx-auto">
-          <Link href="/auth/login" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-blue-600 mb-8 transition-colors">
+          <Link href="/login" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-blue-600 mb-8 transition-colors">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             Quay lại Đăng nhập
           </Link>
@@ -175,7 +175,7 @@ export default function RegisterPage() {
 
             <div className="text-center text-sm">
               <span className="text-slate-600">Đã có tài khoản? </span>
-              <Link href="/auth/login" className="text-blue-600 hover:underline font-bold">Đăng nhập</Link>
+              <Link href="/login" className="text-blue-600 hover:underline font-bold">Đăng nhập</Link>
             </div>
           </form>
         </div>

@@ -14,7 +14,11 @@ export default function LoginPage() {
     if (typeof window !== "undefined") {
       localStorage.setItem("userRole", role);
     }
-    router.push(`/${role}`);
+    if (role === "admin") {
+      router.push("/admin");
+    } else {
+      router.push(`/${role}/dashboard`);
+    }
   };
 
   return (
@@ -109,7 +113,7 @@ export default function LoginPage() {
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                 Chưa có tài khoản doanh nghiệp?{" "}
-                <Link href="/auth/register" style={{ color: theme.palette.primary.main, fontWeight: 600, textDecoration: "none" }}>
+                <Link href="/register" style={{ color: theme.palette.primary.main, fontWeight: 600, textDecoration: "none" }}>
                   Đăng ký ngay
                 </Link>
               </Typography>
@@ -143,7 +147,7 @@ export default function LoginPage() {
                 <Box>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.75 }}>
                     <Typography variant="body2" fontWeight={600} color="text.primary">Mật khẩu</Typography>
-                    <Link href="/auth/forgot-password" style={{ color: theme.palette.primary.main, fontWeight: 600, textDecoration: "none", fontSize: "0.8rem" }}>
+                    <Link href="/forgot-password" style={{ color: theme.palette.primary.main, fontWeight: 600, textDecoration: "none", fontSize: "0.8rem" }}>
                       Quên mật khẩu?
                     </Link>
                   </Box>

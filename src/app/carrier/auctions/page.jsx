@@ -33,6 +33,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { PageHeader, ViewModeToggle, DetailDrawer, DetailRow } from "@/components/common";
+import CarrierBiddingItem from "@/components/carrier/CarrierBiddingItem";
 
 const mockAuctions = [
   {
@@ -143,7 +144,7 @@ export default function AuctionsPage() {
         title="Khám phá Đấu giá" 
         subtitle="Tìm kiếm chuyến hàng phù hợp và tham gia đấu giá thời gian thực"
         breadcrumbs={[
-          { label: "Trang chủ", path: "/carrier" },
+          { label: "Trang chủ", path: "/carrier/dashboard" },
           { label: "Vận hành", path: "#" },
           { label: "Khám phá đấu giá", path: "#" }
         ]}
@@ -212,121 +213,66 @@ export default function AuctionsPage() {
         <Grid container spacing={3}>
           {auctions.filter(a => a.status === 'OPEN_REGISTER' || (a.status === 'BIDDING' && a.isRegistered)).map((auction) => (
             <Grid item xs={12} md={6} lg={4} key={auction.id}>
-              <Card 
-                className={`h-full flex flex-col rounded-2xl border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${auction.status === 'BIDDING' ? 'border-[#10B981]/40 shadow-[0_4px_20px_rgba(16,185,129,0.1)]' : 'border-slate-100'}`}
-                sx={{ background: "rgba(255,255,255,0.8)", backdropFilter: "blur(12px)" }}
-              >
-                <Box className="p-5 pb-3">
-                  <Box className="flex justify-between items-start mb-3">
-                    <Chip label={auction.id} size="small" sx={{ bgcolor: "rgba(27,73,101,0.1)", color: "#1B4965", fontWeight: 700 }} />
-                    {getStatusChip(auction.status)}
-                  </Box>
-                  
-                  <Box className="flex items-center gap-3 mb-4">
-                    <Box className="flex flex-col flex-1">
-                      <Typography variant="body2" className="text-slate-500 font-medium">Từ</Typography>
-                      <Typography variant="subtitle1" className="font-bold text-slate-800 line-clamp-1">{auction.origin}</Typography>
-                    </Box>
-                    <ArrowForwardIcon className="text-slate-300" />
-                    <Box className="flex flex-col flex-1 text-right">
-                      <Typography variant="body2" className="text-slate-500 font-medium">Đến</Typography>
-                      <Typography variant="subtitle1" className="font-bold text-slate-800 line-clamp-1">{auction.destination}</Typography>
-                    </Box>
-                  </Box>
-                </Box>
-  
-                <Divider className="opacity-60" />
-  
-                <CardContent className="flex-1 pb-2">
-                  <Grid container spacing={2} className="mb-4">
-                    <Grid item xs={6}>
-                      <Box className="flex items-start gap-2">
-                        <LocalShippingIcon className="text-slate-400 text-[1.1rem] mt-0.5" />
-                        <Box>
-                          <Typography variant="caption" className="text-slate-500 block">Tải trọng & Hàng</Typography>
-                          <Typography variant="body2" className="font-semibold text-slate-700">{auction.weight} - {auction.cargoType}</Typography>
-                        </Box>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Box className="flex items-start gap-2">
-                        <CalendarTodayIcon className="text-slate-400 text-[1.1rem] mt-0.5" />
-                        <Box>
-                          <Typography variant="caption" className="text-slate-500 block">Ngày bốc dự kiến</Typography>
-                          <Typography variant="body2" className="font-semibold text-slate-700">{auction.pickupTime}</Typography>
-                        </Box>
-                      </Box>
-                    </Grid>
-                  </Grid>
-  
-                  <Box className="bg-slate-50 rounded-xl p-3 space-y-1">
-                    <Box className="flex justify-between items-center">
-                      <Typography variant="body2" className="text-slate-500">Giá khởi điểm:</Typography>
-                      <Typography variant="body2" className="font-semibold text-slate-700">{auction.basePrice}</Typography>
-                    </Box>
-                    {auction.currentLowestBid && (
-                      <Box className="flex justify-between items-center">
-                        <Typography variant="body2" className="text-[#10B981] font-medium">Tốt nhất hiện tại:</Typography>
-                        <Typography variant="body1" className="font-bold text-[#10B981]">{auction.currentLowestBid}</Typography>
-                      </Box>
-                    )}
-                  </Box>
-                </CardContent>
-  
-                <CardActions className="p-4 pt-0 flex gap-2">
-                  <Button 
-                    variant="outlined"
-                    color="inherit"
-                    onClick={() => handleOpenDetails(auction)}
-                    sx={{ borderRadius: "10px", py: 1, flex: 1 }}
-                  >
-                    Xem chi tiết
-                  </Button>
-                  
-                  {auction.status === 'CLOSED' ? (
+              <CarrierBiddingItem
+                auction={auction}
+                mode="marketplace"
+                onViewDetail={handleOpenDetails}
+                customActions={
+                  <>
                     <Button 
                       variant="outlined"
                       color="inherit"
-                      sx={{ borderRadius: "10px", py: 1, flex: 1 }}
-                      disabled
+                      onClick={() => handleOpenDetails(auction)}
+                      sx={{ borderRadius: "10px", py: 1, flex: 1, fontSize: "0.8rem", fontWeight: "bold" }}
                     >
-                      Đã kết thúc
+                      Xem chi tiết
                     </Button>
-                  ) : auction.isRegistered ? (
-                    auction.status === 'BIDDING' ? (
-                      <Button 
-                        component={Link}
-                        href={`/carrier/auctions/${auction.id}`}
-                        variant="contained"
-                        color="success"
-                        sx={{ borderRadius: "10px", py: 1, flex: 1 }}
-                        className="!bg-[#10B981] hover:!bg-emerald-600 !text-white"
-                      >
-                        Vào phòng
-                      </Button>
-                    ) : (
+                    
+                    {auction.status === 'CLOSED' ? (
                       <Button 
                         variant="outlined"
-                        color="primary"
-                        sx={{ borderRadius: "10px", py: 1, flex: 1 }}
+                        color="inherit"
+                        sx={{ borderRadius: "10px", py: 1, flex: 1, fontSize: "0.8rem", fontWeight: "bold" }}
                         disabled
                       >
-                        Đã đăng ký
+                        Đã kết thúc
                       </Button>
-                    )
-                  ) : (
-                    <Button 
-                      variant={auction.status === 'BIDDING' ? 'outlined' : 'contained'}
-                      color={auction.status === 'BIDDING' ? 'inherit' : 'primary'}
-                      sx={auction.status === 'BIDDING' ? { borderRadius: "10px", py: 1, flex: 1 } : { borderRadius: "10px", py: 1, flex: 1, backgroundColor: "#1B4965", "&:hover": { backgroundColor: "#0d2b3e" } }}
-                      onClick={() => auction.status !== 'BIDDING' && handleOpenRegister(auction.id)}
-                      disabled={auction.status === 'BIDDING'}
-                    >
-                      {auction.status === 'BIDDING' ? 'Đã đóng' : 'Đăng ký'}
-                    </Button>
-                  )}
-                </CardActions>
-              </Card>
+                    ) : auction.isRegistered ? (
+                      auction.status === 'BIDDING' ? (
+                        <Button 
+                          component={Link}
+                          href={`/carrier/auctions/${auction.id}`}
+                          variant="contained"
+                          color="success"
+                          sx={{ borderRadius: "10px", py: 1, flex: 1, fontSize: "0.8rem", fontWeight: "bold" }}
+                          className="!bg-[#10B981] hover:!bg-emerald-600 !text-white"
+                        >
+                          Vào phòng
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outlined"
+                          color="primary"
+                          sx={{ borderRadius: "10px", py: 1, flex: 1, fontSize: "0.8rem", fontWeight: "bold" }}
+                          disabled
+                        >
+                          Đã đăng ký
+                        </Button>
+                      )
+                    ) : (
+                      <Button 
+                        variant={auction.status === 'BIDDING' ? 'outlined' : 'contained'}
+                        color={auction.status === 'BIDDING' ? 'inherit' : 'primary'}
+                        sx={auction.status === 'BIDDING' ? { borderRadius: "10px", py: 1, flex: 1, fontSize: "0.8rem", fontWeight: "bold" } : { borderRadius: "10px", py: 1, flex: 1, fontSize: "0.8rem", fontWeight: "bold", backgroundColor: "#1B4965", "&:hover": { backgroundColor: "#0d2b3e" } }}
+                        onClick={() => auction.status !== 'BIDDING' && handleOpenRegister(auction.id)}
+                        disabled={auction.status === 'BIDDING'}
+                      >
+                        {auction.status === 'BIDDING' ? 'Đã đóng' : 'Đăng ký'}
+                      </Button>
+                    )}
+                  </>
+                }
+              />
             </Grid>
           ))}
         </Grid>

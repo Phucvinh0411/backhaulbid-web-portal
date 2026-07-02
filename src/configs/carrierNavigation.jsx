@@ -7,7 +7,7 @@ const carrierNavigation = [
     title: "TỔNG QUAN",
     items: [
       {
-        title: "Trang chủ",
+        title: "Bảng điều khiển",
         path: "/carrier/dashboard",
         icon: DashboardIcon,
       },
@@ -28,10 +28,6 @@ const carrierNavigation = [
           {
             title: "Phiên của tôi",
             path: "/carrier/my-auctions",
-          },
-          {
-            title: "Lịch sử đấu giá",
-            path: "/carrier/auction-history",
           }
         ]
       },
