@@ -16,7 +16,9 @@ import FullscreenRoundedIcon from "@mui/icons-material/FullscreenRounded";
 import HelpOutlineRoundedIcon from "@mui/icons-material/HelpOutlineRounded";
 import { SIDEBAR_WIDTH } from "./Sidebar";
 
-export default function Header({ onMenuToggle }) {
+const defaultUser = { name: "Admin User", email: "admin@backhaulbid.vn", avatar: "A", role: "Quản trị viên", settingsPath: "/settings" };
+
+export default function Header({ onMenuToggle, userInfo = defaultUser }) {
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch((err) => {
@@ -155,10 +157,10 @@ export default function Header({ onMenuToggle }) {
           <Box className="flex items-center gap-2 ml-1 pl-3 border-l border-slate-200/80">
             <Box className="hidden sm:block text-right">
               <Typography className="!text-[0.82rem] !font-bold !leading-tight text-slate-700">
-                Admin User
+                {userInfo.name}
               </Typography>
               <Typography className="!text-[0.68rem] text-cyan-600 !font-semibold !leading-tight uppercase tracking-wider">
-                Quản trị viên
+                {userInfo.role}
               </Typography>
             </Box>
             <Avatar
@@ -175,7 +177,7 @@ export default function Header({ onMenuToggle }) {
                 "&:hover": { transform: "scale(1.05)" }
               }}
             >
-              A
+              {userInfo.avatar}
             </Avatar>
           </Box>
         </Box>

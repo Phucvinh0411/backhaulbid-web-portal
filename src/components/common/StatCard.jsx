@@ -4,8 +4,10 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
+import Tooltip from "@mui/material/Tooltip";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
-export default function StatCard({ title, value, subtitle, icon: Icon, color = "#1B4965" }) {
+export default function StatCard({ title, value, subtitle, icon: Icon, color = "#1B4965", tooltipInfo }) {
   return (
     <Card 
       className="group"
@@ -36,9 +38,16 @@ export default function StatCard({ title, value, subtitle, icon: Icon, color = "
       <CardContent className="!p-5">
         <Box className="flex items-start justify-between">
           <Box className="space-y-1">
-            <Typography variant="body2" className="!text-slate-400 !text-[0.78rem] !font-bold !tracking-wider uppercase !leading-none">
-              {title}
-            </Typography>
+            <Box className="flex items-center gap-1.5 mb-1">
+              <Typography variant="body2" className="!text-slate-400 !text-[0.78rem] !font-bold !tracking-wider uppercase !leading-none">
+                {title}
+              </Typography>
+              {tooltipInfo && (
+                <Tooltip title={tooltipInfo} placement="top" arrow>
+                  <InfoOutlinedIcon sx={{ fontSize: 15, color: "#94a3b8", cursor: "help", mt: -0.2 }} />
+                </Tooltip>
+              )}
+            </Box>
             <Typography 
               variant="h4" 
               className="!font-extrabold text-slate-800 tracking-tight"

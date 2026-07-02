@@ -7,8 +7,13 @@ import { useTheme } from "@mui/material/styles";
 import Sidebar, { SIDEBAR_WIDTH } from "./Sidebar";
 import Header from "./Header";
 import Footer from "./Footer";
+import adminNavigation from "@/configs/adminNavigation";
+import carrierNavigation from "@/configs/carrierNavigation";
+import defaultNavigation from "@/configs/navigation";
 
-export default function DashboardLayout({ children }) {
+export default function DashboardLayout({ children, role, userInfo }) {
+  const navigation = role === "admin" ? adminNavigation : (role === "carrier" ? carrierNavigation : defaultNavigation);
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -36,13 +41,15 @@ export default function DashboardLayout({ children }) {
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
+          navigation={navigation}
+          userInfo={userInfo}
         />
       ) : (
-        <Sidebar variant="permanent" />
+        <Sidebar variant="permanent" navigation={navigation} userInfo={userInfo} />
       )}
 
       {/* Header - Floating next to sidebar */}
-      <Header onMenuToggle={handleDrawerToggle} />
+      <Header onMenuToggle={handleDrawerToggle} userInfo={userInfo} />
 
       {/* Main content area */}
       <Box

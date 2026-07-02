@@ -19,11 +19,10 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import LocalShippingTwoToneIcon from "@mui/icons-material/LocalShippingTwoTone";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import SettingsTwoToneIcon from "@mui/icons-material/SettingsTwoTone";
-import navigation from "@/configs/navigation";
 
 const SIDEBAR_WIDTH = 280;
 
-export default function Sidebar({ open, onClose, variant = "permanent" }) {
+export default function Sidebar({ open, onClose, variant = "permanent", navigation = [], userInfo }) {
   const pathname = usePathname();
   const [openMenus, setOpenMenus] = useState({});
 
@@ -73,7 +72,7 @@ export default function Sidebar({ open, onClose, variant = "permanent" }) {
           <Box key={groupIdx} className="mb-6">
             <Typography
               variant="overline"
-              className="!text-[0.65rem] !font-extrabold text-slate-400 !tracking-widest px-4.5 py-1.5 block"
+              className="!text-xs !font-bold text-slate-400 !tracking-wider px-4.5 py-1.5 block !normal-case"
             >
               {group.title}
             </Typography>
@@ -98,11 +97,12 @@ export default function Sidebar({ open, onClose, variant = "permanent" }) {
                         px: 2.5,
                         transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
                         "&.Mui-selected": {
-                          background: "linear-gradient(135deg, rgba(27, 73, 101, 0.08) 0%, rgba(98, 182, 203, 0.04) 100%)",
+                          background: "linear-gradient(135deg, rgba(27, 73, 101, 0.05) 0%, rgba(98, 182, 203, 0.02) 100%)",
                           color: "#1B4965",
                           fontWeight: 700,
+                          boxShadow: "0 2px 8px rgba(27, 73, 101, 0.03)",
                           "&:hover": { 
-                            background: "linear-gradient(135deg, rgba(27, 73, 101, 0.12) 0%, rgba(98, 182, 203, 0.06) 100%)" 
+                            background: "linear-gradient(135deg, rgba(27, 73, 101, 0.08) 0%, rgba(98, 182, 203, 0.04) 100%)" 
                           },
                         },
                         "&:hover": { 
@@ -226,19 +226,19 @@ export default function Sidebar({ open, onClose, variant = "permanent" }) {
             boxShadow: "0 4px 10px rgba(27, 73, 101, 0.15)",
           }}
         >
-          A
+          {userInfo?.avatar || "A"}
         </Avatar>
         <Box className="flex-1 min-w-0">
           <Typography variant="body2" className="!text-[0.82rem] !font-bold text-slate-700 truncate leading-none mb-1">
-            Admin User
+            {userInfo?.name || "User"}
           </Typography>
           <Typography variant="caption" className="!text-[0.68rem] text-slate-400 font-medium truncate block leading-none">
-            admin@backhaulbid.vn
+            {userInfo?.email || "user@backhaulbid.vn"}
           </Typography>
         </Box>
         <Box className="flex gap-0.5">
           <Tooltip title="Cài đặt">
-            <IconButton size="small" component={Link} href="/settings" sx={{ color: "#94A3B8", "&:hover": { color: "#1B4965" } }}>
+            <IconButton size="small" component={Link} href={userInfo?.settingsPath || "/settings"} sx={{ color: "#94A3B8", "&:hover": { color: "#1B4965" } }}>
               <SettingsTwoToneIcon fontSize="small" />
             </IconButton>
           </Tooltip>

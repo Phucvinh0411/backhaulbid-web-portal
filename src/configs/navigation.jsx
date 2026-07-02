@@ -1,15 +1,19 @@
+"use client";
+
 // ============================================
 // Sidebar Navigation Configuration
 // ============================================
 
-import DashboardIcon from "@mui/icons-material/DashboardOutlined";
-import LocalShippingIcon from "@mui/icons-material/LocalShippingOutlined";
-import GavelIcon from "@mui/icons-material/GavelOutlined";
-import PeopleIcon from "@mui/icons-material/PeopleOutlined";
-import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
-import DescriptionIcon from "@mui/icons-material/DescriptionOutlined";
-import SettingsIcon from "@mui/icons-material/SettingsOutlined";
-import BarChartIcon from "@mui/icons-material/BarChartOutlined";
+import { 
+  DashboardOutlined as DashboardIcon, 
+  LocalShippingOutlined as LocalShippingIcon, 
+  GavelOutlined as GavelIcon, 
+  PeopleOutlined as PeopleIcon, 
+  AccountBalanceWalletOutlined as AccountBalanceWalletIcon, 
+  DescriptionOutlined as DescriptionIcon, 
+  SettingsOutlined as SettingsIcon, 
+  BarChartOutlined as BarChartIcon 
+} from "@mui/icons-material";
 
 const navigation = [
   {
