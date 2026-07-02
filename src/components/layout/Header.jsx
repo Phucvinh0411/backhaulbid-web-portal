@@ -34,19 +34,12 @@ export default function Header({ onMenuToggle, userInfo = defaultUser }) {
       position="fixed"
       elevation={0}
       sx={{
-        width: { 
-          md: `calc(100% - ${SIDEBAR_WIDTH}px - 20px)` // 20px gap from right
-        },
-        ml: { 
-          md: `${SIDEBAR_WIDTH}px` 
-        },
         mt: 2.5, // 20px top gap
-        mr: 2.5, // 20px right gap
-        left: { md: "auto", xs: 16 },
-        right: { md: "auto", xs: 16 },
-        width: { 
-          xs: "calc(100% - 32px)", 
-          md: `calc(100% - ${SIDEBAR_WIDTH}px - 28px)` // 20px right gap + 8px spacing
+        left: { md: 0, xs: 16 },
+        ml: { md: `calc(${SIDEBAR_WIDTH}px + 20px)` },
+        width: {
+          xs: "calc(100% - 32px)",
+          md: `calc(100% - ${SIDEBAR_WIDTH}px - 40px)`
         },
         backgroundColor: "rgba(255, 255, 255, 0.72)",
         backdropFilter: "blur(20px) saturate(180%)",
@@ -62,7 +55,7 @@ export default function Header({ onMenuToggle, userInfo = defaultUser }) {
           edge="start"
           onClick={onMenuToggle}
           className="!mr-1 md:!hidden"
-          sx={{ 
+          sx={{
             color: "#1B4965",
             backgroundColor: "rgba(27, 73, 101, 0.04)",
             "&:hover": { backgroundColor: "rgba(27, 73, 101, 0.08)" }
@@ -72,7 +65,7 @@ export default function Header({ onMenuToggle, userInfo = defaultUser }) {
         </IconButton>
 
         {/* Dynamic Search Box with subtle animation */}
-        <Box 
+        <Box
           className="flex items-center flex-1 max-w-sm rounded-xl px-3 py-1.5 border border-slate-100 transition-all duration-300 hover:border-slate-200 focus-within:!border-[#1B4965]/40 focus-within:!ring-4 focus-within:!ring-[#1B4965]/5"
           style={{
             backgroundColor: "rgba(241, 245, 249, 0.6)",
@@ -97,11 +90,11 @@ export default function Header({ onMenuToggle, userInfo = defaultUser }) {
         {/* Action button grouping */}
         <Box className="flex items-center gap-1.5">
           <Tooltip title="Trợ giúp">
-            <IconButton 
-              size="small" 
-              sx={{ 
-                color: "#64748B", 
-                width: 36, 
+            <IconButton
+              size="small"
+              sx={{
+                color: "#64748B",
+                width: 36,
                 height: 36,
                 "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" }
               }}
@@ -111,14 +104,14 @@ export default function Header({ onMenuToggle, userInfo = defaultUser }) {
           </Tooltip>
 
           <Tooltip title="Toàn màn hình">
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={toggleFullscreen}
-              sx={{ 
-                color: "#64748B", 
-                width: 36, 
+              sx={{
+                color: "#64748B",
+                width: 36,
                 height: 36,
-                "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" } 
+                "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" }
               }}
             >
               <FullscreenRoundedIcon fontSize="medium" />
@@ -126,26 +119,26 @@ export default function Header({ onMenuToggle, userInfo = defaultUser }) {
           </Tooltip>
 
           <Tooltip title="Thông báo">
-            <IconButton 
+            <IconButton
               size="small"
-              sx={{ 
-                color: "#64748B", 
-                width: 36, 
+              sx={{
+                color: "#64748B",
+                width: 36,
                 height: 36,
-                "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" } 
+                "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" }
               }}
             >
               <Badge
                 badgeContent={4}
                 color="error"
-                sx={{ 
-                  "& .MuiBadge-badge": { 
-                    fontSize: "0.62rem", 
-                    height: 16, 
+                sx={{
+                  "& .MuiBadge-badge": {
+                    fontSize: "0.62rem",
+                    height: 16,
                     minWidth: 16,
                     background: "linear-gradient(135deg, #F43F5E 0%, #E11D48 100%)",
                     boxShadow: "0 2px 4px rgba(244, 63, 94, 0.3)",
-                  } 
+                  }
                 }}
               >
                 <NotificationsTwoToneIcon fontSize="small" />
@@ -154,32 +147,56 @@ export default function Header({ onMenuToggle, userInfo = defaultUser }) {
           </Tooltip>
 
           {/* User profile details header */}
-          <Box className="flex items-center gap-2 ml-1 pl-3 border-l border-slate-200/80">
-            <Box className="hidden sm:block text-right">
-              <Typography className="!text-[0.82rem] !font-bold !leading-tight text-slate-700">
-                {userInfo.name}
-              </Typography>
-              <Typography className="!text-[0.68rem] text-cyan-600 !font-semibold !leading-tight uppercase tracking-wider">
-                {userInfo.role}
-              </Typography>
-            </Box>
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: "#1B4965",
-                fontSize: "0.85rem",
-                fontWeight: 700,
-                border: "2px solid #fff",
-                boxShadow: "0 4px 10px rgba(27, 73, 101, 0.12)",
-                cursor: "pointer",
-                transition: "transform 0.2s",
-                "&:hover": { transform: "scale(1.05)" }
-              }}
-            >
-              {userInfo.avatar}
-            </Avatar>
-          </Box>
+          {(() => {
+            const userRole = "admin"; // default to admin for now, or get from context
+            const userProfile = {
+              shipper: {
+                name: "Nguyễn Minh Triết",
+                roleName: "Chủ hàng",
+                avatarLetter: "T",
+              },
+              carrier: {
+                name: "Trần Văn Bình",
+                roleName: "Nhà xe",
+                avatarLetter: "B",
+              },
+              admin: {
+                name: userInfo.name || "Admin User",
+                roleName: userInfo.role || "Quản trị viên",
+                avatarLetter: userInfo.avatar || "A",
+              }
+            };
+            const profile = userProfile[userRole] || userProfile.admin;
+
+            return (
+              <Box className="flex items-center gap-2 ml-1 pl-3 border-l border-slate-200/80">
+                <Box className="hidden sm:block text-right">
+                  <Typography className="!text-[0.82rem] !font-bold !leading-tight text-slate-700">
+                    {profile.name}
+                  </Typography>
+                  <Typography className="!text-[0.68rem] text-cyan-600 !font-semibold !leading-tight uppercase tracking-wider">
+                    {profile.roleName}
+                  </Typography>
+                </Box>
+                <Avatar
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    bgcolor: "#1B4965",
+                    fontSize: "0.85rem",
+                    fontWeight: 700,
+                    border: "2px solid #fff",
+                    boxShadow: "0 4px 10px rgba(27, 73, 101, 0.12)",
+                    cursor: "pointer",
+                    transition: "transform 0.2s",
+                    "&:hover": { transform: "scale(1.05)" }
+                  }}
+                >
+                  {profile.avatarLetter}
+                </Avatar>
+              </Box>
+            );
+          })()}
         </Box>
       </Toolbar>
     </AppBar>
