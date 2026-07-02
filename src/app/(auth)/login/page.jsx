@@ -12,7 +12,7 @@ export default function LoginPage() {
   const handleLogin = (e, role) => {
     e.preventDefault();
     if (typeof window !== "undefined") {
-      localStorage.setItem("userRole", role);
+      window.localStorage.setItem("userRole", role);
     }
     if (role === "admin") {
       router.push("/admin");

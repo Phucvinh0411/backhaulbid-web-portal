@@ -69,7 +69,7 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
-      localStorage.removeItem("userRole");
+      window.localStorage.removeItem("userRole");
       router.push("/login");
     }
   };

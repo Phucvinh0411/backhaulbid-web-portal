@@ -24,7 +24,7 @@ export default function RegisterPage() {
   const handleSkipEkyc = () => {
     setShowEkycModal(false);
     if (typeof window !== "undefined") {
-      localStorage.setItem("userRole", formData.role);
+      window.localStorage.setItem("userRole", formData.role);
     }
     router.push(`/${formData.role}`);
   };
@@ -56,11 +56,8 @@ export default function RegisterPage() {
 
           <div className="flex items-center space-x-4">
             <div className="flex -space-x-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="w-10 h-10 rounded-full border-2 border-blue-700" src="https://i.pravatar.cc/100?img=1" alt="Avatar" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="w-10 h-10 rounded-full border-2 border-blue-700" src="https://i.pravatar.cc/100?img=2" alt="Avatar" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="w-10 h-10 rounded-full border-2 border-blue-700" src="https://i.pravatar.cc/100?img=3" alt="Avatar" />
             </div>
             <span className="text-sm font-medium">Tham gia cùng 10,000+ doanh nghiệp.</span>

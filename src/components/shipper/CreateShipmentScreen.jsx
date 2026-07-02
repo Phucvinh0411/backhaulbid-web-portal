@@ -448,7 +448,6 @@ export default function CreateShipmentScreen() {
                         <div className="flex flex-wrap gap-3 mt-4">
                           {uploadedImages.map((img, idx) => (
                             <div key={idx} className="relative w-20 h-20 rounded-2xl border border-slate-200 overflow-hidden bg-slate-50 flex items-center justify-center group/img">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
                               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
                                 <IconButton

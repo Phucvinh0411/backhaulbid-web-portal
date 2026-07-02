@@ -10,7 +10,7 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const role = localStorage.getItem("userRole");
+      const role = window.localStorage.getItem("userRole");
       if (role) {
         if (role === "admin") {
           router.replace("/admin");

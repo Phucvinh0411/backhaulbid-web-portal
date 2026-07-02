@@ -604,3 +604,36 @@ Import trace for requested module:
  ✓ Compiled in 6.1s (3736 modules)
  ✓ Compiled in 4.3s (3736 modules)
  ○ Compiling /admin/users ...
+ ✓ Compiled /admin/complaints in 13.6s (3771 modules)
+ ✓ Compiled (3779 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 2.8s (1552 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 6.1s (1958 modules)
+ GET / 200 in 6586ms
+ GET / 200 in 153ms
+ GET / 200 in 212ms
+ ○ Compiling /register ...
+ ✓ Compiled /register in 5.3s (1415 modules)
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 1515ms (1447 modules)
+ GET /favicon.ico 200 in 1765ms
+ ○ Compiling /carrier/dashboard ...
+ ✓ Compiled /carrier/dashboard in 4s (1938 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled in 5.6s (4137 modules)
+ GET /carrier/dashboard 200 in 2770ms
+ GET /favicon.ico 200 in 118ms
+ ✓ Compiled in 3.1s (4137 modules)
+ ✓ Compiled in 2.4s (4137 modules)
+ ○ Compiling /admin/users ...
+ ✓ Compiled /admin/users in 3.1s (1938 modules)
+ ✓ Compiled in 3.3s (4149 modules)
+ ✓ Compiled in 1174ms (4149 modules)
+ ✓ Compiled in 1999ms (2211 modules)
+ ○ Compiling /shipper/dashboard ...
+ ✓ Compiled /shipper/dashboard in 3.4s (1944 modules)
+ ✓ Compiled in 1057ms (2211 modules)
+ ✓ Compiled in 1636ms (2211 modules)
+ ○ Compiling /shipper ...
+ ✓ Compiled /shipper in 4.6s (1909 modules)
