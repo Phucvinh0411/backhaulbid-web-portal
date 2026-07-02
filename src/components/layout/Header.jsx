@@ -32,19 +32,12 @@ export default function Header({ onMenuToggle }) {
       position="fixed"
       elevation={0}
       sx={{
-        width: { 
-          md: `calc(100% - ${SIDEBAR_WIDTH}px - 20px)` // 20px gap from right
-        },
-        ml: { 
-          md: `${SIDEBAR_WIDTH}px` 
-        },
         mt: 2.5, // 20px top gap
-        mr: 2.5, // 20px right gap
-        left: { md: "auto", xs: 16 },
-        right: { md: "auto", xs: 16 },
-        width: { 
-          xs: "calc(100% - 32px)", 
-          md: `calc(100% - ${SIDEBAR_WIDTH}px - 28px)` // 20px right gap + 8px spacing
+        left: { md: 0, xs: 16 },
+        ml: { md: `calc(${SIDEBAR_WIDTH}px + 20px)` },
+        width: {
+          xs: "calc(100% - 32px)",
+          md: `calc(100% - ${SIDEBAR_WIDTH}px - 40px)`
         },
         backgroundColor: "rgba(255, 255, 255, 0.72)",
         backdropFilter: "blur(20px) saturate(180%)",
@@ -152,32 +145,56 @@ export default function Header({ onMenuToggle }) {
           </Tooltip>
 
           {/* User profile details header */}
-          <Box className="flex items-center gap-2 ml-1 pl-3 border-l border-slate-200/80">
-            <Box className="hidden sm:block text-right">
-              <Typography className="!text-[0.82rem] !font-bold !leading-tight text-slate-700">
-                Admin User
-              </Typography>
-              <Typography className="!text-[0.68rem] text-cyan-600 !font-semibold !leading-tight uppercase tracking-wider">
-                Quản trị viên
-              </Typography>
-            </Box>
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: "#1B4965",
-                fontSize: "0.85rem",
-                fontWeight: 700,
-                border: "2px solid #fff",
-                boxShadow: "0 4px 10px rgba(27, 73, 101, 0.12)",
-                cursor: "pointer",
-                transition: "transform 0.2s",
-                "&:hover": { transform: "scale(1.05)" }
-              }}
-            >
-              A
-            </Avatar>
-          </Box>
+          {(() => {
+            const userRole = "shipper";
+            const userProfile = {
+              shipper: {
+                name: "Nguyễn Minh Triết",
+                roleName: "Chủ hàng",
+                avatarLetter: "T",
+              },
+              carrier: {
+                name: "Trần Văn Bình",
+                roleName: "Nhà xe",
+                avatarLetter: "B",
+              },
+              admin: {
+                name: "Admin User",
+                roleName: "Quản trị viên",
+                avatarLetter: "A",
+              }
+            };
+            const profile = userProfile[userRole] || userProfile.shipper;
+
+            return (
+              <Box className="flex items-center gap-2 ml-1 pl-3 border-l border-slate-200/80">
+                <Box className="hidden sm:block text-right">
+                  <Typography className="!text-[0.82rem] !font-bold !leading-tight text-slate-700">
+                    {profile.name}
+                  </Typography>
+                  <Typography className="!text-[0.68rem] text-cyan-600 !font-semibold !leading-tight uppercase tracking-wider">
+                    {profile.roleName}
+                  </Typography>
+                </Box>
+                <Avatar
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    bgcolor: "#1B4965",
+                    fontSize: "0.85rem",
+                    fontWeight: 700,
+                    border: "2px solid #fff",
+                    boxShadow: "0 4px 10px rgba(27, 73, 101, 0.12)",
+                    cursor: "pointer",
+                    transition: "transform 0.2s",
+                    "&:hover": { transform: "scale(1.05)" }
+                  }}
+                >
+                  {profile.avatarLetter}
+                </Avatar>
+              </Box>
+            );
+          })()}
         </Box>
       </Toolbar>
     </AppBar>
