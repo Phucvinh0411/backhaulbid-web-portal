@@ -235,8 +235,8 @@ export default function CreateShipmentScreen() {
         title="Tạo Lô Hàng Mới"
         subtitle="Thiết lập các thông số hàng hóa, điểm hành trình và điều kiện giá thầu để đăng phiên."
         breadcrumbs={[
-          { label: "Trang chủ", path: "/dashboard" },
-          { label: "Đấu giá vận tải", path: "/bidding/sessions" },
+          { label: "Trang chủ", path: "/shipper/dashboard" },
+          { label: "Đấu giá vận tải", path: "/shipper/bidding/sessions" },
           { label: "Tạo lô hàng mới" },
         ]}
       />
@@ -298,7 +298,7 @@ export default function CreateShipmentScreen() {
                 <Button
                   fullWidth
                   variant="contained"
-                  onClick={() => router.push("/bidding/sessions")}
+                  onClick={() => router.push("/shipper/bidding/sessions")}
                   className="!font-bold !py-3 !rounded-2xl !capitalize"
                   sx={{
                     background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)",

@@ -187,8 +187,8 @@ export default function AuctionDetailScreen() {
         title="Theo Dõi Phiên Đấu Giá"
         subtitle="Chi tiết diễn biến lệnh đặt giá của các nhà xe đối với lô hàng của bạn."
         breadcrumbs={[
-          { label: "Trang chủ", path: "/dashboard" },
-          { label: "Đấu giá vận tải", path: "/bidding/sessions" },
+          { label: "Trang chủ", path: "/shipper/dashboard" },
+          { label: "Đấu giá vận tải", path: "/shipper/bidding/sessions" },
           { label: "Lô hàng LH-2026-9041" },
         ]}
       />

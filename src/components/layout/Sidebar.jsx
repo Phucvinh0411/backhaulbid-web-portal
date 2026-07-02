@@ -209,47 +209,6 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
         ))}
       </Box>
 
-      {/* User Session profile widget at bottom */}
-      <Box
-        className="mt-auto p-3.5 rounded-2xl flex items-center gap-3 border border-slate-100/60"
-        style={{
-          background: "linear-gradient(135deg, rgba(27,73,101,0.02) 0%, rgba(98,182,203,0.02) 100%)",
-        }}
-      >
-        <Avatar
-          sx={{
-            width: 38,
-            height: 38,
-            bgcolor: "#1B4965",
-            fontSize: "0.95rem",
-            fontWeight: 700,
-            border: "2px solid #fff",
-            boxShadow: "0 4px 10px rgba(27, 73, 101, 0.15)",
-          }}
-        >
-          {userInfo?.avatar || "A"}
-        </Avatar>
-        <Box className="flex-1 min-w-0">
-          <Typography variant="body2" className="!text-[0.82rem] !font-bold text-slate-700 truncate leading-none mb-1">
-            {userInfo?.name || "User"}
-          </Typography>
-          <Typography variant="caption" className="!text-[0.68rem] text-slate-400 font-medium truncate block leading-none">
-            {userInfo?.email || "user@backhaulbid.vn"}
-          </Typography>
-        </Box>
-        <Box className="flex gap-0.5">
-          <Tooltip title="Cài đặt">
-            <IconButton size="small" component={Link} href={userInfo?.settingsPath || "/settings"} sx={{ color: "#94A3B8", "&:hover": { color: "#1B4965" } }}>
-              <SettingsTwoToneIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Đăng xuất">
-            <IconButton size="small" sx={{ color: "#94A3B8", "&:hover": { color: "#F43F5E" } }}>
-              <LogoutRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </Box>
       {(() => {
         const userRole = pathname.includes("/admin") ? "admin" : pathname.includes("/carrier") ? "carrier" : "shipper";
         const userProfile = {
@@ -258,18 +217,21 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
             email: "shipper@backhaulbid.vn",
             roleName: "Chủ hàng",
             avatarLetter: "T",
+            settingsPath: "/shipper/settings",
           },
           carrier: {
             name: "Trần Văn Bình",
             email: "carrier@backhaulbid.vn",
             roleName: "Nhà xe",
             avatarLetter: "B",
+            settingsPath: "/carrier/settings",
           },
           admin: {
             name: "Admin User",
             email: "admin@backhaulbid.vn",
             roleName: "Quản trị viên",
             avatarLetter: "A",
+            settingsPath: "/admin/settings",
           }
         };
 
@@ -277,7 +239,8 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
           name: userInfo.name,
           email: userInfo.email,
           roleName: userInfo.role,
-          avatarLetter: userInfo.avatar
+          avatarLetter: userInfo.avatar,
+          settingsPath: userInfo.settingsPath || "/settings",
         } : (userProfile[userRole] || userProfile.shipper);
 
         return (
@@ -310,7 +273,7 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
             </Box>
             <Box className="flex gap-0.5">
               <Tooltip title="Cài đặt">
-                <IconButton size="small" component={Link} href="/settings" sx={{ color: "#94A3B8", "&:hover": { color: "#1B4965" } }}>
+                <IconButton size="small" component={Link} href={profile.settingsPath} sx={{ color: "#94A3B8", "&:hover": { color: "#1B4965" } }}>
                   <SettingsTwoToneIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
