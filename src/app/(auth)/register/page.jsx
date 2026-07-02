@@ -177,7 +177,7 @@ export default function RegisterPage() {
                   <Grid container spacing={2}>
                     
                     {/* Shipper Card */}
-                    <Grid item xs={6}>
+                    <Grid item xs={6} sx={{ display: "flex" }}>
                       <Paper
                         onClick={() => setFormData({ ...formData, role: "shipper" })}
                         elevation={0}
@@ -189,6 +189,10 @@ export default function RegisterPage() {
                           borderRadius: "12px",
                           cursor: "pointer",
                           transition: "all 0.2s",
+                          height: "100%",
+                          display: "flex",
+                          flexDirection: "column",
+                          width: "100%",
                           "&:hover": {
                             borderColor: theme.palette.primary.main,
                           }
@@ -207,7 +211,7 @@ export default function RegisterPage() {
                     </Grid>
 
                     {/* Carrier Card */}
-                    <Grid item xs={6}>
+                    <Grid item xs={6} sx={{ display: "flex" }}>
                       <Paper
                         onClick={() => setFormData({ ...formData, role: "carrier" })}
                         elevation={0}
@@ -219,6 +223,10 @@ export default function RegisterPage() {
                           borderRadius: "12px",
                           cursor: "pointer",
                           transition: "all 0.2s",
+                          height: "100%",
+                          display: "flex",
+                          flexDirection: "column",
+                          width: "100%",
                           "&:hover": {
                             borderColor: theme.palette.primary.main,
                           }

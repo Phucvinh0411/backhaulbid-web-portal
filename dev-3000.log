@@ -639,3 +639,4 @@ Import trace for requested module:
  ✓ Compiled /shipper in 4.6s (1909 modules)
  GET / 200 in 499ms
  ✓ Compiled in 8s (4125 modules)
+ ✓ Compiled in 3.6s (4125 modules)
