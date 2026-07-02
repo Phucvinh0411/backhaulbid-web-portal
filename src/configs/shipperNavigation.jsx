@@ -13,7 +13,7 @@ const shipperNavigation = [
     items: [
       {
         title: "Dashboard",
-        path: "/dashboard",
+        path: "/shipper/dashboard",
         icon: DashboardIcon,
       },
     ],
@@ -23,20 +23,20 @@ const shipperNavigation = [
     items: [
       {
         title: "Đấu giá vận tải",
-        path: "/bidding",
+        path: "/shipper/bidding",
         icon: GavelIcon,
         children: [
-          { title: "Danh sách phiên", path: "/bidding/sessions" },
-          { title: "Tạo phiên mới", path: "/bidding/create" },
-          { title: "Lịch sử đấu giá", path: "/bidding/history" },
+          { title: "Danh sách phiên", path: "/shipper/bidding/sessions" },
+          { title: "Tạo phiên mới", path: "/shipper/bidding/create" },
+          { title: "Lịch sử đấu giá", path: "/shipper/bidding/history" },
         ],
       },
       {
         title: "Hợp đồng vận chuyển",
-        path: "/contracts",
+        path: "/shipper/contracts",
         icon: DescriptionIcon,
         children: [
-          { title: "Đang hoạt động", path: "/contracts/active" },
+          { title: "Đang hoạt động", path: "/shipper/contracts/active" },
         ],
       },
     ],
@@ -46,16 +46,16 @@ const shipperNavigation = [
     items: [
       {
         title: "Ví & Thanh toán",
-        path: "/wallet",
+        path: "/shipper/wallet",
         icon: AccountBalanceWalletIcon,
         children: [
-          { title: "Tổng quan ví", path: "/wallet/overview" },
-          { title: "Lịch sử giao dịch", path: "/wallet/transactions" },
+          { title: "Tổng quan ví", path: "/shipper/wallet/overview" },
+          { title: "Lịch sử giao dịch", path: "/shipper/wallet/transactions" },
         ],
       },
       {
         title: "Sổ địa chỉ kho",
-        path: "/fleet/routes",
+        path: "/shipper/fleet/routes",
         icon: LocalShippingIcon,
       },
     ],
@@ -65,7 +65,7 @@ const shipperNavigation = [
     items: [
       {
         title: "Cài đặt tài khoản",
-        path: "/settings",
+        path: "/shipper/settings",
         icon: SettingsIcon,
       },
     ],

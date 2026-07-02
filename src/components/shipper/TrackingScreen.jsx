@@ -128,8 +128,8 @@ export default function TrackingScreen() {
         title="Giám Sát Hành Trình & Nghiệm Thu"
         subtitle="Theo dõi thời gian thực vị trí GPS, tiến trình bàn giao và giải ngân thanh toán."
         breadcrumbs={[
-          { label: "Trang chủ", path: "/dashboard" },
-          { label: "Hợp đồng vận chuyển", path: "/contracts/active" },
+          { label: "Trang chủ", path: "/shipper/dashboard" },
+          { label: "Hợp đồng vận chuyển", path: "/shipper/contracts/active" },
           { label: "Giám sát đơn hàng" },
         ]}
       />

@@ -282,12 +282,12 @@ export default function DashboardScreen() {
         title="Quản lý Lô hàng & Đấu giá"
         subtitle="Quản lý tối ưu các lô hàng, tương tác trực tiếp với các đơn đấu giá vận tải."
         breadcrumbs={[
-          { label: "Trang chủ", path: "/dashboard" },
-          { label: "Đấu giá vận tải", path: "/bidding/sessions" },
+          { label: "Trang chủ", path: "/shipper/dashboard" },
+          { label: "Đấu giá vận tải", path: "/shipper/bidding/sessions" },
           { label: "Quản lý lô hàng" },
         ]}
         action={
-          <Link href="/bidding/create" passHref legacyBehavior>
+          <Link href="/shipper/bidding/create" passHref legacyBehavior>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -403,7 +403,7 @@ export default function DashboardScreen() {
               <BiddingItem
                 shipment={shipment}
                 onCancel={handleOpenCancelDialog}
-                onViewDetail={(id) => router.push("/bidding/history")}
+                onViewDetail={(id) => router.push("/shipper/bidding/history")}
               />
             </Grid>
           ))}
