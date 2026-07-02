@@ -1,3 +1,7 @@
+// ============================================
+// src/components/common/StatCard.jsx
+// ============================================
+
 "use client";
 
 import Card from "@mui/material/Card";
@@ -5,51 +9,97 @@ import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 
+const gradients = {
+  "#1B4965": {
+    bg: "linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%)", // Vibrant blue
+    iconBg: "rgba(255, 255, 255, 0.16)",
+    iconColor: "#FFFFFF",
+    textColor: "#FFFFFF",
+    subColor: "rgba(255, 255, 255, 0.76)",
+    boxShadow: "0 10px 25px -5px rgba(30, 58, 138, 0.3)",
+  },
+  "#62B6CB": {
+    bg: "linear-gradient(135deg, #0D9488 0%, #06B6D4 100%)", // Ocean teal-cyan
+    iconBg: "rgba(255, 255, 255, 0.16)",
+    iconColor: "#FFFFFF",
+    textColor: "#FFFFFF",
+    subColor: "rgba(255, 255, 255, 0.76)",
+    boxShadow: "0 10px 25px -5px rgba(13, 148, 136, 0.3)",
+  },
+  "#2E7D32": {
+    bg: "linear-gradient(135deg, #059669 0%, #10B981 100%)", // Emerald success
+    iconBg: "rgba(255, 255, 255, 0.16)",
+    iconColor: "#FFFFFF",
+    textColor: "#FFFFFF",
+    subColor: "rgba(255, 255, 255, 0.76)",
+    boxShadow: "0 10px 25px -5px rgba(5, 150, 105, 0.3)",
+  },
+  "#ED6C02": {
+    bg: "linear-gradient(135deg, #D97706 0%, #F59E0B 100%)", // Amber warning
+    iconBg: "rgba(255, 255, 255, 0.16)",
+    iconColor: "#FFFFFF",
+    textColor: "#FFFFFF",
+    subColor: "rgba(255, 255, 255, 0.76)",
+    boxShadow: "0 10px 25px -5px rgba(217, 119, 6, 0.3)",
+  },
+};
+
 export default function StatCard({ title, value, subtitle, icon: Icon, color = "#1B4965" }) {
+  const styleConfig = gradients[color] || {
+    bg: "rgba(255, 255, 255, 0.7)",
+    iconBg: `linear-gradient(135deg, ${color}14 0%, ${color}05 100%)`,
+    iconColor: color,
+    textColor: "#1E293B",
+    subColor: "#64748B",
+    border: "1px solid rgba(255, 255, 255, 0.5)",
+    boxShadow: "0 8px 32px 0 rgba(27, 73, 101, 0.02)",
+  };
+
   return (
     <Card 
       className="group"
       sx={{
-        background: "rgba(255, 255, 255, 0.7)",
+        background: styleConfig.bg,
         backdropFilter: "blur(20px)",
         borderRadius: "16px",
-        border: "1px solid rgba(255, 255, 255, 0.5)",
-        boxShadow: "0 8px 32px 0 rgba(27, 73, 101, 0.02)",
+        border: styleConfig.border || "none",
+        boxShadow: styleConfig.boxShadow,
         transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         overflow: "hidden",
         position: "relative",
         "&:hover": {
           transform: "translateY(-4px)",
-          boxShadow: "0 12px 40px 0 rgba(27, 73, 101, 0.06)",
-          borderColor: "rgba(27, 73, 101, 0.12)",
+          boxShadow: styleConfig.boxShadow ? `${styleConfig.boxShadow.slice(0, -1)}, 0.45)` : "0 12px 40px 0 rgba(27, 73, 101, 0.08)",
         }
       }}
     >
-      {/* Decorative top border gradient line on hover */}
-      <Box 
-        className="absolute top-0 left-0 right-0 h-[3px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{
-          background: `linear-gradient(90deg, ${color} 0%, #62B6CB 100%)`
-        }}
-      />
-      
       <CardContent className="!p-5">
         <Box className="flex items-start justify-between">
           <Box className="space-y-1">
-            <Typography variant="body2" className="!text-slate-400 !text-[0.78rem] !font-bold !tracking-wider uppercase !leading-none">
+            <Typography 
+              variant="body2" 
+              className="!text-[0.74rem] !font-bold !tracking-wider uppercase !leading-none"
+              sx={{ color: styleConfig.subColor }}
+            >
               {title}
             </Typography>
             <Typography 
               variant="h4" 
-              className="!font-extrabold text-slate-800 tracking-tight"
-              style={{
+              className="!font-extrabold tracking-tight"
+              sx={{
+                color: styleConfig.textColor,
                 fontFamily: "var(--font-inter), sans-serif",
+                mt: 0.5
               }}
             >
               {value}
             </Typography>
             {subtitle && (
-              <Typography variant="caption" className="!text-slate-400 !font-semibold !mt-1 block">
+              <Typography 
+                variant="caption" 
+                className="!font-semibold !mt-1 block"
+                sx={{ color: styleConfig.subColor }}
+              >
                 {subtitle}
               </Typography>
             )}
@@ -59,12 +109,12 @@ export default function StatCard({ title, value, subtitle, icon: Icon, color = "
             <Box
               className="flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 group-hover:scale-110"
               sx={{ 
-                background: `linear-gradient(135deg, ${color}14 0%, ${color}05 100%)`,
-                border: `1px solid ${color}1A`,
-                boxShadow: `0 4px 12px ${color}0A`,
+                background: styleConfig.iconBg,
+                border: styleConfig.border ? `1px solid ${color}1A` : "none",
+                boxShadow: styleConfig.border ? `0 4px 12px ${color}0A` : "none",
               }}
             >
-              <Icon sx={{ color, fontSize: 24 }} />
+              <Icon sx={{ color: styleConfig.iconColor, fontSize: 24 }} />
             </Box>
           )}
         </Box>

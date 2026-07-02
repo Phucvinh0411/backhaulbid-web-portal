@@ -23,9 +23,10 @@ export default function DashboardLayout({ children }) {
       sx={{
         backgroundColor: "#F6F8FC", // Premium soft gray-blue
         backgroundImage: `
-          radial-gradient(circle at 5% 10%, rgba(98, 182, 203, 0.08) 0%, transparent 35%),
-          radial-gradient(circle at 95% 85%, rgba(27, 73, 101, 0.07) 0%, transparent 35%),
-          radial-gradient(circle at 50% 50%, rgba(248, 250, 252, 0.8) 0%, transparent 100%)
+          radial-gradient(circle at 5% 15%, rgba(98, 182, 203, 0.16) 0%, transparent 35%),
+          radial-gradient(circle at 95% 80%, rgba(27, 73, 101, 0.12) 0%, transparent 40%),
+          radial-gradient(circle at 10% 80%, rgba(99, 102, 241, 0.08) 0%, transparent 35%),
+          radial-gradient(circle at 50% 50%, rgba(248, 250, 252, 0.6) 0%, transparent 100%)
         `,
         backgroundAttachment: "fixed",
       }}
@@ -52,14 +53,20 @@ export default function DashboardLayout({ children }) {
           width: { 
             md: `calc(100% - ${SIDEBAR_WIDTH}px)` 
           },
+          maxWidth: {
+            md: `calc(100% - ${SIDEBAR_WIDTH}px)`
+          },
+          ml: {
+            // md: `${SIDEBAR_WIDTH}px`
+          },
           pl: { 
             md: 0.5 // Subtle gap between sidebar and content
           },
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
-        {/* Spacer for floating AppBar (AppBar height is 64px + top margin 20px + bottom spacing 16px) */}
-        <Box sx={{ height: { xs: "100px", md: "104px" } }} />
+        {/* Spacer for floating AppBar (AppBar height is ~80px + top margin 20px + breathing space) */}
+        <Box sx={{ height: { xs: "90px", md: "108px" } }} />
 
         {/* Content canvas */}
         <Box 
