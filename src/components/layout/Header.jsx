@@ -16,7 +16,9 @@ import FullscreenRoundedIcon from "@mui/icons-material/FullscreenRounded";
 import HelpOutlineRoundedIcon from "@mui/icons-material/HelpOutlineRounded";
 import { SIDEBAR_WIDTH } from "./Sidebar";
 
-export default function Header({ onMenuToggle }) {
+const defaultUser = { name: "Admin User", email: "admin@backhaulbid.vn", avatar: "A", role: "Quản trị viên", settingsPath: "/settings" };
+
+export default function Header({ onMenuToggle, userInfo = defaultUser }) {
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch((err) => {
@@ -53,7 +55,7 @@ export default function Header({ onMenuToggle }) {
           edge="start"
           onClick={onMenuToggle}
           className="!mr-1 md:!hidden"
-          sx={{ 
+          sx={{
             color: "#1B4965",
             backgroundColor: "rgba(27, 73, 101, 0.04)",
             "&:hover": { backgroundColor: "rgba(27, 73, 101, 0.08)" }
@@ -63,7 +65,7 @@ export default function Header({ onMenuToggle }) {
         </IconButton>
 
         {/* Dynamic Search Box with subtle animation */}
-        <Box 
+        <Box
           className="flex items-center flex-1 max-w-sm rounded-xl px-3 py-1.5 border border-slate-100 transition-all duration-300 hover:border-slate-200 focus-within:!border-[#1B4965]/40 focus-within:!ring-4 focus-within:!ring-[#1B4965]/5"
           style={{
             backgroundColor: "rgba(241, 245, 249, 0.6)",
@@ -88,11 +90,11 @@ export default function Header({ onMenuToggle }) {
         {/* Action button grouping */}
         <Box className="flex items-center gap-1.5">
           <Tooltip title="Trợ giúp">
-            <IconButton 
-              size="small" 
-              sx={{ 
-                color: "#64748B", 
-                width: 36, 
+            <IconButton
+              size="small"
+              sx={{
+                color: "#64748B",
+                width: 36,
                 height: 36,
                 "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" }
               }}
@@ -102,14 +104,14 @@ export default function Header({ onMenuToggle }) {
           </Tooltip>
 
           <Tooltip title="Toàn màn hình">
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={toggleFullscreen}
-              sx={{ 
-                color: "#64748B", 
-                width: 36, 
+              sx={{
+                color: "#64748B",
+                width: 36,
                 height: 36,
-                "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" } 
+                "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" }
               }}
             >
               <FullscreenRoundedIcon fontSize="medium" />
@@ -117,26 +119,26 @@ export default function Header({ onMenuToggle }) {
           </Tooltip>
 
           <Tooltip title="Thông báo">
-            <IconButton 
+            <IconButton
               size="small"
-              sx={{ 
-                color: "#64748B", 
-                width: 36, 
+              sx={{
+                color: "#64748B",
+                width: 36,
                 height: 36,
-                "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" } 
+                "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" }
               }}
             >
               <Badge
                 badgeContent={4}
                 color="error"
-                sx={{ 
-                  "& .MuiBadge-badge": { 
-                    fontSize: "0.62rem", 
-                    height: 16, 
+                sx={{
+                  "& .MuiBadge-badge": {
+                    fontSize: "0.62rem",
+                    height: 16,
                     minWidth: 16,
                     background: "linear-gradient(135deg, #F43F5E 0%, #E11D48 100%)",
                     boxShadow: "0 2px 4px rgba(244, 63, 94, 0.3)",
-                  } 
+                  }
                 }}
               >
                 <NotificationsTwoToneIcon fontSize="small" />
@@ -146,7 +148,7 @@ export default function Header({ onMenuToggle }) {
 
           {/* User profile details header */}
           {(() => {
-            const userRole = "shipper";
+            const userRole = "admin"; // default to admin for now, or get from context
             const userProfile = {
               shipper: {
                 name: "Nguyễn Minh Triết",
@@ -159,12 +161,12 @@ export default function Header({ onMenuToggle }) {
                 avatarLetter: "B",
               },
               admin: {
-                name: "Admin User",
-                roleName: "Quản trị viên",
-                avatarLetter: "A",
+                name: userInfo.name || "Admin User",
+                roleName: userInfo.role || "Quản trị viên",
+                avatarLetter: userInfo.avatar || "A",
               }
             };
-            const profile = userProfile[userRole] || userProfile.shipper;
+            const profile = userProfile[userRole] || userProfile.admin;
 
             return (
               <Box className="flex items-center gap-2 ml-1 pl-3 border-l border-slate-200/80">

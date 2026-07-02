@@ -23,13 +23,9 @@ import { navigationByRole } from "@/configs/navigation";
 
 const SIDEBAR_WIDTH = 280;
 
-export default function Sidebar({ open, onClose, variant = "permanent" }) {
+export default function Sidebar({ open, onClose, variant = "permanent", navigation = [], userInfo }) {
   const pathname = usePathname();
   const [openMenus, setOpenMenus] = useState({});
-
-  // Active role - can be retrieved from auth context later (default is 'shipper')
-  const userRole = "shipper";
-  const navigation = navigationByRole[userRole] || [];
 
   // Auto-expand menu groups when pathname matches any sub-item
   useEffect(() => {
@@ -52,7 +48,7 @@ export default function Sidebar({ open, onClose, variant = "permanent" }) {
     <Box className="flex flex-col h-full bg-white/80 backdrop-blur-xl border border-white/50 shadow-[0_8px_32px_0_rgba(27,73,101,0.05)] rounded-3xl p-4">
       {/* Brand Header */}
       <Box className="flex items-center gap-3.5 px-3 py-4 mb-4">
-        <Box 
+        <Box
           className="flex items-center justify-center w-11 h-11 rounded-2xl shadow-lg transition-all duration-300 hover:rotate-6 hover:scale-105"
           style={{
             background: "linear-gradient(135deg, #1B4965 0%, #62B6CB 100%)",
@@ -77,7 +73,7 @@ export default function Sidebar({ open, onClose, variant = "permanent" }) {
           <Box key={groupIdx} className="mb-6">
             <Typography
               variant="overline"
-              className="!text-[0.65rem] !font-extrabold text-slate-400 !tracking-widest px-4.5 py-1.5 block"
+              className="!text-xs !font-bold text-slate-400 !tracking-wider px-4.5 py-1.5 block !normal-case"
             >
               {group.title}
             </Typography>
@@ -102,14 +98,15 @@ export default function Sidebar({ open, onClose, variant = "permanent" }) {
                         px: 2.5,
                         transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
                         "&.Mui-selected": {
-                          background: "linear-gradient(135deg, rgba(27, 73, 101, 0.08) 0%, rgba(98, 182, 203, 0.04) 100%)",
+                          background: "linear-gradient(135deg, rgba(27, 73, 101, 0.05) 0%, rgba(98, 182, 203, 0.02) 100%)",
                           color: "#1B4965",
                           fontWeight: 700,
-                          "&:hover": { 
-                            background: "linear-gradient(135deg, rgba(27, 73, 101, 0.12) 0%, rgba(98, 182, 203, 0.06) 100%)" 
+                          boxShadow: "0 2px 8px rgba(27, 73, 101, 0.03)",
+                          "&:hover": {
+                            background: "linear-gradient(135deg, rgba(27, 73, 101, 0.08) 0%, rgba(98, 182, 203, 0.04) 100%)"
                           },
                         },
-                        "&:hover": { 
+                        "&:hover": {
                           backgroundColor: "rgba(27, 73, 101, 0.03)",
                           transform: "translateX(4px)",
                         },
@@ -117,7 +114,7 @@ export default function Sidebar({ open, onClose, variant = "permanent" }) {
                     >
                       {/* Active indicator bar */}
                       {active && !hasChildren && (
-                        <Box 
+                        <Box
                           className="absolute left-0 w-1.5 h-6 rounded-r-full"
                           style={{
                             background: "linear-gradient(180deg, #1B4965 0%, #62B6CB 100%)"
@@ -125,9 +122,9 @@ export default function Sidebar({ open, onClose, variant = "permanent" }) {
                         />
                       )}
 
-                      <ListItemIcon 
-                        sx={{ 
-                          minWidth: 36, 
+                      <ListItemIcon
+                        sx={{
+                          minWidth: 36,
                           color: active ? "#1B4965" : "#94A3B8",
                           transition: "color 0.25s",
                           ".group-hover\\/btn:hover &": { color: "#1B4965" }
@@ -135,7 +132,7 @@ export default function Sidebar({ open, onClose, variant = "permanent" }) {
                       >
                         <Icon fontSize="medium" />
                       </ListItemIcon>
-                      
+
                       <ListItemText
                         primary={item.title}
                         primaryTypographyProps={{
@@ -144,7 +141,7 @@ export default function Sidebar({ open, onClose, variant = "permanent" }) {
                           className: active ? "text-[#1B4965]" : "text-slate-600 hover:text-slate-800"
                         }}
                       />
-                      
+
                       {hasChildren && (
                         isOpen ? (
                           <ExpandLess fontSize="small" sx={{ color: "#1B4965" }} />
@@ -182,7 +179,7 @@ export default function Sidebar({ open, onClose, variant = "permanent" }) {
                                 }}
                               >
                                 {childActive && (
-                                  <Box 
+                                  <Box
                                     className="absolute left-0 w-1 h-4 rounded-r-full"
                                     style={{
                                       background: "#1B4965",
@@ -213,7 +210,48 @@ export default function Sidebar({ open, onClose, variant = "permanent" }) {
       </Box>
 
       {/* User Session profile widget at bottom */}
+      <Box
+        className="mt-auto p-3.5 rounded-2xl flex items-center gap-3 border border-slate-100/60"
+        style={{
+          background: "linear-gradient(135deg, rgba(27,73,101,0.02) 0%, rgba(98,182,203,0.02) 100%)",
+        }}
+      >
+        <Avatar
+          sx={{
+            width: 38,
+            height: 38,
+            bgcolor: "#1B4965",
+            fontSize: "0.95rem",
+            fontWeight: 700,
+            border: "2px solid #fff",
+            boxShadow: "0 4px 10px rgba(27, 73, 101, 0.15)",
+          }}
+        >
+          {userInfo?.avatar || "A"}
+        </Avatar>
+        <Box className="flex-1 min-w-0">
+          <Typography variant="body2" className="!text-[0.82rem] !font-bold text-slate-700 truncate leading-none mb-1">
+            {userInfo?.name || "User"}
+          </Typography>
+          <Typography variant="caption" className="!text-[0.68rem] text-slate-400 font-medium truncate block leading-none">
+            {userInfo?.email || "user@backhaulbid.vn"}
+          </Typography>
+        </Box>
+        <Box className="flex gap-0.5">
+          <Tooltip title="Cài đặt">
+            <IconButton size="small" component={Link} href={userInfo?.settingsPath || "/settings"} sx={{ color: "#94A3B8", "&:hover": { color: "#1B4965" } }}>
+              <SettingsTwoToneIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Đăng xuất">
+            <IconButton size="small" sx={{ color: "#94A3B8", "&:hover": { color: "#F43F5E" } }}>
+              <LogoutRoundedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
       {(() => {
+        const userRole = pathname.includes("/admin") ? "admin" : pathname.includes("/carrier") ? "carrier" : "shipper";
         const userProfile = {
           shipper: {
             name: "Nguyễn Minh Triết",
@@ -235,10 +273,15 @@ export default function Sidebar({ open, onClose, variant = "permanent" }) {
           }
         };
 
-        const profile = userProfile[userRole] || userProfile.shipper;
+        const profile = userInfo ? {
+          name: userInfo.name,
+          email: userInfo.email,
+          roleName: userInfo.role,
+          avatarLetter: userInfo.avatar
+        } : (userProfile[userRole] || userProfile.shipper);
 
         return (
-          <Box 
+          <Box
             className="mt-auto p-3.5 rounded-2xl flex items-center gap-3 border border-slate-100/60"
             style={{
               background: "linear-gradient(135deg, rgba(27,73,101,0.02) 0%, rgba(98,182,203,0.02) 100%)",
