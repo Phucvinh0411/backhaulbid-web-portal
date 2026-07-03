@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
@@ -25,6 +25,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import { 
   Description as DescriptionIcon,
   LocalShipping as LocalShippingIcon,
@@ -82,13 +83,41 @@ export default function ContractsPage() {
   const [selectedContract, setSelectedContract] = useState(null);
   const [agreeTerms, setAgreeTerms] = useState(false);
 
-  const filteredContracts = contracts.filter(c => {
-    if (filter === "PENDING") return c.status === "PENDING_SIGNATURE";
-    if (filter === "ACTIVE") return c.status === "ACTIVE";
-    if (filter === "COMPLETED") return c.status === "COMPLETED";
-    if (filter === "CANCELLED") return c.status === "CANCELLED";
-    return true;
-  });
+  const filteredContracts = React.useMemo(() => {
+    return contracts.filter(c => {
+      if (filter === "PENDING") return c.status === "PENDING_SIGNATURE";
+      if (filter === "ACTIVE") return c.status === "ACTIVE";
+      if (filter === "COMPLETED") return c.status === "COMPLETED";
+      if (filter === "CANCELLED") return c.status === "CANCELLED";
+      return true;
+    });
+  }, [contracts, filter]);
+
+  const [order, setOrder] = useState("asc");
+  const [orderBy, setOrderBy] = useState("id");
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  const sortedContracts = React.useMemo(() => {
+    let result = [...filteredContracts];
+    result.sort((a, b) => {
+      let comparison = 0;
+      if (orderBy === "value") {
+        // Value format "5,350,000 ₫" -> Parse to int for sort
+        const valA = parseInt(a.value.replace(/\D/g, ""), 10) || 0;
+        const valB = parseInt(b.value.replace(/\D/g, ""), 10) || 0;
+        comparison = valA - valB;
+      } else {
+        comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
+      }
+      return order === "desc" ? -comparison : comparison;
+    });
+    return result;
+  }, [filteredContracts, order, orderBy]);
 
   const getStatusConfig = (status) => {
     switch(status) {
@@ -171,7 +200,7 @@ export default function ContractsPage() {
 
       {viewMode === "CARD" ? (
         <Grid container spacing={3}>
-          {filteredContracts.map((contract) => (
+          {sortedContracts.map((contract) => (
             <Grid item xs={12} sm={6} md={4} key={contract.id}>
               <CarrierContractItem
                 contract={contract}
@@ -186,17 +215,23 @@ export default function ContractsPage() {
           <Table sx={{ minWidth: 800 }}>
             <TableHead className="bg-slate-50">
               <TableRow>
-                <TableCell className="font-bold text-slate-600">Mã HĐ</TableCell>
-                <TableCell className="font-bold text-slate-600">Tuyến đường</TableCell>
-                <TableCell className="font-bold text-slate-600">Đối tác</TableCell>
-                <TableCell className="font-bold text-slate-600">Ngày bốc</TableCell>
-                <TableCell className="font-bold text-slate-600">Giá trị</TableCell>
-                <TableCell className="font-bold text-slate-600">Trạng thái</TableCell>
-                <TableCell align="right" className="font-bold text-slate-600">Thao tác</TableCell>
+                {[{id: 'id', label: 'Mã HĐ'}, {id: 'route', label: 'Tuyến đường', sortable: false}, {id: 'partner', label: 'Đối tác'}, {id: 'date', label: 'Ngày bốc'}, {id: 'value', label: 'Giá trị'}, {id: 'status', label: 'Trạng thái'}, {id: 'actions', label: 'Thao tác', align: 'right', sortable: false}].map(col => (
+                  <TableCell key={col.id} align={col.align || 'left'} className="font-bold text-slate-600">
+                    {col.sortable !== false ? (
+                      <TableSortLabel
+                        active={orderBy === col.id}
+                        direction={orderBy === col.id ? order : "asc"}
+                        onClick={() => handleRequestSort(col.id)}
+                      >
+                        {col.label}
+                      </TableSortLabel>
+                    ) : col.label}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredContracts.map((contract) => {
+              {sortedContracts.map((contract) => {
                 const statusConfig = getStatusConfig(contract.status);
                 return (
                   <TableRow key={contract.id} hover className="transition-colors">

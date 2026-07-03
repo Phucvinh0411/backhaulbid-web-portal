@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
@@ -29,6 +29,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import { PageHeader, ViewModeToggle, DetailDrawer, DetailRow } from "@/components/common";
 import CarrierBiddingItem from "@/components/carrier/CarrierBiddingItem";
 import { useRouter } from "next/navigation";
@@ -139,12 +140,39 @@ export default function MyAuctionsPage() {
     }
   };
 
-  const filteredAuctions = auctions.filter(a => {
-    if (filter === "BIDDING") return a.status === 'BIDDING';
-    if (filter === "OPEN_REGISTER") return a.status === 'OPEN_REGISTER';
-    if (filter === "CLOSED") return a.status === 'CLOSED';
-    return true; // ALL
-  });
+  const filteredAuctions = React.useMemo(() => {
+    return auctions.filter(a => {
+      if (filter === "BIDDING") return a.status === 'BIDDING';
+      if (filter === "OPEN_REGISTER") return a.status === 'OPEN_REGISTER';
+      if (filter === "CLOSED") return a.status === 'CLOSED';
+      return true; // ALL
+    });
+  }, [auctions, filter]);
+
+  const [order, setOrder] = useState("desc");
+  const [orderBy, setOrderBy] = useState("id");
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  const sortedAuctions = React.useMemo(() => {
+    let result = [...filteredAuctions];
+    result.sort((a, b) => {
+      let comparison = 0;
+      if (orderBy === "basePrice") {
+        const valA = parseInt(a.basePrice.replace(/\D/g, ""), 10) || 0;
+        const valB = parseInt(b.basePrice.replace(/\D/g, ""), 10) || 0;
+        comparison = valA - valB;
+      } else {
+        comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
+      }
+      return order === "desc" ? -comparison : comparison;
+    });
+    return result;
+  }, [filteredAuctions, order, orderBy]);
 
   return (
     <Box className="animate-fade-in-up">
@@ -189,7 +217,7 @@ export default function MyAuctionsPage() {
 
       {viewMode === "CARD" ? (
         <Grid container spacing={3}>
-          {filteredAuctions.map((a) => (
+          {sortedAuctions.map((a) => (
             <Grid item xs={12} sm={6} md={4} key={a.id}>
               <CarrierBiddingItem 
                 auction={a} 
@@ -205,17 +233,23 @@ export default function MyAuctionsPage() {
           <Table sx={{ minWidth: 800 }}>
             <TableHead className="bg-slate-50">
               <TableRow>
-                <TableCell className="font-bold text-slate-600">Mã phiên</TableCell>
-                <TableCell className="font-bold text-slate-600">Tuyến đường</TableCell>
-                <TableCell className="font-bold text-slate-600">Hàng hóa</TableCell>
-                <TableCell className="font-bold text-slate-600">Xe đăng ký</TableCell>
-                <TableCell className="font-bold text-slate-600">Thời gian bốc</TableCell>
-                <TableCell className="font-bold text-slate-600">Trạng thái</TableCell>
-                <TableCell align="right" className="font-bold text-slate-600">Thao tác</TableCell>
+                {[{id: 'id', label: 'Mã phiên'}, {id: 'origin', label: 'Tuyến đường', sortable: false}, {id: 'cargoType', label: 'Hàng hóa'}, {id: 'registeredVehicle', label: 'Xe đăng ký'}, {id: 'pickupTime', label: 'Thời gian bốc'}, {id: 'status', label: 'Trạng thái'}, {id: 'actions', label: 'Thao tác', align: 'right', sortable: false}].map(col => (
+                  <TableCell key={col.id} align={col.align || 'left'} className="font-bold text-slate-600">
+                    {col.sortable !== false ? (
+                      <TableSortLabel
+                        active={orderBy === col.id}
+                        direction={orderBy === col.id ? order : "asc"}
+                        onClick={() => handleRequestSort(col.id)}
+                      >
+                        {col.label}
+                      </TableSortLabel>
+                    ) : col.label}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredAuctions.map((a) => (
+              {sortedAuctions.map((a) => (
                 <TableRow key={a.id} hover className="transition-colors">
                   <TableCell>
                     <Typography variant="body2" className="font-mono font-bold text-[#1B4965]">{a.id}</Typography>

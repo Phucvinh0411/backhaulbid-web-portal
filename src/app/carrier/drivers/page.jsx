@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
@@ -28,6 +28,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import { PageHeader, ViewModeToggle, DetailDrawer } from "@/components/common";
 
 const mockDrivers = [
@@ -44,12 +45,32 @@ export default function DriversPage() {
   const [openImportModal, setOpenImportModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
 
-  const filteredDrivers = drivers.filter(d => {
-    if (filter === "VERIFIED") return d.verification === "VERIFIED";
-    if (filter === "PENDING") return d.verification === "PENDING";
-    if (filter === "REJECTED") return d.verification === "REJECTED";
-    return true;
-  });
+  const filteredDrivers = React.useMemo(() => {
+    return drivers.filter(d => {
+      if (filter === "VERIFIED") return d.verification === "VERIFIED";
+      if (filter === "PENDING") return d.verification === "PENDING";
+      if (filter === "REJECTED") return d.verification === "REJECTED";
+      return true;
+    });
+  }, [drivers, filter]);
+
+  const [order, setOrder] = useState("asc");
+  const [orderBy, setOrderBy] = useState("name");
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  const sortedDrivers = React.useMemo(() => {
+    let result = [...filteredDrivers];
+    result.sort((a, b) => {
+      let comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
+      return order === "desc" ? -comparison : comparison;
+    });
+    return result;
+  }, [filteredDrivers, order, orderBy]);
 
   const handleOpen = () => setOpenModal(true);
   const handleClose = () => setOpenModal(false);
@@ -136,7 +157,7 @@ export default function DriversPage() {
 
       {viewMode === "CARD" ? (
         <Grid container spacing={3}>
-          {filteredDrivers.map((d) => (
+          {sortedDrivers.map((d) => (
             <Grid item xs={12} sm={6} md={4} key={d.id}>
               <Card variant="outlined" className={`hover:shadow-md transition-shadow rounded-2xl h-full flex flex-col ${d.verification === 'PENDING' ? 'border-amber-200' : 'border-slate-200'}`}>
                 <CardContent className="flex-1">
@@ -184,16 +205,23 @@ export default function DriversPage() {
           <Table sx={{ minWidth: 650 }}>
             <TableHead className="bg-slate-50">
               <TableRow>
-                <TableCell className="font-bold text-slate-600">Tài xế</TableCell>
-                <TableCell className="font-bold text-slate-600">Số điện thoại</TableCell>
-                <TableCell className="font-bold text-slate-600">Hạng GPLX</TableCell>
-                <TableCell className="font-bold text-slate-600">Kiểm duyệt</TableCell>
-                <TableCell className="font-bold text-slate-600">Trạng thái</TableCell>
-                <TableCell align="right" className="font-bold text-slate-600">Thao tác</TableCell>
+                {[{id: 'name', label: 'Tài xế'}, {id: 'phone', label: 'Số điện thoại'}, {id: 'licenseClass', label: 'Hạng GPLX'}, {id: 'verification', label: 'Kiểm duyệt'}, {id: 'active', label: 'Trạng thái'}, {id: 'actions', label: 'Thao tác', align: 'right', sortable: false}].map(col => (
+                  <TableCell key={col.id} align={col.align || 'left'} className="font-bold text-slate-600">
+                    {col.sortable !== false ? (
+                      <TableSortLabel
+                        active={orderBy === col.id}
+                        direction={orderBy === col.id ? order : "asc"}
+                        onClick={() => handleRequestSort(col.id)}
+                      >
+                        {col.label}
+                      </TableSortLabel>
+                    ) : col.label}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredDrivers.map((d) => (
+              {sortedDrivers.map((d) => (
                 <TableRow key={d.id} hover className="transition-colors">
                   <TableCell>
                     <Box className="flex items-center gap-3">

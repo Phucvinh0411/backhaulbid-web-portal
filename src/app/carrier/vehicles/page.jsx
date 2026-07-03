@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
@@ -27,6 +27,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import { PageHeader, ViewModeToggle, DetailDrawer } from "@/components/common";
 import CarrierVehicleItem from "@/components/carrier/CarrierVehicleItem";
 
@@ -44,12 +45,32 @@ export default function VehiclesPage() {
   const [openImportModal, setOpenImportModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
 
-  const filteredVehicles = vehicles.filter(v => {
-    if (filter === "VERIFIED") return v.verification === "VERIFIED";
-    if (filter === "PENDING") return v.verification === "PENDING";
-    if (filter === "REJECTED") return v.verification === "REJECTED";
-    return true;
-  });
+  const [order, setOrder] = useState("asc");
+  const [orderBy, setOrderBy] = useState("plate");
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  const filteredVehicles = React.useMemo(() => {
+    return vehicles.filter(v => {
+      if (filter === "VERIFIED") return v.verification === "VERIFIED";
+      if (filter === "PENDING") return v.verification === "PENDING";
+      if (filter === "REJECTED") return v.verification === "REJECTED";
+      return true;
+    });
+  }, [vehicles, filter]);
+
+  const sortedVehicles = React.useMemo(() => {
+    let result = [...filteredVehicles];
+    result.sort((a, b) => {
+      let comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
+      return order === "desc" ? -comparison : comparison;
+    });
+    return result;
+  }, [filteredVehicles, order, orderBy]);
 
   const handleOpen = () => setOpenModal(true);
   const handleClose = () => setOpenModal(false);
@@ -136,7 +157,7 @@ export default function VehiclesPage() {
 
       {viewMode === "CARD" ? (
         <Grid container spacing={3}>
-          {filteredVehicles.map((v) => (
+          {sortedVehicles.map((v) => (
             <Grid item xs={12} sm={6} md={4} key={v.id}>
               <CarrierVehicleItem
                 vehicle={v}
@@ -150,16 +171,23 @@ export default function VehiclesPage() {
           <Table sx={{ minWidth: 650 }}>
             <TableHead className="bg-slate-50">
               <TableRow>
-                <TableCell className="font-bold text-slate-600">Biển số xe</TableCell>
-                <TableCell className="font-bold text-slate-600">Tải trọng</TableCell>
-                <TableCell className="font-bold text-slate-600">Loại xe</TableCell>
-                <TableCell className="font-bold text-slate-600">Kiểm duyệt</TableCell>
-                <TableCell className="font-bold text-slate-600">Trạng thái xe</TableCell>
-                <TableCell align="right" className="font-bold text-slate-600">Thao tác</TableCell>
+                {[{id: 'plate', label: 'Biển số xe'}, {id: 'capacity', label: 'Tải trọng'}, {id: 'type', label: 'Loại xe'}, {id: 'verification', label: 'Kiểm duyệt'}, {id: 'active', label: 'Trạng thái xe'}, {id: 'actions', label: 'Thao tác', align: 'right', sortable: false}].map(col => (
+                  <TableCell key={col.id} align={col.align || 'left'} className="font-bold text-slate-600">
+                    {col.sortable !== false ? (
+                      <TableSortLabel
+                        active={orderBy === col.id}
+                        direction={orderBy === col.id ? order : "asc"}
+                        onClick={() => handleRequestSort(col.id)}
+                      >
+                        {col.label}
+                      </TableSortLabel>
+                    ) : col.label}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredVehicles.map((v) => (
+              {sortedVehicles.map((v) => (
                 <TableRow key={v.id} hover className="transition-colors">
                   <TableCell>
                     <Box className="flex items-center gap-2">

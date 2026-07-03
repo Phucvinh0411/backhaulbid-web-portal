@@ -1,5 +1,5 @@
 "use client";
-
+import React from "react";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Table from "@mui/material/Table";
@@ -8,6 +8,7 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import Typography from "@mui/material/Typography";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
@@ -86,6 +87,24 @@ const getReportStatus = (status) => {
 };
 
 export default function AdminDashboardPage() {
+  const [order, setOrder] = React.useState("asc");
+  const [orderBy, setOrderBy] = React.useState("date");
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  const sortedReports = React.useMemo(() => {
+    let result = [...pendingReports];
+    result.sort((a, b) => {
+      let comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
+      return order === "desc" ? -comparison : comparison;
+    });
+    return result;
+  }, [order, orderBy]);
+
   return (
     <AdminPageShell>
       <AdminPageHeader
@@ -120,18 +139,23 @@ export default function AdminDashboardPage() {
           <Table aria-label="Báo cáo vi phạm">
             <TableHead sx={{ bgcolor: "rgba(27, 73, 101, 0.04)" }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>ID báo cáo</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>Người bị báo cáo</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>Lý do</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>Ngày gửi</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>Trạng thái</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 600, color: "text.secondary" }}>
-                  Hành động
-                </TableCell>
+                {[{id: 'id', label: 'ID báo cáo'}, {id: 'reportedUser', label: 'Người bị báo cáo'}, {id: 'reason', label: 'Lý do'}, {id: 'date', label: 'Ngày gửi'}, {id: 'status', label: 'Trạng thái'}, {id: 'actions', label: 'Hành động', align: 'right', sortable: false}].map(col => (
+                  <TableCell key={col.id} align={col.align || 'left'} sx={{ fontWeight: 600, color: "text.secondary" }}>
+                    {col.sortable !== false ? (
+                      <TableSortLabel
+                        active={orderBy === col.id}
+                        direction={orderBy === col.id ? order : "asc"}
+                        onClick={() => handleRequestSort(col.id)}
+                      >
+                        {col.label}
+                      </TableSortLabel>
+                    ) : col.label}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {pendingReports.map((row) => (
+              {sortedReports.map((row) => (
                 <TableRow key={row.id} hover sx={{ "&:last-child td": { borderBottom: 0 } }}>
                   <TableCell sx={{ fontWeight: 700, color: "text.primary" }}>{row.id}</TableCell>
                   <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>{row.reportedUser}</TableCell>

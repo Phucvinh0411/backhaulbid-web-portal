@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Dialog from "@mui/material/Dialog";
@@ -16,6 +16,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import Typography from "@mui/material/Typography";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
@@ -133,7 +134,25 @@ export default function AdminUsersPage() {
     return matchesType && matchesSearch;
   });
 
-  const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const [order, setOrder] = useState("asc");
+  const [orderBy, setOrderBy] = useState("name");
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  const sortedUsers = React.useMemo(() => {
+    let result = [...filteredUsers];
+    result.sort((a, b) => {
+      let comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
+      return order === "desc" ? -comparison : comparison;
+    });
+    return result;
+  }, [filteredUsers, order, orderBy]);
+
+  const paginatedUsers = sortedUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const openUserDialog = (user) => {
     setSelectedUser(user);
@@ -175,14 +194,19 @@ export default function AdminUsersPage() {
           <Table aria-label="Danh sách người dùng">
             <TableHead sx={{ bgcolor: "rgba(27, 73, 101, 0.04)" }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>Người dùng</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>Liên hệ</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>Loại hình</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>Ngày đăng ký</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>Trạng thái</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 600, color: "text.secondary" }}>
-                  Hành động
-                </TableCell>
+                {[{id: 'name', label: 'Người dùng'}, {id: 'email', label: 'Liên hệ'}, {id: 'type', label: 'Loại hình'}, {id: 'registeredAt', label: 'Ngày đăng ký'}, {id: 'status', label: 'Trạng thái'}, {id: 'actions', label: 'Hành động', align: 'right', sortable: false}].map(col => (
+                  <TableCell key={col.id} align={col.align || 'left'} sx={{ fontWeight: 600, color: "text.secondary" }}>
+                    {col.sortable !== false ? (
+                      <TableSortLabel
+                        active={orderBy === col.id}
+                        direction={orderBy === col.id ? order : "asc"}
+                        onClick={() => handleRequestSort(col.id)}
+                      >
+                        {col.label}
+                      </TableSortLabel>
+                    ) : col.label}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
