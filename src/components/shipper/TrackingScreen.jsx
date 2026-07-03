@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -34,6 +35,26 @@ import CompassIcon from "@mui/icons-material/ExploreOutlined";
 import PhoneIcon from "@mui/icons-material/PhoneInTalkOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
+
+// Dynamically import Map component to avoid SSR issues with Leaflet
+const Map = dynamic(() => import("@/components/map/Map"), { 
+  ssr: false,
+  loading: () => (
+    <Box className="w-full h-[400px] flex items-center justify-center bg-slate-100 rounded-3xl border border-slate-200">
+      <Typography variant="body2" className="text-slate-500 animate-pulse font-medium">Đang tải bản đồ...</Typography>
+    </Box>
+  )
+});
+
+// Coordinates for the route (Bình Dương -> TP. HCM -> Mỹ Tho -> Vĩnh Long -> Cần Thơ)
+const ROUTE_POINTS = [
+  [10.9634, 106.7029], // Bình Dương (Start)
+  [10.7626, 106.6602], // TP. HCM
+  [10.3606, 106.3533], // Mỹ Tho
+  [10.2458, 105.9583], // Vĩnh Long
+  [10.0102, 105.7483], // Cần Thơ (End)
+];
+const CURRENT_POS = [10.2458, 105.9583]; // Vĩnh Long
 
 // Mock Driver & Vehicle details
 const SHIPMENT_TRACKING_INFO = {
@@ -88,10 +109,6 @@ export default function TrackingScreen() {
   const [driverRating, setDriverRating] = useState(5);
   const [reviewNote, setReviewNote] = useState("");
   const [isReviewed, setIsReviewed] = useState(false);
-
-  // Map settings states
-  const [mapLayer, setMapLayer] = useState("vector"); // "vector" or "satellite"
-  const [zoomLevel, setZoomLevel] = useState(1);
 
   const handleOpenDisburseDialog = () => {
     setOpenDisburseDialog(true);
@@ -164,170 +181,26 @@ export default function TrackingScreen() {
                 </div>
               </Box>
 
-              {/* Map Simulated Graphic Canvas */}
-              <div 
-                className={`h-[400px] w-full relative overflow-hidden transition-colors duration-500 ${
-                  mapLayer === "satellite" ? "bg-slate-900" : "bg-slate-950"
-                }`}
-                style={{
-                  backgroundImage: mapLayer === "vector"
-                    ? "radial-gradient(circle, rgba(98,182,203,0.12) 1px, transparent 1px)"
-                    : "radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)",
-                  backgroundSize: "24px 24px",
-                }}
-              >
-                {/* SVG Map Canvas */}
-                <svg className="w-full h-full" viewBox="0 0 800 400" preserveAspectRatio="xMinYMin slice">
-                  <style dangerouslySetInnerHTML={{ __html: `
-                    @keyframes dash {
-                      to {
-                        stroke-dashoffset: -20;
-                      }
-                    }
-                    .animate-dash {
-                      stroke-dasharray: 8, 6;
-                      animation: dash 2s linear infinite;
-                    }
-                    @keyframes ping-glow {
-                      0% {
-                        r: 6;
-                        opacity: 0.8;
-                      }
-                      100% {
-                        r: 20;
-                        opacity: 0;
-                      }
-                    }
-                    .animate-ping-glow {
-                      animation: ping-glow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-                    }
-                  `}} />
+              {/* Leaflet Map Integration */}
+              <Box className="h-[400px] w-full relative z-0">
+                <Map routePoints={ROUTE_POINTS} currentPos={CURRENT_POS} />
+              </Box>
 
-                  {/* Grid Lines for Tech HUD look */}
-                  <g className="opacity-[0.04] stroke-white" strokeWidth="0.8">
-                    <line x1="100" y1="0" x2="100" y2="400" />
-                    <line x1="200" y1="0" x2="200" y2="400" />
-                    <line x1="300" y1="0" x2="300" y2="400" />
-                    <line x1="400" y1="0" x2="400" y2="400" />
-                    <line x1="500" y1="0" x2="500" y2="400" />
-                    <line x1="600" y1="0" x2="600" y2="400" />
-                    <line x1="700" y1="0" x2="700" y2="400" />
-                    <line x1="0" y1="100" x2="800" y2="100" />
-                    <line x1="0" y1="200" x2="800" y2="200" />
-                    <line x1="0" y1="300" x2="800" y2="300" />
-                  </g>
-
-                  {/* Simulated Rivers (Coastline) */}
-                  <path 
-                    d="M-50,220 C150,200 250,260 400,280 C500,290 650,220 850,260" 
-                    fill="none" 
-                    stroke={mapLayer === "satellite" ? "#1E293B" : "#1B4965"} 
-                    strokeWidth="16" 
-                    className="opacity-30" 
-                  />
-                  <path 
-                    d="M-50,220 C150,200 250,260 400,280 C500,290 650,220 850,260" 
-                    fill="none" 
-                    stroke={mapLayer === "satellite" ? "#3B82F6" : "#62B6CB"} 
-                    strokeWidth="4" 
-                    className="opacity-50" 
-                  />
-
-                  {/* Main Road Route Path */}
-                  <path 
-                    id="route-path"
-                    d="M 640,100 C 580,130 520,170 420,210 C 350,240 280,260 160,320" 
-                    fill="none" 
-                    stroke="#1E293B" 
-                    strokeWidth="8" 
-                    strokeLinecap="round" 
-                    className="opacity-40" 
-                  />
-                  <path 
-                    d="M 640,100 C 580,130 520,170 420,210 C 350,240 280,260 160,320" 
-                    fill="none" 
-                    stroke="#22D3EE" 
-                    strokeWidth="4" 
-                    strokeLinecap="round" 
-                    className="opacity-80 animate-dash" 
-                  />
-
-                  {/* City Labels */}
-                  <text x="640" y="80" fill="#94A3B8" fontSize="10" fontWeight="bold" textAnchor="middle">BÌNH DƯƠNG (A)</text>
-                  <text x="440" y="195" fill="#64748B" fontSize="9" fontWeight="bold" textAnchor="middle">TP. HỒ CHÍ MINH</text>
-                  <text x="320" y="235" fill="#64748B" fontSize="9" fontWeight="bold" textAnchor="middle">MỸ THO</text>
-                  <text x="160" y="350" fill="#94A3B8" fontSize="10" fontWeight="bold" textAnchor="middle">CẦN THƠ (B)</text>
-
-                  {/* Start Point A marker */}
-                  <circle cx="640" cy="100" r="5" fill="#0EA5E9" />
-                  <circle cx="640" cy="100" r="10" fill="none" stroke="#0EA5E9" strokeWidth="1.5" className="opacity-60" />
-
-                  {/* End Point B marker */}
-                  <circle cx="160" cy="320" r="5" fill="#10B981" />
-                  <circle cx="160" cy="320" r="10" fill="none" stroke="#10B981" strokeWidth="1.5" className="opacity-60" />
-
-                  {/* Animated glowing path marker */}
-                  <circle r="5" fill="#22D3EE">
-                    <animateMotion dur="8s" repeatCount="indefinite" path="M 640,100 C 580,130 520,170 420,210 C 350,240 280,260 160,320" />
-                  </circle>
-
-                  {/* Active Vehicle Marker Group (Located at Vĩnh Long - x: 280, y: 260) */}
-                  <g transform="translate(280, 260)">
-                    {/* Pulsing radar */}
-                    <circle cx="0" cy="0" r="6" fill="#06B6D4" className="animate-ping-glow" />
-                    
-                    {/* Pin Shape */}
-                    <path d="M 0,0 C -10,-10 -15,-25 0,-35 C 15,-25 10,-10 0,0 Z" fill="#0891B2" stroke="#FFFFFF" strokeWidth="1.5" />
-                    
-                    {/* Inner vehicle dot */}
-                    <circle cx="0" cy="-22" r="6" fill="#FFFFFF" />
-                    <circle cx="0" cy="-22" r="3.5" fill="#0891B2" />
-                  </g>
-                </svg>
-
-                {/* Floating telemetry metrics panel overlay */}
-                <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-100/50 shadow-lg flex items-center justify-between text-xs transition-all">
-                  <div className="space-y-1">
-                    <Typography className="!text-[0.65rem] text-slate-400 font-bold uppercase tracking-wider">Vị trí hiện tại (GPS)</Typography>
-                    <Typography variant="body2" className="!font-bold text-slate-700 leading-tight">
-                      {SHIPMENT_TRACKING_INFO.currentRoad}
+              {/* Floating telemetry metrics panel overlay */}
+              <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-100/50 shadow-lg flex items-center justify-between text-xs transition-all z-10">
+                <div className="space-y-1">
+                  <Typography className="!text-[0.65rem] text-slate-400 font-bold uppercase tracking-wider">Vị trí hiện tại (GPS)</Typography>
+                  <Typography variant="body2" className="!font-bold text-slate-700 leading-tight">
+                    {SHIPMENT_TRACKING_INFO.currentRoad}
+                  </Typography>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 pl-4 border-l border-slate-100">
+                  <div className="text-right">
+                    <Typography className="!text-[0.6rem] text-slate-400 font-bold uppercase">Vận tốc</Typography>
+                    <Typography variant="caption" className="!font-black text-[#1B4965] font-mono block">
+                      {SHIPMENT_TRACKING_INFO.speed}
                     </Typography>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 pl-4 border-l border-slate-100">
-                    <div className="text-right">
-                      <Typography className="!text-[0.6rem] text-slate-400 font-bold uppercase">Vận tốc</Typography>
-                      <Typography variant="caption" className="!font-black text-cyan-600 font-mono block">
-                        {SHIPMENT_TRACKING_INFO.speed}
-                      </Typography>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Map Interactive HUD Controls */}
-                <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-                  <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-100/50 shadow-md p-1 flex flex-col">
-                    <button 
-                      onClick={() => setZoomLevel(prev => Math.min(prev + 0.25, 2))}
-                      className="w-7 h-7 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-bold transition-all"
-                    >
-                      +
-                    </button>
-                    <Divider className="my-1" />
-                    <button 
-                      onClick={() => setZoomLevel(prev => Math.max(prev - 0.25, 0.5))}
-                      className="w-7 h-7 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-bold transition-all"
-                    >
-                      -
-                    </button>
-                  </div>
-
-                  <button 
-                    onClick={() => setMapLayer(prev => prev === "vector" ? "satellite" : "vector")}
-                    className="bg-white/95 backdrop-blur-md px-3 py-2 rounded-2xl border border-slate-100/50 shadow-md flex items-center gap-1.5 hover:bg-slate-50 transition-all text-[0.72rem] font-bold text-slate-700"
-                  >
-                    <MapIcon className="!text-[0.95rem] text-[#1B4965]" />
-                    {mapLayer === "vector" ? "Vệ tinh" : "Bản đồ"}
-                  </button>
                 </div>
               </div>
             </CardContent>
