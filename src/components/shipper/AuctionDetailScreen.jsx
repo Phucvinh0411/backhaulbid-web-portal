@@ -36,72 +36,448 @@ import SecurityIcon from "@mui/icons-material/Security";
 
 import PageHeader from "@/components/common/PageHeader";
 
-// Mock Active Auction Info
-const AUCTION_SHIPMENT = {
-  id: "LH-2026-9041",
-  goodsType: "Linh kiện điện tử (Màn hình điện thoại)",
-  weight: "5.2 tấn",
-  volume: "28 m³",
-  maxPrice: 12500000,
-  createdTime: "2026-07-02T10:00:00",
-  from: {
-    name: "Kho Samsung Yên Bình - Thái Nguyên",
-    address: "KCN Yên Bình, Phổ Yên, Thái Nguyên",
+// Mock Data mapping representing professional logistics operations
+const AUCTION_SHIPMENTS_MAP = {
+  "LH-2026-9041": {
+    id: "LH-2026-9041",
+    goodsType: "Linh kiện điện tử (Màn hình điện thoại)",
+    weight: "5.2 tấn",
+    volume: "28 m³",
+    maxPrice: 12500000,
+    createdTime: "2026-07-02T10:00:00",
+    from: {
+      name: "Kho Samsung Yên Bình - Thái Nguyên",
+      address: "KCN Yên Bình, Phổ Yên, Thái Nguyên",
+    },
+    to: {
+      name: "Kho Cảng Đình Vũ - Hải Phòng",
+      address: "Đông Hải 2, Quận Hải An, Hải Phòng",
+    },
+    description: "Hàng linh kiện đóng pallet gỗ tissue chuẩn. Yêu cầu xe thùng kín bảo ôn chống ẩm ẩm mốc. Đơn vị vận chuyển có đầy đủ hóa đơn chứng từ.",
+    status: "active_bids",
+    bids: [
+      {
+        id: "bid-1",
+        carrierName: "Công ty Vận tải Phước An",
+        rating: 4.8,
+        ratingCount: 156,
+        bidAmount: 11200000,
+        time: "2 phút trước",
+        isLowest: true,
+      },
+      {
+        id: "bid-2",
+        carrierName: "Logistics Bắc Nam T&T",
+        rating: 4.6,
+        ratingCount: 89,
+        bidAmount: 11500000,
+        time: "5 phút trước",
+        isLowest: false,
+      },
+      {
+        id: "bid-3",
+        carrierName: "Hợp tác xã Vận tải Hữu Nghị",
+        rating: 4.5,
+        ratingCount: 204,
+        bidAmount: 11900000,
+        time: "12 phút trước",
+        isLowest: false,
+      },
+      {
+        id: "bid-4",
+        carrierName: "Vận tải Quốc tế Hoa Lâm",
+        rating: 4.2,
+        ratingCount: 42,
+        bidAmount: 12200000,
+        time: "18 phút trước",
+        isLowest: false,
+      }
+    ]
   },
-  to: {
-    name: "Kho Cảng Đình Vũ - Hải Phòng",
-    address: "Đông Hải 2, Quận Hải An, Hải Phòng",
+  "LH-2026-9042": {
+    id: "LH-2026-9042",
+    goodsType: "Thực phẩm đông lạnh (Thủy sản)",
+    weight: "8.0 tấn",
+    volume: "45 m³",
+    maxPrice: 28000000,
+    createdTime: "2026-07-02T11:30:00",
+    from: {
+      name: "Kho Thủy Sản Sông Đốc - Cà Mau",
+      address: "Cụm CN Sông Đốc, Huyện Trần Văn Thời, Cà Mau",
+    },
+    to: {
+      name: "Kho Lạnh Transimex - TP. Hồ Chí Minh",
+      address: "Khu Công Nghệ Cao Quận 9, TP. Hồ Chí Minh",
+    },
+    description: "Hàng hải sản đông lạnh xuất khẩu. Yêu cầu container lạnh giữ nhiệt độ ổn định ở -18 độ C suốt hành trình. Bàn giao đầy đủ CO/CQ.",
+    status: "active_bids",
+    bids: [
+      {
+        id: "bid-1",
+        carrierName: "Vận tải Đông Lạnh Meito",
+        rating: 4.9,
+        ratingCount: 312,
+        bidAmount: 26500000,
+        time: "1 phút trước",
+        isLowest: true,
+      },
+      {
+        id: "bid-2",
+        carrierName: "Công ty Logistics Ánh Dương",
+        rating: 4.7,
+        ratingCount: 145,
+        bidAmount: 27000000,
+        time: "6 phút trước",
+        isLowest: false,
+      },
+      {
+        id: "bid-3",
+        carrierName: "Logistics Bắc Nam T&T",
+        rating: 4.6,
+        ratingCount: 89,
+        bidAmount: 27500000,
+        time: "15 phút trước",
+        isLowest: false,
+      }
+    ]
   },
-  description: "Hàng linh kiện đóng pallet gỗ tiêu chuẩn. Yêu cầu xe thùng kín bảo ôn chống ẩm ẩm mốc. Đơn vị vận chuyển có đầy đủ hóa đơn chứng từ."
+  "LH-2026-9043": {
+    id: "LH-2026-9043",
+    goodsType: "Nông sản khô (Hạt điều)",
+    weight: "15.0 tấn",
+    volume: "60 m³",
+    maxPrice: 18500000,
+    createdTime: "2026-07-03T08:00:00",
+    from: {
+      name: "Nhà Máy Điều Đồng Phú - Bình Phước",
+      address: "Kho xuất khẩu Đồng Phú, Bình Phước",
+    },
+    to: {
+      name: "Cảng Cái Mép - Bà Rịa - Vũng Tàu",
+      address: "Cảng Cái Mép - Thị Vải, Phú Mỹ, Bà Rịa - Vũng Tàu",
+    },
+    description: "Hạt điều sấy khô đóng bao 50kg. Yêu cầu xe bạt sạch sẽ, không có mùi lạ, che chắn mưa tuyệt đối.",
+    status: "pending_bids",
+    bids: []
+  },
+  "LH-2026-9044": {
+    id: "LH-2026-9044",
+    goodsType: "Vật liệu xây dựng (Sắt thép)",
+    weight: "22.5 tấn",
+    volume: "18 m³",
+    maxPrice: 16000000,
+    createdTime: "2026-07-01T09:00:00",
+    from: {
+      name: "Nhà Máy Thép Hòa Phát - Quảng Ngãi",
+      address: "KCN Dung Quất, Bình Sơn, Quảng Ngãi",
+    },
+    to: {
+      name: "Tổng Kho Hòa Khánh - Đà Nẵng",
+      address: "KCN Hòa Khánh, Liên Chiểu, Đà Nẵng",
+    },
+    description: "Thép cuộn xây dựng. Yêu cầu xe đầu kéo rơ-moóc sàn có xích neo chằng chịu lực cao. Giao hàng trong giờ hành chính.",
+    status: "awarded",
+    bids: [
+      {
+        id: "bid-1",
+        carrierName: "Công ty Vận tải Phước An",
+        rating: 4.8,
+        ratingCount: 156,
+        bidAmount: 14800000,
+        time: "1 ngày trước",
+        isLowest: true,
+      },
+      {
+        id: "bid-2",
+        carrierName: "Vận tải Đa Quốc gia Minh Long",
+        rating: 4.4,
+        ratingCount: 78,
+        bidAmount: 15200000,
+        time: "1 ngày trước",
+        isLowest: false,
+      },
+      {
+        id: "bid-3",
+        carrierName: "Hợp tác xã Vận tải Hữu Nghị",
+        rating: 4.5,
+        ratingCount: 204,
+        bidAmount: 15500000,
+        time: "2 ngày trước",
+        isLowest: false,
+      }
+    ]
+  },
+  "LH-2026-9045": {
+    id: "LH-2026-9045",
+    goodsType: "Hàng tiêu dùng nhanh (FMCG)",
+    weight: "3.5 tấn",
+    volume: "22 m³",
+    maxPrice: 9500000,
+    createdTime: "2026-06-30T10:00:00",
+    from: {
+      name: "Kho Unilever VSIP I - Bình Dương",
+      address: "KCN VSIP I, Thuận An, Bình Dương",
+    },
+    to: {
+      name: "Mega Market Cái Răng - Cần Thơ",
+      address: "Trung tâm phân phối Mega Market, Cái Răng, Cần Thơ",
+    },
+    description: "Nước giặt, xà bông đóng thùng carton. Yêu cầu xe tải thùng bạt hoặc thùng kín sạch sẽ, không rò rỉ nước.",
+    status: "shipping",
+    bids: [
+      {
+        id: "bid-1",
+        carrierName: "Hợp tác xã Vận tải Hữu Nghị",
+        rating: 4.5,
+        ratingCount: 204,
+        bidAmount: 8900000,
+        time: "3 ngày trước",
+        isLowest: true,
+      },
+      {
+        id: "bid-2",
+        carrierName: "Công ty Vận tải Phước An",
+        rating: 4.8,
+        ratingCount: 156,
+        bidAmount: 9100000,
+        time: "3 ngày trước",
+        isLowest: false,
+      },
+      {
+        id: "bid-3",
+        carrierName: "Logistics Quốc tế Tân Cảng",
+        rating: 4.7,
+        ratingCount: 112,
+        bidAmount: 9350000,
+        time: "4 ngày trước",
+        isLowest: false,
+      }
+    ]
+  },
+  "LH-2026-9046": {
+    id: "LH-2026-9046",
+    goodsType: "Trái cây xuất khẩu (Thanh long)",
+    weight: "10.0 tấn",
+    volume: "40 m³",
+    maxPrice: 42000000,
+    createdTime: "2026-06-24T14:00:00",
+    from: {
+      name: "Vựa Thanh Long Hàm Thuận Nam - Bình Thuận",
+      address: "Xã Hàm Mỹ, Hàm Thuận Nam, Bình Thuận",
+    },
+    to: {
+      name: "Bãi Kiểm Hóa Cửa Khẩu Tân Thanh - Lạng Sơn",
+      address: "Cửa khẩu Tân Thanh, Văn Lãng, Lạng Sơn",
+    },
+    description: "Thanh long tươi đóng thùng xốp. Yêu cầu container lạnh cài đặt nhiệt độ ở mức 5 độ C suốt hành trình để bảo quản chất lượng.",
+    status: "completed",
+    bids: [
+      {
+        id: "bid-1",
+        carrierName: "Logistics Bắc Nam T&T",
+        rating: 4.6,
+        ratingCount: 89,
+        bidAmount: 39500000,
+        time: "1 tuần trước",
+        isLowest: true,
+      },
+      {
+        id: "bid-2",
+        carrierName: "Công ty Cổ phần Vận tải biển & GLC",
+        rating: 4.3,
+        ratingCount: 52,
+        bidAmount: 40800000,
+        time: "1 tuần trước",
+        isLowest: false,
+      },
+      {
+        id: "bid-3",
+        carrierName: "Hợp tác xã Vận tải Hữu Nghị",
+        rating: 4.5,
+        ratingCount: 204,
+        bidAmount: 41200000,
+        time: "1 tuần trước",
+        isLowest: false,
+      }
+    ]
+  },
+  "LH-2026-9047": {
+    id: "LH-2026-9047",
+    goodsType: "Hóa chất (Sơn công nghiệp)",
+    weight: "6.0 tấn",
+    volume: "24 m³",
+    maxPrice: 15500000,
+    createdTime: "2026-06-27T08:00:00",
+    from: {
+      name: "Nhà Máy Sơn Amata - Đồng Nai",
+      address: "KCN Amata, Biên Hòa, Đồng Nai",
+    },
+    to: {
+      name: "Kho Sơn Đông Á - Khánh Hòa",
+      address: "KCN Suối Dầu, Cam Lâm, Khánh Hòa",
+    },
+    description: "Thùng sơn công nghiệp loại 20L. Yêu cầu xe tải sàn gỗ có đệm giảm chấn chèn lót kỹ càng, lái xe có chứng chỉ vận chuyển hàng nguy hiểm.",
+    status: "cancelled",
+    bids: [
+      {
+        id: "bid-1",
+        carrierName: "Hợp tác xã Vận tải Hữu Nghị",
+        rating: 4.5,
+        ratingCount: 204,
+        bidAmount: 14700000,
+        time: "5 ngày trước",
+        isLowest: true,
+      },
+      {
+        id: "bid-2",
+        carrierName: "Vận tải Đa Phương thức Vinafreight",
+        rating: 4.2,
+        ratingCount: 61,
+        bidAmount: 15100000,
+        time: "5 ngày trước",
+        isLowest: false,
+      }
+    ]
+  },
+  "LH-2026-9048": {
+    id: "LH-2026-9048",
+    goodsType: "Bao bì carton",
+    weight: "2.0 tấn",
+    volume: "35 m³",
+    maxPrice: 6500000,
+    createdTime: "2026-07-02T15:00:00",
+    from: {
+      name: "Nhà Máy Bao Bì Phố Nối - Hưng Yên",
+      address: "KCN Phố Nối A, Yên Mỹ, Hưng Yên",
+    },
+    to: {
+      name: "Nhà Máy Foxconn Quang Châu - Bắc Giang",
+      address: "KCN Quang Châu, Việt Yên, Bắc Giang",
+    },
+    description: "Thùng carton phẳng xếp kiện pallet bọc màng co PE. Yêu cầu thùng xe kín hoàn toàn để ngăn nước mưa làm hỏng bao bì.",
+    status: "active_bids",
+    bids: [
+      {
+        id: "bid-1",
+        carrierName: "Vận tải Nội Bài Express",
+        rating: 4.7,
+        ratingCount: 65,
+        bidAmount: 5800000,
+        time: "10 phút trước",
+        isLowest: true,
+      },
+      {
+        id: "bid-2",
+        carrierName: "Logistics Bắc Nam T&T",
+        rating: 4.6,
+        ratingCount: 89,
+        bidAmount: 6000000,
+        time: "20 phút trước",
+        isLowest: false,
+      },
+      {
+        id: "bid-3",
+        carrierName: "Hợp tác xã Vận tải Hữu Nghị",
+        rating: 4.5,
+        ratingCount: 204,
+        bidAmount: 6200000,
+        time: "40 phút trước",
+        isLowest: false,
+      }
+    ]
+  }
 };
 
-// Mock Carrier Bids List
-const INITIAL_BIDS = [
-  {
-    id: "bid-1",
-    carrierName: "Công ty Vận tải Phước An",
-    rating: 4.8,
-    ratingCount: 156,
-    bidAmount: 11200000,
-    time: "2 phút trước",
-    isLowest: true,
-  },
-  {
-    id: "bid-2",
-    carrierName: "Logistics Bắc Nam T&T",
-    rating: 4.6,
-    ratingCount: 89,
-    bidAmount: 11500000,
-    time: "5 phút trước",
-    isLowest: false,
-  },
-  {
-    id: "bid-3",
-    carrierName: "Hợp tác xã Vận tải Hữu Nghị",
-    rating: 4.5,
-    ratingCount: 204,
-    bidAmount: 11900000,
-    time: "12 phút trước",
-    isLowest: false,
-  },
-  {
-    id: "bid-4",
-    carrierName: "Vận tải Quốc tế Hoa Lâm",
-    rating: 4.2,
-    ratingCount: 42,
-    bidAmount: 12200000,
-    time: "18 phút trước",
-    isLowest: false,
-  }
-];
+export default function AuctionDetailScreen({ id }) {
+  const shipment = AUCTION_SHIPMENTS_MAP[id] || AUCTION_SHIPMENTS_MAP["LH-2026-9041"];
+  const [bids, setBids] = useState([]);
 
-export default function AuctionDetailScreen() {
-  const [bids, setBids] = useState(INITIAL_BIDS);
+  const [columns, setColumns] = useState([
+    { id: "carrierName", label: "Nhà xe", align: "left" },
+    { id: "rating", label: "Đánh giá tín nhiệm", align: "center" },
+    { id: "bidAmount", label: "Giá thầu đề xuất", align: "right" },
+    { id: "time", label: "Thời điểm đặt", align: "right" },
+    { id: "status", label: "Trạng thái", align: "center" },
+  ]);
+
+  const [draggedIdx, setDraggedIdx] = useState(null);
+
+  const handleDragStart = (e, index) => {
+    setDraggedIdx(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e, overIndex) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === overIndex) return;
+
+    const updatedCols = [...columns];
+    const draggedCol = updatedCols[draggedIdx];
+    updatedCols.splice(draggedIdx, 1);
+    updatedCols.splice(overIndex, 0, draggedCol);
+
+    setDraggedIdx(overIndex);
+    setColumns(updatedCols);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIdx(null);
+  };
+
+  useEffect(() => {
+    if (shipment) {
+      setBids(shipment.bids || []);
+    }
+  }, [id, shipment]);
+
   const [openOtpDialog, setOpenOtpDialog] = useState(false);
   const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
   const [isOtpSuccess, setIsOtpSuccess] = useState(false);
   const [countdown, setCountdown] = useState(930); // 15 minutes 30 seconds
   const otpInputRefs = useRef([]);
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "pending_bids":
+        return (
+          <span className="text-[0.72rem] font-bold px-3 py-1 bg-amber-50 text-amber-600 border border-amber-100 rounded-full">
+            Chờ đấu giá
+          </span>
+        );
+      case "active_bids":
+        return (
+          <span className="text-[0.72rem] font-bold px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-full animate-pulse-subtle">
+            Đấu giá hoạt động
+          </span>
+        );
+      case "awarded":
+        return (
+          <span className="text-[0.72rem] font-bold px-3 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded-full">
+            Đã chốt thầu
+          </span>
+        );
+      case "shipping":
+        return (
+          <span className="text-[0.72rem] font-bold px-3 py-1 bg-cyan-50 text-cyan-600 border border-cyan-100 rounded-full">
+            Đang vận chuyển
+          </span>
+        );
+      case "completed":
+        return (
+          <span className="text-[0.72rem] font-bold px-3 py-1 bg-slate-50 text-slate-600 border border-slate-200 rounded-full">
+            Đã hoàn thành
+          </span>
+        );
+      case "cancelled":
+        return (
+          <span className="text-[0.72rem] font-bold px-3 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded-full">
+            Đã hủy
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
 
   // Live Timer Countdown Effect
   useEffect(() => {
@@ -189,7 +565,7 @@ export default function AuctionDetailScreen() {
         breadcrumbs={[
           { label: "Trang chủ", path: "/shipper/dashboard" },
           { label: "Đấu giá vận tải", path: "/shipper/bidding/sessions" },
-          { label: "Lô hàng LH-2026-9041" },
+          { label: `Lô hàng ${shipment.id}` },
         ]}
       />
 
@@ -209,16 +585,14 @@ export default function AuctionDetailScreen() {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
                   <Typography variant="caption" className="text-slate-400 font-mono font-bold">
-                    MÃ LÔ HÀNG: {AUCTION_SHIPMENT.id}
+                    MÃ LÔ HÀNG: {shipment.id}
                   </Typography>
                   <Typography variant="h6" className="!font-bold text-slate-800 !mt-0.5">
-                    {AUCTION_SHIPMENT.goodsType}
+                    {shipment.goodsType}
                   </Typography>
                 </div>
                 <div className="text-right">
-                  <span className="text-[0.72rem] font-bold px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-full animate-pulse-subtle">
-                    Đấu giá hoạt động
-                  </span>
+                  {getStatusBadge(shipment.status)}
                 </div>
               </div>
 
@@ -226,15 +600,15 @@ export default function AuctionDetailScreen() {
               <div className="grid grid-cols-3 gap-4 py-1.5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100/50 text-xs">
                 <div>
                   <Typography className="!text-[0.7rem] text-slate-400 font-medium uppercase">Khối lượng</Typography>
-                  <Typography className="!font-bold text-slate-700 !mt-0.5">{AUCTION_SHIPMENT.weight}</Typography>
+                  <Typography className="!font-bold text-slate-700 !mt-0.5">{shipment.weight}</Typography>
                 </div>
                 <div>
                   <Typography className="!text-[0.7rem] text-slate-400 font-medium uppercase">Thể tích</Typography>
-                  <Typography className="!font-bold text-slate-700 !mt-0.5">{AUCTION_SHIPMENT.volume}</Typography>
+                  <Typography className="!font-bold text-slate-700 !mt-0.5">{shipment.volume}</Typography>
                 </div>
                 <div>
                   <Typography className="!text-[0.7rem] text-slate-400 font-medium uppercase">Giá trần tối đa</Typography>
-                  <Typography className="!font-bold text-slate-700 !mt-0.5">{formatCurrency(AUCTION_SHIPMENT.maxPrice)}</Typography>
+                  <Typography className="!font-bold text-slate-700 !mt-0.5">{formatCurrency(shipment.maxPrice)}</Typography>
                 </div>
               </div>
 
@@ -257,10 +631,10 @@ export default function AuctionDetailScreen() {
                         Điểm Lấy Hàng
                       </Typography>
                       <Typography variant="body2" className="text-slate-800 font-bold !mt-0.5">
-                        {AUCTION_SHIPMENT.from.name}
+                        {shipment.from.name}
                       </Typography>
                       <Typography variant="caption" className="text-slate-500 font-medium block">
-                        {AUCTION_SHIPMENT.from.address}
+                        {shipment.from.address}
                       </Typography>
                     </div>
                   </div>
@@ -273,10 +647,10 @@ export default function AuctionDetailScreen() {
                         Điểm Giao Hàng
                       </Typography>
                       <Typography variant="body2" className="text-slate-800 font-bold !mt-0.5">
-                        {AUCTION_SHIPMENT.to.name}
+                        {shipment.to.name}
                       </Typography>
                       <Typography variant="caption" className="text-slate-500 font-medium block">
-                        {AUCTION_SHIPMENT.to.address}
+                        {shipment.to.address}
                       </Typography>
                     </div>
                   </div>
@@ -289,7 +663,7 @@ export default function AuctionDetailScreen() {
                   Yêu cầu & Ghi chú bổ sung
                 </Typography>
                 <Typography variant="body2" className="text-slate-500 leading-relaxed">
-                  {AUCTION_SHIPMENT.description}
+                  {shipment.description}
                 </Typography>
               </div>
             </CardContent>
@@ -339,19 +713,23 @@ export default function AuctionDetailScreen() {
                     <GavelIcon className="!text-[1rem]" /> Báo giá thấp nhất hiện tại
                   </Typography>
                   <Typography variant="h3" className="!font-black text-emerald-600 tracking-tight">
-                    {formatCurrency(lowestBidAmount)}
+                    {lowestBidAmount > 0 ? formatCurrency(lowestBidAmount) : "Chưa có báo giá"}
                   </Typography>
                 </div>
 
                 <div className="bg-white/80 p-3 rounded-2xl border border-emerald-100/50 text-xs text-slate-500 font-medium space-y-1">
                   <div className="flex justify-between">
                     <span>Nhà xe báo giá thấp nhất:</span>
-                    <strong className="text-slate-700">Công ty Vận tải Phước An</strong>
+                    <strong className="text-slate-700">
+                      {lowestBidAmount > 0 ? (bids.find((b) => b.isLowest)?.carrierName || "N/A") : "N/A"}
+                    </strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Tiết kiệm so với giá trần:</span>
                     <strong className="text-emerald-600 font-bold">
-                      -{formatCurrency(AUCTION_SHIPMENT.maxPrice - lowestBidAmount)} ({((AUCTION_SHIPMENT.maxPrice - lowestBidAmount) / AUCTION_SHIPMENT.maxPrice * 100).toFixed(1)}%)
+                      {lowestBidAmount > 0 
+                        ? `-${formatCurrency(shipment.maxPrice - lowestBidAmount)} (${((shipment.maxPrice - lowestBidAmount) / shipment.maxPrice * 100).toFixed(1)}%)`
+                        : "0đ (0%)"}
                     </strong>
                   </div>
                 </div>
@@ -361,6 +739,7 @@ export default function AuctionDetailScreen() {
                   fullWidth
                   variant="contained"
                   onClick={handleOpenOtpDialog}
+                  disabled={lowestBidAmount === 0 || shipment.status === "completed" || shipment.status === "cancelled" || shipment.status === "shipping"}
                   className="!rounded-2xl !py-3.5 !font-bold !capitalize shadow-lg shadow-emerald-500/10 hover:shadow-xl hover:-translate-y-0.5 transition-all"
                   sx={{
                     background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
@@ -369,7 +748,15 @@ export default function AuctionDetailScreen() {
                     },
                   }}
                 >
-                  Chốt thầu & Ký Hợp đồng
+                  {shipment.status === "completed" 
+                    ? "Đã Hoàn Thành Vận Chuyển" 
+                    : shipment.status === "shipping"
+                    ? "Đang Vận Chuyển"
+                    : shipment.status === "cancelled"
+                    ? "Đã Hủy Lô Hàng"
+                    : lowestBidAmount > 0 
+                    ? "Chốt thầu & Ký Hợp đồng" 
+                    : "Chờ báo giá từ nhà xe..."}
                 </Button>
               </CardContent>
             </Card>
@@ -405,77 +792,113 @@ export default function AuctionDetailScreen() {
           <Table sx={{ minWidth: 650 }}>
             <TableHead className="bg-slate-50/50">
               <TableRow>
-                <TableCell className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Nhà xe</TableCell>
-                <TableCell align="center" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Đánh giá tín nhiệm</TableCell>
-                <TableCell align="right" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Giá thầu đề xuất</TableCell>
-                <TableCell align="right" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Thời điểm đặt</TableCell>
-                <TableCell align="center" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Trạng thái</TableCell>
+                {columns.map((col, idx) => (
+                  <TableCell
+                    key={col.id}
+                    align={col.align}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragOver={(e) => handleDragOver(e, idx)}
+                    onDragEnd={handleDragEnd}
+                    className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 cursor-grab active:cursor-grabbing hover:bg-slate-100/80 transition-colors select-none"
+                  >
+                    <Box className="flex items-center gap-1 justify-inherit">
+                      <span>{col.label}</span>
+                      <span className="text-[0.65rem] text-slate-300 font-normal">⋮⋮</span>
+                    </Box>
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {bids.map((bid) => (
-                <TableRow
-                  key={bid.id}
-                  className={`transition-colors ${
-                    bid.isLowest
-                      ? "bg-emerald-500/5 hover:bg-emerald-500/10"
-                      : "hover:bg-slate-50/50"
-                  }`}
-                >
-                  {/* Carrier Name */}
-                  <TableCell className="!font-bold !text-slate-700 !border-slate-100">
-                    <div className="flex flex-col">
-                      <span>{bid.carrierName}</span>
-                      <span className="text-[0.68rem] text-slate-400 font-medium">B2B Verified Member</span>
-                    </div>
-                  </TableCell>
-
-                  {/* Rating */}
-                  <TableCell align="center" className="!border-slate-100">
-                    <div className="flex items-center justify-center gap-1.5">
-                      <Rating
-                        name="read-only"
-                        value={bid.rating}
-                        precision={0.1}
-                        readOnly
-                        size="small"
-                        emptyIcon={<StarIcon className="text-slate-200" fontSize="inherit" />}
-                      />
-                      <span className="text-xs font-bold text-slate-600">{bid.rating}</span>
-                      <span className="text-[0.7rem] text-slate-400">({bid.ratingCount})</span>
-                    </div>
-                  </TableCell>
-
-                  {/* Bid Amount */}
-                  <TableCell
-                    align="right"
-                    className={`!font-mono !font-bold !border-slate-100 ${
-                      bid.isLowest ? "!text-emerald-600 !text-base" : "!text-slate-600"
-                    }`}
-                  >
-                    {formatCurrency(bid.bidAmount)}
-                  </TableCell>
-
-                  {/* Bid Time */}
-                  <TableCell align="right" className="!text-slate-500 !text-xs !border-slate-100">
-                    {bid.time}
-                  </TableCell>
-
-                  {/* Action or Badge */}
-                  <TableCell align="center" className="!border-slate-100">
-                    {bid.isLowest ? (
-                      <Chip
-                        label="Thấp nhất"
-                        size="small"
-                        color="success"
-                        className="!font-extrabold !text-[0.68rem] bg-emerald-500 text-white rounded-md"
-                      />
-                    ) : (
-                      <span className="text-xs text-slate-400 font-bold">-</span>
-                    )}
+              {bids.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} align="center" className="!py-12 !border-none">
+                    <Typography variant="body2" className="text-slate-400 font-medium">
+                      Chưa có nhà xe nào báo giá cho lô hàng này.
+                    </Typography>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                bids.map((bid) => (
+                  <TableRow
+                    key={bid.id}
+                    className={`transition-colors ${
+                      bid.isLowest
+                        ? "bg-emerald-500/5 hover:bg-emerald-500/10"
+                        : "hover:bg-slate-50/50"
+                    }`}
+                  >
+                    {columns.map((col) => {
+                      if (col.id === "carrierName") {
+                        return (
+                          <TableCell key={col.id} className="!font-bold !text-slate-700 !border-slate-100">
+                            <div className="flex flex-col">
+                              <span>{bid.carrierName}</span>
+                              <span className="text-[0.68rem] text-slate-400 font-medium">B2B Verified Member</span>
+                            </div>
+                          </TableCell>
+                        );
+                      }
+                      if (col.id === "rating") {
+                        return (
+                          <TableCell key={col.id} align="center" className="!border-slate-100">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <Rating
+                                name="read-only"
+                                value={bid.rating}
+                                precision={0.1}
+                                readOnly
+                                size="small"
+                                emptyIcon={<StarIcon className="text-slate-200" fontSize="inherit" />}
+                              />
+                              <span className="text-xs font-bold text-slate-600">{bid.rating}</span>
+                              <span className="text-[0.7rem] text-slate-400">({bid.ratingCount})</span>
+                            </div>
+                          </TableCell>
+                        );
+                      }
+                      if (col.id === "bidAmount") {
+                        return (
+                          <TableCell
+                            key={col.id}
+                            align="right"
+                            className={`!font-mono !font-bold !border-slate-100 ${
+                              bid.isLowest ? "!text-emerald-600 !text-base" : "!text-slate-600"
+                            }`}
+                          >
+                            {formatCurrency(bid.bidAmount)}
+                          </TableCell>
+                        );
+                      }
+                      if (col.id === "time") {
+                        return (
+                          <TableCell key={col.id} align="right" className="!text-slate-500 !text-xs !border-slate-100">
+                            {bid.time}
+                          </TableCell>
+                        );
+                      }
+                      if (col.id === "status") {
+                        return (
+                          <TableCell key={col.id} align="center" className="!border-slate-100">
+                            {bid.isLowest ? (
+                              <Chip
+                                label="Thấp nhất"
+                                size="small"
+                                color="success"
+                                className="!font-extrabold !text-[0.68rem] bg-emerald-500 text-white rounded-md"
+                              />
+                            ) : (
+                              <span className="text-xs text-slate-400 font-bold">-</span>
+                            )}
+                          </TableCell>
+                        );
+                      }
+                      return null;
+                    })}
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>

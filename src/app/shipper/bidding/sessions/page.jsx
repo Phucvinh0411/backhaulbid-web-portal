@@ -1,7 +1,7 @@
 "use client";
 
-import DashboardScreen from "@/components/shipper/DashboardScreen";
+import BiddingSessionsScreen from "@/components/shipper/BiddingSessionsScreen";
 
 export default function BiddingSessionsPage() {
-  return <DashboardScreen />;
+  return <BiddingSessionsScreen />;
 }

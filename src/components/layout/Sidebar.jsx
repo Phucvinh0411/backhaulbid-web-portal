@@ -70,7 +70,7 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
   const handleLogout = () => {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem("userRole");
-      router.push("/login");
+      router.push("/");
     }
   };
 

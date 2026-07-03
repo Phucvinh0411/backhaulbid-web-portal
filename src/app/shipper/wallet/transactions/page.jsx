@@ -1,7 +1,7 @@
 "use client";
 
-import ProfileWalletScreen from "@/components/shipper/ProfileWalletScreen";
+import WalletScreen from "@/components/wallet/WalletScreen";
 
 export default function WalletTransactionsPage() {
-  return <ProfileWalletScreen initialTab={0} />;
+  return <WalletScreen role="shipper" standalone={true} />;
 }

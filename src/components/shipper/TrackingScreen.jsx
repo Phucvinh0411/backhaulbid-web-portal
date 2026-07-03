@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -19,6 +20,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
+import Divider from "@mui/material/Divider";
 
 // Icons
 import LocalShippingIcon from "@mui/icons-material/LocalShippingOutlined";
@@ -29,10 +31,29 @@ import CloseIcon from "@mui/icons-material/Close";
 import DescriptionIcon from "@mui/icons-material/DescriptionOutlined";
 import StarIcon from "@mui/icons-material/Star";
 import MapIcon from "@mui/icons-material/MapOutlined";
-import CompassIcon from "@mui/icons-material/ExploreOutlined";
 import PhoneIcon from "@mui/icons-material/PhoneInTalkOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
+
+// Dynamically import Map component to avoid SSR issues with Leaflet
+const Map = dynamic(() => import("@/components/map/Map"), { 
+  ssr: false,
+  loading: () => (
+    <Box className="w-full h-[400px] flex items-center justify-center bg-slate-100 rounded-3xl border border-slate-200">
+      <Typography variant="body2" className="text-slate-500 animate-pulse font-medium">Đang tải bản đồ...</Typography>
+    </Box>
+  )
+});
+
+// Coordinates for the route (Bình Dương -> TP. HCM -> Mỹ Tho -> Vĩnh Long -> Cần Thơ)
+const ROUTE_POINTS = [
+  [10.9634, 106.7029], // Bình Dương (Start)
+  [10.7626, 106.6602], // TP. HCM
+  [10.3606, 106.3533], // Mỹ Tho
+  [10.2458, 105.9583], // Vĩnh Long
+  [10.0102, 105.7483], // Cần Thơ (End)
+];
+const CURRENT_POS = [10.2458, 105.9583]; // Vĩnh Long
 
 // Mock Driver & Vehicle details
 const SHIPMENT_TRACKING_INFO = {
@@ -146,66 +167,31 @@ export default function TrackingScreen() {
               boxShadow: "0 8px 32px 0 rgba(27, 73, 101, 0.02)",
             }}
           >
-            <CardContent className="!p-0 relative">
               {/* Map Header Overlay */}
-              <Box className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-slate-100/50 shadow-sm flex items-center gap-2">
-                <CompassIcon className="text-[#1B4965] animate-spin-slow" />
+              <Box className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-slate-100/50 shadow-sm flex items-center gap-2">
+                <MapIcon className="text-[#1B4965]" />
                 <div>
-                  <Typography className="!text-[0.68rem] text-slate-400 font-bold uppercase tracking-wider leading-none">GPS Telemetry</Typography>
+                  <Typography className="!text-[0.68rem] text-slate-400 font-bold uppercase tracking-wider leading-none">Bản đồ tuyến đường</Typography>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <Typography variant="body2" className="!font-bold text-[#1B4965] leading-none">Active Connect</Typography>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10B981] animate-pulse" />
+                    <Typography variant="body2" className="!font-bold text-[#1B4965] leading-none">Bình Dương → Cần Thơ</Typography>
                   </div>
                 </div>
               </Box>
 
-              {/* Map Simulated Graphic Canvas */}
-              <div 
-                className="h-[360px] w-full relative overflow-hidden bg-slate-950 flex items-center justify-center"
-                style={{
-                  backgroundImage: "radial-gradient(circle, rgba(98,182,203,0.15) 1px, transparent 1px)",
-                  backgroundSize: "24px 24px",
-                }}
-              >
-                {/* Simulated Roads Grid Lines */}
-                <div className="absolute inset-0 opacity-10 pointer-events-none">
-                  <div className="absolute top-1/3 left-0 w-full h-[8px] bg-slate-500 transform rotate-12" />
-                  <div className="absolute top-0 left-1/2 w-[10px] h-full bg-slate-500 transform -rotate-45" />
-                  <div className="absolute bottom-1/4 left-0 w-full h-[6px] bg-slate-500" />
-                </div>
+              {/* Leaflet Map Integration */}
+              <Box className="h-[400px] w-full relative z-0">
+                <Map routePoints={ROUTE_POINTS} />
+              </Box>
 
-                {/* Simulated Route Line */}
-                <div className="absolute left-1/4 bottom-1/4 w-[300px] h-[150px] border-b-4 border-r-4 border-dashed border-cyan-400 rounded-br-3xl opacity-50 pointer-events-none" />
-
-                {/* Animated Pulsing Marker */}
-                <div className="absolute flex flex-col items-center justify-center z-10 transform -translate-y-6">
-                  {/* Outer Pulsing Glow */}
-                  <div className="absolute w-12 h-12 bg-cyan-500/30 rounded-full animate-ping" />
-                  
-                  {/* Pin Circle */}
-                  <div className="w-10 h-10 bg-cyan-600 text-white rounded-2xl border-2 border-white shadow-[0_4px_20px_rgba(6,182,212,0.4)] flex items-center justify-center animate-float">
-                    <LocalShippingIcon className="!text-[1.2rem]" />
-                  </div>
-                  {/* Pin Tip Arrow */}
-                  <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-white mt-[-2px]" />
-                </div>
-
-                {/* Map Bottom Metadata Overlay */}
-                <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-slate-100/50 shadow-md flex items-center justify-between text-xs">
-                  <div className="space-y-1">
-                    <Typography className="!text-[0.65rem] text-slate-400 font-bold uppercase">Địa chỉ GPS hiện tại</Typography>
-                    <Typography variant="body2" className="!font-bold text-slate-700 leading-none">
-                      {SHIPMENT_TRACKING_INFO.currentRoad}
-                    </Typography>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="text-[0.7rem] font-bold px-2 py-0.5 bg-cyan-50 text-cyan-600 border border-cyan-100 rounded font-mono">
-                      {SHIPMENT_TRACKING_INFO.speed}
-                    </span>
-                  </div>
+              {/* Floating route info panel overlay */}
+              <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-100/50 shadow-lg flex items-center justify-between text-xs transition-all z-10">
+                <div className="space-y-1">
+                  <Typography className="!text-[0.65rem] text-slate-400 font-bold uppercase tracking-wider">Hành trình chi tiết</Typography>
+                  <Typography variant="body2" className="!font-bold text-slate-700 leading-tight">
+                    Từ: {SHIPMENT_TRACKING_INFO.from} → Đến: {SHIPMENT_TRACKING_INFO.to}
+                  </Typography>
                 </div>
               </div>
-            </CardContent>
           </Card>
 
           {/* Acceptance, Proof of Delivery and Disbursement */}

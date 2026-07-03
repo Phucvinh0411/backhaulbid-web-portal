@@ -39,50 +39,7 @@ import CheckIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 import InfoIcon from "@mui/icons-material/InfoOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
-
-// Mock Transaction History
-const INITIAL_TRANSACTIONS = [
-  {
-    id: "TX-2026-001",
-    type: "deposit", // Nạp tiền
-    typeName: "Nạp tiền vào ví (Qua VietQR)",
-    amount: 20000000,
-    time: "2026-07-02 09:30",
-    status: "success",
-  },
-  {
-    id: "TX-2026-002",
-    type: "hold", // Trừ cọc
-    typeName: "Tạm giữ cọc đấu giá (Lô LH-9041)",
-    amount: -2500000,
-    time: "2026-07-02 10:15",
-    status: "success",
-  },
-  {
-    id: "TX-2026-003",
-    type: "refund", // Hoàn cọc
-    typeName: "Hoàn trả cọc thầu (Lô LH-8072)",
-    amount: 1500000,
-    time: "2026-07-01 16:40",
-    status: "success",
-  },
-  {
-    id: "TX-2026-004",
-    type: "payment", // Thanh toán
-    typeName: "Thanh toán cước vận chuyển (Đơn LH-9034)",
-    amount: -8900000,
-    time: "2026-06-30 18:10",
-    status: "success",
-  },
-  {
-    id: "TX-2026-005",
-    type: "withdraw", // Rút tiền
-    typeName: "Rút tiền về tài khoản MB Bank",
-    amount: -5000000,
-    time: "2026-06-29 11:20",
-    status: "success",
-  }
-];
+import WalletScreen from "@/components/wallet/WalletScreen";
 
 // Mock Address Book
 const INITIAL_ADDRESSES = [
@@ -114,15 +71,7 @@ const INITIAL_ADDRESSES = [
 
 export default function ProfileWalletScreen({ initialTab = 0 }) {
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [balance, setBalance] = useState(15500000);
-  const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
   const [addresses, setAddresses] = useState(INITIAL_ADDRESSES);
-
-  // States for Wallet actions
-  const [openWalletDialog, setOpenWalletDialog] = useState(false);
-  const [walletActionType, setWalletActionType] = useState("deposit"); // 'deposit' or 'withdraw'
-  const [walletAmount, setWalletAmount] = useState("");
-  const [bankAccount, setBankAccount] = useState("MB Bank - 1902888889999");
 
   // States for Profile Info
   const [companyName, setCompanyName] = useState("Công ty TNHH Logistics & Thương mại Toàn Cầu");
@@ -147,44 +96,6 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
-  };
-
-  const formatCurrency = (val) => {
-    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" })
-      .format(val)
-      .replace("₫", "đ");
-  };
-
-  // --- Wallet Action Handlers ---
-  const handleOpenWalletAction = (type) => {
-    setWalletActionType(type);
-    setWalletAmount("");
-    setOpenWalletDialog(true);
-  };
-
-  const handleWalletActionSubmit = () => {
-    const amountNum = Number(walletAmount);
-    if (isNaN(amountNum) || amountNum <= 0) return;
-
-    if (walletActionType === "withdraw" && amountNum > balance) {
-      alert("Số dư khả dụng không đủ để thực hiện giao dịch này.");
-      return;
-    }
-
-    const newBalance = walletActionType === "deposit" ? balance + amountNum : balance - amountNum;
-    setBalance(newBalance);
-
-    const newTx = {
-      id: `TX-2026-00${transactions.length + 1}`,
-      type: walletActionType,
-      typeName: walletActionType === "deposit" ? "Nạp tiền vào ví" : "Rút tiền về tài khoản ngân hàng",
-      amount: walletActionType === "deposit" ? amountNum : -amountNum,
-      time: new Date().toISOString().replace("T", " ").substring(0, 16),
-      status: "success",
-    };
-
-    setTransactions([newTx, ...transactions]);
-    setOpenWalletDialog(false);
   };
 
   // --- Profile eKYC Handlers ---
@@ -254,7 +165,7 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
       {/* Page Header */}
       <PageHeader
         title="Tài Khoản & Thiết Lập"
-        subtitle="Quản lý thông tin doanh nghiệp, số dư ví ký quỹ giao dịch và sổ địa chỉ giao nhận."
+        subtitle="Quản lý thông tin doanh nghiệp, xác thực hồ sơ eKYC và sổ địa chỉ giao nhận."
         breadcrumbs={[
           { label: "Trang chủ", path: "/shipper/dashboard" },
           { label: "Thiết lập tài khoản" },
@@ -286,165 +197,13 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
             },
           }}
         >
-          <Tab icon={<WalletIcon className="!text-[1.2rem] mr-2" />} iconPosition="start" label="Ví điện tử" />
           <Tab icon={<PersonIcon className="!text-[1.2rem] mr-2" />} iconPosition="start" label="Hồ sơ & eKYC" />
           <Tab icon={<BookIcon className="!text-[1.2rem] mr-2" />} iconPosition="start" label="Sổ địa chỉ" />
         </Tabs>
       </Box>
 
-      {/* TAB CONTENT 1: WALLET */}
+      {/* TAB CONTENT 1: PROFILE & eKYC */}
       {activeTab === 0 && (
-        <div className="space-y-6 animate-fade-in">
-          {/* Balance card with gradient */}
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={5}>
-              <Card
-                className="!rounded-3xl border border-white/20 h-full relative overflow-hidden"
-                style={{
-                  background: "linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%)",
-                  boxShadow: "0 12px 36px rgba(59, 130, 246, 0.25)",
-                }}
-              >
-                <div className="absolute top-[-30px] right-[-30px] w-48 h-48 bg-white/10 rounded-full blur-xl pointer-events-none" />
-                <CardContent className="!p-8 flex flex-col justify-between h-full space-y-6 text-white">
-                  <div className="space-y-1.5">
-                    <Typography className="!text-white/85 font-bold uppercase tracking-wider text-xs flex items-center gap-1.5">
-                      <WalletIcon className="!text-[1rem]" /> Số dư ví khả dụng (Ký quỹ)
-                    </Typography>
-                    <Typography variant="h3" className="!font-black tracking-tight font-mono text-white">
-                      {formatCurrency(balance)}
-                    </Typography>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      onClick={() => handleOpenWalletAction("deposit")}
-                      className="!bg-white !text-blue-600 hover:!bg-blue-50 !font-extrabold !py-3 !rounded-2xl !capitalize shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
-                    >
-                      Nạp tiền
-                    </Button>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      onClick={() => handleOpenWalletAction("withdraw")}
-                      className="!border-white/50 !text-white hover:!bg-white/10 !font-bold !py-3 !rounded-2xl !capitalize hover:-translate-y-0.5 transition-all"
-                    >
-                      Rút tiền
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Quick stats / note card */}
-            <Grid item xs={12} md={7}>
-              <Card className="!rounded-3xl border border-slate-100 h-full bg-white/70 backdrop-blur-md">
-                <CardContent className="!p-6 flex flex-col justify-between h-full">
-                  <div className="space-y-3.5">
-                    <Typography variant="h6" className="!font-bold text-slate-800">
-                      Quy chế ký quỹ & Thanh toán B2B
-                    </Typography>
-                    
-                    <div className="space-y-2.5 text-xs text-slate-500 font-medium">
-                      <div className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#1E3A8A] mt-1.5 shrink-0" />
-                        <span>Hệ thống áp dụng cơ chế <span style={{ color: "#1E3A8A", backgroundColor: "rgba(30, 58, 138, 0.06)", padding: "2px 6px", borderRadius: "6px", fontWeight: 700 }}>Ký quỹ (Escrow)</span> để đảm bảo quyền lợi giữa Chủ hàng và Nhà xe khi đấu giá chốt thầu thành công.</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#B45309] mt-1.5 shrink-0" />
-                        <span>Khoản tiền cọc <span style={{ color: "#B45309", backgroundColor: "rgba(180, 83, 9, 0.06)", padding: "2px 6px", borderRadius: "6px", fontWeight: 700 }}>20% giá trần</span> của phiên đấu giá sẽ tự động tạm giữ khi bạn đăng lô hàng và giải tỏa ngay khi kết thúc hoặc hủy.</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#047857] mt-1.5 shrink-0" />
-                        <span>Khi nghiệm thu hoàn thành hành trình, số tiền cước vận chuyển sẽ <span style={{ color: "#047857", backgroundColor: "rgba(4, 120, 87, 0.06)", padding: "2px 6px", borderRadius: "6px", fontWeight: 700 }}>tự động giải ngân</span> từ ví ký quỹ sang tài khoản của tài xế/nhà xe.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-sky-50/50 p-3 rounded-2xl border border-sky-100/60 text-xs text-sky-800 font-semibold flex items-center gap-2 mt-4">
-                    <InfoIcon className="!text-[1.1rem] shrink-0" />
-                    <span>Nạp tiền siêu tốc bằng mã VietQR hỗ trợ liên ngân hàng 24/7 không mất phí.</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-
-          {/* Transaction history table */}
-          <Card
-            className="!rounded-3xl border border-slate-100 !shadow-[0_8px_32px_0_rgba(27,73,101,0.02)] overflow-hidden"
-            sx={{
-              background: "rgba(255, 255, 255, 0.8)",
-              backdropFilter: "blur(20px)",
-            }}
-          >
-            <div className="px-6 py-4.5 border-b border-slate-100">
-              <Typography variant="h6" className="!font-bold text-slate-700">
-                Lịch sử giao dịch ví ký quỹ
-              </Typography>
-            </div>
-
-            <TableContainer component={Paper} className="!shadow-none !bg-transparent">
-              <Table sx={{ minWidth: 650 }}>
-                <TableHead className="bg-slate-50/50">
-                  <TableRow>
-                    <TableCell className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Mã giao dịch</TableCell>
-                    <TableCell className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Nội dung chi tiết</TableCell>
-                    <TableCell align="right" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Giá trị giao dịch</TableCell>
-                    <TableCell align="right" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Thời gian</TableCell>
-                    <TableCell align="center" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Trạng thái</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {transactions.map((tx) => (
-                    <TableRow key={tx.id} className="hover:bg-slate-50/40">
-                      {/* Tx ID */}
-                      <TableCell className="!font-mono !font-bold text-slate-400 !border-slate-100">
-                        {tx.id}
-                      </TableCell>
-
-                      {/* Content */}
-                      <TableCell className="!font-bold text-slate-700 !border-slate-100">
-                        {tx.typeName}
-                      </TableCell>
-
-                      {/* Amount */}
-                      <TableCell
-                        align="right"
-                        className={`!font-mono !font-bold !border-slate-100 ${
-                          tx.amount > 0 ? "!text-emerald-600" : "!text-rose-500"
-                        }`}
-                      >
-                        {tx.amount > 0 ? `+${formatCurrency(tx.amount)}` : formatCurrency(tx.amount)}
-                      </TableCell>
-
-                      {/* Time */}
-                      <TableCell align="right" className="!text-slate-500 !text-xs !border-slate-100">
-                        {tx.time}
-                      </TableCell>
-
-                      {/* Status */}
-                      <TableCell align="center" className="!border-slate-100">
-                        <Chip
-                          label="Thành công"
-                          size="small"
-                          color="success"
-                          className="!font-bold !text-[0.68rem] bg-emerald-50 text-emerald-600 border border-emerald-100 rounded"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Card>
-        </div>
-      )}
-
-      {/* TAB CONTENT 2: PROFILE & eKYC */}
-      {activeTab === 1 && (
         <div className="space-y-6 animate-fade-in">
           <Card
             className="!rounded-3xl border border-slate-100"
@@ -596,7 +355,7 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
       )}
 
       {/* TAB CONTENT 3: ADDRESS BOOK */}
-      {activeTab === 2 && (
+      {activeTab === 1 && (
         <div className="space-y-6 animate-fade-in">
           {/* Toolbar with Add Address Button */}
           <div className="flex justify-between items-center">
@@ -674,79 +433,6 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
         </div>
       )}
 
-      {/* Wallet Action Dialog (Deposit / Withdraw simulation) */}
-      <Dialog
-        open={openWalletDialog}
-        onClose={() => setOpenWalletDialog(false)}
-        maxWidth="xs"
-        fullWidth
-        className="backdrop-blur-sm"
-        PaperProps={{
-          className: "!rounded-3xl !p-2",
-        }}
-      >
-        <DialogTitle className="flex justify-between items-center !font-bold text-slate-800">
-          {walletActionType === "deposit" ? "Nạp tiền vào ví ký quỹ" : "Yêu cầu rút tiền về ngân hàng"}
-          <IconButton size="small" onClick={() => setOpenWalletDialog(false)} className="text-slate-400">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent className="space-y-4 !pt-2">
-          {walletActionType === "deposit" ? (
-            <div className="bg-sky-50 p-3.5 rounded-2xl border border-sky-100/50 flex flex-col items-center text-center space-y-2">
-              {/* Simulated QR Code */}
-              <div className="w-32 h-32 bg-white rounded-xl border border-slate-200 flex items-center justify-center font-mono text-xs text-slate-400 font-bold">
-                [ VietQR Image ]
-              </div>
-              <Typography variant="caption" className="text-slate-500 font-semibold">
-                Quét mã QR để chuyển khoản trực tiếp qua hệ thống Napas247.
-              </Typography>
-            </div>
-          ) : (
-            <TextField
-              select
-              label="Chọn tài khoản ngân hàng nhận"
-              fullWidth
-              value={bankAccount}
-              onChange={(e) => setBankAccount(e.target.value)}
-              InputProps={{ className: "!rounded-2xl" }}
-            >
-              <MenuItem value="MB Bank - 1902888889999">MB Bank - 1902888889999 (Chính chủ)</MenuItem>
-              <MenuItem value="Vietcombank - 0011002223334">Vietcombank - 0011002223334</MenuItem>
-            </TextField>
-          )}
-
-          <TextField
-            label="Số tiền giao dịch (VNĐ)"
-            type="number"
-            placeholder="Nhập số tiền muốn nạp/rút"
-            fullWidth
-            value={walletAmount}
-            onChange={(e) => setWalletAmount(e.target.value)}
-            InputProps={{ className: "!rounded-2xl" }}
-          />
-        </DialogContent>
-        <DialogActions className="!px-6 !pb-4 flex justify-end gap-3">
-          <Button
-            onClick={() => setOpenWalletDialog(false)}
-            variant="text"
-            className="!text-slate-500 !font-bold !capitalize !rounded-xl"
-          >
-            Hủy
-          </Button>
-          <Button
-            onClick={handleWalletActionSubmit}
-            disabled={!walletAmount}
-            variant="contained"
-            className="!font-bold !capitalize !rounded-xl !px-5"
-            sx={{
-              background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)",
-            }}
-          >
-            Xác nhận
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Address Edit/Add Dialog */}
       <Dialog
