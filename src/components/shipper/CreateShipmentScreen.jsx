@@ -441,7 +441,7 @@ export default function CreateShipmentScreen() {
 
                         <Grid item xs={12}>
                           <Paper className="!shadow-none border border-slate-100 rounded-2xl p-4 bg-slate-50/40">
-                            <Typography variant="body2" className="text-slate-700 font-bold mb-3 flex items-center gap-1.5">
+                            <Typography variant="body2" className="text-slate-700 font-bold !mb-5 flex items-center gap-1.5">
                               <ScaleIcon fontSize="small" className="text-slate-400" />
                               Kích thước phủ bì chi tiết (Đơn vị: Mét - Không bắt buộc)
                             </Typography>
