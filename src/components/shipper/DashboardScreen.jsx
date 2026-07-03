@@ -3,505 +3,557 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Box from "@mui/material/Box";
-import BiddingItem from "./BiddingItem";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
-import Chip from "@mui/material/Chip";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import TextField from "@mui/material/TextField";
-import MenuItem from "@mui/material/MenuItem";
-import RadioGroup from "@mui/material/RadioGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Radio from "@mui/material/Radio";
-import IconButton from "@mui/material/IconButton";
-import InputAdornment from "@mui/material/InputAdornment";
-import SearchIcon from "@mui/icons-material/SearchOutlined";
+import {
+  Box,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  Divider,
+  IconButton,
+  Chip,
+  Tooltip as MuiTooltip,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@mui/material";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import GavelIcon from "@mui/icons-material/Gavel";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
-import CloseIcon from "@mui/icons-material/Close";
-import Grid from "@mui/material/Grid";
+import SettingsIcon from "@mui/icons-material/Settings";
+import RouteIcon from "@mui/icons-material/Route";
 
-import PageHeader from "@/components/common/PageHeader";
+import { PageHeader, StatCard } from "@/components/common";
 
-// Mock Data representing professional logistics operations
-const INITIAL_SHIPMENTS = [
+// Mock Data for Shipper Statistics & Charts
+const spendData = [
+  { name: "T1", spend: 120000000, savings: 15000000 },
+  { name: "T2", spend: 98000000, savings: 12000000 },
+  { name: "T3", spend: 145000000, savings: 22000000 },
+  { name: "T4", spend: 110000000, savings: 18000000 },
+  { name: "T5", spend: 165000000, savings: 28000000 },
+  { name: "T6", spend: 130000000, savings: 25000000 },
+  { name: "T7", spend: 142500000, savings: 24500000 }, // current
+];
+
+const activeShipments = [
   {
-    id: "LH-2026-9041",
-    goodsType: "Linh kiện điện tử",
-    weight: "5.2 tấn",
-    volume: "28 m³",
-    from: {
-      province: "Thái Nguyên",
-      detail: "Kho Samsung Yên Bình, Phổ Yên",
-    },
-    to: {
-      province: "Hải Phòng",
-      detail: "Cảng Đình Vũ, Quận Hải An",
-    },
-    maxPrice: 12500000,
-    currentLowestBid: 11200000,
-    bidCount: 4,
-    closeTime: "2026-07-04T18:00:00",
-    status: "active_bids", // đang đấu giá
-  },
-  {
-    id: "LH-2026-9042",
-    goodsType: "Thực phẩm đông lạnh (Thủy sản)",
-    weight: "8.0 tấn",
-    volume: "45 m³",
-    from: {
-      province: "Cà Mau",
-      detail: "Cụm CN Sông Đốc, Huyện Trần Văn Thời",
-    },
-    to: {
-      province: "TP. Hồ Chí Minh",
-      detail: "Kho lạnh Transimex, Khu Công Nghệ Cao Quận 9",
-    },
-    maxPrice: 28000000,
-    currentLowestBid: 26500000,
-    bidCount: 3,
-    closeTime: "2026-07-03T12:00:00",
-    status: "active_bids",
-  },
-  {
-    id: "LH-2026-9043",
-    goodsType: "Nông sản khô (Hạt điều)",
-    weight: "15.0 tấn",
-    volume: "60 m³",
-    from: {
-      province: "Bình Phước",
-      detail: "Kho xuất khẩu Đồng Phú",
-    },
-    to: {
-      province: "Bà Rịa - Vũng Tàu",
-      detail: "Cảng Cái Mép - Thị Vải, Phú Mỹ",
-    },
-    maxPrice: 18500000,
-    currentLowestBid: 0,
-    bidCount: 0,
-    closeTime: "2026-07-05T17:00:00",
-    status: "pending_bids", // chờ đấu giá
+    id: "LH-2026-9045",
+    goodsType: "Hàng FMCG",
+    route: "Bình Dương → Cần Thơ",
+    driverName: "Trần Văn Bình",
+    driverPlate: "51C-777.45",
+    progress: 75,
+    status: "Đang di chuyển",
   },
   {
     id: "LH-2026-9044",
-    goodsType: "Vật liệu xây dựng (Sắt thép)",
-    weight: "22.5 tấn",
-    volume: "18 m³",
-    from: {
-      province: "Quảng Ngãi",
-      detail: "KCN Dung Quất, Bình Sơn",
-    },
-    to: {
-      province: "Đà Nẵng",
-      detail: "Tổng kho Hòa Khánh, Liên Chiểu",
-    },
-    maxPrice: 16000000,
-    currentLowestBid: 14800000,
-    bidCount: 6,
-    closeTime: "2026-07-02T10:00:00",
-    status: "awarded", // đã chốt thầu
-    carrier: "Công ty Vận tải Phước An",
-    carrierPhone: "0905.888.999",
-    finalPrice: 14800000,
+    goodsType: "Vật liệu xây dựng",
+    route: "Quảng Ngãi → Đà Nẵng",
+    driverName: "Nguyễn Văn Hùng",
+    driverPlate: "43C-112.89",
+    progress: 35,
+    status: "Đã lấy hàng",
+  },
+];
+
+const endingAuctions = [
+  {
+    id: "LH-2026-9041",
+    goodsType: "Linh kiện điện tử",
+    route: "Thái Nguyên → Hải Phòng",
+    maxPrice: "12,500,000đ",
+    currentLowest: "11,200,000đ",
+    bidCount: 4,
+    timeLeft: "2 giờ",
   },
   {
-    id: "LH-2026-9045",
-    goodsType: "Hàng tiêu dùng nhanh (FMCG)",
-    weight: "3.5 tấn",
-    volume: "22 m³",
-    from: {
-      province: "Bình Dương",
-      detail: "KCN VSIP I, Thuận An",
-    },
-    to: {
-      province: "Cần Thơ",
-      detail: "Trung tâm phân phối Mega Market, Cái Răng",
-    },
-    maxPrice: 9500000,
-    currentLowestBid: 8900000,
-    bidCount: 5,
-    closeTime: "2026-06-30T15:00:00",
-    status: "shipping", // đang vận chuyển
-    carrier: "Hợp tác xã Vận tải Hữu Nghị",
-    carrierPhone: "0918.222.333",
-    driverName: "Trần Văn Bình",
-    driverPlate: "51C-777.45",
-    finalPrice: 8900000,
-  },
-  {
-    id: "LH-2026-9046",
-    goodsType: "Trái cây xuất khẩu (Thanh long)",
-    weight: "10.0 tấn",
-    volume: "40 m³",
-    from: {
-      province: "Bình Thuận",
-      detail: "Vựa thu mua Hàm Thuận Nam",
-    },
-    to: {
-      province: "Lạng Sơn",
-      detail: "Bãi kiểm hóa Cửa khẩu Tân Thanh",
-    },
-    maxPrice: 42000000,
-    currentLowestBid: 39500000,
-    bidCount: 9,
-    closeTime: "2026-06-25T20:00:00",
-    status: "completed", // hoàn thành
-    carrier: "Logistics Bắc Nam T&T",
-    carrierPhone: "0977.345.678",
-    driverName: "Lê Minh Quốc",
-    driverPlate: "29H-123.56",
-    finalPrice: 39500000,
-  },
-  {
-    id: "LH-2026-9047",
-    goodsType: "Hóa chất (Sơn công nghiệp)",
-    weight: "6.0 tấn",
-    volume: "24 m³",
-    from: {
-      province: "Đồng Nai",
-      detail: "KCN Amata, Biên Hòa",
-    },
-    to: {
-      province: "Khánh Hòa",
-      detail: "Kho Sơn Đông Á, KCN Suối Dầu",
-    },
-    maxPrice: 15500000,
-    currentLowestBid: 14700000,
-    bidCount: 2,
-    closeTime: "2026-06-28T09:00:00",
-    status: "cancelled", // đã hủy
-    cancelReason: "Thay đổi lịch sản xuất tại nhà máy",
+    id: "LH-2026-9042",
+    goodsType: "Thực phẩm đông lạnh",
+    route: "Cà Mau → TP. Hồ Chí Minh",
+    maxPrice: "28,000,000đ",
+    currentLowest: "26,500,000đ",
+    bidCount: 3,
+    timeLeft: "5 giờ",
   },
   {
     id: "LH-2026-9048",
     goodsType: "Bao bì carton",
-    weight: "2.0 tấn",
-    volume: "35 m³",
-    from: {
-      province: "Hưng Yên",
-      detail: "KCN Phố Nối A",
-    },
-    to: {
-      province: "Bắc Giang",
-      detail: "Nhà máy Foxconn Quang Châu",
-    },
-    maxPrice: 6500000,
-    currentLowestBid: 5800000,
+    route: "Hưng Yên → Bắc Giang",
+    maxPrice: "6,500,000đ",
+    currentLowest: "5,800,000đ",
     bidCount: 4,
-    closeTime: "2026-07-02T16:00:00",
-    status: "active_bids",
-  }
+    timeLeft: "8 giờ",
+  },
 ];
+
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
+};
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const [shipments, setShipments] = useState(INITIAL_SHIPMENTS);
-  const [activeTab, setActiveTab] = useState(0); // 0: Tất cả, 1: Chờ đấu giá, 2: Đang đấu giá, 3: Đã chốt, 4: Đang vận chuyển, 5: Hoàn thành, 6: Đã hủy
-  const [searchQuery, setSearchQuery] = useState("");
+  const [timeFilter, setTimeFilter] = useState("month");
 
-  // States for Cancel Dialog
-  const [openCancelDialog, setOpenCancelDialog] = useState(false);
-  const [selectedShipmentId, setSelectedShipmentId] = useState(null);
-  const [cancelReasonType, setCancelReasonType] = useState("Thay đổi kế hoạch kinh doanh");
-  const [cancelReasonNote, setCancelReasonNote] = useState("");
-
-  // Map Tab index to Shipment status
-  const tabStatusMap = [
-    "all",
-    "pending_bids",
-    "active_bids",
-    "awarded",
-    "shipping",
-    "completed",
-    "cancelled",
-  ];
-
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
+  const handleTimeChange = (event, newTime) => {
+    if (newTime !== null) {
+      setTimeFilter(newTime);
+    }
   };
-
-  // Filter shipments based on search query and active tab
-  const filteredShipments = shipments.filter((item) => {
-    const matchesSearch =
-      item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.goodsType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.from.province.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.to.province.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const targetStatus = tabStatusMap[activeTab];
-    const matchesStatus = targetStatus === "all" ? true : item.status === targetStatus;
-
-    return matchesSearch && matchesStatus;
-  });
-
-
-
-  const handleOpenCancelDialog = (id) => {
-    setSelectedShipmentId(id);
-    setCancelReasonType("Thay đổi kế hoạch kinh doanh");
-    setCancelReasonNote("");
-    setOpenCancelDialog(true);
-  };
-
-  const handleCloseCancelDialog = () => {
-    setOpenCancelDialog(false);
-    setSelectedShipmentId(null);
-  };
-
-  const handleConfirmCancel = () => {
-    if (!selectedShipmentId) return;
-
-    setShipments((prev) =>
-      prev.map((item) =>
-        item.id === selectedShipmentId
-          ? {
-            ...item,
-            status: "cancelled",
-            cancelReason: cancelReasonNote ? `${cancelReasonType}: ${cancelReasonNote}` : cancelReasonType,
-          }
-          : item
-      )
-    );
-
-    handleCloseCancelDialog();
-  };
-
-
 
   return (
-    <Box className="w-full min-h-screen">
-      {/* Header section with CTA Action */}
+    <Box className="animate-fade-in-up pb-12 w-full mt-2 flex flex-col gap-6">
       <PageHeader
-        title="Quản lý Lô hàng & Đấu giá"
-        subtitle="Quản lý tối ưu các lô hàng, tương tác trực tiếp với các đơn đấu giá vận tải."
-        breadcrumbs={[
-          { label: "Trang chủ", path: "/shipper/dashboard" },
-          { label: "Đấu giá vận tải", path: "/shipper/bidding/sessions" },
-          { label: "Quản lý lô hàng" },
-        ]}
+        title="Trung tâm điều phối Logistics"
+        subtitle="Tổng quan hoạt động đấu giá và quản lý vận tải của doanh nghiệp"
         action={
-          <Link href="/shipper/bidding/create" passHref legacyBehavior>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              className="!rounded-2xl !py-3 !px-6 !text-sm !font-bold !capitalize shadow-lg hover:shadow-xl transition-all duration-300"
-              sx={{
-                background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                "&:hover": {
-                  background: "linear-gradient(135deg, #0D2B3E 0%, #1B4965 100%)",
-                },
-              }}
-            >
-              Tạo lô hàng mới
-            </Button>
-          </Link>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => router.push("/shipper/bidding/create")}
+            className="!rounded-2xl !py-3 !px-6 !text-sm !font-bold !capitalize shadow-lg hover:shadow-xl transition-all duration-300"
+            sx={{
+              background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #0D2B3E 0%, #1B4965 100%)",
+              },
+            }}
+          >
+            Tạo lô hàng mới
+          </Button>
         }
       />
 
-      {/* Tabs Filter Section */}
-      <Box className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-3xl p-3 shadow-[0_8px_32px_0_rgba(27,73,101,0.03)] mb-6">
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          className="min-h-[48px]"
-          sx={{
-            "& .MuiTabs-indicator": {
-              backgroundColor: "#1B4965",
-              height: 3,
-              borderRadius: 2,
-            },
-            "& .MuiTab-root": {
-              textTransform: "none",
-              fontWeight: 600,
-              fontSize: "0.88rem",
-              color: "#64748B",
-              minHeight: 48,
-              px: 3,
-              "&.Mui-selected": {
-                color: "#1B4965",
-                fontWeight: 700,
-              },
-            },
-          }}
-        >
-          <Tab label="Tất cả" />
-          <Tab label="Chờ đấu giá" />
-          <Tab label="Đang đấu giá" />
-          <Tab label="Đã chốt thầu" />
-          <Tab label="Đang vận chuyển" />
-          <Tab label="Hoàn thành" />
-          <Tab label="Đã hủy" />
-        </Tabs>
-      </Box>
-
-      {/* Search and Filters Toolbar */}
-      <Box className="flex flex-col sm:flex-row items-center gap-4 mb-6">
-        <TextField
-          placeholder="Tìm kiếm mã lô hàng, loại hàng, điểm đi/đến..."
-          variant="outlined"
-          size="small"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full sm:w-96 bg-white/70 backdrop-blur-md rounded-2xl"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon className="text-slate-400" />
-              </InputAdornment>
-            ),
-            className: "!rounded-2xl !border-slate-100 hover:!border-slate-200 transition-all",
-          }}
-          sx={{
-            "& .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#E2E8F0",
-            },
-            "&:hover .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#CBD5E1",
-            },
-            "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#1B4965",
-            },
-          }}
-        />
-
-        <Typography variant="body2" className="text-slate-500 font-medium ml-auto">
-          Hiển thị <span className="text-[#1B4965] font-bold">{filteredShipments.length}</span> kết quả
-        </Typography>
-      </Box>
-
-      {/* Grid List of Shipments */}
-      {filteredShipments.length === 0 ? (
-        <Card className="!rounded-3xl border border-dashed border-slate-200/80 !shadow-none bg-slate-50/20 py-16 text-center">
-          <CardContent className="space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-slate-100 flex items-center justify-center mx-auto text-2xl text-slate-400">
-              📦
-            </div>
-            <div>
-              <Typography variant="h6" className="!font-bold text-slate-700">
-                Không tìm thấy lô hàng nào
-              </Typography>
-              <Typography variant="body2" className="text-slate-400 max-w-sm mx-auto">
-                Không có dữ liệu phù hợp với bộ lọc hiện tại. Thử thay đổi từ khóa hoặc bộ lọc của bạn.
-              </Typography>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
+      {/* KPI Cards */}
+      <Box>
         <Grid container spacing={3}>
-          {filteredShipments.map((shipment) => (
-            <Grid item xs={12} md={6} lg={4} key={shipment.id}>
-              <BiddingItem
-                shipment={shipment}
-                onCancel={handleOpenCancelDialog}
-                onViewDetail={(id) => router.push("/shipper/bidding/history")}
-              />
-            </Grid>
-          ))}
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Đang đấu giá"
+              value="5 lô hàng"
+              subtitle="Phiên đấu thầu mở"
+              icon={GavelIcon}
+              color="#1B4965"
+              tooltipInfo="Các lô hàng của bạn đang trong thời gian mở thầu công khai"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Đang vận chuyển"
+              value="12 đơn hàng"
+              subtitle="Đang di chuyển thực tế"
+              icon={LocalShippingIcon}
+              color="#10b981"
+              tooltipInfo="Đơn hàng đã chốt thầu và đang được đơn vị vận chuyển giao hàng"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Chi tiêu tháng này"
+              value="142.5Tr ₫"
+              subtitle="-8.2% so với tháng trước"
+              icon={AccountBalanceWalletIcon}
+              color="#3b82f6"
+              tooltipInfo="Tổng cước phí vận chuyển đã thanh toán & dự kiến chi trong tháng"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Tiết kiệm dự kiến"
+              value="24.5Tr ₫"
+              subtitle="Nhờ đấu giá ngược"
+              icon={AssignmentTurnedInIcon}
+              color="#f59e0b"
+              tooltipInfo="Số tiền tiết kiệm được so với mức giá tối đa ban đầu"
+            />
+          </Grid>
         </Grid>
-      )}
+      </Box>
 
-      {/* Cancellation Dialog confirmation */}
-      <Dialog
-        open={openCancelDialog}
-        onClose={handleCloseCancelDialog}
-        maxWidth="xs"
-        fullWidth
-        className="backdrop-blur-sm"
-        PaperProps={{
-          className: "!rounded-3xl !p-2",
-        }}
-      >
-        <DialogTitle className="flex justify-between items-center !font-bold text-slate-800">
-          Xác nhận hủy lô hàng
-          <IconButton size="small" onClick={handleCloseCancelDialog} className="text-slate-400">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent className="space-y-4">
-          <Typography variant="body2" className="text-slate-500">
-            Bạn có chắc chắn muốn hủy lô hàng <span className="font-mono font-bold text-slate-700">{selectedShipmentId}</span>? Hành động này sẽ dừng phiên đấu giá và không thể phục hồi.
-          </Typography>
+      {/* Main Content Grid */}
+      <Box>
+        <Grid container spacing={4}>
+          {/* Left Column: Spending Chart & Active Shipments */}
+          <Grid item xs={12} md={8}>
+            <Box className="flex flex-col gap-6">
+              
+              {/* Spending & Savings Chart */}
+              <Card className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+                <CardContent className="p-6">
+                  <Box className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+                    <Typography variant="h6" className="font-bold text-[#1B4965]">
+                      Phân tích chi phí & Tiết kiệm (VNĐ)
+                    </Typography>
+                    <ToggleButtonGroup
+                      value={timeFilter}
+                      exclusive
+                      onChange={handleTimeChange}
+                      size="small"
+                      sx={{
+                        "& .MuiToggleButton-root": {
+                          py: 0.5,
+                          px: 2,
+                          textTransform: "none",
+                          fontWeight: 600,
+                          fontSize: "0.8rem",
+                          color: "#64748b",
+                          borderColor: "#e2e8f0",
+                        },
+                        "& .Mui-selected": {
+                          color: "#1B4965 !important",
+                          bgcolor: "rgba(27,73,101,0.08) !important",
+                        },
+                      }}
+                    >
+                      <ToggleButton value="week">Tuần</ToggleButton>
+                      <ToggleButton value="month">Tháng</ToggleButton>
+                      <ToggleButton value="year">Năm</ToggleButton>
+                    </ToggleButtonGroup>
+                  </Box>
+                  <Box className="h-[280px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={spendData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorSpend" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#1B4965" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#1B4965" stopOpacity={0} />
+                          </linearGradient>
+                          <linearGradient id="colorSavings" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <XAxis
+                          dataKey="name"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: "#64748b", fontSize: 12, fontWeight: 600 }}
+                          dy={10}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: "#64748b", fontSize: 12, fontWeight: 600 }}
+                          tickFormatter={(value) => `${value / 1000000}Tr`}
+                          dx={-5}
+                        />
+                        <RechartsTooltip
+                          formatter={(value, name) => [
+                            formatCurrency(value),
+                            name === "spend" ? "Chi phí thực tế" : "Tiết kiệm được",
+                          ]}
+                          contentStyle={{
+                            borderRadius: "12px",
+                            border: "1px solid #e2e8f0",
+                            boxShadow: "0 8px 30px rgba(27,73,101,0.1)",
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="spend"
+                          name="spend"
+                          stroke="#1B4965"
+                          strokeWidth={3}
+                          fillOpacity={1}
+                          fill="url(#colorSpend)"
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="savings"
+                          name="savings"
+                          stroke="#10b981"
+                          strokeWidth={2}
+                          fillOpacity={1}
+                          fill="url(#colorSavings)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
 
-          <Box className="space-y-3 pt-2">
-            <Typography variant="body2" className="!font-bold text-slate-700">
-              Chọn lý do hủy:
-            </Typography>
-            <RadioGroup
-              value={cancelReasonType}
-              onChange={(e) => setCancelReasonType(e.target.value)}
-              className="space-y-1"
-            >
-              <FormControlLabel
-                value="Thay đổi kế hoạch kinh doanh"
-                control={<Radio size="small" sx={{ color: "#1B4965", "&.Mui-checked": { color: "#1B4965" } }} />}
-                label={<span className="text-sm font-medium text-slate-600">Thay đổi kế hoạch sản xuất/kinh doanh</span>}
-              />
-              <FormControlLabel
-                value="Tìm thấy đơn vị vận chuyển ngoài"
-                control={<Radio size="small" sx={{ color: "#1B4965", "&.Mui-checked": { color: "#1B4965" } }} />}
-                label={<span className="text-sm font-medium text-slate-600">Đã thỏa thuận được với nhà xe ngoài</span>}
-              />
-              <FormControlLabel
-                value="Nhập sai thông tin hàng hóa"
-                control={<Radio size="small" sx={{ color: "#1B4965", "&.Mui-checked": { color: "#1B4965" } }} />}
-                label={<span className="text-sm font-medium text-slate-600">Nhập sai thông tin kích thước/trọng tải</span>}
-              />
-              <FormControlLabel
-                value="Khác"
-                control={<Radio size="small" sx={{ color: "#1B4965", "&.Mui-checked": { color: "#1B4965" } }} />}
-                label={<span className="text-sm font-medium text-slate-600">Lý do khác</span>}
-              />
-            </RadioGroup>
+              {/* Active Shipments in transit */}
+              <Card className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+                <CardContent className="p-6">
+                  <Box className="flex items-center justify-between mb-4">
+                    <Typography variant="h6" className="font-bold text-[#1B4965]">
+                      Lô hàng đang vận chuyển
+                    </Typography>
+                    <Button
+                      component={Link}
+                      href="/shipper/bidding/sessions"
+                      variant="text"
+                      size="small"
+                      endIcon={<ChevronRightIcon />}
+                      sx={{ color: "#1B4965", fontWeight: "bold" }}
+                    >
+                      Xem tất cả
+                    </Button>
+                  </Box>
+                  <Box className="flex flex-col gap-3">
+                    {activeShipments.map((shipment) => (
+                      <Box
+                        key={shipment.id}
+                        className="p-4 rounded-xl border border-slate-100 bg-white/60 hover:bg-white transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_20px_rgba(27,73,101,0.06)]"
+                      >
+                        <Box className="flex items-center gap-4">
+                          <Box className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#1B4965]">
+                            <LocalShippingIcon fontSize="small" />
+                          </Box>
+                          <Box>
+                            <Typography variant="subtitle2" className="font-bold text-slate-800">
+                              {shipment.id} ({shipment.goodsType})
+                            </Typography>
+                            <Typography variant="body2" className="text-slate-500 font-medium">
+                              {shipment.route}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Box className="flex items-center gap-4 w-full md:w-[45%]">
+                          <Box className="w-full flex flex-col gap-1">
+                            <Box className="flex justify-between items-center">
+                              <Typography variant="caption" className="text-slate-500 font-bold uppercase tracking-wider">
+                                {shipment.driverPlate} • {shipment.driverName}
+                              </Typography>
+                              <Typography variant="caption" className="text-[#1B4965] font-bold">
+                                {shipment.progress}%
+                              </Typography>
+                            </Box>
+                            <Box className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <Box
+                                className="h-full bg-gradient-to-r from-blue-400 to-[#1B4965] rounded-full"
+                                style={{ width: `${shipment.progress}%` }}
+                              ></Box>
+                            </Box>
+                          </Box>
+                          <MuiTooltip title="Theo dõi chi tiết">
+                            <IconButton
+                              component={Link}
+                              href="/shipper/bidding/sessions"
+                              size="small"
+                              className="bg-white text-[#1B4965] border border-slate-200 shadow-sm hover:bg-slate-50"
+                            >
+                              <ChevronRightIcon />
+                            </IconButton>
+                          </MuiTooltip>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
+          </Grid>
 
-            {cancelReasonType === "Khác" && (
-              <TextField
-                placeholder="Nhập lý do chi tiết..."
-                fullWidth
-                multiline
-                rows={2}
-                value={cancelReasonNote}
-                onChange={(e) => setCancelReasonNote(e.target.value)}
-                className="mt-2"
-                InputProps={{
-                  className: "!rounded-2xl",
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#E2E8F0",
-                  },
-                }}
-              />
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions className="!px-6 !pb-4 flex justify-end gap-3">
-          <Button
-            onClick={handleCloseCancelDialog}
-            variant="text"
-            className="!text-slate-500 !font-bold !capitalize !rounded-xl"
-          >
-            Đóng
-          </Button>
-          <Button
-            onClick={handleConfirmCancel}
-            variant="contained"
-            color="error"
-            className="!bg-rose-500 hover:!bg-rose-600 !font-bold !capitalize !rounded-xl !px-5"
-          >
-            Đồng ý Hủy
-          </Button>
-        </DialogActions>
-      </Dialog>
+          {/* Right Column: Active Auctions & Quick Actions */}
+          <Grid item xs={12} md={4}>
+            <Box className="flex flex-col gap-6 h-full">
+              
+              {/* Ending Auctions */}
+              <Card className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+                <CardContent className="p-6">
+                  <Box className="flex items-center justify-between mb-4">
+                    <Typography variant="h6" className="font-bold text-[#1B4965]">
+                      Phiên đấu giá sắp kết thúc
+                    </Typography>
+                    <Chip label="Đang Đấu" size="small" color="primary" sx={{ fontWeight: "bold" }} />
+                  </Box>
+                  <Box className="flex flex-col gap-4">
+                    {endingAuctions.map((auction) => (
+                      <Box
+                        key={auction.id}
+                        className="p-4 rounded-xl border border-slate-200 bg-white/80 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden"
+                      >
+                        <Box className="absolute -right-6 -top-6 w-16 h-16 bg-gradient-to-br from-transparent via-[#62b6cb]/10 to-[#62b6cb]/30 rounded-full group-hover:scale-[2] transition-transform duration-500"></Box>
+
+                        <Box className="flex justify-between items-start mb-1 relative z-10">
+                          <Typography variant="subtitle2" className="font-bold text-[#1B4965]">
+                            {auction.id}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            className="text-orange-600 bg-orange-50 px-2 py-0.5 rounded font-semibold border border-orange-100"
+                          >
+                            Còn {auction.timeLeft}
+                          </Typography>
+                        </Box>
+
+                        <Typography variant="body2" className="text-slate-700 font-bold mb-1 relative z-10">
+                          {auction.goodsType}
+                        </Typography>
+                        <Typography variant="body2" className="text-slate-500 mb-3 relative z-10 font-medium">
+                          {auction.route}
+                        </Typography>
+
+                        <Divider className="my-2.5 opacity-60" />
+
+                        <Box className="flex justify-between items-center relative z-10">
+                          <Box>
+                            <Typography variant="caption" className="text-slate-400 block uppercase tracking-widest font-bold text-[0.6rem]">
+                              Giá thấp nhất
+                            </Typography>
+                            <Typography variant="body2" className="font-extrabold text-emerald-600">
+                              {auction.currentLowest}
+                            </Typography>
+                          </Box>
+                          <Button
+                            component={Link}
+                            href="/shipper/bidding/history"
+                            variant="contained"
+                            size="small"
+                            sx={{
+                              bgcolor: "#1B4965",
+                              borderRadius: "8px",
+                              "&:hover": { bgcolor: "#0d2b3e" },
+                              px: 2,
+                              py: 0.75,
+                              fontSize: "0.75rem",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Xem Thầu
+                          </Button>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions Card */}
+              <Card className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+                <CardContent className="p-6">
+                  <Typography variant="h6" className="font-bold text-[#1B4965] mb-4">
+                    Thao tác nhanh
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Button
+                        component={Link}
+                        href="/shipper/bidding/create"
+                        variant="outlined"
+                        fullWidth
+                        startIcon={<AddIcon />}
+                        sx={{
+                          flexDirection: "column",
+                          gap: 1,
+                          py: 2,
+                          borderRadius: "16px",
+                          borderColor: "rgba(27,73,101,0.15)",
+                          color: "#1B4965",
+                          "& .MuiButton-startIcon": { m: 0 },
+                          fontSize: "0.8rem",
+                          fontWeight: "bold",
+                          "&:hover": {
+                            borderColor: "#1B4965",
+                            bgcolor: "rgba(27,73,101,0.02)",
+                          },
+                        }}
+                      >
+                        Đăng Lô Hàng
+                      </Button>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Button
+                        component={Link}
+                        href="/shipper/wallet/overview"
+                        variant="outlined"
+                        fullWidth
+                        startIcon={<AccountBalanceWalletIcon />}
+                        sx={{
+                          flexDirection: "column",
+                          gap: 1,
+                          py: 2,
+                          borderRadius: "16px",
+                          borderColor: "rgba(27,73,101,0.15)",
+                          color: "#1B4965",
+                          "& .MuiButton-startIcon": { m: 0 },
+                          fontSize: "0.8rem",
+                          fontWeight: "bold",
+                          "&:hover": {
+                            borderColor: "#1B4965",
+                            bgcolor: "rgba(27,73,101,0.02)",
+                          },
+                        }}
+                      >
+                        Quản Lý Ví
+                      </Button>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Button
+                        component={Link}
+                        href="/shipper/fleet/routes"
+                        variant="outlined"
+                        fullWidth
+                        startIcon={<RouteIcon />}
+                        sx={{
+                          flexDirection: "column",
+                          gap: 1,
+                          py: 2,
+                          borderRadius: "16px",
+                          borderColor: "rgba(27,73,101,0.15)",
+                          color: "#1B4965",
+                          "& .MuiButton-startIcon": { m: 0 },
+                          fontSize: "0.8rem",
+                          fontWeight: "bold",
+                          "&:hover": {
+                            borderColor: "#1B4965",
+                            bgcolor: "rgba(27,73,101,0.02)",
+                          },
+                        }}
+                      >
+                        Kho Bãi
+                      </Button>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Button
+                        component={Link}
+                        href="/shipper/settings"
+                        variant="outlined"
+                        fullWidth
+                        startIcon={<SettingsIcon />}
+                        sx={{
+                          flexDirection: "column",
+                          gap: 1,
+                          py: 2,
+                          borderRadius: "16px",
+                          borderColor: "rgba(27,73,101,0.15)",
+                          color: "#1B4965",
+                          "& .MuiButton-startIcon": { m: 0 },
+                          fontSize: "0.8rem",
+                          fontWeight: "bold",
+                          "&:hover": {
+                            borderColor: "#1B4965",
+                            bgcolor: "rgba(27,73,101,0.02)",
+                          },
+                        }}
+                      >
+                        Cấu Hình
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+
+            </Box>
+          </Grid>
+        </Grid>
+      </Box>
     </Box>
   );
 }
