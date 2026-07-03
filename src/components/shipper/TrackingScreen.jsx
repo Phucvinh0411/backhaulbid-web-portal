@@ -31,7 +31,6 @@ import CloseIcon from "@mui/icons-material/Close";
 import DescriptionIcon from "@mui/icons-material/DescriptionOutlined";
 import StarIcon from "@mui/icons-material/Star";
 import MapIcon from "@mui/icons-material/MapOutlined";
-import CompassIcon from "@mui/icons-material/ExploreOutlined";
 import PhoneIcon from "@mui/icons-material/PhoneInTalkOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
@@ -168,42 +167,31 @@ export default function TrackingScreen() {
               boxShadow: "0 8px 32px 0 rgba(27, 73, 101, 0.02)",
             }}
           >
-            <CardContent className="!p-0 relative">
               {/* Map Header Overlay */}
               <Box className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-slate-100/50 shadow-sm flex items-center gap-2">
-                <CompassIcon className="text-[#1B4965] animate-spin-slow" />
+                <MapIcon className="text-[#1B4965]" />
                 <div>
-                  <Typography className="!text-[0.68rem] text-slate-400 font-bold uppercase tracking-wider leading-none">GPS Telemetry</Typography>
+                  <Typography className="!text-[0.68rem] text-slate-400 font-bold uppercase tracking-wider leading-none">Bản đồ tuyến đường</Typography>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <Typography variant="body2" className="!font-bold text-[#1B4965] leading-none">Hoạt động</Typography>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10B981] animate-pulse" />
+                    <Typography variant="body2" className="!font-bold text-[#1B4965] leading-none">Bình Dương → Cần Thơ</Typography>
                   </div>
                 </div>
               </Box>
 
               {/* Leaflet Map Integration */}
               <Box className="h-[400px] w-full relative z-0">
-                <Map routePoints={ROUTE_POINTS} currentPos={CURRENT_POS} />
+                <Map routePoints={ROUTE_POINTS} />
               </Box>
 
-              {/* Floating telemetry metrics panel overlay */}
+              {/* Floating route info panel overlay */}
               <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-100/50 shadow-lg flex items-center justify-between text-xs transition-all z-10">
                 <div className="space-y-1">
-                  <Typography className="!text-[0.65rem] text-slate-400 font-bold uppercase tracking-wider">Vị trí hiện tại (GPS)</Typography>
+                  <Typography className="!text-[0.65rem] text-slate-400 font-bold uppercase tracking-wider">Hành trình chi tiết</Typography>
                   <Typography variant="body2" className="!font-bold text-slate-700 leading-tight">
-                    {SHIPMENT_TRACKING_INFO.currentRoad}
+                    Từ: {SHIPMENT_TRACKING_INFO.from} → Đến: {SHIPMENT_TRACKING_INFO.to}
                   </Typography>
                 </div>
-                <div className="flex items-center gap-2 shrink-0 pl-4 border-l border-slate-100">
-                  <div className="text-right">
-                    <Typography className="!text-[0.6rem] text-slate-400 font-bold uppercase">Vận tốc</Typography>
-                    <Typography variant="caption" className="!font-black text-[#1B4965] font-mono block">
-                      {SHIPMENT_TRACKING_INFO.speed}
-                    </Typography>
-                  </div>
-                </div>
               </div>
-            </CardContent>
           </Card>
 
           {/* Acceptance, Proof of Delivery and Disbursement */}

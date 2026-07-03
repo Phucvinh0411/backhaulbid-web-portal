@@ -413,7 +413,7 @@ export default function DashboardScreen() {
                           </Box>
                           <Button
                             component={Link}
-                            href="/shipper/bidding/history"
+                            href={`/shipper/bidding/history?id=${auction.id}`}
                             variant="contained"
                             size="small"
                             sx={{

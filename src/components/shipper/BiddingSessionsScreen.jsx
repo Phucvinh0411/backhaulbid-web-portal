@@ -397,7 +397,7 @@ export default function BiddingSessionsScreen() {
               <BiddingItem
                 shipment={shipment}
                 onCancel={handleOpenCancelDialog}
-                onViewDetail={(id) => router.push("/shipper/bidding/history")}
+                onViewDetail={(id) => router.push(`/shipper/bidding/history?id=${id}`)}
               />
             </Grid>
           ))}
