@@ -392,6 +392,38 @@ export default function AuctionDetailScreen({ id }) {
   const shipment = AUCTION_SHIPMENTS_MAP[id] || AUCTION_SHIPMENTS_MAP["LH-2026-9041"];
   const [bids, setBids] = useState([]);
 
+  const [columns, setColumns] = useState([
+    { id: "carrierName", label: "Nhà xe", align: "left" },
+    { id: "rating", label: "Đánh giá tín nhiệm", align: "center" },
+    { id: "bidAmount", label: "Giá thầu đề xuất", align: "right" },
+    { id: "time", label: "Thời điểm đặt", align: "right" },
+    { id: "status", label: "Trạng thái", align: "center" },
+  ]);
+
+  const [draggedIdx, setDraggedIdx] = useState(null);
+
+  const handleDragStart = (e, index) => {
+    setDraggedIdx(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e, overIndex) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === overIndex) return;
+
+    const updatedCols = [...columns];
+    const draggedCol = updatedCols[draggedIdx];
+    updatedCols.splice(draggedIdx, 1);
+    updatedCols.splice(overIndex, 0, draggedCol);
+
+    setDraggedIdx(overIndex);
+    setColumns(updatedCols);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIdx(null);
+  };
+
   useEffect(() => {
     if (shipment) {
       setBids(shipment.bids || []);
@@ -760,17 +792,28 @@ export default function AuctionDetailScreen({ id }) {
           <Table sx={{ minWidth: 650 }}>
             <TableHead className="bg-slate-50/50">
               <TableRow>
-                <TableCell className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Nhà xe</TableCell>
-                <TableCell align="center" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Đánh giá tín nhiệm</TableCell>
-                <TableCell align="right" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Giá thầu đề xuất</TableCell>
-                <TableCell align="right" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Thời điểm đặt</TableCell>
-                <TableCell align="center" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Trạng thái</TableCell>
+                {columns.map((col, idx) => (
+                  <TableCell
+                    key={col.id}
+                    align={col.align}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragOver={(e) => handleDragOver(e, idx)}
+                    onDragEnd={handleDragEnd}
+                    className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 cursor-grab active:cursor-grabbing hover:bg-slate-100/80 transition-colors select-none"
+                  >
+                    <Box className="flex items-center gap-1 justify-inherit">
+                      <span>{col.label}</span>
+                      <span className="text-[0.65rem] text-slate-300 font-normal">⋮⋮</span>
+                    </Box>
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
               {bids.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" className="!py-12 !border-none">
+                  <TableCell colSpan={columns.length} align="center" className="!py-12 !border-none">
                     <Typography variant="body2" className="text-slate-400 font-medium">
                       Chưa có nhà xe nào báo giá cho lô hàng này.
                     </Typography>
@@ -786,58 +829,73 @@ export default function AuctionDetailScreen({ id }) {
                         : "hover:bg-slate-50/50"
                     }`}
                   >
-                    {/* Carrier Name */}
-                    <TableCell className="!font-bold !text-slate-700 !border-slate-100">
-                      <div className="flex flex-col">
-                        <span>{bid.carrierName}</span>
-                        <span className="text-[0.68rem] text-slate-400 font-medium">B2B Verified Member</span>
-                      </div>
-                    </TableCell>
-
-                    {/* Rating */}
-                    <TableCell align="center" className="!border-slate-100">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <Rating
-                          name="read-only"
-                          value={bid.rating}
-                          precision={0.1}
-                          readOnly
-                          size="small"
-                          emptyIcon={<StarIcon className="text-slate-200" fontSize="inherit" />}
-                        />
-                        <span className="text-xs font-bold text-slate-600">{bid.rating}</span>
-                        <span className="text-[0.7rem] text-slate-400">({bid.ratingCount})</span>
-                      </div>
-                    </TableCell>
-
-                    {/* Bid Amount */}
-                    <TableCell
-                      align="right"
-                      className={`!font-mono !font-bold !border-slate-100 ${
-                        bid.isLowest ? "!text-emerald-600 !text-base" : "!text-slate-600"
-                      }`}
-                    >
-                      {formatCurrency(bid.bidAmount)}
-                    </TableCell>
-
-                    {/* Bid Time */}
-                    <TableCell align="right" className="!text-slate-500 !text-xs !border-slate-100">
-                      {bid.time}
-                    </TableCell>
-
-                    {/* Action or Badge */}
-                    <TableCell align="center" className="!border-slate-100">
-                      {bid.isLowest ? (
-                        <Chip
-                          label="Thấp nhất"
-                          size="small"
-                          color="success"
-                          className="!font-extrabold !text-[0.68rem] bg-emerald-500 text-white rounded-md"
-                        />
-                      ) : (
-                        <span className="text-xs text-slate-400 font-bold">-</span>
-                      )}
-                    </TableCell>
+                    {columns.map((col) => {
+                      if (col.id === "carrierName") {
+                        return (
+                          <TableCell key={col.id} className="!font-bold !text-slate-700 !border-slate-100">
+                            <div className="flex flex-col">
+                              <span>{bid.carrierName}</span>
+                              <span className="text-[0.68rem] text-slate-400 font-medium">B2B Verified Member</span>
+                            </div>
+                          </TableCell>
+                        );
+                      }
+                      if (col.id === "rating") {
+                        return (
+                          <TableCell key={col.id} align="center" className="!border-slate-100">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <Rating
+                                name="read-only"
+                                value={bid.rating}
+                                precision={0.1}
+                                readOnly
+                                size="small"
+                                emptyIcon={<StarIcon className="text-slate-200" fontSize="inherit" />}
+                              />
+                              <span className="text-xs font-bold text-slate-600">{bid.rating}</span>
+                              <span className="text-[0.7rem] text-slate-400">({bid.ratingCount})</span>
+                            </div>
+                          </TableCell>
+                        );
+                      }
+                      if (col.id === "bidAmount") {
+                        return (
+                          <TableCell
+                            key={col.id}
+                            align="right"
+                            className={`!font-mono !font-bold !border-slate-100 ${
+                              bid.isLowest ? "!text-emerald-600 !text-base" : "!text-slate-600"
+                            }`}
+                          >
+                            {formatCurrency(bid.bidAmount)}
+                          </TableCell>
+                        );
+                      }
+                      if (col.id === "time") {
+                        return (
+                          <TableCell key={col.id} align="right" className="!text-slate-500 !text-xs !border-slate-100">
+                            {bid.time}
+                          </TableCell>
+                        );
+                      }
+                      if (col.id === "status") {
+                        return (
+                          <TableCell key={col.id} align="center" className="!border-slate-100">
+                            {bid.isLowest ? (
+                              <Chip
+                                label="Thấp nhất"
+                                size="small"
+                                color="success"
+                                className="!font-extrabold !text-[0.68rem] bg-emerald-500 text-white rounded-md"
+                              />
+                            ) : (
+                              <span className="text-xs text-slate-400 font-bold">-</span>
+                            )}
+                          </TableCell>
+                        );
+                      }
+                      return null;
+                    })}
                   </TableRow>
                 ))
               )}

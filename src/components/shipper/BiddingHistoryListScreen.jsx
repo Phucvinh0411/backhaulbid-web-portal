@@ -172,6 +172,41 @@ export default function BiddingHistoryListScreen() {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  const [columns, setColumns] = useState([
+    { id: "id", label: "Mã lô hàng", align: "left" },
+    { id: "goodsType", label: "Hàng hóa & Quy cách", align: "left" },
+    { id: "route", label: "Lộ trình vận chuyển", align: "left" },
+    { id: "maxPrice", label: "Giá trần", align: "right" },
+    { id: "finalPrice", label: "Giá chốt / Thấp nhất", align: "right" },
+    { id: "bidCount", label: "Lượt thầu", align: "center" },
+    { id: "status", label: "Trạng thái", align: "center" },
+    { id: "actions", label: "Thao tác", align: "center" },
+  ]);
+
+  const [draggedIdx, setDraggedIdx] = useState(null);
+
+  const handleDragStart = (e, index) => {
+    setDraggedIdx(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e, overIndex) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === overIndex) return;
+
+    const updatedCols = [...columns];
+    const draggedCol = updatedCols[draggedIdx];
+    updatedCols.splice(draggedIdx, 1);
+    updatedCols.splice(overIndex, 0, draggedCol);
+
+    setDraggedIdx(overIndex);
+    setColumns(updatedCols);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIdx(null);
+  };
+
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
@@ -582,20 +617,28 @@ export default function BiddingHistoryListScreen() {
           <Table sx={{ minWidth: 800 }}>
             <TableHead className="bg-slate-50/50">
               <TableRow>
-                <TableCell className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Mã lô hàng</TableCell>
-                <TableCell className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Hàng hóa & Quy cách</TableCell>
-                <TableCell className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Lộ trình vận chuyển</TableCell>
-                <TableCell align="right" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Giá trần</TableCell>
-                <TableCell align="right" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Giá chốt / Thấp nhất</TableCell>
-                <TableCell align="center" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Lượt thầu</TableCell>
-                <TableCell align="center" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Trạng thái</TableCell>
-                <TableCell align="center" className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">Thao tác</TableCell>
+                {columns.map((col, idx) => (
+                  <TableCell
+                    key={col.id}
+                    align={col.align}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragOver={(e) => handleDragOver(e, idx)}
+                    onDragEnd={handleDragEnd}
+                    className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 cursor-grab active:cursor-grabbing hover:bg-slate-100/80 transition-colors select-none"
+                  >
+                    <Box className="flex items-center gap-1 justify-inherit">
+                      <span>{col.label}</span>
+                      <span className="text-[0.65rem] text-slate-300 font-normal">⋮⋮</span>
+                    </Box>
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
               {paginatedShipments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" className="!py-16 !border-slate-100">
+                  <TableCell colSpan={columns.length} align="center" className="!py-16 !border-slate-100">
                     <Typography variant="body2" className="text-slate-400 font-medium">
                       Không tìm thấy phiên đấu giá nào phù hợp với bộ lọc hiện tại.
                     </Typography>
@@ -608,116 +651,137 @@ export default function BiddingHistoryListScreen() {
                   
                   return (
                     <TableRow key={shipment.id} className="hover:bg-slate-50/30 transition-colors">
-                      {/* Shipment Code */}
-                      <TableCell className="!font-mono !font-bold !text-[#1B4965] !border-slate-100">
-                        <Link href={`/shipper/bidding/history?id=${shipment.id}`} className="hover:underline">
-                          {shipment.id}
-                        </Link>
-                      </TableCell>
-
-                      {/* Goods Spec */}
-                      <TableCell className="!border-slate-100">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-700 text-xs sm:text-sm">{shipment.goodsType}</span>
-                          <span className="text-[0.7rem] text-slate-400 font-bold mt-0.5">
-                            {shipment.weight} • {shipment.volume}
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      {/* Route Info */}
-                      <TableCell className="!border-slate-100">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-800 text-xs">
-                            {shipment.from.province} → {shipment.to.province}
-                          </span>
-                          <Tooltip title={`Từ: ${shipment.from.detail} | Đến: ${shipment.to.detail}`} arrow>
-                            <span className="text-[0.68rem] text-slate-400 truncate max-w-[180px] font-medium block mt-0.5 cursor-help">
-                              {shipment.from.detail}
-                            </span>
-                          </Tooltip>
-                        </div>
-                      </TableCell>
-
-                      {/* Max Price */}
-                      <TableCell align="right" className="!font-mono !text-slate-500 !text-xs !border-slate-100">
-                        {formatCurrency(shipment.maxPrice)}
-                      </TableCell>
-
-                      {/* Lowest Bid / Final Price */}
-                      <TableCell 
-                        align="right" 
-                        className={`!font-mono !font-bold !border-slate-100 ${
-                          shipment.status === "completed" || shipment.status === "shipping" || shipment.status === "awarded"
-                            ? "!text-emerald-600"
-                            : "!text-slate-700"
-                        }`}
-                      >
-                        {finalPriceToShow > 0 ? formatCurrency(finalPriceToShow) : "Chưa có"}
-                      </TableCell>
-
-                      {/* Bid Count */}
-                      <TableCell align="center" className="!border-slate-100">
-                        <Chip
-                          label={`${shipment.bidCount} thầu`}
-                          size="small"
-                          className={`!font-bold !text-[0.7rem] ${
-                            shipment.bidCount > 0
-                              ? "bg-blue-50 text-blue-600 border border-blue-100"
-                              : "bg-slate-100 text-slate-400"
-                          }`}
-                        />
-                      </TableCell>
-
-                      {/* Status Badge */}
-                      <TableCell align="center" className="!border-slate-100">
-                        <Chip
-                          label={statusInfo.label}
-                          size="small"
-                          color={statusInfo.color}
-                          className="!font-extrabold !text-[0.68rem] rounded-md px-1.5"
-                        />
-                      </TableCell>
-
-                      {/* Actions */}
-                      <TableCell align="center" className="!border-slate-100">
-                        <div className="flex justify-center items-center gap-1.5">
-                          <Tooltip title="Xem thầu & Chi tiết">
-                            <IconButton
-                              component={Link}
-                              href={`/shipper/bidding/history?id=${shipment.id}`}
-                              size="small"
-                              className="text-[#1B4965] hover:bg-[#1B4965]/5 bg-slate-50"
+                      {columns.map((col) => {
+                        if (col.id === "id") {
+                          return (
+                            <TableCell key={col.id} className="!font-mono !font-bold !text-[#1B4965] !border-slate-100">
+                              <Link href={`/shipper/bidding/history?id=${shipment.id}`} className="hover:underline">
+                                {shipment.id}
+                              </Link>
+                            </TableCell>
+                          );
+                        }
+                        if (col.id === "goodsType") {
+                          return (
+                            <TableCell key={col.id} className="!border-slate-100">
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-700 text-xs sm:text-sm">{shipment.goodsType}</span>
+                                <span className="text-[0.7rem] text-slate-400 font-bold mt-0.5">
+                                  {shipment.weight} • {shipment.volume}
+                                </span>
+                              </div>
+                            </TableCell>
+                          );
+                        }
+                        if (col.id === "route") {
+                          return (
+                            <TableCell key={col.id} className="!border-slate-100">
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-800 text-xs">
+                                  {shipment.from.province} → {shipment.to.province}
+                                </span>
+                                <Tooltip title={`Từ: ${shipment.from.detail} | Đến: ${shipment.to.detail}`} arrow>
+                                  <span className="text-[0.68rem] text-slate-400 truncate max-w-[180px] font-medium block mt-0.5 cursor-help">
+                                    {shipment.from.detail}
+                                  </span>
+                                </Tooltip>
+                              </div>
+                            </TableCell>
+                          );
+                        }
+                        if (col.id === "maxPrice") {
+                          return (
+                            <TableCell key={col.id} align="right" className="!font-mono !text-slate-500 !text-xs !border-slate-100">
+                              {formatCurrency(shipment.maxPrice)}
+                            </TableCell>
+                          );
+                        }
+                        if (col.id === "finalPrice") {
+                          return (
+                            <TableCell 
+                              key={col.id}
+                              align="right" 
+                              className={`!font-mono !font-bold !border-slate-100 ${
+                                shipment.status === "completed" || shipment.status === "shipping" || shipment.status === "awarded"
+                                  ? "!text-emerald-600"
+                                  : "!text-slate-700"
+                              }`}
                             >
-                              <VisibilityIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-
-                          {shipment.status === "shipping" && (
-                            <Tooltip title="Định vị hành trình">
-                              <IconButton
+                              {finalPriceToShow > 0 ? formatCurrency(finalPriceToShow) : "Chưa có"}
+                            </TableCell>
+                          );
+                        }
+                        if (col.id === "bidCount") {
+                          return (
+                            <TableCell key={col.id} align="center" className="!border-slate-100">
+                              <Chip
+                                label={`${shipment.bidCount} thầu`}
                                 size="small"
-                                className="text-cyan-600 hover:bg-cyan-50 bg-slate-50"
-                                onClick={() => router.push(`/shipper/tracking?id=${shipment.id}`)}
-                              >
-                                <LocalShippingIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-
-                          {(shipment.status === "awarded" || shipment.status === "shipping" || shipment.status === "completed") && (
-                            <Tooltip title="Xem hợp đồng">
-                              <IconButton
+                                className={`!font-bold !text-[0.7rem] ${
+                                  shipment.bidCount > 0
+                                    ? "bg-blue-50 text-blue-600 border border-blue-100"
+                                    : "bg-slate-100 text-slate-400"
+                                }`}
+                              />
+                            </TableCell>
+                          );
+                        }
+                        if (col.id === "status") {
+                          return (
+                            <TableCell key={col.id} align="center" className="!border-slate-100">
+                              <Chip
+                                label={statusInfo.label}
                                 size="small"
-                                className="text-blue-600 hover:bg-blue-50 bg-slate-50"
-                                onClick={() => router.push(`/shipper/contracts/active`)}
-                              >
-                                <DescriptionIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                        </div>
-                      </TableCell>
+                                color={statusInfo.color}
+                                className="!font-extrabold !text-[0.68rem] rounded-md px-1.5"
+                              />
+                            </TableCell>
+                          );
+                        }
+                        if (col.id === "actions") {
+                          return (
+                            <TableCell key={col.id} align="center" className="!border-slate-100">
+                              <div className="flex justify-center items-center gap-1.5">
+                                <Tooltip title="Xem thầu & Chi tiết">
+                                  <IconButton
+                                    component={Link}
+                                    href={`/shipper/bidding/history?id=${shipment.id}`}
+                                    size="small"
+                                    className="text-[#1B4965] hover:bg-[#1B4965]/5 bg-slate-50"
+                                  >
+                                    <VisibilityIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+
+                                {shipment.status === "shipping" && (
+                                  <Tooltip title="Định vị hành trình">
+                                    <IconButton
+                                      size="small"
+                                      className="text-cyan-600 hover:bg-cyan-50 bg-slate-50"
+                                      onClick={() => router.push(`/shipper/tracking?id=${shipment.id}`)}
+                                    >
+                                      <LocalShippingIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                )}
+
+                                {(shipment.status === "awarded" || shipment.status === "shipping" || shipment.status === "completed") && (
+                                  <Tooltip title="Xem hợp đồng">
+                                    <IconButton
+                                      size="small"
+                                      className="text-blue-600 hover:bg-blue-50 bg-slate-50"
+                                      onClick={() => router.push(`/shipper/contracts/active`)}
+                                    >
+                                      <DescriptionIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                )}
+                              </div>
+                            </TableCell>
+                          );
+                        }
+                        return null;
+                      })}
                     </TableRow>
                   );
                 })
