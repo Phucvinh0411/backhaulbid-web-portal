@@ -256,7 +256,7 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
         title="Tài Khoản & Thiết Lập"
         subtitle="Quản lý thông tin doanh nghiệp, số dư ví ký quỹ giao dịch và sổ địa chỉ giao nhận."
         breadcrumbs={[
-          { label: "Trang chủ", path: "/dashboard" },
+          { label: "Trang chủ", path: "/shipper/dashboard" },
           { label: "Thiết lập tài khoản" },
         ]}
       />

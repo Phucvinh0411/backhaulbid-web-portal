@@ -1,12 +1,11 @@
 import { DashboardLayout } from "@/components/layout";
-import adminNavigation from "@/configs/adminNavigation";
 
 export const metadata = {
   title: "Admin | BackHaulBid",
 };
 
 const adminUser = {
-  name: "Admin User",
+  name: "Quản trị viên",
   email: "admin@backhaulbid.vn",
   avatar: "A",
   role: "Quản trị viên",

@@ -35,7 +35,7 @@
 
 /* ---- Google Inter Font ---- */
 body {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background-color: var(--color-background);
   color: var(--color-text-primary);
   margin: 0;

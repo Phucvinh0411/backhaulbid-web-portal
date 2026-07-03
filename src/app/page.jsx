@@ -10,9 +10,13 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const role = localStorage.getItem("userRole");
+      const role = window.localStorage.getItem("userRole");
       if (role) {
-        router.replace(`/${role}/dashboard`);
+        if (role === "admin") {
+          router.replace("/admin");
+        } else {
+          router.replace(`/${role}/dashboard`);
+        }
       } else {
         setIsRedirecting(false);
       }

@@ -6,17 +6,17 @@ import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import CardActions from "@mui/material/CardActions";
 import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
 import Link from "next/link";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogActions from "@mui/material/DialogActions";
 import { 
-  LocalShipping as LocalShippingIcon,
-  CalendarToday as CalendarTodayIcon,
   ArrowForward as ArrowForwardIcon,
   CheckCircleOutline as CheckCircleOutlineIcon,
   CancelOutlined as CancelOutlinedIcon,
@@ -30,8 +30,10 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { PageHeader, ViewModeToggle, DetailDrawer, DetailRow } from "@/components/common";
+import CarrierBiddingItem from "@/components/carrier/CarrierBiddingItem";
+import { useRouter } from "next/navigation";
 
-const myRegisteredAuctions = [
+const initialAuctions = [
   {
     id: "BID-2454",
     origin: "Đà Nẵng",
@@ -86,14 +88,39 @@ const myRegisteredAuctions = [
 ];
 
 export default function MyAuctionsPage() {
+  const router = useRouter();
+  const [auctions, setAuctions] = useState(initialAuctions);
   const [filter, setFilter] = useState("ALL");
   const [viewMode, setViewMode] = useState("CARD");
+  
   const [openDetailDrawer, setOpenDetailDrawer] = useState(false);
   const [selectedAuction, setSelectedAuction] = useState(null);
+
+  // Modal Cancel State
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [auctionToCancel, setAuctionToCancel] = useState(null);
 
   const handleOpenDetails = (auction) => {
     setSelectedAuction(auction);
     setOpenDetailDrawer(true);
+  };
+
+  const handleCancelRequest = (auction) => {
+    setAuctionToCancel(auction);
+    setCancelModalOpen(true);
+  };
+
+  const handleConfirmCancel = () => {
+    if (auctionToCancel) {
+      // For demonstration, remove it from list
+      setAuctions(auctions.filter((a) => a.id !== auctionToCancel.id));
+    }
+    setCancelModalOpen(false);
+    setAuctionToCancel(null);
+  };
+
+  const handleEnterRoom = (id) => {
+    router.push(`/carrier/auctions/${id}`);
   };
 
   const getStatusChip = (status, isWinner) => {
@@ -112,10 +139,10 @@ export default function MyAuctionsPage() {
     }
   };
 
-  const filteredAuctions = myRegisteredAuctions.filter(a => {
-    if (filter === "ACTIVE") return a.status !== 'CLOSED';
-    if (filter === "WON") return a.status === 'CLOSED' && a.isWinner;
-    if (filter === "LOST") return a.status === 'CLOSED' && !a.isWinner;
+  const filteredAuctions = auctions.filter(a => {
+    if (filter === "BIDDING") return a.status === 'BIDDING';
+    if (filter === "OPEN_REGISTER") return a.status === 'OPEN_REGISTER';
+    if (filter === "CLOSED") return a.status === 'CLOSED';
     return true; // ALL
   });
 
@@ -125,7 +152,7 @@ export default function MyAuctionsPage() {
         title="Phiên đấu giá của tôi" 
         subtitle="Quản lý và xem lịch sử các chuyến hàng bạn đã tham gia đấu giá"
         breadcrumbs={[
-          { label: "Trang chủ", path: "/carrier" },
+          { label: "Trang chủ", path: "/carrier/dashboard" },
           { label: "Vận hành", path: "#" },
           { label: "Phiên đấu giá của tôi", path: "#" }
         ]}
@@ -164,88 +191,12 @@ export default function MyAuctionsPage() {
         <Grid container spacing={3}>
           {filteredAuctions.map((a) => (
             <Grid item xs={12} sm={6} md={4} key={a.id}>
-              <Card variant="outlined" className="hover:shadow-md transition-shadow rounded-2xl h-full flex flex-col border-slate-200">
-                <CardContent className="flex-1">
-                  <Box className="flex justify-between items-start mb-3">
-                    <Typography variant="h6" className="font-mono font-bold text-[#1B4965] text-lg">{a.id}</Typography>
-                    {getStatusChip(a.status, a.isWinner)}
-                  </Box>
-                  
-                  <Box className="flex items-center gap-2 mb-4">
-                    <Typography variant="body1" className="font-bold text-slate-800">{a.origin}</Typography>
-                    <ArrowForwardIcon fontSize="small" className="text-slate-400" />
-                    <Typography variant="body1" className="font-bold text-slate-800">{a.destination}</Typography>
-                  </Box>
-                  
-                  <Divider className="mb-4" />
-                  
-                  <Box className="space-y-2 mb-4">
-                    <Box className="flex justify-between">
-                      <Typography variant="body2" className="text-slate-500">Hàng hóa:</Typography>
-                      <Typography variant="body2" className="font-semibold text-slate-800">{a.cargoType} ({a.weight})</Typography>
-                    </Box>
-                    <Box className="flex justify-between items-center">
-                      <Typography variant="body2" className="text-slate-500">Thời gian bốc:</Typography>
-                      <Box className="flex items-center gap-1">
-                        <CalendarTodayIcon sx={{ fontSize: 14, color: "#94A3B8" }} />
-                        <Typography variant="body2" className="font-semibold text-slate-800">{a.pickupTime}</Typography>
-                      </Box>
-                    </Box>
-                    <Box className="flex justify-between">
-                      <Typography variant="body2" className="text-slate-500">Xe đăng ký:</Typography>
-                      <Typography variant="body2" className="font-semibold text-[#1B4965] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{a.registeredVehicle}</Typography>
-                    </Box>
-                  </Box>
-                  
-                  <Box className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <Box className="flex justify-between mb-1">
-                      <Typography variant="caption" className="text-slate-500">Giá khởi điểm:</Typography>
-                      <Typography variant="caption" className="font-medium text-slate-700">{a.basePrice}</Typography>
-                    </Box>
-                    {a.status === "BIDDING" && (
-                      <Box className="flex justify-between">
-                        <Typography variant="body2" className="font-bold text-[#1B4965]">Giá thấp nhất hiện tại:</Typography>
-                        <Typography variant="body2" className="font-bold text-emerald-600">{a.currentLowestBid}</Typography>
-                      </Box>
-                    )}
-                    {a.status === "CLOSED" && (
-                      <>
-                        <Box className="flex justify-between mb-1">
-                          <Typography variant="caption" className="text-slate-500">Giá thắng thầu:</Typography>
-                          <Typography variant="caption" className="font-medium text-slate-700">{a.winningBid}</Typography>
-                        </Box>
-                        <Box className="flex justify-between">
-                          <Typography variant="body2" className="font-bold text-[#1B4965]">Giá chốt của bạn:</Typography>
-                          <Typography variant="body2" className={`font-bold ${a.isWinner ? 'text-emerald-600' : 'text-slate-500'}`}>{a.myFinalBid}</Typography>
-                        </Box>
-                      </>
-                    )}
-                  </Box>
-                </CardContent>
-                <CardActions className="p-4 pt-0 border-t border-slate-100">
-                  {a.status === "BIDDING" ? (
-                    <Button 
-                      fullWidth 
-                      variant="contained"
-                      color="primary"
-                      component={Link} 
-                      href={`/carrier/auctions/${a.id}`}
-                      sx={{ backgroundColor: "#1B4965" }}
-                    >
-                      Vào phòng đấu giá
-                    </Button>
-                  ) : (
-                    <Button 
-                      fullWidth 
-                      variant="outlined"
-                      color="inherit"
-                      onClick={() => handleOpenDetails(a)}
-                    >
-                      Xem chi tiết
-                    </Button>
-                  )}
-                </CardActions>
-              </Card>
+              <CarrierBiddingItem 
+                auction={a} 
+                onCancel={handleCancelRequest}
+                onViewDetail={handleOpenDetails}
+                onEnterRoom={handleEnterRoom}
+              />
             </Grid>
           ))}
         </Grid>
@@ -294,22 +245,34 @@ export default function MyAuctionsPage() {
                         size="small" 
                         variant="contained"
                         color="primary"
-                        component={Link} 
-                        href={`/carrier/auctions/${a.id}`}
-                        sx={{ borderRadius: "6px" }}
+                        onClick={() => handleEnterRoom(a.id)}
+                        sx={{ borderRadius: "6px", ml: 1 }}
                       >
                         Vào phòng
                       </Button>
                     ) : (
-                      <Button 
-                        size="small" 
-                        variant="outlined"
-                        color="inherit"
-                        onClick={() => handleOpenDetails(a)}
-                        sx={{ borderRadius: "6px" }}
-                      >
-                        Xem chi tiết
-                      </Button>
+                      <>
+                        <Button 
+                          size="small" 
+                          variant="outlined"
+                          color="inherit"
+                          onClick={() => handleOpenDetails(a)}
+                          sx={{ borderRadius: "6px" }}
+                        >
+                          Xem chi tiết
+                        </Button>
+                        {a.status === "OPEN_REGISTER" && (
+                          <Button 
+                            size="small" 
+                            variant="outlined"
+                            color="error"
+                            onClick={() => handleCancelRequest(a)}
+                            sx={{ borderRadius: "6px", ml: 1 }}
+                          >
+                            Hủy
+                          </Button>
+                        )}
+                      </>
                     )}
                   </TableCell>
                 </TableRow>
@@ -354,8 +317,7 @@ export default function MyAuctionsPage() {
               <Button 
                 variant="contained" 
                 fullWidth
-                component={Link}
-                href={`/carrier/auctions/${selectedAuction.id}`}
+                onClick={() => handleEnterRoom(selectedAuction.id)}
                 sx={{ borderRadius: "8px", bgcolor: "#1B4965", "&:hover": { bgcolor: "#0d2b3e" }, mt: 2 }}
               >
                 Vào phòng đấu giá
@@ -364,6 +326,34 @@ export default function MyAuctionsPage() {
           </Box>
         )}
       </DetailDrawer>
+
+      {/* Confirmation Modal for Cancellation */}
+      <Dialog
+        open={cancelModalOpen}
+        onClose={() => setCancelModalOpen(false)}
+        aria-labelledby="cancel-dialog-title"
+        aria-describedby="cancel-dialog-description"
+        PaperProps={{
+          sx: { borderRadius: "16px", padding: 1 }
+        }}
+      >
+        <DialogTitle id="cancel-dialog-title" className="text-slate-800 font-bold">
+          Xác nhận hủy đăng ký
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="cancel-dialog-description" className="text-slate-600">
+            Bạn có chắc chắn muốn hủy đăng ký tham gia phiên đấu giá <strong>{auctionToCancel?.id}</strong> không? Hành động này không thể hoàn tác.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCancelModalOpen(false)} sx={{ color: "#64748B", fontWeight: 600 }}>
+            Quay lại
+          </Button>
+          <Button onClick={handleConfirmCancel} variant="contained" color="error" sx={{ fontWeight: 600, borderRadius: "8px" }} autoFocus>
+            Đồng ý hủy
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

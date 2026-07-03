@@ -205,7 +205,7 @@ export default function DashboardScreen() {
   const [shipments, setShipments] = useState(INITIAL_SHIPMENTS);
   const [activeTab, setActiveTab] = useState(0); // 0: Tất cả, 1: Chờ đấu giá, 2: Đang đấu giá, 3: Đã chốt, 4: Đang vận chuyển, 5: Hoàn thành, 6: Đã hủy
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // States for Cancel Dialog
   const [openCancelDialog, setOpenCancelDialog] = useState(false);
   const [selectedShipmentId, setSelectedShipmentId] = useState(null);
@@ -262,10 +262,10 @@ export default function DashboardScreen() {
       prev.map((item) =>
         item.id === selectedShipmentId
           ? {
-              ...item,
-              status: "cancelled",
-              cancelReason: cancelReasonNote ? `${cancelReasonType}: ${cancelReasonNote}` : cancelReasonType,
-            }
+            ...item,
+            status: "cancelled",
+            cancelReason: cancelReasonNote ? `${cancelReasonType}: ${cancelReasonNote}` : cancelReasonType,
+          }
           : item
       )
     );

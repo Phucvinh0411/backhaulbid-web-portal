@@ -111,7 +111,7 @@ export default function LiveBiddingRoom({ params }) {
       <PageHeader 
         title="Theo dõi phiên đấu giá"
         breadcrumbs={[
-          { label: "Trang chủ", path: "/carrier" },
+          { label: "Trang chủ", path: "/carrier/dashboard" },
           { label: "Vận hành", path: "#" },
           { label: "Đấu giá", path: "/carrier/auctions" },
           { label: id, path: "#" }

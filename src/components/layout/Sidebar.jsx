@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
@@ -19,37 +19,98 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import LocalShippingTwoToneIcon from "@mui/icons-material/LocalShippingTwoTone";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import SettingsTwoToneIcon from "@mui/icons-material/SettingsTwoTone";
-import { navigationByRole } from "@/configs/navigation";
 
 const SIDEBAR_WIDTH = 280;
 
+const fallbackProfiles = {
+  shipper: {
+    name: "Nguyễn Minh Triết",
+    email: "shipper@backhaulbid.vn",
+    roleName: "Chủ hàng",
+    avatarLetter: "T",
+    settingsPath: "/shipper/settings",
+  },
+  carrier: {
+    name: "Trần Văn Bình",
+    email: "carrier@backhaulbid.vn",
+    roleName: "Nhà xe",
+    avatarLetter: "B",
+    settingsPath: "/carrier/settings",
+  },
+  admin: {
+    name: "Quản trị viên",
+    email: "admin@backhaulbid.vn",
+    roleName: "Quản trị viên",
+    avatarLetter: "A",
+    settingsPath: "/admin/settings",
+  },
+};
+
 export default function Sidebar({ open, onClose, variant = "permanent", navigation = [], userInfo }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [openMenus, setOpenMenus] = useState({});
 
-  // Auto-expand menu groups when pathname matches any sub-item
   useEffect(() => {
+    const nextOpenMenus = {};
     navigation.forEach((group) => {
       group.items.forEach((item) => {
-        if (item.children && item.children.some((child) => pathname === child.path)) {
-          setOpenMenus((prev) => ({ ...prev, [item.path]: true }));
+        if (item.children?.some((child) => pathname === child.path || pathname.startsWith(`${child.path}/`))) {
+          nextOpenMenus[item.path] = true;
         }
       });
     });
+    setOpenMenus((prev) => ({ ...prev, ...nextOpenMenus }));
   }, [pathname, navigation]);
 
   const handleToggle = (path) => {
     setOpenMenus((prev) => ({ ...prev, [path]: !prev[path] }));
   };
 
-  const isActive = (path) => pathname === path || pathname.startsWith(path + "/");
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("userRole");
+      router.push("/login");
+    }
+  };
+
+  const isRootSectionPath = (path) => path.split("/").filter(Boolean).length === 1;
+  const isActivePath = (path, exact) => {
+    if (exact || isRootSectionPath(path)) {
+      return pathname === path;
+    }
+    return pathname === path || pathname.startsWith(`${path}/`);
+  };
+  const isItemActive = (item) => isActivePath(item.path, item.exact) || item.children?.some((child) => isActivePath(child.path, child.exact));
+
+  const userRole = pathname.includes("/admin") ? "admin" : pathname.includes("/carrier") ? "carrier" : "shipper";
+  const fallback = fallbackProfiles[userRole] || fallbackProfiles.shipper;
+  const profile = userInfo
+    ? {
+        name: userInfo.name,
+        email: userInfo.email,
+        roleName: userInfo.role,
+        avatarLetter: userInfo.avatar,
+        settingsPath: userInfo.settingsPath || fallback.settingsPath,
+      }
+    : fallback;
 
   const drawerContent = (
     <Box className="flex flex-col h-full bg-white/80 backdrop-blur-xl border border-white/50 shadow-[0_8px_32px_0_rgba(27,73,101,0.05)] rounded-3xl p-4">
-      {/* Brand Header */}
-      <Box className="flex items-center gap-3.5 px-3 py-4 mb-4">
+      <Box 
+        component={Link} 
+        href={(() => {
+          const segments = pathname.split("/").filter(Boolean);
+          const currentRole = segments[0];
+          if (currentRole === "admin") return "/admin";
+          if (currentRole === "shipper") return "/shipper/dashboard";
+          if (currentRole === "carrier") return "/carrier/dashboard";
+          return "/";
+        })()}
+        className="flex items-center gap-3.5 px-3 py-4 mb-4 cursor-pointer no-underline group"
+      >
         <Box
-          className="flex items-center justify-center w-11 h-11 rounded-2xl shadow-lg transition-all duration-300 hover:rotate-6 hover:scale-105"
+          className="flex items-center justify-center w-11 h-11 rounded-2xl shadow-lg transition-all duration-300 group-hover:rotate-6 group-hover:scale-105"
           style={{
             background: "linear-gradient(135deg, #1B4965 0%, #62B6CB 100%)",
             boxShadow: "0 8px 20px rgba(27, 73, 101, 0.25)",
@@ -58,7 +119,7 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
           <LocalShippingTwoToneIcon sx={{ color: "#fff", fontSize: 24 }} />
         </Box>
         <Box>
-          <Typography variant="h6" className="!text-[1.05rem] !font-black !leading-tight text-slate-800 tracking-tight">
+          <Typography variant="h6" className="!text-[1.05rem] !font-black !leading-tight text-slate-800 tracking-tight transition-colors group-hover:text-[#1B4965]">
             BackHaulBid
           </Typography>
           <Typography variant="caption" className="!text-[0.7rem] text-cyan-600 !font-bold tracking-widest uppercase">
@@ -67,10 +128,9 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
         </Box>
       </Box>
 
-      {/* Navigation List */}
       <Box className="flex-1 overflow-y-auto pr-1 -mr-2 sidebar-scroll">
-        {navigation.map((group, groupIdx) => (
-          <Box key={groupIdx} className="mb-6">
+        {navigation.map((group) => (
+          <Box key={group.title} className="mb-6">
             <Typography
               variant="overline"
               className="!text-xs !font-bold text-slate-400 !tracking-wider px-4.5 py-1.5 block !normal-case"
@@ -81,8 +141,8 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
             <List disablePadding className="space-y-1">
               {group.items.map((item) => {
                 const Icon = item.icon;
-                const active = isActive(item.path);
-                const hasChildren = item.children && item.children.length > 0;
+                const active = Boolean(isItemActive(item));
+                const hasChildren = Boolean(item.children?.length);
                 const isOpen = openMenus[item.path];
 
                 return (
@@ -90,7 +150,7 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
                     <ListItemButton
                       component={hasChildren ? "div" : Link}
                       href={hasChildren ? undefined : item.path}
-                      onClick={hasChildren ? () => handleToggle(item.path) : undefined}
+                      onClick={hasChildren ? () => handleToggle(item.path) : onClose}
                       selected={active && !hasChildren}
                       className="!rounded-xl !mb-0.5 group/btn relative overflow-hidden"
                       sx={{
@@ -103,7 +163,7 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
                           fontWeight: 700,
                           boxShadow: "0 2px 8px rgba(27, 73, 101, 0.03)",
                           "&:hover": {
-                            background: "linear-gradient(135deg, rgba(27, 73, 101, 0.08) 0%, rgba(98, 182, 203, 0.04) 100%)"
+                            background: "linear-gradient(135deg, rgba(27, 73, 101, 0.08) 0%, rgba(98, 182, 203, 0.04) 100%)",
                           },
                         },
                         "&:hover": {
@@ -112,13 +172,10 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
                         },
                       }}
                     >
-                      {/* Active indicator bar */}
                       {active && !hasChildren && (
                         <Box
                           className="absolute left-0 w-1.5 h-6 rounded-r-full"
-                          style={{
-                            background: "linear-gradient(180deg, #1B4965 0%, #62B6CB 100%)"
-                          }}
+                          style={{ background: "linear-gradient(180deg, #1B4965 0%, #62B6CB 100%)" }}
                         />
                       )}
 
@@ -127,7 +184,7 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
                           minWidth: 36,
                           color: active ? "#1B4965" : "#94A3B8",
                           transition: "color 0.25s",
-                          ".group-hover\\/btn:hover &": { color: "#1B4965" }
+                          ".group-hover\\/btn:hover &": { color: "#1B4965" },
                         }}
                       >
                         <Icon fontSize="medium" />
@@ -138,29 +195,29 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
                         primaryTypographyProps={{
                           fontSize: "0.88rem",
                           fontWeight: active ? 700 : 500,
-                          className: active ? "text-[#1B4965]" : "text-slate-600 hover:text-slate-800"
+                          className: active ? "text-[#1B4965]" : "text-slate-600 hover:text-slate-800",
                         }}
                       />
 
-                      {hasChildren && (
-                        isOpen ? (
+                      {hasChildren &&
+                        (isOpen ? (
                           <ExpandLess fontSize="small" sx={{ color: "#1B4965" }} />
                         ) : (
                           <ExpandMore fontSize="small" sx={{ color: "#94A3B8" }} />
-                        )
-                      )}
+                        ))}
                     </ListItemButton>
 
                     {hasChildren && (
                       <Collapse in={isOpen} timeout="auto" unmountOnExit>
                         <List disablePadding className="mt-1 pl-4 border-l-2 border-slate-100 ml-6 space-y-1">
                           {item.children.map((child) => {
-                            const childActive = pathname === child.path;
+                            const childActive = isActivePath(child.path, child.exact);
                             return (
                               <ListItemButton
                                 key={child.path}
                                 component={Link}
                                 href={child.path}
+                                onClick={onClose}
                                 selected={childActive}
                                 className="!rounded-lg relative"
                                 sx={{
@@ -170,12 +227,12 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
                                   "&.Mui-selected": {
                                     backgroundColor: "rgba(27, 73, 101, 0.05)",
                                     color: "#1B4965",
-                                    "&:hover": { backgroundColor: "rgba(27, 73, 101, 0.08)" }
+                                    "&:hover": { backgroundColor: "rgba(27, 73, 101, 0.08)" },
                                   },
                                   "&:hover": {
                                     backgroundColor: "rgba(0, 0, 0, 0.02)",
                                     transform: "translateX(2px)",
-                                  }
+                                  },
                                 }}
                               >
                                 {childActive && (
@@ -183,7 +240,7 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
                                     className="absolute left-0 w-1 h-4 rounded-r-full"
                                     style={{
                                       background: "#1B4965",
-                                      marginLeft: "-2px"
+                                      marginLeft: "-2px",
                                     }}
                                   />
                                 )}
@@ -192,7 +249,7 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
                                   primaryTypographyProps={{
                                     fontSize: "0.82rem",
                                     fontWeight: childActive ? 700 : 500,
-                                    className: childActive ? "text-[#1B4965]" : "text-slate-500 hover:text-slate-800"
+                                    className: childActive ? "text-[#1B4965]" : "text-slate-500 hover:text-slate-800",
                                   }}
                                 />
                               </ListItemButton>
@@ -209,83 +266,55 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
         ))}
       </Box>
 
-      {(() => {
-        const userRole = pathname.includes("/admin") ? "admin" : pathname.includes("/carrier") ? "carrier" : "shipper";
-        const userProfile = {
-          shipper: {
-            name: "Nguyễn Minh Triết",
-            email: "shipper@backhaulbid.vn",
-            roleName: "Chủ hàng",
-            avatarLetter: "T",
-            settingsPath: "/shipper/settings",
-          },
-          carrier: {
-            name: "Trần Văn Bình",
-            email: "carrier@backhaulbid.vn",
-            roleName: "Nhà xe",
-            avatarLetter: "B",
-            settingsPath: "/carrier/settings",
-          },
-          admin: {
-            name: "Admin User",
-            email: "admin@backhaulbid.vn",
-            roleName: "Quản trị viên",
-            avatarLetter: "A",
-            settingsPath: "/admin/settings",
-          }
-        };
-
-        const profile = userInfo ? {
-          name: userInfo.name,
-          email: userInfo.email,
-          roleName: userInfo.role,
-          avatarLetter: userInfo.avatar,
-          settingsPath: userInfo.settingsPath || "/settings",
-        } : (userProfile[userRole] || userProfile.shipper);
-
-        return (
-          <Box
-            className="mt-auto p-3.5 rounded-2xl flex items-center gap-3 border border-slate-100/60"
-            style={{
-              background: "linear-gradient(135deg, rgba(27,73,101,0.02) 0%, rgba(98,182,203,0.02) 100%)",
-            }}
-          >
-            <Avatar
-              sx={{
-                width: 38,
-                height: 38,
-                bgcolor: "#1B4965",
-                fontSize: "0.95rem",
-                fontWeight: 700,
-                border: "2px solid #fff",
-                boxShadow: "0 4px 10px rgba(27, 73, 101, 0.15)",
-              }}
+      <Box
+        className="mt-auto p-3.5 rounded-2xl flex items-center gap-3 border border-slate-100/60"
+        style={{
+          background: "linear-gradient(135deg, rgba(27,73,101,0.02) 0%, rgba(98,182,203,0.02) 100%)",
+        }}
+      >
+        <Avatar
+          sx={{
+            width: 38,
+            height: 38,
+            bgcolor: "#1B4965",
+            fontSize: "0.95rem",
+            fontWeight: 700,
+            border: "2px solid #fff",
+            boxShadow: "0 4px 10px rgba(27, 73, 101, 0.15)",
+          }}
+        >
+          {profile.avatarLetter}
+        </Avatar>
+        <Box className="flex-1 min-w-0">
+          <Typography variant="body2" className="!text-[0.82rem] !font-bold text-slate-700 truncate leading-none mb-1">
+            {profile.name}
+          </Typography>
+          <Typography variant="caption" className="!text-[0.68rem] text-slate-400 font-medium truncate block leading-none">
+            {profile.email}
+          </Typography>
+        </Box>
+        <Box className="flex gap-0.5">
+          <Tooltip title="Cài đặt">
+            <IconButton
+              size="small"
+              component={Link}
+              href={profile.settingsPath}
+              sx={{ color: "#94A3B8", "&:hover": { color: "#1B4965" } }}
             >
-              {profile.avatarLetter}
-            </Avatar>
-            <Box className="flex-1 min-w-0">
-              <Typography variant="body2" className="!text-[0.82rem] !font-bold text-slate-700 truncate leading-none mb-1">
-                {profile.name}
-              </Typography>
-              <Typography variant="caption" className="!text-[0.68rem] text-slate-400 font-medium truncate block leading-none">
-                {profile.email}
-              </Typography>
-            </Box>
-            <Box className="flex gap-0.5">
-              <Tooltip title="Cài đặt">
-                <IconButton size="small" component={Link} href={profile.settingsPath} sx={{ color: "#94A3B8", "&:hover": { color: "#1B4965" } }}>
-                  <SettingsTwoToneIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Đăng xuất">
-                <IconButton size="small" sx={{ color: "#94A3B8", "&:hover": { color: "#F43F5E" } }}>
-                  <LogoutRoundedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </Box>
-        );
-      })()}
+              <SettingsTwoToneIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Đăng xuất">
+            <IconButton
+              size="small"
+              onClick={handleLogout}
+              sx={{ color: "#94A3B8", "&:hover": { color: "#F43F5E" } }}
+            >
+              <LogoutRoundedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
     </Box>
   );
 
@@ -302,7 +331,7 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
           boxSizing: "border-box",
           border: "none",
           background: "transparent",
-          p: variant === "permanent" ? 2.5 : 2, // Floating padding
+          p: variant === "permanent" ? 2.5 : 2,
           pr: variant === "permanent" ? 1.25 : 2,
         },
       }}

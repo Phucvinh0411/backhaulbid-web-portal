@@ -35,6 +35,7 @@ import {
   VerifiedUser as VerifiedUserIcon
 } from "@mui/icons-material";
 import { PageHeader, ViewModeToggle, DetailDrawer, DetailRow } from "@/components/common";
+import CarrierContractItem from "@/components/carrier/CarrierContractItem";
 
 const initialContracts = [
   {
@@ -130,7 +131,7 @@ export default function ContractsPage() {
         title="Quản lý Hợp đồng" 
         subtitle="Quản lý các hợp đồng vận chuyển điện tử sau khi trúng thầu"
         breadcrumbs={[
-          { label: "Trang chủ", path: "/carrier" },
+          { label: "Trang chủ", path: "/carrier/dashboard" },
           { label: "Vận hành", path: "#" },
           { label: "Hợp đồng", path: "/carrier/contracts" }
         ]}
@@ -170,127 +171,15 @@ export default function ContractsPage() {
 
       {viewMode === "CARD" ? (
         <Grid container spacing={3}>
-          {filteredContracts.map((contract, index) => {
-            const statusConfig = getStatusConfig(contract.status);
-            
-            return (
-              <Grid item xs={12} lg={6} key={contract.id}>
-                <Card 
-                  className={`glass border rounded-2xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${contract.status === 'PENDING_SIGNATURE' ? 'border-amber-300 shadow-[0_4px_20px_rgba(245,158,11,0.15)]' : 'border-slate-200'}`}
-                  sx={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <CardContent className="p-6">
-                    {/* Header */}
-                    <Box className="flex justify-between items-start mb-4">
-                      <Box>
-                        <Typography variant="h6" className="font-bold text-[#1B4965] flex items-center gap-2">
-                          <DescriptionIcon sx={{ color: "#5FA8D3" }} />
-                          {contract.id}
-                        </Typography>
-                        <Typography variant="body2" className="text-slate-500 mt-1">
-                          Phiên đấu giá: <span className="font-semibold text-slate-700">{contract.auctionId}</span>
-                        </Typography>
-                      </Box>
-                      <Chip 
-                        label={statusConfig.label} 
-                        size="small" 
-                        className={statusConfig.className}
-                        sx={{ borderRadius: "8px", height: "28px" }}
-                      />
-                    </Box>
-
-                    {/* Body */}
-                    <Box className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 mb-5">
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
-                          <Box className="flex items-start gap-2">
-                            <LocalShippingIcon className="text-slate-400 mt-0.5" fontSize="small" />
-                            <Box>
-                              <Typography variant="caption" className="text-slate-500 font-medium block text-[0.75rem]">Tuyến đường</Typography>
-                              <Typography variant="body2" className="font-semibold text-slate-800">
-                                {contract.origin} &rarr; {contract.destination}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Box className="flex items-start gap-2">
-                            <WorkspacePremiumIcon className="text-slate-400 mt-0.5" fontSize="small" />
-                            <Box>
-                              <Typography variant="caption" className="text-slate-500 font-medium block text-[0.75rem]">Đối tác</Typography>
-                              <Typography variant="body2" className="font-semibold text-slate-800 line-clamp-1">
-                                {contract.partner}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Box className="flex items-start gap-2">
-                            <EventIcon className="text-slate-400 mt-0.5" fontSize="small" />
-                            <Box>
-                              <Typography variant="caption" className="text-slate-500 font-medium block text-[0.75rem]">Ngày bốc hàng</Typography>
-                              <Typography variant="body2" className="font-semibold text-slate-800">{contract.date}</Typography>
-                            </Box>
-                          </Box>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Box className="flex items-start gap-2">
-                            <AttachMoneyIcon className="text-emerald-500 mt-0.5" fontSize="small" />
-                            <Box>
-                              <Typography variant="caption" className="text-slate-500 font-medium block text-[0.75rem]">Giá trị hợp đồng</Typography>
-                              <Typography variant="body1" className="font-bold text-emerald-600">{contract.value}</Typography>
-                            </Box>
-                          </Box>
-                        </Grid>
-                      </Grid>
-                    </Box>
-
-                    {/* Actions */}
-                    <Box className="flex gap-3 justify-end mt-2">
-                      {contract.status === 'PENDING_SIGNATURE' ? (
-                        <>
-                          <Button 
-                            variant="outlined" 
-                            startIcon={<DescriptionIcon />}
-                            onClick={() => handleOpenDetails(contract)}
-                            sx={{ borderRadius: "8px", borderColor: "#1B4965", color: "#1B4965", "&:hover": { bgcolor: "rgba(27,73,101,0.05)" } }}
-                          >
-                            Xem chi tiết
-                          </Button>
-                          <Button 
-                            variant="contained" 
-                            startIcon={<VerifiedUserIcon />}
-                            onClick={() => handleOpenSign(contract)}
-                            sx={{ borderRadius: "8px", bgcolor: "#1B4965", "&:hover": { bgcolor: "#133850" } }}
-                          >
-                            Ký điện tử ngay
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button 
-                            variant="text" 
-                            startIcon={<DescriptionIcon />}
-                            onClick={() => handleOpenDetails(contract)}
-                            sx={{ color: "#1B4965" }}
-                          >
-                            Xem chi tiết
-                          </Button>
-                          <Button 
-                            variant="outlined" 
-                            startIcon={<FileDownloadIcon />}
-                            sx={{ borderRadius: "8px", borderColor: "rgba(27,73,101,0.3)", color: "#1B4965" }}
-                          >
-                            Tải PDF
-                          </Button>
-                        </>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })}
+          {filteredContracts.map((contract) => (
+            <Grid item xs={12} sm={6} md={4} key={contract.id}>
+              <CarrierContractItem
+                contract={contract}
+                onSign={handleOpenSign}
+                onViewDetail={handleOpenDetails}
+              />
+            </Grid>
+          ))}
         </Grid>
       ) : (
         <TableContainer component={Paper} className="rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">

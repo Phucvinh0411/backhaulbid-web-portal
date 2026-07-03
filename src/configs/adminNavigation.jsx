@@ -1,11 +1,11 @@
 "use client";
 
-import { 
-  DashboardOutlined as DashboardIcon, 
-  PeopleOutlined as PeopleIcon, 
-  GavelOutlined as GavelIcon, 
+import {
+  DashboardOutlined as DashboardIcon,
+  PeopleOutlined as PeopleIcon,
+  GavelOutlined as GavelIcon,
   ReportProblemOutlined as ReportProblemIcon,
-  SettingsOutlined as SettingsIcon
+  SettingsOutlined as SettingsIcon,
 } from "@mui/icons-material";
 
 const adminNavigation = [
@@ -43,9 +43,15 @@ const adminNavigation = [
     title: "HỆ THỐNG",
     items: [
       {
-        title: "Cài đặt chung",
+        title: "Cài đặt",
         path: "/admin/settings",
         icon: SettingsIcon,
+        children: [
+          { title: "Chung", path: "/admin/settings", exact: true },
+          { title: "Luật đấu giá", path: "/admin/settings/auction" },
+          { title: "Thanh toán", path: "/admin/settings/payment" },
+          { title: "Thông báo", path: "/admin/settings/notification" },
+        ],
       },
     ],
   },
