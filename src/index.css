@@ -8,6 +8,7 @@
 @theme inline {
   /* ---- Primary Palette ---- */
   --color-primary: #1B4965;
+  --color-primary-mid: #2A6F97;
   --color-primary-light: #5FA8D3;
   --color-primary-dark: #0D2B3E;
   --color-secondary: #62B6CB;
@@ -21,6 +22,7 @@
   --color-text-secondary: #64748B;
   --color-text-muted: #94A3B8;
   --color-border: rgba(0, 0, 0, 0.06);
+  --color-overlay-shadow: rgba(0, 0, 0, 0.15);
 
   /* ---- Accent Colors ---- */
   --color-accent-cyan: #06B6D4;
@@ -33,9 +35,9 @@
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ---- Google Inter Font ---- */
+/* ---- Google Roboto Font ---- */
 body {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-roboto), "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background-color: var(--color-background);
   color: var(--color-text-primary);
   margin: 0;

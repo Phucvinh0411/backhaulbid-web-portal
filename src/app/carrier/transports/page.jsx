@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -11,6 +11,7 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Dialog from "@mui/material/Dialog";
@@ -73,6 +74,24 @@ export default function TransportsPage() {
   const [selectedDriver, setSelectedDriver] = useState("");
   const [generatedPin, setGeneratedPin] = useState("");
 
+  const [order, setOrder] = useState("asc");
+  const [orderBy, setOrderBy] = useState("id");
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  const sortedTransports = React.useMemo(() => {
+    let result = [...mockTransports];
+    result.sort((a, b) => {
+      let comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
+      return order === "desc" ? -comparison : comparison;
+    });
+    return result;
+  }, [order, orderBy]);
+
   const handleOpenAssign = (transport) => {
     setSelectedTransport(transport);
     setSelectedDriver("");
@@ -123,17 +142,23 @@ export default function TransportsPage() {
             <Table aria-label="transports table">
               <TableHead sx={{ backgroundColor: "rgba(241, 245, 249, 0.5)" }}>
                 <TableRow>
-                  <TableCell className="!font-bold">Mã Chuyến</TableCell>
-                  <TableCell className="!font-bold">Tuyến đường</TableCell>
-                  <TableCell className="!font-bold">Phương tiện</TableCell>
-                  <TableCell className="!font-bold">Tài xế</TableCell>
-                  <TableCell className="!font-bold">Mã PIN</TableCell>
-                  <TableCell className="!font-bold">Trạng thái</TableCell>
-                  <TableCell className="!font-bold text-right">Thao tác</TableCell>
+                  {[{id: 'id', label: 'Mã Chuyến'}, {id: 'route', label: 'Tuyến đường'}, {id: 'vehicle', label: 'Phương tiện'}, {id: 'driver', label: 'Tài xế'}, {id: 'pin', label: 'Mã PIN'}, {id: 'status', label: 'Trạng thái'}, {id: 'actions', label: 'Thao tác', align: 'right', sortable: false}].map(col => (
+                    <TableCell key={col.id} align={col.align || 'left'} className="!font-bold">
+                      {col.sortable !== false ? (
+                        <TableSortLabel
+                          active={orderBy === col.id}
+                          direction={orderBy === col.id ? order : "asc"}
+                          onClick={() => handleRequestSort(col.id)}
+                        >
+                          {col.label}
+                        </TableSortLabel>
+                      ) : col.label}
+                    </TableCell>
+                  ))}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {mockTransports.map((row) => (
+                {sortedTransports.map((row) => (
                   <TableRow key={row.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
                     <TableCell component="th" scope="row" className="font-semibold text-[#1B4965]">
                       {row.id}
@@ -177,7 +202,7 @@ export default function TransportsPage() {
         </Card>
       ) : (
         <Grid container spacing={3} className="mt-2">
-          {mockTransports.map((row) => (
+          {sortedTransports.map((row) => (
             <Grid item xs={12} sm={6} md={4} key={row.id}>
               <CarrierTransportItem
                 transport={row}

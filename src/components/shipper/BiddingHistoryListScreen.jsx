@@ -21,6 +21,7 @@ import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import Chip from "@mui/material/Chip";
 import Pagination from "@mui/material/Pagination";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
@@ -166,51 +167,34 @@ export default function BiddingHistoryListScreen() {
   const [statusTab, setStatusTab] = useState("all");
   const [originFilter, setOriginFilter] = useState("all");
   const [destFilter, setDestFilter] = useState("all");
-  const [sortOption, setSortOption] = useState("date-desc");
+  const [order, setOrder] = useState("desc");
+  const [orderBy, setOrderBy] = useState("dateCreated");
   
   // Pagination State
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const [columns, setColumns] = useState([
+  const columns = [
     { id: "id", label: "Mã lô hàng", align: "left" },
     { id: "goodsType", label: "Hàng hóa & Quy cách", align: "left" },
     { id: "route", label: "Lộ trình vận chuyển", align: "left" },
     { id: "maxPrice", label: "Giá trần", align: "right" },
     { id: "finalPrice", label: "Giá chốt / Thấp nhất", align: "right" },
     { id: "bidCount", label: "Lượt thầu", align: "center" },
-    { id: "status", label: "Trạng thái", align: "center" },
-    { id: "actions", label: "Thao tác", align: "center" },
-  ]);
+    { id: "status", label: "Trạng thái", align: "center", sortable: false },
+    { id: "actions", label: "Thao tác", align: "center", sortable: false },
+  ];
 
-  const [draggedIdx, setDraggedIdx] = useState(null);
-
-  const handleDragStart = (e, index) => {
-    setDraggedIdx(index);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragOver = (e, overIndex) => {
-    e.preventDefault();
-    if (draggedIdx === null || draggedIdx === overIndex) return;
-
-    const updatedCols = [...columns];
-    const draggedCol = updatedCols[draggedIdx];
-    updatedCols.splice(draggedIdx, 1);
-    updatedCols.splice(overIndex, 0, draggedCol);
-
-    setDraggedIdx(overIndex);
-    setColumns(updatedCols);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIdx(null);
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
   };
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, statusTab, originFilter, destFilter, sortOption]);
+  }, [searchTerm, statusTab, originFilter, destFilter, order, orderBy]);
 
   // Formatter helpers
   const formatCurrency = (val) => {
@@ -302,24 +286,25 @@ export default function BiddingHistoryListScreen() {
 
     // 5. Sorting Options
     result.sort((a, b) => {
-      switch (sortOption) {
-        case "date-asc":
-          return new Date(a.dateCreated) - new Date(b.dateCreated);
-        case "date-desc":
-          return new Date(b.dateCreated) - new Date(a.dateCreated);
-        case "price-asc":
-          return a.maxPrice - b.maxPrice;
-        case "price-desc":
-          return b.maxPrice - a.maxPrice;
-        case "bids-desc":
-          return b.bidCount - a.bidCount;
-        default:
-          return 0;
+      let comparison = 0;
+      if (orderBy === "dateCreated") {
+        comparison = new Date(a.dateCreated) - new Date(b.dateCreated);
+      } else if (orderBy === "id") {
+        comparison = a.id.localeCompare(b.id);
+      } else if (orderBy === "maxPrice" || orderBy === "finalPrice" || orderBy === "bidCount") {
+        const valA = a[orderBy] || 0;
+        const valB = b[orderBy] || 0;
+        comparison = valA - valB;
+      } else if (orderBy === "goodsType") {
+        comparison = a.goodsType.localeCompare(b.goodsType);
+      } else if (orderBy === "route") {
+        comparison = a.from.province.localeCompare(b.from.province);
       }
+      return order === "desc" ? -comparison : comparison;
     });
 
     return result;
-  }, [searchTerm, statusTab, originFilter, destFilter, sortOption]);
+  }, [searchTerm, statusTab, originFilter, destFilter, order, orderBy]);
 
   // Paginated Slicing
   const paginatedShipments = useMemo(() => {
@@ -334,7 +319,8 @@ export default function BiddingHistoryListScreen() {
     setStatusTab("all");
     setOriginFilter("all");
     setDestFilter("all");
-    setSortOption("date-desc");
+    setOrder("desc");
+    setOrderBy("dateCreated");
   };
 
   return (
@@ -567,36 +553,8 @@ export default function BiddingHistoryListScreen() {
                 </Select>
               </FormControl>
 
-              {/* Sort Filter */}
-              <FormControl size="small" className="min-w-[140px] flex-1 md:flex-initial">
-                <InputLabel id="sort-select-label" className="!font-semibold !text-slate-500 !text-sm">Sắp xếp</InputLabel>
-                <Select
-                  labelId="sort-select-label"
-                  value={sortOption}
-                  label="Sắp xếp"
-                  onChange={(e) => setSortOption(e.target.value)}
-                  className="!rounded-xl"
-                  sx={{
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "rgba(27,73,101,0.08)",
-                    },
-                    "& .MuiSelect-select": {
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                      color: "#334155",
-                    }
-                  }}
-                >
-                  <MenuItem value="date-desc">Mới nhất</MenuItem>
-                  <MenuItem value="date-asc">Cũ nhất</MenuItem>
-                  <MenuItem value="price-desc">Giá trần: Cao → Thấp</MenuItem>
-                  <MenuItem value="price-asc">Giá trần: Thấp → Cao</MenuItem>
-                  <MenuItem value="bids-desc">Số lượt đấu thầu</MenuItem>
-                </Select>
-              </FormControl>
-
               {/* Reset Button */}
-              {(searchTerm || originFilter !== "all" || destFilter !== "all" || statusTab !== "all" || sortOption !== "date-desc") && (
+              {(searchTerm || originFilter !== "all" || destFilter !== "all" || statusTab !== "all" || orderBy !== "dateCreated" || order !== "desc") && (
                 <Button
                   variant="text"
                   color="inherit"
@@ -617,20 +575,25 @@ export default function BiddingHistoryListScreen() {
           <Table sx={{ minWidth: 800 }}>
             <TableHead className="bg-slate-50/50">
               <TableRow>
-                {columns.map((col, idx) => (
+                {columns.map((col) => (
                   <TableCell
                     key={col.id}
                     align={col.align}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, idx)}
-                    onDragOver={(e) => handleDragOver(e, idx)}
-                    onDragEnd={handleDragEnd}
-                    className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 cursor-grab active:cursor-grabbing hover:bg-slate-100/80 transition-colors select-none"
+                    className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 select-none hover:bg-slate-100/80 transition-colors"
                   >
-                    <Box className="flex items-center gap-1 justify-inherit">
+                    {col.sortable !== false ? (
+                      <TableSortLabel
+                        active={orderBy === col.id}
+                        direction={orderBy === col.id ? order : "asc"}
+                        onClick={() => handleRequestSort(col.id)}
+                        className="!font-bold hover:!text-slate-700"
+                        sx={{ '& .MuiTableSortLabel-icon': { color: '#64748B !important' } }}
+                      >
+                        {col.label}
+                      </TableSortLabel>
+                    ) : (
                       <span>{col.label}</span>
-                      <span className="text-[0.65rem] text-slate-300 font-normal">⋮⋮</span>
-                    </Box>
+                    )}
                   </TableCell>
                 ))}
               </TableRow>

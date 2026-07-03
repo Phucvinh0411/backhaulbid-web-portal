@@ -19,6 +19,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import TablePagination from "@mui/material/TablePagination";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -155,37 +156,21 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
   const [walletAmount, setWalletAmount] = useState("");
   const [bankAccount, setBankAccount] = useState(isShipper ? "MB Bank - 1902888889999" : "Vietcombank - **** **** **** 1234");
 
-  // Dynamic columns for Drag & Drop reordering
-  const [columns, setColumns] = useState([
+  const [order, setOrder] = useState("desc");
+  const [orderBy, setOrderBy] = useState("time");
+
+  const columns = [
     { id: "id", label: "Mã giao dịch", align: "left" },
     { id: "typeName", label: "Nội dung chi tiết", align: "left" },
     { id: "amount", label: "Giá trị giao dịch", align: "right" },
     { id: "time", label: "Thời gian", align: "right" },
     { id: "status", label: "Trạng thái", align: "center" },
-  ]);
+  ];
 
-  const [draggedIdx, setDraggedIdx] = useState(null);
-
-  const handleDragStart = (e, index) => {
-    setDraggedIdx(index);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragOver = (e, overIndex) => {
-    e.preventDefault();
-    if (draggedIdx === null || draggedIdx === overIndex) return;
-
-    const updatedCols = [...columns];
-    const draggedCol = updatedCols[draggedIdx];
-    updatedCols.splice(draggedIdx, 1);
-    updatedCols.splice(overIndex, 0, draggedCol);
-
-    setDraggedIdx(overIndex);
-    setColumns(updatedCols);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIdx(null);
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
   };
 
   const formatCurrency = (val) => {
@@ -232,7 +217,7 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
 
   // Filter Transactions
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((tx) => {
+    let result = transactions.filter((tx) => {
       const matchesSearch = 
         tx.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         tx.typeName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -243,7 +228,21 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
 
       return matchesSearch && matchesTab;
     });
-  }, [transactions, searchTerm, statusTab]);
+
+    result.sort((a, b) => {
+      let comparison = 0;
+      if (orderBy === "amount") {
+        comparison = a.amount - b.amount;
+      } else if (orderBy === "time") {
+        comparison = new Date(a.time) - new Date(b.time);
+      } else {
+        comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
+      }
+      return order === "desc" ? -comparison : comparison;
+    });
+
+    return result;
+  }, [transactions, searchTerm, statusTab, order, orderBy]);
 
   // Paginated Transactions
   const paginatedTransactions = useMemo(() => {
@@ -452,20 +451,25 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
             <Table sx={{ minWidth: 650 }}>
               <TableHead className="bg-slate-50/50">
                 <TableRow>
-                  {columns.map((col, idx) => (
+                  {columns.map((col) => (
                     <TableCell
                       key={col.id}
                       align={col.align}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, idx)}
-                      onDragOver={(e) => handleDragOver(e, idx)}
-                      onDragEnd={handleDragEnd}
-                      className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 cursor-grab active:cursor-grabbing hover:bg-slate-100/80 transition-colors select-none"
+                      className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 select-none hover:bg-slate-100/80 transition-colors"
                     >
-                      <Box className="flex items-center gap-1 justify-inherit">
+                      {col.sortable !== false ? (
+                        <TableSortLabel
+                          active={orderBy === col.id}
+                          direction={orderBy === col.id ? order : "asc"}
+                          onClick={() => handleRequestSort(col.id)}
+                          className="!font-bold hover:!text-slate-700"
+                          sx={{ '& .MuiTableSortLabel-icon': { color: '#64748B !important' } }}
+                        >
+                          {col.label}
+                        </TableSortLabel>
+                      ) : (
                         <span>{col.label}</span>
-                        <span className="text-[0.65rem] text-slate-300 font-normal">⋮⋮</span>
-                      </Box>
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>

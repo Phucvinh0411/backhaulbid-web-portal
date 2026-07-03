@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -13,6 +13,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import Rating from "@mui/material/Rating";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -392,36 +393,21 @@ export default function AuctionDetailScreen({ id }) {
   const shipment = AUCTION_SHIPMENTS_MAP[id] || AUCTION_SHIPMENTS_MAP["LH-2026-9041"];
   const [bids, setBids] = useState([]);
 
-  const [columns, setColumns] = useState([
+  const [order, setOrder] = useState("asc");
+  const [orderBy, setOrderBy] = useState("bidAmount");
+
+  const columns = [
     { id: "carrierName", label: "Nhà xe", align: "left" },
     { id: "rating", label: "Đánh giá tín nhiệm", align: "center" },
     { id: "bidAmount", label: "Giá thầu đề xuất", align: "right" },
-    { id: "time", label: "Thời điểm đặt", align: "right" },
-    { id: "status", label: "Trạng thái", align: "center" },
-  ]);
+    { id: "time", label: "Thời điểm đặt", align: "right", sortable: false },
+    { id: "status", label: "Trạng thái", align: "center", sortable: false },
+  ];
 
-  const [draggedIdx, setDraggedIdx] = useState(null);
-
-  const handleDragStart = (e, index) => {
-    setDraggedIdx(index);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragOver = (e, overIndex) => {
-    e.preventDefault();
-    if (draggedIdx === null || draggedIdx === overIndex) return;
-
-    const updatedCols = [...columns];
-    const draggedCol = updatedCols[draggedIdx];
-    updatedCols.splice(draggedIdx, 1);
-    updatedCols.splice(overIndex, 0, draggedCol);
-
-    setDraggedIdx(overIndex);
-    setColumns(updatedCols);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIdx(null);
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
   };
 
   useEffect(() => {
@@ -429,6 +415,22 @@ export default function AuctionDetailScreen({ id }) {
       setBids(shipment.bids || []);
     }
   }, [id, shipment]);
+
+  const sortedBids = useMemo(() => {
+    let result = [...bids];
+    result.sort((a, b) => {
+      let comparison = 0;
+      if (orderBy === "bidAmount") {
+        comparison = a.bidAmount - b.bidAmount;
+      } else if (orderBy === "rating") {
+        comparison = a.rating - b.rating;
+      } else {
+        comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
+      }
+      return order === "desc" ? -comparison : comparison;
+    });
+    return result;
+  }, [bids, order, orderBy]);
 
   const [openOtpDialog, setOpenOtpDialog] = useState(false);
   const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
@@ -792,26 +794,31 @@ export default function AuctionDetailScreen({ id }) {
           <Table sx={{ minWidth: 650 }}>
             <TableHead className="bg-slate-50/50">
               <TableRow>
-                {columns.map((col, idx) => (
+                {columns.map((col) => (
                   <TableCell
                     key={col.id}
                     align={col.align}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, idx)}
-                    onDragOver={(e) => handleDragOver(e, idx)}
-                    onDragEnd={handleDragEnd}
-                    className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 cursor-grab active:cursor-grabbing hover:bg-slate-100/80 transition-colors select-none"
+                    className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 select-none hover:bg-slate-100/80 transition-colors"
                   >
-                    <Box className="flex items-center gap-1 justify-inherit">
+                    {col.sortable !== false ? (
+                      <TableSortLabel
+                        active={orderBy === col.id}
+                        direction={orderBy === col.id ? order : "asc"}
+                        onClick={() => handleRequestSort(col.id)}
+                        className="!font-bold hover:!text-slate-700"
+                        sx={{ '& .MuiTableSortLabel-icon': { color: '#64748B !important' } }}
+                      >
+                        {col.label}
+                      </TableSortLabel>
+                    ) : (
                       <span>{col.label}</span>
-                      <span className="text-[0.65rem] text-slate-300 font-normal">⋮⋮</span>
-                    </Box>
+                    )}
                   </TableCell>
                 ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {bids.length === 0 ? (
+              {sortedBids.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={columns.length} align="center" className="!py-12 !border-none">
                     <Typography variant="body2" className="text-slate-400 font-medium">
@@ -820,7 +827,7 @@ export default function AuctionDetailScreen({ id }) {
                   </TableCell>
                 </TableRow>
               ) : (
-                bids.map((bid) => (
+                sortedBids.map((bid) => (
                   <TableRow
                     key={bid.id}
                     className={`transition-colors ${
