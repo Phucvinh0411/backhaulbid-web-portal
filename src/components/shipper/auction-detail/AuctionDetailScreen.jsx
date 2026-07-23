@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import PageHeader from "@/components/common/PageHeader";
@@ -19,6 +20,7 @@ import ContractOtpModal from "./ContractOtpModal";
 import CarrierProfileModal from "./CarrierProfileModal";
 
 export default function AuctionDetailScreen({ id }) {
+  const router = useRouter();
   const rawShipment = AUCTION_SHIPMENTS_MAP[id] || AUCTION_SHIPMENTS_MAP["LH-2026-9041"];
   const shipment = enrichShipmentDetails(rawShipment);
 
@@ -89,8 +91,9 @@ export default function AuctionDetailScreen({ id }) {
 
   const handleOpenCarrierModal = (bid) => {
     if (!bid) return;
-    setSelectedCarrier(getCarrierDetails(bid));
-    setOpenCarrierModal(true);
+    const details = getCarrierDetails(bid);
+    const carrierId = details?.code || bid?.carrierCode || bid?.carrierName || "CARRIER-PA-8839";
+    router.push(`/shipper/carriers/${encodeURIComponent(carrierId)}`);
   };
 
   const handleCloseCarrierModal = () => {

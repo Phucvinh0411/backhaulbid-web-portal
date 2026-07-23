@@ -7,6 +7,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import IconButton from "@mui/material/IconButton";
+import Link from "next/link";
 import Chip from "@mui/material/Chip";
 
 import CloseIcon from "@mui/icons-material/Close";
@@ -235,6 +236,16 @@ export default function CarrierProfileModal({
           Gọi hotline nhà xe
         </Button>
         <div className="flex gap-2">
+          <Link href={`/shipper/carriers/${carrier.code}`} passHref legacyBehavior>
+            <Button
+              component="a"
+              variant="outlined"
+              onClick={onClose}
+              className="!text-[#1B4965] !border-slate-300 hover:!bg-slate-50 !font-bold !capitalize !rounded-xl !text-xs"
+            >
+              Mở trang chi tiết riêng ↗
+            </Button>
+          </Link>
           <Button
             onClick={onClose}
             variant="text"

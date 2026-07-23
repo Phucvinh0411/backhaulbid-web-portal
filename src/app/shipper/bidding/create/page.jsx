@@ -1,7 +1,7 @@
 "use client";
 
-import CreateShipmentScreen from "@/components/shipper/CreateShipmentScreen";
+import CreateAuctionScreen from "@/components/shipper/create-auction";
 
 export default function CreateShipmentPage() {
-  return <CreateShipmentScreen />;
+  return <CreateAuctionScreen />;
 }

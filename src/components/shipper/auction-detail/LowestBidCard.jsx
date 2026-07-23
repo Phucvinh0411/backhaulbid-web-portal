@@ -254,9 +254,9 @@ export default function LowestBidCard({
               }}
             >
               {shipment.status === "completed"
-                ? "✓ Đã hoàn thành vận chuyển"
+                ? "Đã hoàn thành vận chuyển"
                 : shipment.status === "shipping"
-                ? "🚛 Đang vận chuyển..."
+                ? "Đang vận chuyển..."
                 : shipment.status === "cancelled"
                 ? "✗ Đã hủy lô hàng"
                 : lowestBidAmount > 0
@@ -275,11 +275,11 @@ export default function LowestBidCard({
               {shipment.status === "completed"
                 ? "✓ Đã hoàn thành — Nhà xe thấp nhất đã trúng thầu"
                 : shipment.status === "shipping"
-                ? "🚛 Đang vận chuyển..."
+                ? "Đang vận chuyển..."
                 : shipment.status === "cancelled"
-                ? "✗ Đã hủy"
+                ? "Đã hủy"
                 : lowestBidAmount > 0
-                ? "⏳ Hệ thống sẽ tự động chọn nhà xe này khi đóng thầu"
+                ? "Hệ thống sẽ tự động chọn nhà xe này khi đóng thầu"
                 : "Đang chờ báo giá..."
               }
             </div>
