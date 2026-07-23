@@ -25,6 +25,9 @@ import SearchIcon from "@mui/icons-material/SearchOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 import Grid from "@mui/material/Grid";
+import MenuItem from "@mui/material/MenuItem";
+import FilterListIcon from "@mui/icons-material/FilterListOutlined";
+
 
 import PageHeader from "@/components/common/PageHeader";
 
@@ -48,6 +51,7 @@ const INITIAL_SHIPMENTS = [
     bidCount: 4,
     closeTime: "2026-07-04T18:00:00",
     status: "active_bids", // đang đấu giá
+    auctionType: "PUBLIC",
   },
   {
     id: "LH-2026-9042",
@@ -67,6 +71,7 @@ const INITIAL_SHIPMENTS = [
     bidCount: 3,
     closeTime: "2026-07-03T12:00:00",
     status: "active_bids",
+    auctionType: "SEALED",
   },
   {
     id: "LH-2026-9043",
@@ -86,6 +91,7 @@ const INITIAL_SHIPMENTS = [
     bidCount: 0,
     closeTime: "2026-07-05T17:00:00",
     status: "pending_bids", // chờ đấu giá
+    auctionType: "PUBLIC",
   },
   {
     id: "LH-2026-9044",
@@ -108,6 +114,7 @@ const INITIAL_SHIPMENTS = [
     carrier: "Công ty Vận tải Phước An",
     carrierPhone: "0905.888.999",
     finalPrice: 14800000,
+    auctionType: "PUBLIC",
   },
   {
     id: "LH-2026-9045",
@@ -132,6 +139,7 @@ const INITIAL_SHIPMENTS = [
     driverName: "Trần Văn Bình",
     driverPlate: "51C-777.45",
     finalPrice: 8900000,
+    auctionType: "PUBLIC",
   },
   {
     id: "LH-2026-9046",
@@ -156,6 +164,7 @@ const INITIAL_SHIPMENTS = [
     driverName: "Lê Minh Quốc",
     driverPlate: "29H-123.56",
     finalPrice: 39500000,
+    auctionType: "PUBLIC",
   },
   {
     id: "LH-2026-9047",
@@ -176,6 +185,7 @@ const INITIAL_SHIPMENTS = [
     closeTime: "2026-06-28T09:00:00",
     status: "cancelled", // đã hủy
     cancelReason: "Thay đổi lịch sản xuất tại nhà máy",
+    auctionType: "PUBLIC",
   },
   {
     id: "LH-2026-9048",
@@ -195,6 +205,7 @@ const INITIAL_SHIPMENTS = [
     bidCount: 4,
     closeTime: "2026-07-02T16:00:00",
     status: "active_bids",
+    auctionType: "SEALED",
   }
 ];
 
@@ -203,6 +214,7 @@ export default function BiddingSessionsScreen() {
   const [shipments, setShipments] = useState(INITIAL_SHIPMENTS);
   const [activeTab, setActiveTab] = useState(0); // 0: Tất cả, 1: Chờ đấu giá, 2: Đang đấu giá, 3: Đã chốt, 4: Đang vận chuyển, 5: Hoàn thành, 6: Đã hủy
   const [searchQuery, setSearchQuery] = useState("");
+  const [auctionTypeFilter, setAuctionTypeFilter] = useState("ALL"); // ALL, PUBLIC, SEALED
 
   // States for Cancel Dialog
   const [openCancelDialog, setOpenCancelDialog] = useState(false);
@@ -225,7 +237,7 @@ export default function BiddingSessionsScreen() {
     setActiveTab(newValue);
   };
 
-  // Filter shipments based on search query and active tab
+  // Filter shipments based on search query, active tab, and auction type
   const filteredShipments = shipments.filter((item) => {
     const matchesSearch =
       item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -235,8 +247,9 @@ export default function BiddingSessionsScreen() {
 
     const targetStatus = tabStatusMap[activeTab];
     const matchesStatus = targetStatus === "all" ? true : item.status === targetStatus;
+    const matchesType = auctionTypeFilter === "ALL" ? true : item.auctionType === auctionTypeFilter;
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesType;
   });
 
   const handleOpenCancelDialog = (id) => {
@@ -300,77 +313,141 @@ export default function BiddingSessionsScreen() {
         }
       />
 
-      {/* Tabs Filter Section */}
-      <Box className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-3xl p-3 shadow-[0_8px_32px_0_rgba(27,73,101,0.03)] mb-6">
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          className="min-h-[48px]"
-          sx={{
-            "& .MuiTabs-indicator": {
-              backgroundColor: "#1B4965",
-              height: 3,
-              borderRadius: 2,
-            },
-            "& .MuiTab-root": {
-              textTransform: "none",
-              fontWeight: 600,
-              fontSize: "0.88rem",
-              color: "#64748B",
-              minHeight: 48,
-              px: 3,
-              "&.Mui-selected": {
-                color: "#1B4965",
-                fontWeight: 700,
-              },
-            },
-          }}
-        >
-          <Tab label="Tất cả" />
-          <Tab label="Chờ đấu giá" />
-          <Tab label="Đang đấu giá" />
-          <Tab label="Đã chốt thầu" />
-          <Tab label="Đang vận chuyển" />
-          <Tab label="Hoàn thành" />
-          <Tab label="Đã hủy" />
-        </Tabs>
-      </Box>
+      {/* Integrated Search & Filter Bar */}
+      <Box className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-3xl p-4 shadow-[0_8px_32px_0_rgba(27,73,101,0.04)] mb-6 space-y-3">
+        <div className="flex flex-col md:flex-row items-center gap-3">
+          {/* Search Input */}
+          <TextField
+            placeholder="Tìm kiếm mã lô hàng, loại hàng, điểm đi/đến..."
+            variant="outlined"
+            size="small"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full md:flex-1 bg-white rounded-2xl"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon className="text-slate-400 !text-[1.2rem]" />
+                </InputAdornment>
+              ),
+              endAdornment: searchQuery ? (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => setSearchQuery("")}>
+                    <CloseIcon className="!text-[1rem] text-slate-400" />
+                  </IconButton>
+                </InputAdornment>
+              ) : null,
+              className: "!rounded-2xl !border-slate-200 hover:!border-slate-300 transition-all text-sm",
+            }}
+            sx={{
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: "#E2E8F0" },
+              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#CBD5E1" },
+              "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#1B4965" },
+            }}
+          />
 
-      {/* Search and Filters Toolbar */}
-      <Box className="flex flex-col sm:flex-row items-center gap-4 mb-6">
-        <TextField
-          placeholder="Tìm kiếm mã lô hàng, loại hàng, điểm đi/đến..."
-          variant="outlined"
-          size="small"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full sm:w-96 bg-white/70 backdrop-blur-md rounded-2xl"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon className="text-slate-400" />
-              </InputAdornment>
-            ),
-            className: "!rounded-2xl !border-slate-100 hover:!border-slate-200 transition-all",
-          }}
-          sx={{
-            "& .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#E2E8F0",
-            },
-            "&:hover .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#CBD5E1",
-            },
-            "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#1B4965",
-            },
-          }}
-        />
+          {/* Status Filter Dropdown */}
+          <TextField
+            select
+            size="small"
+            value={activeTab}
+            onChange={(e) => setActiveTab(Number(e.target.value))}
+            className="w-full md:w-56 bg-white rounded-2xl shrink-0"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <FilterListIcon className="text-[#1B4965] !text-[1.1rem]" />
+                </InputAdornment>
+              ),
+              className: "!rounded-2xl !border-slate-200 text-sm font-semibold",
+            }}
+            sx={{
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: "#E2E8F0" },
+              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#CBD5E1" },
+              "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#1B4965" },
+            }}
+          >
+            <MenuItem value={0} className="!text-xs !font-medium">Tất cả trạng thái</MenuItem>
+            <MenuItem value={1} className="!text-xs !font-medium">Chờ đấu giá</MenuItem>
+            <MenuItem value={2} className="!text-xs !font-medium">Đang đấu giá</MenuItem>
+            <MenuItem value={3} className="!text-xs !font-medium">Đã chốt thầu</MenuItem>
+            <MenuItem value={4} className="!text-xs !font-medium">Đang vận chuyển</MenuItem>
+            <MenuItem value={5} className="!text-xs !font-medium">Hoàn thành</MenuItem>
+            <MenuItem value={6} className="!text-xs !font-medium">Đã hủy</MenuItem>
+          </TextField>
 
-        <Typography variant="body2" className="text-slate-500 font-medium ml-auto">
-          Hiển thị <span className="text-[#1B4965] font-bold">{filteredShipments.length}</span> kết quả
-        </Typography>
+          {/* Auction Type Filter Dropdown */}
+          <TextField
+            select
+            size="small"
+            value={auctionTypeFilter}
+            onChange={(e) => setAuctionTypeFilter(e.target.value)}
+            className="w-full md:w-52 bg-white rounded-2xl shrink-0"
+            InputProps={{
+              className: "!rounded-2xl !border-slate-200 text-sm font-semibold",
+            }}
+            sx={{
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: "#E2E8F0" },
+              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#CBD5E1" },
+              "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#1B4965" },
+            }}
+          >
+            <MenuItem value="ALL" className="!text-xs !font-medium">Tất cả hình thức</MenuItem>
+            <MenuItem value="PUBLIC" className="!text-xs !font-medium">Đấu giá công khai</MenuItem>
+            <MenuItem value="SEALED" className="!text-xs !font-medium">Đấu giá kín</MenuItem>
+          </TextField>
+        </div>
+
+        {/* Filter Summary & Active Badges Row */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100/80 text-xs">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-slate-500 font-medium">Bộ lọc đang áp dụng:</span>
+            
+            {activeTab !== 0 && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200 font-bold text-[0.68rem]">
+                Trạng thái: {["Tất cả", "Chờ đấu giá", "Đang đấu giá", "Đã chốt thầu", "Đang vận chuyển", "Hoàn thành", "Đã hủy"][activeTab]}
+                <CloseIcon className="!text-[0.75rem] cursor-pointer hover:text-sky-900" onClick={() => setActiveTab(0)} />
+              </span>
+            )}
+
+            {auctionTypeFilter !== "ALL" && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[0.68rem]">
+                Hình thức: {auctionTypeFilter === "PUBLIC" ? "Đấu giá công khai" : "Đấu giá kín"}
+                <CloseIcon className="!text-[0.75rem] cursor-pointer hover:text-amber-900" onClick={() => setAuctionTypeFilter("ALL")} />
+              </span>
+            )}
+
+            {searchQuery && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-bold text-[0.68rem]">
+                Từ khóa: "{searchQuery}"
+                <CloseIcon className="!text-[0.75rem] cursor-pointer hover:text-slate-900" onClick={() => setSearchQuery("")} />
+              </span>
+            )}
+
+            {activeTab === 0 && auctionTypeFilter === "ALL" && !searchQuery && (
+              <span className="text-slate-400 font-medium italic text-[0.7rem]">Tất cả lô hàng</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            {(activeTab !== 0 || auctionTypeFilter !== "ALL" || searchQuery) && (
+              <button
+                onClick={() => {
+                  setActiveTab(0);
+                  setAuctionTypeFilter("ALL");
+                  setSearchQuery("");
+                }}
+                className="text-[0.7rem] font-bold text-rose-600 hover:text-rose-800 transition-colors"
+              >
+                Xóa bộ lọc
+              </button>
+            )}
+
+            <span className="text-slate-500 font-medium">
+              Hiển thị <strong className="text-[#1B4965] font-black">{filteredShipments.length}</strong> lô hàng
+            </span>
+          </div>
+        </div>
       </Box>
 
       {/* Grid List of Shipments */}
@@ -391,9 +468,9 @@ export default function BiddingSessionsScreen() {
           </CardContent>
         </Card>
       ) : (
-        <Grid container spacing={3}>
+        <Grid container spacing={3} alignItems="stretch">
           {filteredShipments.map((shipment) => (
-            <Grid item xs={12} md={6} lg={4} key={shipment.id}>
+            <Grid item xs={12} md={6} lg={4} key={shipment.id} className="!flex !flex-col">
               <BiddingItem
                 shipment={shipment}
                 onCancel={handleOpenCancelDialog}

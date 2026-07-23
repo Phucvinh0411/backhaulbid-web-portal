@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import AuctionDetailScreen from "@/components/shipper/AuctionDetailScreen";
+import AuctionDetailScreen from "@/components/shipper/auction-detail";
 import BiddingHistoryListScreen from "@/components/shipper/BiddingHistoryListScreen";
 
 function AuctionDetailContent() {

@@ -45,6 +45,32 @@ export default function VehiclesPage() {
   const [openImportModal, setOpenImportModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
 
+  const [columnsList, setColumnsList] = useState([
+    { id: 'plate', label: 'Biển số xe' },
+    { id: 'capacity', label: 'Tải trọng' },
+    { id: 'type', label: 'Loại xe' },
+    { id: 'verification', label: 'Kiểm duyệt' },
+    { id: 'active', label: 'Trạng thái xe' },
+    { id: 'actions', label: 'Thao tác', align: 'right', sortable: false }
+  ]);
+
+  const handleDragStart = (e, index) => {
+    e.dataTransfer.setData("colIndex", index.toString());
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e, index) => {
+    const dragIndex = Number(e.dataTransfer.getData("colIndex"));
+    if (isNaN(dragIndex) || dragIndex === index) return;
+    const updated = [...columnsList];
+    const [removed] = updated.splice(dragIndex, 1);
+    updated.splice(index, 0, removed);
+    setColumnsList(updated);
+  };
+
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("plate");
 
@@ -171,8 +197,16 @@ export default function VehiclesPage() {
           <Table sx={{ minWidth: 650 }}>
             <TableHead className="bg-slate-50">
               <TableRow>
-                {[{id: 'plate', label: 'Biển số xe'}, {id: 'capacity', label: 'Tải trọng'}, {id: 'type', label: 'Loại xe'}, {id: 'verification', label: 'Kiểm duyệt'}, {id: 'active', label: 'Trạng thái xe'}, {id: 'actions', label: 'Thao tác', align: 'right', sortable: false}].map(col => (
-                  <TableCell key={col.id} align={col.align || 'left'} className="font-bold text-slate-600">
+                {columnsList.map((col, idx) => (
+                  <TableCell
+                    key={col.id}
+                    align={col.align || 'left'}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, idx)}
+                    className="font-bold text-slate-600 select-none cursor-move hover:bg-slate-100 transition-colors"
+                  >
                     {col.sortable !== false ? (
                       <TableSortLabel
                         active={orderBy === col.id}
@@ -189,32 +223,65 @@ export default function VehiclesPage() {
             <TableBody>
               {sortedVehicles.map((v) => (
                 <TableRow key={v.id} hover className="transition-colors">
-                  <TableCell>
-                    <Box className="flex items-center gap-2">
-                      <DirectionsCarIcon sx={{ color: "#1B4965", fontSize: 20 }} />
-                      <Typography variant="body2" className="font-mono font-bold text-[#1B4965]">{v.plate}</Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell><Typography variant="body2" className="text-slate-800">{v.capacity}</Typography></TableCell>
-                  <TableCell><Typography variant="body2" className="text-slate-800">{v.type}</Typography></TableCell>
-                  <TableCell>{getVerificationChip(v.verification)}</TableCell>
-                  <TableCell>
-                    <Typography variant="body2" className={`font-medium ${v.active ? 'text-emerald-600' : 'text-slate-500'}`}>
-                      {v.active ? 'Sẵn sàng' : 'Bảo trì'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      color="primary" 
-                      startIcon={<SettingsIcon />} 
-                      onClick={() => handleOpenDetails(v)}
-                      sx={{ borderRadius: "6px" }}
-                    >
-                      Xem chi tiết
-                    </Button>
-                  </TableCell>
+                  {columnsList.map((col) => {
+                    if (col.id === 'plate') {
+                      return (
+                        <TableCell key={col.id}>
+                          <Box className="flex items-center gap-2">
+                            <DirectionsCarIcon sx={{ color: "#1B4965", fontSize: 20 }} />
+                            <Typography variant="body2" className="font-mono font-bold text-[#1B4965]">{v.plate}</Typography>
+                          </Box>
+                        </TableCell>
+                      );
+                    }
+                    if (col.id === 'capacity') {
+                      return (
+                        <TableCell key={col.id}>
+                          <Typography variant="body2" className="text-slate-800">{v.capacity}</Typography>
+                        </TableCell>
+                      );
+                    }
+                    if (col.id === 'type') {
+                      return (
+                        <TableCell key={col.id}>
+                          <Typography variant="body2" className="text-slate-800">{v.type}</Typography>
+                        </TableCell>
+                      );
+                    }
+                    if (col.id === 'verification') {
+                      return (
+                        <TableCell key={col.id}>
+                          {getVerificationChip(v.verification)}
+                        </TableCell>
+                      );
+                    }
+                    if (col.id === 'active') {
+                      return (
+                        <TableCell key={col.id}>
+                          <Typography variant="body2" className={`font-medium ${v.active ? 'text-emerald-600' : 'text-slate-500'}`}>
+                            {v.active ? 'Sẵn sàng' : 'Bảo trì'}
+                          </Typography>
+                        </TableCell>
+                      );
+                    }
+                    if (col.id === 'actions') {
+                      return (
+                        <TableCell key={col.id} align="right">
+                          <Button 
+                            size="small" 
+                            variant="outlined" 
+                            color="primary" 
+                            startIcon={<SettingsIcon />} 
+                            onClick={() => handleOpenDetails(v)}
+                            sx={{ borderRadius: "6px" }}
+                          >
+                            Xem chi tiết
+                          </Button>
+                        </TableCell>
+                      );
+                    }
+                    return null;
+                  })}
                 </TableRow>
               ))}
             </TableBody>

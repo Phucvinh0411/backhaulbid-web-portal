@@ -159,13 +159,30 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
   const [order, setOrder] = useState("desc");
   const [orderBy, setOrderBy] = useState("time");
 
-  const columns = [
+  const [columnsList, setColumnsList] = useState([
     { id: "id", label: "Mã giao dịch", align: "left" },
     { id: "typeName", label: "Nội dung chi tiết", align: "left" },
     { id: "amount", label: "Giá trị giao dịch", align: "right" },
     { id: "time", label: "Thời gian", align: "right" },
     { id: "status", label: "Trạng thái", align: "center" },
-  ];
+  ]);
+
+  const handleDragStart = (e, index) => {
+    e.dataTransfer.setData("colIndex", index.toString());
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e, index) => {
+    const dragIndex = Number(e.dataTransfer.getData("colIndex"));
+    if (isNaN(dragIndex) || dragIndex === index) return;
+    const updated = [...columnsList];
+    const [removed] = updated.splice(dragIndex, 1);
+    updated.splice(index, 0, removed);
+    setColumnsList(updated);
+  };
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === "asc";
@@ -451,11 +468,15 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
             <Table sx={{ minWidth: 650 }}>
               <TableHead className="bg-slate-50/50">
                 <TableRow>
-                  {columns.map((col) => (
+                  {columnsList.map((col, idx) => (
                     <TableCell
                       key={col.id}
                       align={col.align}
-                      className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 select-none hover:bg-slate-100/80 transition-colors"
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, idx)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, idx)}
+                      className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 select-none hover:bg-slate-100/80 transition-colors cursor-move"
                     >
                       {col.sortable !== false ? (
                         <TableSortLabel
@@ -477,7 +498,7 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
               <TableBody>
                 {filteredTransactions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={columns.length} align="center" className="!py-12 !border-none">
+                    <TableCell colSpan={columnsList.length} align="center" className="!py-12 !border-none">
                       <Typography variant="body2" className="text-slate-400 font-medium">
                         Không tìm thấy giao dịch nào phù hợp.
                       </Typography>
@@ -486,7 +507,7 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
                 ) : (
                   paginatedTransactions.map((tx) => (
                     <TableRow key={tx.id} className="hover:bg-slate-50/40 transition-colors">
-                      {columns.map((col) => {
+                      {columnsList.map((col) => {
                         if (col.id === "id") {
                           return (
                             <TableCell key={col.id} className="!font-mono !font-bold text-slate-400 !border-slate-100">

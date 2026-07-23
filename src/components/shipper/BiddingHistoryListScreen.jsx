@@ -174,7 +174,7 @@ export default function BiddingHistoryListScreen() {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const columns = [
+  const [columnsList, setColumnsList] = useState([
     { id: "id", label: "Mã lô hàng", align: "left" },
     { id: "goodsType", label: "Hàng hóa & Quy cách", align: "left" },
     { id: "route", label: "Lộ trình vận chuyển", align: "left" },
@@ -183,7 +183,24 @@ export default function BiddingHistoryListScreen() {
     { id: "bidCount", label: "Lượt thầu", align: "center" },
     { id: "status", label: "Trạng thái", align: "center", sortable: false },
     { id: "actions", label: "Thao tác", align: "center", sortable: false },
-  ];
+  ]);
+
+  const handleDragStart = (e, index) => {
+    e.dataTransfer.setData("colIndex", index.toString());
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e, index) => {
+    const dragIndex = Number(e.dataTransfer.getData("colIndex"));
+    if (isNaN(dragIndex) || dragIndex === index) return;
+    const updated = [...columnsList];
+    const [removed] = updated.splice(dragIndex, 1);
+    updated.splice(index, 0, removed);
+    setColumnsList(updated);
+  };
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === "asc";
@@ -575,11 +592,15 @@ export default function BiddingHistoryListScreen() {
           <Table sx={{ minWidth: 800 }}>
             <TableHead className="bg-slate-50/50">
               <TableRow>
-                {columns.map((col) => (
+                {columnsList.map((col, idx) => (
                   <TableCell
                     key={col.id}
                     align={col.align}
-                    className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 select-none hover:bg-slate-100/80 transition-colors"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, idx)}
+                    className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 select-none hover:bg-slate-100/80 transition-colors cursor-move"
                   >
                     {col.sortable !== false ? (
                       <TableSortLabel
@@ -601,7 +622,7 @@ export default function BiddingHistoryListScreen() {
             <TableBody>
               {paginatedShipments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length} align="center" className="!py-16 !border-slate-100">
+                  <TableCell colSpan={columnsList.length} align="center" className="!py-16 !border-slate-100">
                     <Typography variant="body2" className="text-slate-400 font-medium">
                       Không tìm thấy phiên đấu giá nào phù hợp với bộ lọc hiện tại.
                     </Typography>
@@ -614,7 +635,7 @@ export default function BiddingHistoryListScreen() {
                   
                   return (
                     <TableRow key={shipment.id} className="hover:bg-slate-50/30 transition-colors">
-                      {columns.map((col) => {
+                      {columnsList.map((col) => {
                         if (col.id === "id") {
                           return (
                             <TableCell key={col.id} className="!font-mono !font-bold !text-[#1B4965] !border-slate-100">

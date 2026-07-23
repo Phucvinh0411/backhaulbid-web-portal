@@ -8,6 +8,7 @@ import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonthOutlined";
 import BalanceIcon from "@mui/icons-material/ScaleOutlined";
+import { AuctionTypeBadge, AuctionStatusBadge, RoundedBox, AsymmetricCornerBox, ActionButton } from "@/components/common";
 
 /**
  * Reusable BiddingItem card component representing a logistics shipment.
@@ -43,151 +44,100 @@ export default function BiddingItem({ shipment, onCancel, onViewDetail }) {
   const getStatusDesign = (status) => {
     switch (status) {
       case "pending_bids":
-        return {
-          label: "Chờ đấu giá",
-          bgColor: "#EFF6FF",
-          textColor: "#2563EB",
-          borderColor: "#DBEAFE",
-        };
+        return { label: "Chờ đấu giá" };
       case "active_bids":
-        return {
-          label: "Đang đấu giá",
-          bgColor: "#ECFDF5",
-          textColor: "#059669",
-          borderColor: "#D1FAE5",
-          pulse: true,
-        };
+        return { label: "Đang đấu giá" };
       case "awarded":
-        return {
-          label: "Đã chốt thầu",
-          bgColor: "#F5F3FF",
-          textColor: "#7C3AED",
-          borderColor: "#DDD6FE",
-        };
+        return { label: "Đã chốt thầu" };
       case "shipping":
-        return {
-          label: "Đang vận chuyển",
-          bgColor: "#FEF3C7",
-          textColor: "#D97706",
-          borderColor: "#FDE68A",
-        };
+        return { label: "Đang vận chuyển" };
       case "completed":
-        return {
-          label: "Hoàn thành",
-          bgColor: "#F1F5F9",
-          textColor: "#475569",
-          borderColor: "#E2E8F0",
-        };
+        return { label: "Hoàn thành" };
       case "cancelled":
-        return {
-          label: "Đã hủy",
-          bgColor: "#FEF2F2",
-          textColor: "#E11D48",
-          borderColor: "#FEE2E2",
-        };
+        return { label: "Đã hủy" };
       default:
-        return {
-          label: "Không xác định",
-          bgColor: "#F8FAFC",
-          textColor: "#64748B",
-          borderColor: "#E2E8F0",
-        };
+        return { label: "Khác" };
     }
   };
 
   const design = getStatusDesign(shipment.status);
 
   return (
-    <Card 
-      className="group hover:-translate-y-1 hover:shadow-xl transition-all duration-300 border border-slate-100/80 !rounded-3xl relative overflow-hidden"
-      sx={{
-        background: "rgba(255, 255, 255, 0.8)",
-        backdropFilter: "blur(20px)",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.02)",
-        "&:hover": {
-          borderColor: "rgba(27, 73, 101, 0.15)",
-          boxShadow: "0 12px 30px rgba(27, 73, 101, 0.05)",
-        }
-      }}
+    <RoundedBox
+      className="group h-full flex flex-col justify-between"
+      padding="lg"
+      hoverEffect={true}
     >
       {/* Visual background gradient glow on hover */}
       <Box className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#1B4965] to-[#62B6CB] opacity-0 group-hover:opacity-100 transition-all duration-300" />
       
-      <CardContent className="!p-6 space-y-4">
-        {/* Card Header: Code & Status */}
-        <div className="flex items-center justify-between">
-          <Typography className="!font-mono !font-bold text-slate-400 text-xs">
-            {shipment.id}
-          </Typography>
-          <Chip
-            label={design.label}
-            size="small"
-            className={design.pulse ? "animate-pulse-subtle" : ""}
-            sx={{
-              fontWeight: "bold",
-              fontSize: "0.72rem",
-              px: 1,
-              py: 0.5,
-              borderRadius: "9999px",
-              border: "1px solid",
-              backgroundColor: `${design.bgColor} !important`,
-              color: `${design.textColor} !important`,
-              borderColor: `${design.borderColor} !important`,
-            }}
-          />
-        </div>
-
-        {/* Main Title & Goods Info */}
-        <div>
-          <Typography variant="h6" className="!font-bold text-slate-800 leading-snug truncate">
-            {shipment.goodsType}
-          </Typography>
-          <div className="flex items-center gap-4 mt-1.5 text-slate-500 text-xs font-semibold">
-            <span className="flex items-center gap-1">
-              <BalanceIcon className="!text-[1rem] text-slate-400" />
-              {shipment.weight}
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-            <span>Kích thước: {shipment.volume}</span>
-          </div>
-        </div>
-
-        {/* Address Route Timeline Visual */}
-        <div className="bg-slate-50/60 p-3 rounded-2xl border border-slate-100/50 space-y-3">
-          {/* Source point */}
-          <div className="flex items-start gap-2.5">
-            <div className="flex flex-col items-center mt-1">
-              <div className="w-2.5 h-2.5 rounded-full border-2 border-sky-500 bg-white" />
-              <div className="w-0.5 h-6 bg-slate-200" />
+      <div className="flex-1 flex flex-col justify-between space-y-4">
+        {/* Top Info Group */}
+        <div className="space-y-4">
+          {/* Card Header: Code, Auction Type Badge & Status */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="font-mono font-black text-slate-700 text-xs tracking-tight shrink-0 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200/80 whitespace-nowrap">
+                {shipment.id}
+              </span>
+              <AuctionTypeBadge type={shipment.auctionType} size="md" />
             </div>
-            <div className="min-w-0">
-              <Typography className="!text-[0.68rem] !font-bold text-sky-600 uppercase tracking-wider leading-none">
-                Điểm Lấy Hàng ({shipment.from.province})
-              </Typography>
-              <Typography variant="body2" className="text-slate-600 font-medium truncate mt-0.5">
-                {shipment.from.detail}
-              </Typography>
+
+            <AuctionStatusBadge status={shipment.status} labelOverride={design.label} size="md" />
+          </div>
+
+          {/* Main Title & Goods Info */}
+          <div>
+            <Typography variant="h6" className="!font-bold text-slate-800 leading-snug truncate">
+              {shipment.goodsType}
+            </Typography>
+            <div className="flex items-center gap-4 mt-1.5 text-slate-500 text-xs font-semibold">
+              <span className="flex items-center gap-1">
+                <BalanceIcon className="!text-[1rem] text-slate-400" />
+                {shipment.weight}
+              </span>
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+              <span>Kích thước: {shipment.volume}</span>
             </div>
           </div>
 
-          {/* Destination point */}
-          <div className="flex items-start gap-2.5">
-            <div className="flex flex-col items-center mt-1">
-              <div className="w-2.5 h-2.5 rounded-full border-2 border-emerald-500 bg-emerald-500" />
+          {/* Address Route Timeline Visual */}
+          <div className="bg-slate-50/60 p-3 rounded-2xl border border-slate-100/50 space-y-3">
+            {/* Source point */}
+            <div className="flex items-start gap-2.5">
+              <div className="flex flex-col items-center mt-1">
+                <div className="w-2.5 h-2.5 rounded-full border-2 border-sky-500 bg-white" />
+                <div className="w-0.5 h-6 bg-slate-200" />
+              </div>
+              <div className="min-w-0">
+                <Typography className="!text-[0.68rem] !font-bold text-sky-600 uppercase tracking-wider leading-none">
+                  Điểm Lấy Hàng ({shipment.from.province})
+                </Typography>
+                <Typography variant="body2" className="text-slate-600 font-medium truncate mt-0.5">
+                  {shipment.from.detail}
+                </Typography>
+              </div>
             </div>
-            <div className="min-w-0">
-              <Typography className="!text-[0.68rem] !font-bold text-emerald-600 uppercase tracking-wider leading-none">
-                Điểm Giao Hàng ({shipment.to.province})
-              </Typography>
-              <Typography variant="body2" className="text-slate-600 font-medium truncate mt-0.5">
-                {shipment.to.detail}
-              </Typography>
+
+            {/* Destination point */}
+            <div className="flex items-start gap-2.5">
+              <div className="flex flex-col items-center mt-1">
+                <div className="w-2.5 h-2.5 rounded-full border-2 border-emerald-500 bg-emerald-500" />
+              </div>
+              <div className="min-w-0">
+                <Typography className="!text-[0.68rem] !font-bold text-emerald-600 uppercase tracking-wider leading-none">
+                  Điểm Giao Hàng ({shipment.to.province})
+                </Typography>
+                <Typography variant="body2" className="text-slate-600 font-medium truncate mt-0.5">
+                  {shipment.to.detail}
+                </Typography>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Auction and Carrier info based on status */}
-        <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+        {/* Bottom Info & Actions Group */}
+        <div className="pt-2 border-t border-slate-100 flex flex-col gap-2 mt-auto">
           {/* Bidding Information for Active Bids */}
           {shipment.status === "active_bids" && (
             <div className="grid grid-cols-2 gap-2 text-xs">
@@ -256,29 +206,25 @@ export default function BiddingItem({ shipment, onCancel, onViewDetail }) {
 
         {/* Card Actions */}
         <div className="flex items-center justify-between pt-3 border-t border-slate-100 gap-3">
-          <Button
+          <ActionButton
             variant="text"
-            size="small"
+            size="sm"
             onClick={() => onViewDetail && onViewDetail(shipment.id)}
-            className="!text-[#1B4965] !font-bold !text-[0.8rem] !capitalize !rounded-xl"
-            sx={{ "&:hover": { backgroundColor: "rgba(27, 73, 101, 0.05)" } }}
           >
             Xem chi tiết
-          </Button>
+          </ActionButton>
 
           {(shipment.status === "active_bids" || shipment.status === "pending_bids") && (
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
+            <ActionButton
+              variant="danger-outlined"
+              size="sm"
               onClick={() => onCancel && onCancel(shipment.id)}
-              className="!text-rose-500 !border-rose-200 hover:!bg-rose-50 hover:!border-rose-300 !font-bold !text-[0.8rem] !capitalize !rounded-xl"
             >
               Hủy thầu
-            </Button>
+            </ActionButton>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </RoundedBox>
   );
 }

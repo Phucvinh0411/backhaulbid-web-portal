@@ -9,6 +9,7 @@ import Chip from "@mui/material/Chip";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonthOutlined";
 import BalanceIcon from "@mui/icons-material/ScaleOutlined";
 import { EmojiEvents as EmojiEventsIcon, CancelOutlined as CancelOutlinedIcon } from "@mui/icons-material";
+import { AuctionTypeBadge, AuctionStatusBadge, RoundedBox, AsymmetricCornerBox, ActionButton } from "@/components/common";
 
 export default function CarrierBiddingItem({ 
   auction, 
@@ -83,45 +84,25 @@ export default function CarrierBiddingItem({
   const design = getStatusDesign(auction.status, auction.isWinner);
 
   return (
-    <Card 
-      className="group hover:-translate-y-1 hover:shadow-xl transition-all duration-300 border border-slate-100/80 !rounded-3xl relative overflow-hidden h-full flex flex-col"
-      sx={{
-        background: "rgba(255, 255, 255, 0.8)",
-        backdropFilter: "blur(20px)",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.02)",
-        "&:hover": {
-          borderColor: "rgba(27, 73, 101, 0.15)",
-          boxShadow: "0 12px 30px rgba(27, 73, 101, 0.05)",
-        }
-      }}
+    <RoundedBox
+      className="group h-full flex flex-col justify-between"
+      padding="lg"
+      hoverEffect={true}
     >
       {/* Visual background gradient glow on hover */}
       <Box className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#1B4965] to-[#62B6CB] opacity-0 group-hover:opacity-100 transition-all duration-300" />
       
-      <CardContent className="!p-6 space-y-4 flex-1">
-        {/* Card Header: Code & Status */}
-        <div className="flex items-center justify-between">
-          <Typography className="!font-mono !font-bold text-[#1B4965] text-sm">
-            {auction.id}
-          </Typography>
-          <Chip
-            icon={design.icon}
-            label={design.label}
-            size="small"
-            className={design.pulse ? "animate-pulse-subtle" : ""}
-            sx={{
-              fontWeight: "bold",
-              fontSize: "0.72rem",
-              px: 1,
-              py: 0.5,
-              borderRadius: "9999px",
-              border: "1px solid",
-              backgroundColor: `${design.bgColor} !important`,
-              color: `${design.textColor} !important`,
-              borderColor: `${design.borderColor} !important`,
-              "& .MuiChip-icon": { color: "inherit", ml: 0.5 }
-            }}
-          />
+      <div className="flex-1 flex flex-col justify-between space-y-4">
+        {/* Card Header: Code, Auction Type Badge & Status */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="font-mono font-black text-[#1B4965] text-xs tracking-tight shrink-0 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200/80 whitespace-nowrap">
+              {auction.id}
+            </span>
+            <AuctionTypeBadge type={auction.auctionType} size="md" />
+          </div>
+
+          <AuctionStatusBadge status={auction.status} labelOverride={design.label} size="md" />
         </div>
 
         {/* Main Title & Goods Info */}
@@ -240,50 +221,45 @@ export default function CarrierBiddingItem({
             </div>
           )}
         </div>
-      </CardContent>
+      </div>
 
       {/* Card Actions */}
-      <div className="flex items-center justify-between p-4 pt-3 border-t border-slate-100 gap-3">
+      <div className="flex items-center justify-between pt-3 border-t border-slate-100 gap-3">
         {customActions ? customActions : (
           <>
             {auction.status === "BIDDING" ? (
-              <Button 
+              <ActionButton 
                 fullWidth 
-                variant="contained"
-                color="primary"
+                variant="primary"
+                size="sm"
                 onClick={() => onEnterRoom && onEnterRoom(auction.id)}
-                sx={{ backgroundColor: "#1B4965", borderRadius: "12px", textTransform: "none", fontWeight: 700 }}
               >
                 Vào phòng đấu giá
-              </Button>
+              </ActionButton>
             ) : (
               <>
-                <Button
+                <ActionButton
                   variant="text"
-                  size="small"
+                  size="sm"
                   onClick={() => onViewDetail && onViewDetail(auction)}
-                  className="!text-[#1B4965] !font-bold !text-[0.8rem] !capitalize !rounded-xl"
-                  sx={{ "&:hover": { backgroundColor: "rgba(27, 73, 101, 0.05)" } }}
                 >
                   Chi tiết
-                </Button>
+                </ActionButton>
                 
                 {auction.status === "OPEN_REGISTER" && onCancel && (
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    size="small"
+                  <ActionButton
+                    variant="danger-outlined"
+                    size="sm"
                     onClick={() => onCancel(auction)}
-                    className="!text-rose-500 !border-rose-200 hover:!bg-rose-50 hover:!border-rose-300 !font-bold !text-[0.8rem] !capitalize !rounded-xl"
                   >
                     Hủy đăng ký
-                  </Button>
+                  </ActionButton>
                 )}
               </>
             )}
           </>
         )}
       </div>
-    </Card>
+    </RoundedBox>
   );
 }
