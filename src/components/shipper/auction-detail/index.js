@@ -5,6 +5,7 @@ export { default as ShipmentSummaryCard } from "./ShipmentSummaryCard";
 export { default as LiveCountdownCard } from "./LiveCountdownCard";
 export { default as LowestBidCard } from "./LowestBidCard";
 export { default as BidsTable } from "./BidsTable";
+export { default as FullBidsDetailModal } from "./FullBidsDetailModal";
 export { default as ContractOtpModal } from "./ContractOtpModal";
 export { default as CarrierProfileModal } from "./CarrierProfileModal";
 export * from "./mockData";

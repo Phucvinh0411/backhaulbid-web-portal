@@ -14,6 +14,7 @@ import ShipmentSummaryCard from "./ShipmentSummaryCard";
 import LiveCountdownCard from "./LiveCountdownCard";
 import LowestBidCard from "./LowestBidCard";
 import BidsTable from "./BidsTable";
+import FullBidsDetailModal from "./FullBidsDetailModal";
 import ContractOtpModal from "./ContractOtpModal";
 import CarrierProfileModal from "./CarrierProfileModal";
 
@@ -30,6 +31,8 @@ export default function AuctionDetailScreen({ id }) {
 
   const [openCarrierModal, setOpenCarrierModal] = useState(false);
   const [selectedCarrier, setSelectedCarrier] = useState(null);
+
+  const [openFullBidsModal, setOpenFullBidsModal] = useState(false);
 
   useEffect(() => {
     if (shipment) {
@@ -108,37 +111,52 @@ export default function AuctionDetailScreen({ id }) {
         ]}
       />
 
-      {/* Grid: Left - Shipment Detail Info | Right - Real-time Bidding status */}
-      <Grid container spacing={3} className="!mb-6">
-        {/* Left Side: Summary Card */}
-        <Grid item xs={12} lg={7}>
-          <ShipmentSummaryCard shipment={shipment} />
-        </Grid>
-
-        {/* Right Side: Live Countdown & Lowest Bid Card */}
-        <Grid item xs={12} lg={5}>
-          <div className="space-y-6 flex flex-col justify-between h-full">
-            <LiveCountdownCard countdown={countdown} />
-            <LowestBidCard
-              shipment={shipment}
-              lowestBidDetails={lowestBidDetails}
-              lowestBidAmount={lowestBidAmount}
+      {/* TOP SECTION: Real-time Bidding & Carrier Bids Overview — pure CSS grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-[7fr_5fr] gap-6 mb-6">
+        {/* Left Column: Bids Table — relative + absolute inset-0 prevents height expansion */}
+        <div className="relative min-h-[420px] lg:min-h-0">
+          <div className="lg:absolute lg:inset-0 flex flex-col">
+            <BidsTable
+              bids={bids}
+              shipmentStatus={shipment.status}
+              auctionType={shipment.auctionType}
               onOpenOtpDialog={handleOpenOtpDialog}
               onOpenCarrierModal={handleOpenCarrierModal}
+              onOpenFullModal={() => setOpenFullBidsModal(true)}
+              isSimplified={true}
             />
           </div>
-        </Grid>
-      </Grid>
+        </div>
 
-      {/* Table: List of Carrier bids */}
-      <BidsTable
+        {/* Right Column: Countdown & Lowest Price Card stacked */}
+        <div className="flex flex-col gap-4">
+          <LiveCountdownCard countdown={countdown} />
+          <LowestBidCard
+            shipment={shipment}
+            lowestBidDetails={lowestBidDetails}
+            lowestBidAmount={lowestBidAmount}
+            onOpenOtpDialog={handleOpenOtpDialog}
+            onOpenCarrierModal={handleOpenCarrierModal}
+          />
+        </div>
+      </div>
+
+      {/* BOTTOM SECTION: Detailed Shipment Parameters & Cargo Info */}
+      <Box className="w-full">
+        <ShipmentSummaryCard shipment={shipment} />
+      </Box>
+
+      {/* Modal 1: Full Detailed Bids Table Modal */}
+      <FullBidsDetailModal
+        open={openFullBidsModal}
+        onClose={() => setOpenFullBidsModal(false)}
         bids={bids}
         shipmentStatus={shipment.status}
         onOpenOtpDialog={handleOpenOtpDialog}
         onOpenCarrierModal={handleOpenCarrierModal}
       />
 
-      {/* Contract OTP Dialog */}
+      {/* Modal 2: Contract OTP Dialog */}
       <ContractOtpModal
         open={openOtpDialog}
         onClose={handleCloseOtpDialog}
@@ -149,7 +167,7 @@ export default function AuctionDetailScreen({ id }) {
         winnerCarrierName={selectedWinnerBid ? selectedWinnerBid.carrierName : (lowestBidDetails ? lowestBidDetails.carrierName : "")}
       />
 
-      {/* Carrier Profile Detail Dialog */}
+      {/* Modal 3: Carrier Profile Detail Dialog */}
       <CarrierProfileModal
         open={openCarrierModal}
         onClose={handleCloseCarrierModal}
