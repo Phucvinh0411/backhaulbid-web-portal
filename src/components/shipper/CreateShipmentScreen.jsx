@@ -40,6 +40,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import InfoIcon from "@mui/icons-material/InfoOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
+import AuctionTypeSelector from "@/components/shipper/AuctionTypeSelector";
 
 // Mock Address Book for quick populating
 const MOCK_ADDRESS_BOOK = [
@@ -97,15 +98,19 @@ export default function CreateShipmentScreen() {
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   // --- STEP 1 STATE: Goods Info ---
-  const [goodsType, setGoodsType] = useState("");
+  const [goodsType, setGoodsType] = useState(""); // This is goodsName
+  const [goodsCategory, setGoodsCategory] = useState("Hàng bách hóa");
   const [weight, setWeight] = useState("");
   const [weightUnit, setWeightUnit] = useState("tấn");
   const [volume, setVolume] = useState("");
   const [dimensions, setDimensions] = useState({ length: "", width: "", height: "" });
+  const [goodsValue, setGoodsValue] = useState("");
+  const [requiredTemp, setRequiredTemp] = useState("");
+  const [goodsNotes, setGoodsNotes] = useState("");
   const [uploadedImages, setUploadedImages] = useState([]);
   const [step1Errors, setStep1Errors] = useState({});
 
-  // --- STEP 2 STATE: Locations ---
+  // --- STEP 2 STATE: Locations & Time Window ---
   const [pickup, setPickup] = useState({
     contactName: "",
     contactPhone: "",
@@ -118,16 +123,31 @@ export default function CreateShipmentScreen() {
     province: "",
     detail: "",
   });
+  const [earliestPickup, setEarliestPickup] = useState("");
+  const [latestPickup, setLatestPickup] = useState("");
+  const [earliestDelivery, setEarliestDelivery] = useState("");
+  const [latestDelivery, setLatestDelivery] = useState("");
+  
   const [addressBookTarget, setAddressBookTarget] = useState(null); // 'pickup' or 'delivery'
   const [openAddressBook, setOpenAddressBook] = useState(false);
   const [step2Errors, setStep2Errors] = useState({});
 
   // --- STEP 3 STATE: Auction ---
   const [maxPrice, setMaxPrice] = useState("");
+  const [auctionCreator, setAuctionCreator] = useState("Công ty TNHH Vận tải & Thương mại Hùng Vương");
+  const [regStartTime, setRegStartTime] = useState("");
+  const [regEndTime, setRegEndTime] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [notes, setNotes] = useState("");
+  const [priceStep, setPriceStep] = useState("50000");
+  const [maxBids, setMaxBids] = useState("5");
+  const [participationFee, setParticipationFee] = useState("20000");
+  const [depositAmount, setDepositAmount] = useState("1000000");
+  const [requiredVehicleType, setRequiredVehicleType] = useState("Xe tải thùng kín");
+  const [requiredVehicleDims, setRequiredVehicleDims] = useState({ length: "", width: "", height: "" });
+  const [notes, setNotes] = useState(""); // detailed note
   const [step3Errors, setStep3Errors] = useState({});
+  const [auctionType, setAuctionType] = useState("PUBLIC"); // 'PUBLIC' or 'SEALED'
 
   // --- Step 1 image handler (simulation) ---
   const handleImageUpload = (e) => {
@@ -169,9 +189,15 @@ export default function CreateShipmentScreen() {
   // --- Validations ---
   const validateStep1 = () => {
     const errors = {};
-    if (!goodsType.trim()) errors.goodsType = "Vui lòng nhập loại hàng hóa";
+    if (!goodsType.trim()) errors.goodsType = "Vui lòng nhập tên hàng hóa";
     if (!weight || Number(weight) <= 0) errors.weight = "Trọng lượng phải lớn hơn 0";
     if (!volume || Number(volume) <= 0) errors.volume = "Thể tích phải lớn hơn 0";
+    if (goodsCategory === "Hàng đông lạnh" && !requiredTemp) {
+      errors.requiredTemp = "Vui lòng nhập nhiệt độ yêu cầu";
+    }
+    if (!goodsValue || Number(goodsValue) <= 0) {
+      errors.goodsValue = "Vui lòng nhập giá trị hàng hóa ước tính";
+    }
     setStep1Errors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -188,6 +214,18 @@ export default function CreateShipmentScreen() {
     if (!delivery.province.trim()) errors.deliveryProvince = "Nhập tỉnh/thành phố giao hàng";
     if (!delivery.detail.trim()) errors.deliveryDetail = "Nhập địa chỉ chi tiết giao hàng";
 
+    if (!earliestPickup) errors.earliestPickup = "Chọn thời gian nhận hàng sớm nhất";
+    if (!latestPickup) errors.latestPickup = "Chọn thời gian nhận hàng trễ nhất";
+    if (!earliestDelivery) errors.earliestDelivery = "Chọn thời gian giao hàng sớm nhất";
+    if (!latestDelivery) errors.latestDelivery = "Chọn thời gian giao hàng trễ nhất";
+
+    if (earliestPickup && latestPickup && new Date(earliestPickup) >= new Date(latestPickup)) {
+      errors.latestPickup = "Nhận hàng trễ nhất phải sau sớm nhất";
+    }
+    if (earliestDelivery && latestDelivery && new Date(earliestDelivery) >= new Date(latestDelivery)) {
+      errors.latestDelivery = "Giao hàng trễ nhất phải sau sớm nhất";
+    }
+
     setStep2Errors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -195,9 +233,16 @@ export default function CreateShipmentScreen() {
   const validateStep3 = () => {
     const errors = {};
     if (!maxPrice || Number(maxPrice) <= 0) errors.maxPrice = "Vui lòng nhập giá trần tối đa hợp lệ";
+    if (!regStartTime) errors.regStartTime = "Chọn thời gian mở đăng ký";
+    if (!regEndTime) errors.regEndTime = "Chọn thời gian đóng đăng ký";
     if (!startTime) errors.startTime = "Chọn thời gian bắt đầu đấu giá";
     if (!endTime) errors.endTime = "Chọn thời gian đóng thầu";
-    
+    if (!priceStep || Number(priceStep) <= 0) errors.priceStep = "Nhập bước giá hợp lệ";
+    if (!depositAmount || Number(depositAmount) <= 0) errors.depositAmount = "Nhập tiền đặt trước hợp lệ";
+
+    if (regStartTime && regEndTime && new Date(regStartTime) >= new Date(regEndTime)) {
+      errors.regEndTime = "Thời gian đóng đăng ký phải sau thời gian mở đăng ký";
+    }
     if (startTime && endTime && new Date(startTime) >= new Date(endTime)) {
       errors.endTime = "Thời gian kết thúc phải sau thời gian bắt đầu";
     }
@@ -361,10 +406,10 @@ export default function CreateShipmentScreen() {
                       </div>
 
                       <Grid container spacing={3}>
-                        <Grid item xs={12}>
+                        <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Tên / Loại hàng hóa"
-                            placeholder="Ví dụ: Linh kiện điện tử, Nông sản tươi, Thép cuộn..."
+                            label="Tên hàng hóa chi tiết"
+                            placeholder="Ví dụ: Linh kiện điện tử Samsung, Thủy sản đông lạnh..."
                             fullWidth
                             value={goodsType}
                             onChange={(e) => setGoodsType(e.target.value)}
@@ -383,9 +428,26 @@ export default function CreateShipmentScreen() {
 
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Khối lượng (Trọng tải)"
+                            select
+                            label="Phân loại nhóm hàng hóa"
+                            fullWidth
+                            value={goodsCategory}
+                            onChange={(e) => setGoodsCategory(e.target.value)}
+                            InputProps={{ className: "!rounded-2xl" }}
+                          >
+                            <MenuItem value="Hàng bách hóa">Hàng bách hóa</MenuItem>
+                            <MenuItem value="Hàng đông lạnh">Hàng đông lạnh (Thực phẩm, dược phẩm...)</MenuItem>
+                            <MenuItem value="Hàng cồng kềnh">Hàng cồng kềnh (Quá khổ, siêu trường siêu trọng...)</MenuItem>
+                            <MenuItem value="Hàng dễ vỡ">Hàng dễ vỡ</MenuItem>
+                            <MenuItem value="Hóa chất nguy hiểm">Hóa chất nguy hiểm</MenuItem>
+                          </TextField>
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Trọng lượng (Khối lượng hàng)"
                             type="number"
-                            placeholder="Nhập trọng tải hàng"
+                            placeholder="Nhập khối lượng"
                             fullWidth
                             value={weight}
                             onChange={(e) => setWeight(e.target.value)}
@@ -428,7 +490,7 @@ export default function CreateShipmentScreen() {
                             value={volume}
                             onChange={(e) => setVolume(e.target.value)}
                             error={!!step1Errors.volume}
-                            helperText={step1Errors.volume || "Nhập Kích thước bên dưới để tính nhanh thể tích."}
+                            helperText={step1Errors.volume || "Có thể nhập Kích thước bên dưới để tự động tính."}
                             InputProps={{
                               endAdornment: <InputAdornment position="end">m³</InputAdornment>,
                               className: "!rounded-2xl",
@@ -443,11 +505,79 @@ export default function CreateShipmentScreen() {
                           />
                         </Grid>
 
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Giá trị hàng hóa ước tính"
+                            type="number"
+                            placeholder="Ví dụ: 500000000"
+                            fullWidth
+                            value={goodsValue}
+                            onChange={(e) => setGoodsValue(e.target.value)}
+                            error={!!step1Errors.goodsValue}
+                            helperText={step1Errors.goodsValue || "Giá trị dùng để xác định bảo hiểm & tiền đặt trước"}
+                            InputProps={{
+                              endAdornment: <InputAdornment position="end">VNĐ</InputAdornment>,
+                              className: "!rounded-2xl",
+                            }}
+                            sx={{
+                              "& .MuiOutlinedInput-root": {
+                                "& fieldset": { borderColor: "#E2E8F0" },
+                                "&:hover fieldset": { borderColor: "#CBD5E1" },
+                                "&.Mui-focused fieldset": { borderColor: "#1B4965" },
+                              }
+                            }}
+                          />
+                        </Grid>
+
+                        {goodsCategory === "Hàng đông lạnh" && (
+                          <Grid item xs={12} sm={6} className="animate-fade-in">
+                            <TextField
+                              label="Nhiệt độ yêu cầu (°C)"
+                              type="number"
+                              placeholder="Ví dụ: -18"
+                              fullWidth
+                              value={requiredTemp}
+                              onChange={(e) => setRequiredTemp(e.target.value)}
+                              error={!!step1Errors.requiredTemp}
+                              helperText={step1Errors.requiredTemp}
+                              InputProps={{
+                                endAdornment: <InputAdornment position="end">°C</InputAdornment>,
+                                className: "!rounded-2xl",
+                              }}
+                              sx={{
+                                "& .MuiOutlinedInput-root": {
+                                  "& fieldset": { borderColor: "#E2E8F0" },
+                                  "&:hover fieldset": { borderColor: "#CBD5E1" },
+                                  "&.Mui-focused fieldset": { borderColor: "#1B4965" },
+                                }
+                              }}
+                            />
+                          </Grid>
+                        )}
+
+                        <Grid item xs={12}>
+                          <TextField
+                            label="Ghi chú bốc xếp / xếp chồng"
+                            placeholder="Ví dụ: Hàng dễ vỡ, không xếp chồng quá 3 lớp. Cần đệm lót kỹ càng."
+                            fullWidth
+                            value={goodsNotes}
+                            onChange={(e) => setGoodsNotes(e.target.value)}
+                            InputProps={{ className: "!rounded-2xl" }}
+                            sx={{
+                              "& .MuiOutlinedInput-root": {
+                                "& fieldset": { borderColor: "#E2E8F0" },
+                                "&:hover fieldset": { borderColor: "#CBD5E1" },
+                                "&.Mui-focused fieldset": { borderColor: "#1B4965" },
+                              }
+                            }}
+                          />
+                        </Grid>
+
                         <Grid item xs={12}>
                           <Paper className="!shadow-none border border-slate-100 rounded-2xl p-4 bg-slate-50/40">
                             <Typography variant="body2" className="text-slate-700 font-bold !mb-3 flex items-center gap-1.5">
                               <ScaleIcon fontSize="small" className="text-slate-400" />
-                              Kích thước phủ bì chi tiết (Đơn vị: Mét - Không bắt buộc)
+                              Kích thước hàng hóa chi tiết (Đơn vị: Mét - Không bắt buộc)
                             </Typography>
                             <Grid container spacing={2}>
                               <Grid item xs={4}>
@@ -692,6 +822,73 @@ export default function CreateShipmentScreen() {
                             </Grid>
                           </Grid>
                         </Grid>
+
+                        <Grid item xs={12}><Divider className="my-2 opacity-50" /></Grid>
+
+                        {/* Time Windows Form */}
+                        <Grid item xs={12} className="space-y-4">
+                          <Box className="flex items-center justify-between bg-amber-50/20 p-3 rounded-2xl border border-amber-100/50">
+                            <Typography className="!font-bold text-slate-700 flex items-center gap-2">
+                              <span className="w-3 h-3 rounded-full bg-amber-500 shadow-sm" />
+                              Khung thời gian giao nhận hàng
+                            </Typography>
+                          </Box>
+
+                          <Grid container spacing={3}>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                label="Thời gian nhận hàng sớm nhất"
+                                type="datetime-local"
+                                fullWidth
+                                value={earliestPickup}
+                                onChange={(e) => setEarliestPickup(e.target.value)}
+                                error={!!step2Errors.earliestPickup}
+                                helperText={step2Errors.earliestPickup}
+                                InputProps={{ className: "!rounded-2xl" }}
+                                InputLabelProps={{ shrink: true }}
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                label="Thời gian nhận hàng trễ nhất"
+                                type="datetime-local"
+                                fullWidth
+                                value={latestPickup}
+                                onChange={(e) => setLatestPickup(e.target.value)}
+                                error={!!step2Errors.latestPickup}
+                                helperText={step2Errors.latestPickup}
+                                InputProps={{ className: "!rounded-2xl" }}
+                                InputLabelProps={{ shrink: true }}
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                label="Thời gian giao hàng sớm nhất"
+                                type="datetime-local"
+                                fullWidth
+                                value={earliestDelivery}
+                                onChange={(e) => setEarliestDelivery(e.target.value)}
+                                error={!!step2Errors.earliestDelivery}
+                                helperText={step2Errors.earliestDelivery}
+                                InputProps={{ className: "!rounded-2xl" }}
+                                InputLabelProps={{ shrink: true }}
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                label="Thời gian giao hàng trễ nhất"
+                                type="datetime-local"
+                                fullWidth
+                                value={latestDelivery}
+                                onChange={(e) => setLatestDelivery(e.target.value)}
+                                error={!!step2Errors.latestDelivery}
+                                helperText={step2Errors.latestDelivery}
+                                InputProps={{ className: "!rounded-2xl" }}
+                                InputLabelProps={{ shrink: true }}
+                              />
+                            </Grid>
+                          </Grid>
+                        </Grid>
                       </Grid>
                     </div>
                   )}
@@ -714,83 +911,221 @@ export default function CreateShipmentScreen() {
                       </div>
 
                       <Grid container spacing={3}>
-                        <Grid item xs={12}>
+                        <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Giá cước trần (Giá cước tối đa bạn có thể trả)"
-                            type="number"
-                            placeholder="Nhập mức giá cao nhất có thể trả"
+                            label="Người tạo phiên đấu giá"
                             fullWidth
-                            value={maxPrice}
-                            onChange={(e) => setMaxPrice(e.target.value)}
-                            error={!!step3Errors.maxPrice}
-                            helperText={step3Errors.maxPrice || "Ví dụ: 12.500.000. Nhà xe sẽ đấu thầu giảm dần từ mốc này."}
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <MoneyIcon className="text-slate-400" />
-                                </InputAdornment>
-                              ),
-                              endAdornment: <InputAdornment position="end">VNĐ</InputAdornment>,
-                              className: "!rounded-2xl",
-                            }}
-                            sx={{
-                              "& .MuiOutlinedInput-root": {
-                                "& fieldset": { borderColor: "#E2E8F0" },
-                                "&:hover fieldset": { borderColor: "#CBD5E1" },
-                                "&.Mui-focused fieldset": { borderColor: "#1B4965" },
-                              }
-                            }}
+                            value={auctionCreator}
+                            disabled
+                            InputProps={{ className: "!rounded-2xl" }}
                           />
                         </Grid>
 
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Thời gian mở phiên đấu giá"
+                            select
+                            label="Loại xe yêu cầu"
+                            fullWidth
+                            value={requiredVehicleType}
+                            onChange={(e) => setRequiredVehicleType(e.target.value)}
+                            InputProps={{ className: "!rounded-2xl" }}
+                          >
+                            <MenuItem value="Xe tải thùng kín">Xe tải thùng kín</MenuItem>
+                            <MenuItem value="Xe tải mui phủ bạt">Xe tải mui phủ bạt</MenuItem>
+                            <MenuItem value="Xe tải có thùng đông lạnh">Xe tải có thùng đông lạnh</MenuItem>
+                          </TextField>
+                        </Grid>
+
+                        <Grid item xs={12}>
+                          <AuctionTypeSelector value={auctionType} onChange={setAuctionType} />
+                        </Grid>
+
+                        <Grid item xs={12}>
+                          <Paper className="!shadow-none border border-slate-100 rounded-2xl p-4 bg-slate-50/40">
+                            <Typography variant="body2" className="text-slate-700 font-bold !mb-3 flex items-center gap-1.5">
+                              <ScaleIcon fontSize="small" className="text-slate-400" />
+                              Kích thước lòng thùng yêu cầu tối thiểu (Đơn vị: Mét - Không bắt buộc)
+                            </Typography>
+                            <Grid container spacing={2}>
+                              <Grid item xs={4}>
+                                <TextField
+                                  label="Chiều dài"
+                                  type="number"
+                                  placeholder="Dài (m)"
+                                  fullWidth
+                                  value={requiredVehicleDims.length}
+                                  onChange={(e) => setRequiredVehicleDims({ ...requiredVehicleDims, length: e.target.value })}
+                                  InputProps={{ className: "!rounded-2xl bg-white" }}
+                                />
+                              </Grid>
+                              <Grid item xs={4}>
+                                <TextField
+                                  label="Chiều rộng"
+                                  type="number"
+                                  placeholder="Rộng (m)"
+                                  fullWidth
+                                  value={requiredVehicleDims.width}
+                                  onChange={(e) => setRequiredVehicleDims({ ...requiredVehicleDims, width: e.target.value })}
+                                  InputProps={{ className: "!rounded-2xl bg-white" }}
+                                />
+                              </Grid>
+                              <Grid item xs={4}>
+                                <TextField
+                                  label="Chiều cao"
+                                  type="number"
+                                  placeholder="Cao (m)"
+                                  fullWidth
+                                  value={requiredVehicleDims.height}
+                                  onChange={(e) => setRequiredVehicleDims({ ...requiredVehicleDims, height: e.target.value })}
+                                  InputProps={{ className: "!rounded-2xl bg-white" }}
+                                />
+                              </Grid>
+                            </Grid>
+                          </Paper>
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Thời gian mở đăng ký tham gia"
+                            type="datetime-local"
+                            fullWidth
+                            value={regStartTime}
+                            onChange={(e) => setRegStartTime(e.target.value)}
+                            error={!!step3Errors.regStartTime}
+                            helperText={step3Errors.regStartTime}
+                            InputProps={{ className: "!rounded-2xl" }}
+                            InputLabelProps={{ shrink: true }}
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Thời gian kết thúc đăng ký"
+                            type="datetime-local"
+                            fullWidth
+                            value={regEndTime}
+                            onChange={(e) => setRegEndTime(e.target.value)}
+                            error={!!step3Errors.regEndTime}
+                            helperText={step3Errors.regEndTime}
+                            InputProps={{ className: "!rounded-2xl" }}
+                            InputLabelProps={{ shrink: true }}
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Thời gian bắt đầu phiên đấu giá"
                             type="datetime-local"
                             fullWidth
                             value={startTime}
                             onChange={(e) => setStartTime(e.target.value)}
                             error={!!step3Errors.startTime}
                             helperText={step3Errors.startTime}
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <CalendarIcon className="text-slate-400" />
-                                </InputAdornment>
-                              ),
-                              className: "!rounded-2xl",
-                            }}
+                            InputProps={{ className: "!rounded-2xl" }}
                             InputLabelProps={{ shrink: true }}
                           />
                         </Grid>
 
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Thời gian đóng thầu (Kết thúc)"
+                            label="Thời gian kết thúc phiên đấu giá"
                             type="datetime-local"
                             fullWidth
                             value={endTime}
                             onChange={(e) => setEndTime(e.target.value)}
                             error={!!step3Errors.endTime}
                             helperText={step3Errors.endTime}
+                            InputProps={{ className: "!rounded-2xl" }}
+                            InputLabelProps={{ shrink: true }}
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Giá cước trần (Giá tối đa)"
+                            type="number"
+                            placeholder="Nhập mức giá tối đa"
+                            fullWidth
+                            value={maxPrice}
+                            onChange={(e) => setMaxPrice(e.target.value)}
+                            error={!!step3Errors.maxPrice}
+                            helperText={step3Errors.maxPrice || "Nhà xe sẽ đấu thầu giảm dần từ mốc này"}
                             InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <CalendarIcon className="text-slate-400" />
-                                </InputAdornment>
-                              ),
+                              endAdornment: <InputAdornment position="end">VNĐ</InputAdornment>,
                               className: "!rounded-2xl",
                             }}
-                            InputLabelProps={{ shrink: true }}
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Bước giá"
+                            type="number"
+                            placeholder="Ví dụ: 50000"
+                            fullWidth
+                            value={priceStep}
+                            onChange={(e) => setPriceStep(e.target.value)}
+                            error={!!step3Errors.priceStep}
+                            helperText={step3Errors.priceStep || "Bước giảm tối thiểu mỗi lượt đấu giá"}
+                            InputProps={{
+                              endAdornment: <InputAdornment position="end">VNĐ</InputAdornment>,
+                              className: "!rounded-2xl",
+                            }}
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Số lần ra giá tối đa của mỗi nhà xe"
+                            type="number"
+                            placeholder="Ví dụ: 5"
+                            fullWidth
+                            value={maxBids}
+                            onChange={(e) => setMaxBids(e.target.value)}
+                            helperText="Giới hạn số lượt đấu thầu"
+                            InputProps={{ className: "!rounded-2xl" }}
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Chi phí tham gia phiên đấu giá"
+                            type="number"
+                            placeholder="Ví dụ: 20000"
+                            fullWidth
+                            value={participationFee}
+                            onChange={(e) => setParticipationFee(e.target.value)}
+                            helperText="Phí tham gia đấu thầu của nhà xe (không hoàn lại)"
+                            InputProps={{
+                              endAdornment: <InputAdornment position="end">VNĐ</InputAdornment>,
+                              className: "!rounded-2xl",
+                            }}
                           />
                         </Grid>
 
                         <Grid item xs={12}>
                           <TextField
-                            label="Yêu cầu chi tiết khác đối với nhà xe"
+                            label="Tiền đặt trước (Deposit) yêu cầu của nhà xe"
+                            type="number"
+                            placeholder="Ví dụ: 1000000"
+                            fullWidth
+                            value={depositAmount}
+                            onChange={(e) => setDepositAmount(e.target.value)}
+                            error={!!step3Errors.depositAmount}
+                            helperText="Tiền cọc đảm bảo: Hoàn trả khi giao hàng thành công; đền bù cho chủ hàng nếu bỏ chuyến."
+                            InputProps={{
+                              endAdornment: <InputAdornment position="end">VNĐ</InputAdornment>,
+                              className: "!rounded-2xl",
+                            }}
+                          />
+                        </Grid>
+
+                        <Grid item xs={12}>
+                          <TextField
+                            label="Ghi chú & Yêu cầu bổ sung đối với nhà xe"
                             multiline
-                            rows={4}
-                            placeholder="Mô tả cụ thể về loại xe yêu cầu (xe bạt, thùng kín, đông lạnh), các dịch vụ gia tăng như nâng hạ bốc xếp, bảo hiểm hàng hóa..."
+                            rows={3}
+                            placeholder="Mô tả cụ thể về chứng từ bốc xếp, nâng hạ, hoặc bảo hiểm..."
                             fullWidth
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
@@ -831,7 +1166,9 @@ export default function CreateShipmentScreen() {
                       <Button
                         variant="contained"
                         onClick={handleSubmit}
-                        className="!font-bold !px-8 !py-3.5 !rounded-2xl !capitalize shadow-md hover:shadow-lg transition-all duration-300"
+                        disabled={loading}
+                        endIcon={loading ? <CircularProgress size={20} color="inherit" /> : <GavelIcon />}
+                        className="!font-bold !px-6 !py-3 !rounded-2xl !capitalize shadow-md hover:shadow-lg transition-all duration-300"
                         sx={{
                           background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
                           "&:hover": {
@@ -839,52 +1176,81 @@ export default function CreateShipmentScreen() {
                           },
                         }}
                       >
-                        Kích hoạt Đấu giá
+                        {loading ? "Đang tạo..." : "Tạo phiên đấu thầu"}
                       </Button>
                     )}
                   </Box>
                 </Box>
               </Grid>
 
-              {/* Right Column: Live Draft Preview Panel */}
+              {/* Live Preview Side Column */}
               <Grid item xs={12} lg={4.5}>
-                <Box className="sticky top-6">
-                  <Card className="!rounded-3xl border border-slate-150 shadow-md bg-gradient-to-br from-slate-50/80 to-white relative overflow-hidden">
-                    {/* Decorative Top Accent Line */}
-                    <Box className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#1B4965] to-[#62B6CB]" />
-                    
-                    <CardContent className="p-6">
-                      <Typography variant="caption" className="text-slate-400 font-bold uppercase tracking-wider block mb-4">
-                        Bản Xem Trước Tin Đăng (Live Draft)
+                <Box className="sticky top-6 space-y-4">
+                  {/* Preview Title */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                      <Typography variant="subtitle1" className="!font-extrabold text-[#1B4965]">
+                        Xem trước lô hàng
                       </Typography>
+                      <Typography variant="caption" className="text-slate-450">
+                        Thông tin hiển thị cho nhà xe thời gian thực
+                      </Typography>
+                    </div>
+                  </div>
 
+                  <Card 
+                    className="!rounded-3xl border border-slate-150/80 shadow-sm"
+                    sx={{
+                      background: "rgba(255, 255, 255, 0.9)",
+                      backdropFilter: "blur(20px)",
+                    }}
+                  >
+                    <CardContent className="!p-5">
                       <Box className="space-y-4">
                         {/* Goods Info Section */}
-                        <Box>
-                          <Typography variant="caption" className="text-slate-400 block font-medium">Hàng hóa</Typography>
-                          <Typography variant="body1" className="!font-bold text-slate-800">
+                        <Box className="space-y-1 bg-slate-50/60 p-3 rounded-2xl border border-slate-100">
+                          <Typography variant="caption" className="text-slate-400 block font-bold uppercase text-[10px]">1. Thông tin hàng hóa</Typography>
+                          <Typography variant="body2" className="!font-bold text-slate-800">
                             {goodsType || <span className="text-slate-350 italic">Chưa nhập tên hàng</span>}
                           </Typography>
-                          <Box className="flex gap-4 mt-1">
-                            <Typography variant="caption" className="text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-md">
-                              Cân nặng: {weight ? `${weight} ${weightUnit}` : "Chưa có"}
+                          <Box className="flex flex-wrap gap-2 mt-1">
+                            <Typography variant="caption" className="text-slate-500 font-semibold bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+                              Nhóm: {goodsCategory}
                             </Typography>
-                            <Typography variant="caption" className="text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-md">
+                            <Typography variant="caption" className="text-slate-500 font-semibold bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+                              Khối lượng: {weight ? `${weight} ${weightUnit}` : "Chưa có"}
+                            </Typography>
+                            <Typography variant="caption" className="text-slate-500 font-semibold bg-white border border-slate-200 px-2 py-0.5 rounded-md">
                               Thể tích: {volume ? `${volume} m³` : "Chưa có"}
                             </Typography>
                           </Box>
                           {dimensions.length || dimensions.width || dimensions.height ? (
                             <Typography variant="caption" className="text-slate-400 block mt-1">
-                              Kích thước: {dimensions.length || "-"}m x {dimensions.width || "-"}m x {dimensions.height || "-"}m
+                              KT phủ bì: {dimensions.length || "-"}m x {dimensions.width || "-"}m x {dimensions.height || "-"}m
                             </Typography>
                           ) : null}
+                          {goodsValue && (
+                            <Typography variant="caption" className="text-slate-500 block">
+                              <strong>Giá trị ước tính:</strong> {formatCurrency(goodsValue)}
+                            </Typography>
+                          )}
+                          {goodsCategory === "Hàng đông lạnh" && requiredTemp && (
+                            <Typography variant="caption" className="text-rose-600 font-bold block">
+                              <strong>Nhiệt độ yêu cầu:</strong> {requiredTemp} °C
+                            </Typography>
+                          )}
+                          {goodsNotes && (
+                            <Typography variant="caption" className="text-amber-700 italic block mt-1 bg-amber-50 px-2 py-1 rounded">
+                              * {goodsNotes}
+                            </Typography>
+                          )}
                         </Box>
 
                         <Divider className="opacity-60" />
 
-                        {/* Route Section */}
-                        <Box className="space-y-3">
-                          <Typography variant="caption" className="text-slate-400 block font-medium">Hành trình giao nhận</Typography>
+                        {/* Route & Time Windows Section */}
+                        <Box className="space-y-3 bg-slate-50/60 p-3 rounded-2xl border border-slate-100">
+                          <Typography variant="caption" className="text-slate-400 block font-bold uppercase text-[10px]">2. Địa chỉ & Khung thời gian</Typography>
                           
                           {/* Point A */}
                           <Box className="flex items-start gap-2.5">
@@ -893,16 +1259,16 @@ export default function CreateShipmentScreen() {
                             </Box>
                             <Box className="min-w-0">
                               <Typography variant="caption" className="!font-bold text-slate-700 block leading-tight">
-                                {pickup.province ? `${pickup.province}` : <span className="text-slate-350 italic">Chưa nhập điểm đi</span>}
+                                Nhận: {pickup.province ? `${pickup.province}` : <span className="text-slate-350 italic">Chưa nhập điểm đi</span>}
                               </Typography>
                               {pickup.detail && (
-                                <Typography variant="caption" className="text-slate-400 block truncate">
+                                <Typography variant="caption" className="text-slate-450 block truncate">
                                   {pickup.detail}
                                 </Typography>
                               )}
-                              {pickup.contactName && (
-                                <Typography variant="caption" className="text-slate-450 block font-medium">
-                                  Người gửi: {pickup.contactName} ({pickup.contactPhone})
+                              {earliestPickup && latestPickup && (
+                                <Typography variant="caption" className="text-slate-500 block bg-white border border-slate-150 px-2 py-0.5 rounded mt-1 text-[11px]">
+                                  Nhận hàng từ: {new Date(earliestPickup).toLocaleString("vi-VN")} đến {new Date(latestPickup).toLocaleString("vi-VN")}
                                 </Typography>
                               )}
                             </Box>
@@ -910,21 +1276,21 @@ export default function CreateShipmentScreen() {
 
                           {/* Point B */}
                           <Box className="flex items-start gap-2.5">
-                            <Box className="w-5 h-5 rounded-full bg-emerald-55 flex items-center justify-center text-emerald-600 font-bold text-[10px] mt-0.5 shadow-sm border border-emerald-100">
+                            <Box className="w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold text-[10px] mt-0.5 shadow-sm border border-emerald-100">
                               B
                             </Box>
                             <Box className="min-w-0">
                               <Typography variant="caption" className="!font-bold text-slate-700 block leading-tight">
-                                {delivery.province ? `${delivery.province}` : <span className="text-slate-350 italic">Chưa nhập điểm đến</span>}
+                                Giao: {delivery.province ? `${delivery.province}` : <span className="text-slate-350 italic">Chưa nhập điểm đến</span>}
                               </Typography>
                               {delivery.detail && (
-                                <Typography variant="caption" className="text-slate-400 block truncate">
+                                <Typography variant="caption" className="text-slate-450 block truncate">
                                   {delivery.detail}
                                 </Typography>
                               )}
-                              {delivery.contactName && (
-                                <Typography variant="caption" className="text-slate-450 block font-medium">
-                                  Người nhận: {delivery.contactName} ({delivery.contactPhone})
+                              {earliestDelivery && latestDelivery && (
+                                <Typography variant="caption" className="text-slate-500 block bg-white border border-slate-150 px-2 py-0.5 rounded mt-1 text-[11px]">
+                                  Giao hàng từ: {new Date(earliestDelivery).toLocaleString("vi-VN")} đến {new Date(latestDelivery).toLocaleString("vi-VN")}
                                 </Typography>
                               )}
                             </Box>
@@ -933,37 +1299,84 @@ export default function CreateShipmentScreen() {
 
                         <Divider className="opacity-60" />
 
-                        {/* Price & Schedule Section */}
+                        {/* Auction Parameters Section */}
                         <Box className="bg-[#1B4965]/[0.02] border border-[#1B4965]/10 rounded-2xl p-3.5 space-y-2">
-                          <Box className="flex justify-between items-center">
+                          <Typography variant="caption" className="text-[#1B4965] block font-bold uppercase text-[10px]">3. Thiết lập Đấu giá</Typography>
+                          
+                          <Box className="flex justify-between items-center text-[11px]">
+                            <Typography className="text-slate-500 font-medium">Người tạo:</Typography>
+                            <Typography className="text-slate-800 font-bold">{auctionCreator}</Typography>
+                          </Box>
+                          
+                          <Box className="flex justify-between items-center text-[11px]">
+                            <Typography className="text-slate-500 font-medium">Yêu cầu loại xe:</Typography>
+                            <Typography className="text-slate-800 font-bold">{requiredVehicleType}</Typography>
+                          </Box>
+
+                          {requiredVehicleDims.length || requiredVehicleDims.width || requiredVehicleDims.height ? (
+                            <Box className="flex justify-between items-center text-[11px]">
+                              <Typography className="text-slate-500 font-medium">KT lòng thùng:</Typography>
+                              <Typography className="text-slate-800 font-bold">
+                                {requiredVehicleDims.length || "-"}m x {requiredVehicleDims.width || "-"}m x {requiredVehicleDims.height || "-"}m
+                              </Typography>
+                            </Box>
+                          ) : null}
+
+                          <Box className="flex justify-between items-center text-[11px] border-t border-slate-100 pt-1">
+                            <Typography className="text-slate-500 font-medium">Hình thức đấu giá:</Typography>
+                            <Typography className={`font-bold ${auctionType === "PUBLIC" ? "text-sky-600" : "text-amber-600"}`}>
+                              {auctionType === "PUBLIC" ? "Đấu giá công khai" : "Đấu giá kín"}
+                            </Typography>
+                          </Box>
+
+                          <Box className="flex justify-between items-center text-[11px] border-t border-slate-100 pt-1">
+                            <Typography className="text-slate-500 font-medium">Đăng ký tham gia:</Typography>
+                            <Typography className="text-slate-700 font-semibold text-right">
+                              {regStartTime ? new Date(regStartTime).toLocaleString("vi-VN") : "Chưa đặt"}<br/>
+                              đến {regEndTime ? new Date(regEndTime).toLocaleString("vi-VN") : "Chưa đặt"}
+                            </Typography>
+                          </Box>
+
+                          <Box className="flex justify-between items-center text-[11px] border-t border-slate-100 pt-1">
+                            <Typography className="text-slate-500 font-medium">Thời gian đấu giá:</Typography>
+                            <Typography className="text-slate-700 font-semibold text-right">
+                              {startTime ? new Date(startTime).toLocaleString("vi-VN") : "Chưa đặt"}<br/>
+                              đến {endTime ? new Date(endTime).toLocaleString("vi-VN") : "Chưa đặt"}
+                            </Typography>
+                          </Box>
+
+                          <Box className="flex justify-between items-center border-t border-[#1B4965]/10 pt-2">
                             <Typography variant="caption" className="text-slate-500 font-semibold">Giá cước trần:</Typography>
-                            <Typography variant="subtitle2" className="!font-extrabold text-slate-800">
+                            <Typography variant="subtitle2" className="!font-extrabold text-[#1B4965]">
                               {maxPrice ? formatCurrency(maxPrice) : <span className="text-slate-350 italic">Chưa đặt</span>}
                             </Typography>
                           </Box>
-                          
-                          {startTime && (
-                            <Box className="flex justify-between items-center">
-                              <Typography variant="caption" className="text-slate-500 font-semibold">Mở thầu:</Typography>
-                              <Typography variant="caption" className="text-slate-700 font-bold">
-                                {new Date(startTime).toLocaleString("vi-VN")}
-                              </Typography>
-                            </Box>
-                          )}
-                          {endTime && (
-                            <Box className="flex justify-between items-center">
-                              <Typography variant="caption" className="text-slate-500 font-semibold">Đóng thầu:</Typography>
-                              <Typography variant="caption" className="text-rose-600 font-bold">
-                                {new Date(endTime).toLocaleString("vi-VN")}
-                              </Typography>
-                            </Box>
-                          )}
+
+                          <Box className="flex justify-between items-center text-[11px]">
+                            <Typography className="text-slate-500 font-medium">Bước giá:</Typography>
+                            <Typography className="text-slate-800 font-bold">{priceStep ? formatCurrency(priceStep) : "Chưa đặt"}</Typography>
+                          </Box>
+
+                          <Box className="flex justify-between items-center text-[11px]">
+                            <Typography className="text-slate-500 font-medium">Lượt đặt tối đa:</Typography>
+                            <Typography className="text-slate-800 font-bold">{maxBids} lượt/nhà xe</Typography>
+                          </Box>
+
+                          <Box className="flex justify-between items-center text-[11px]">
+                            <Typography className="text-slate-500 font-medium">Phí tham gia:</Typography>
+                            <Typography className="text-slate-800 font-bold">{participationFee ? formatCurrency(participationFee) : "Chưa đặt"}</Typography>
+                          </Box>
+
+                          <Box className="flex justify-between items-center text-[11px] border-t border-slate-100 pt-1">
+                            <Typography className="text-slate-500 font-medium">Tiền đặt trước (Cọc):</Typography>
+                            <Typography className="text-slate-800 font-bold text-right">{depositAmount ? formatCurrency(depositAmount) : "Chưa đặt"}</Typography>
+                          </Box>
                         </Box>
 
                         {/* Notes Preview */}
                         {notes && (
                           <Box className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                            <Typography variant="caption" className="text-slate-450 block font-bold mb-1">Ghi chú yêu cầu:</Typography>
+                            <Typography variant="caption" className="text-slate-450 block font-bold mb-1">Ghi chú bổ sung:</Typography>
                             <Typography variant="caption" className="text-slate-500 block leading-normal italic">
                               "{notes}"
                             </Typography>

@@ -116,9 +116,18 @@ export default function BiddingItem({ shipment, onCancel, onViewDetail }) {
       <CardContent className="!p-6 space-y-4">
         {/* Card Header: Code & Status */}
         <div className="flex items-center justify-between">
-          <Typography className="!font-mono !font-bold text-slate-400 text-xs">
-            {shipment.id}
-          </Typography>
+          <div className="flex items-center gap-2">
+            <Typography className="!font-mono !font-bold text-slate-400 text-xs">
+              {shipment.id}
+            </Typography>
+            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+              shipment.auctionType === "SEALED"
+                ? "bg-amber-50 text-amber-600 border-amber-200"
+                : "bg-sky-50 text-sky-600 border-sky-200"
+            }`}>
+              {shipment.auctionType === "SEALED" ? "Đấu giá kín" : "Công khai"}
+            </span>
+          </div>
           <Chip
             label={design.label}
             size="small"

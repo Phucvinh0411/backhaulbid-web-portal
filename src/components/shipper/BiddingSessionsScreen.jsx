@@ -25,6 +25,8 @@ import SearchIcon from "@mui/icons-material/SearchOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 import Grid from "@mui/material/Grid";
+import MenuItem from "@mui/material/MenuItem";
+
 
 import PageHeader from "@/components/common/PageHeader";
 
@@ -48,6 +50,7 @@ const INITIAL_SHIPMENTS = [
     bidCount: 4,
     closeTime: "2026-07-04T18:00:00",
     status: "active_bids", // đang đấu giá
+    auctionType: "PUBLIC",
   },
   {
     id: "LH-2026-9042",
@@ -67,6 +70,7 @@ const INITIAL_SHIPMENTS = [
     bidCount: 3,
     closeTime: "2026-07-03T12:00:00",
     status: "active_bids",
+    auctionType: "SEALED",
   },
   {
     id: "LH-2026-9043",
@@ -86,6 +90,7 @@ const INITIAL_SHIPMENTS = [
     bidCount: 0,
     closeTime: "2026-07-05T17:00:00",
     status: "pending_bids", // chờ đấu giá
+    auctionType: "PUBLIC",
   },
   {
     id: "LH-2026-9044",
@@ -108,6 +113,7 @@ const INITIAL_SHIPMENTS = [
     carrier: "Công ty Vận tải Phước An",
     carrierPhone: "0905.888.999",
     finalPrice: 14800000,
+    auctionType: "PUBLIC",
   },
   {
     id: "LH-2026-9045",
@@ -132,6 +138,7 @@ const INITIAL_SHIPMENTS = [
     driverName: "Trần Văn Bình",
     driverPlate: "51C-777.45",
     finalPrice: 8900000,
+    auctionType: "PUBLIC",
   },
   {
     id: "LH-2026-9046",
@@ -156,6 +163,7 @@ const INITIAL_SHIPMENTS = [
     driverName: "Lê Minh Quốc",
     driverPlate: "29H-123.56",
     finalPrice: 39500000,
+    auctionType: "PUBLIC",
   },
   {
     id: "LH-2026-9047",
@@ -176,6 +184,7 @@ const INITIAL_SHIPMENTS = [
     closeTime: "2026-06-28T09:00:00",
     status: "cancelled", // đã hủy
     cancelReason: "Thay đổi lịch sản xuất tại nhà máy",
+    auctionType: "PUBLIC",
   },
   {
     id: "LH-2026-9048",
@@ -195,6 +204,7 @@ const INITIAL_SHIPMENTS = [
     bidCount: 4,
     closeTime: "2026-07-02T16:00:00",
     status: "active_bids",
+    auctionType: "SEALED",
   }
 ];
 
@@ -203,6 +213,7 @@ export default function BiddingSessionsScreen() {
   const [shipments, setShipments] = useState(INITIAL_SHIPMENTS);
   const [activeTab, setActiveTab] = useState(0); // 0: Tất cả, 1: Chờ đấu giá, 2: Đang đấu giá, 3: Đã chốt, 4: Đang vận chuyển, 5: Hoàn thành, 6: Đã hủy
   const [searchQuery, setSearchQuery] = useState("");
+  const [auctionTypeFilter, setAuctionTypeFilter] = useState("ALL"); // ALL, PUBLIC, SEALED
 
   // States for Cancel Dialog
   const [openCancelDialog, setOpenCancelDialog] = useState(false);
@@ -225,7 +236,7 @@ export default function BiddingSessionsScreen() {
     setActiveTab(newValue);
   };
 
-  // Filter shipments based on search query and active tab
+  // Filter shipments based on search query, active tab, and auction type
   const filteredShipments = shipments.filter((item) => {
     const matchesSearch =
       item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -235,8 +246,9 @@ export default function BiddingSessionsScreen() {
 
     const targetStatus = tabStatusMap[activeTab];
     const matchesStatus = targetStatus === "all" ? true : item.status === targetStatus;
+    const matchesType = auctionTypeFilter === "ALL" ? true : item.auctionType === auctionTypeFilter;
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesType;
   });
 
   const handleOpenCancelDialog = (id) => {
@@ -367,6 +379,30 @@ export default function BiddingSessionsScreen() {
             },
           }}
         />
+
+        <TextField
+          select
+          size="small"
+          value={auctionTypeFilter}
+          onChange={(e) => setAuctionTypeFilter(e.target.value)}
+          className="w-full sm:w-56 bg-white/70 backdrop-blur-md rounded-2xl"
+          InputProps={{ className: "!rounded-2xl" }}
+          sx={{
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#E2E8F0",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#CBD5E1",
+            },
+            "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#1B4965",
+            },
+          }}
+        >
+          <MenuItem value="ALL">Tất cả hình thức</MenuItem>
+          <MenuItem value="PUBLIC">Đấu giá công khai</MenuItem>
+          <MenuItem value="SEALED">Đấu giá kín (Đấu thầu)</MenuItem>
+        </TextField>
 
         <Typography variant="body2" className="text-slate-500 font-medium ml-auto">
           Hiển thị <span className="text-[#1B4965] font-bold">{filteredShipments.length}</span> kết quả

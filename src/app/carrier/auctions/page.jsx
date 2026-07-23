@@ -101,6 +101,33 @@ export default function AuctionsPage() {
     return auctions.filter(a => a.status === 'OPEN_REGISTER' || (a.status === 'BIDDING' && a.isRegistered));
   }, [auctions]);
 
+  const [columnsList, setColumnsList] = useState([
+    { id: 'id', label: 'Mã phiên' },
+    { id: 'origin', label: 'Tuyến đường', sortable: false },
+    { id: 'cargoType', label: 'Hàng hóa' },
+    { id: 'basePrice', label: 'Khởi điểm' },
+    { id: 'pickupTime', label: 'Thời gian bốc' },
+    { id: 'status', label: 'Trạng thái' },
+    { id: 'actions', label: 'Thao tác', align: 'right', sortable: false }
+  ]);
+
+  const handleDragStart = (e, index) => {
+    e.dataTransfer.setData("colIndex", index.toString());
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e, index) => {
+    const dragIndex = Number(e.dataTransfer.getData("colIndex"));
+    if (isNaN(dragIndex) || dragIndex === index) return;
+    const updated = [...columnsList];
+    const [removed] = updated.splice(dragIndex, 1);
+    updated.splice(index, 0, removed);
+    setColumnsList(updated);
+  };
+
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("id");
 
@@ -311,8 +338,16 @@ export default function AuctionsPage() {
           <Table sx={{ minWidth: 800 }}>
             <TableHead className="bg-slate-50">
               <TableRow>
-                {[{id: 'id', label: 'Mã phiên'}, {id: 'origin', label: 'Tuyến đường', sortable: false}, {id: 'cargoType', label: 'Hàng hóa'}, {id: 'basePrice', label: 'Khởi điểm'}, {id: 'pickupTime', label: 'Thời gian bốc'}, {id: 'status', label: 'Trạng thái'}, {id: 'actions', label: 'Thao tác', align: 'right', sortable: false}].map(col => (
-                  <TableCell key={col.id} align={col.align || 'left'} className="font-bold text-slate-600">
+                {columnsList.map((col, idx) => (
+                  <TableCell
+                    key={col.id}
+                    align={col.align || 'left'}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, idx)}
+                    className="font-bold text-slate-600 select-none cursor-move hover:bg-slate-100 transition-colors"
+                  >
                     {col.sortable !== false ? (
                       <TableSortLabel
                         active={orderBy === col.id}
@@ -329,77 +364,110 @@ export default function AuctionsPage() {
             <TableBody>
               {sortedAuctions.map((a) => (
                 <TableRow key={a.id} hover className="transition-colors">
-                  <TableCell>
-                    <Typography variant="body2" className="font-mono font-bold text-[#1B4965]">{a.id}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box className="flex items-center gap-1">
-                      <Typography variant="body2" className="font-bold text-slate-800">{a.origin}</Typography>
-                      <ArrowForwardIcon sx={{ fontSize: 16 }} className="text-slate-400" />
-                      <Typography variant="body2" className="font-bold text-slate-800">{a.destination}</Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" className="text-slate-800">{a.cargoType} ({a.weight})</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" className="font-semibold text-slate-700">{a.basePrice}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" className="text-slate-800">{a.pickupTime}</Typography>
-                  </TableCell>
-                  <TableCell>{getStatusChip(a.status)}</TableCell>
-                  <TableCell align="right">
-                    <Box className="flex gap-2 justify-end">
-                      <Button 
-                        size="small" 
-                        variant="outlined"
-                        color="inherit"
-                        onClick={() => handleOpenDetails(a)}
-                        sx={{ borderRadius: "6px" }}
-                      >
-                        Chi tiết
-                      </Button>
-                      
-                      {a.status === 'CLOSED' ? (
-                        <Button size="small" variant="outlined" disabled sx={{ borderRadius: "6px" }}>Kết thúc</Button>
-                      ) : a.isRegistered ? (
-                        a.status === 'BIDDING' ? (
-                          <Button 
-                            size="small" 
-                            variant="contained"
-                            color="success"
-                            component={Link} 
-                            href={`/carrier/auctions/${a.id}`}
-                            sx={{ borderRadius: "6px" }}
-                          >
-                            Vào phòng
-                          </Button>
-                        ) : (
-                          <Button 
-                            size="small" 
-                            variant="outlined"
-                            color="primary"
-                            sx={{ borderRadius: "6px" }}
-                            disabled
-                          >
-                            Đã đăng ký
-                          </Button>
-                        )
-                      ) : (
-                        <Button 
-                          size="small" 
-                          variant="contained" 
-                          color="primary"
-                          sx={{ borderRadius: "6px", backgroundColor: "#1B4965" }}
-                          onClick={() => handleOpenRegister(a.id)}
-                          disabled={a.status === 'BIDDING'}
-                        >
-                          {a.status === 'BIDDING' ? 'Đã đóng' : 'Đăng ký'}
-                        </Button>
-                      )}
-                    </Box>
-                  </TableCell>
+                  {columnsList.map((col) => {
+                    if (col.id === 'id') {
+                      return (
+                        <TableCell key={col.id}>
+                          <Typography variant="body2" className="font-mono font-bold text-[#1B4965]">{a.id}</Typography>
+                        </TableCell>
+                      );
+                    }
+                    if (col.id === 'origin') {
+                      return (
+                        <TableCell key={col.id}>
+                          <Box className="flex items-center gap-1">
+                            <Typography variant="body2" className="font-bold text-slate-800">{a.origin}</Typography>
+                            <ArrowForwardIcon sx={{ fontSize: 16 }} className="text-slate-400" />
+                            <Typography variant="body2" className="font-bold text-slate-800">{a.destination}</Typography>
+                          </Box>
+                        </TableCell>
+                      );
+                    }
+                    if (col.id === 'cargoType') {
+                      return (
+                        <TableCell key={col.id}>
+                          <Typography variant="body2" className="text-slate-800">{a.cargoType} ({a.weight})</Typography>
+                        </TableCell>
+                      );
+                    }
+                    if (col.id === 'basePrice') {
+                      return (
+                        <TableCell key={col.id}>
+                          <Typography variant="body2" className="font-semibold text-slate-700">{a.basePrice}</Typography>
+                        </TableCell>
+                      );
+                    }
+                    if (col.id === 'pickupTime') {
+                      return (
+                        <TableCell key={col.id}>
+                          <Typography variant="body2" className="text-slate-800">{a.pickupTime}</Typography>
+                        </TableCell>
+                      );
+                    }
+                    if (col.id === 'status') {
+                      return (
+                        <TableCell key={col.id}>
+                          {getStatusChip(a.status)}
+                        </TableCell>
+                      );
+                    }
+                    if (col.id === 'actions') {
+                      return (
+                        <TableCell key={col.id} align="right">
+                          <Box className="flex gap-2 justify-end">
+                            <Button 
+                              size="small" 
+                              variant="outlined"
+                              color="inherit"
+                              onClick={() => handleOpenDetails(a)}
+                              sx={{ borderRadius: "6px" }}
+                            >
+                              Chi tiết
+                            </Button>
+                            
+                            {a.status === 'CLOSED' ? (
+                              <Button size="small" variant="outlined" disabled sx={{ borderRadius: "6px" }}>Kết thúc</Button>
+                            ) : a.isRegistered ? (
+                              a.status === 'BIDDING' ? (
+                                <Button 
+                                  size="small" 
+                                  variant="contained"
+                                  color="success"
+                                  component={Link} 
+                                  href={`/carrier/auctions/${a.id}`}
+                                  sx={{ borderRadius: "6px" }}
+                                >
+                                  Vào phòng
+                                </Button>
+                              ) : (
+                                <Button 
+                                  size="small" 
+                                  variant="outlined"
+                                  color="primary"
+                                  sx={{ borderRadius: "6px" }}
+                                  disabled
+                                >
+                                  Đã đăng ký
+                                </Button>
+                              )
+                            ) : (
+                              <Button 
+                                size="small" 
+                                variant="contained" 
+                                color="primary"
+                                sx={{ borderRadius: "6px", backgroundColor: "#1B4965" }}
+                                onClick={() => handleOpenRegister(a.id)}
+                                disabled={a.status === 'BIDDING'}
+                              >
+                                {a.status === 'BIDDING' ? 'Đã đóng' : 'Đăng ký'}
+                              </Button>
+                            )}
+                          </Box>
+                        </TableCell>
+                      );
+                    }
+                    return null;
+                  })}
                 </TableRow>
               ))}
             </TableBody>
