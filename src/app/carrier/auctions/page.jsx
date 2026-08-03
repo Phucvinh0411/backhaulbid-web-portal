@@ -140,7 +140,7 @@ export default function AuctionsPage() {
   const sortedAuctions = React.useMemo(() => {
     let result = [...filteredAuctions];
     result.sort((a, b) => {
-      let comparison = 0;
+      let comparison;
       if (orderBy === "basePrice") {
         const valA = parseInt(a.basePrice.replace(/\D/g, ""), 10) || 0;
         const valB = parseInt(b.basePrice.replace(/\D/g, ""), 10) || 0;
@@ -509,23 +509,81 @@ export default function AuctionsPage() {
       <DetailDrawer
         open={openDetailDrawer}
         onClose={() => setOpenDetailDrawer(false)}
-        title="Chi tiết Phiên Đấu Giá"
+        variant="modal"
+        title={selectedAuction ? `Chi tiết phiên ${selectedAuction.id}` : "Chi tiết phiên đấu giá"}
+        width={560}
       >
         {selectedAuction && (
-          <Box className="space-y-4">
-            <Typography variant="body1">
-              Thông tin chi tiết phiên <strong>{selectedAuction.id}</strong>
-            </Typography>
-            <Box className="bg-white border border-slate-100 rounded-xl mt-2 overflow-hidden">
-              <Box className="px-4 py-2">
-                <DetailRow label="Tuyến đường" value={`${selectedAuction.origin} - ${selectedAuction.destination}`} />
-                <DetailRow label="Hàng hóa" value={`${selectedAuction.cargoType} (${selectedAuction.weight})`} />
-                <DetailRow label="Ngày bốc hàng" value={selectedAuction.pickupTime} />
-                <DetailRow label="Giá khởi điểm" value={selectedAuction.basePrice} />
-                {selectedAuction.currentLowestBid && (
-                  <DetailRow label="Giá tốt nhất hiện tại" value={selectedAuction.currentLowestBid} valueColor="text-emerald-600" />
-                )}
-                <DetailRow label="Trạng thái" value={getStatusChip(selectedAuction.status)} />
+          <Box className="space-y-5">
+            <Box className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <Box className="flex items-center justify-between gap-3 mb-3">
+                <Box>
+                  <Typography variant="overline" className="!font-bold !tracking-wider text-slate-400">
+                    Chủ hàng đăng tin
+                  </Typography>
+                  <Typography variant="body1" className="!font-extrabold text-[#1B4965]">
+                    Công ty Cổ phần Sữa Việt Nam (Vinamilk)
+                  </Typography>
+                </Box>
+                {getStatusChip(selectedAuction.status)}
+              </Box>
+              <Box className="grid grid-cols-1 sm:grid-cols-2 gap-x-5">
+                <DetailRow label="Mã phiên" value={selectedAuction.id} />
+                <DetailRow label="Loại yêu cầu" value="Xe tải thùng kín" />
+                <DetailRow label="Mở đăng ký" value={`08:00:00 ${selectedAuction.pickupTime}`} />
+                <DetailRow label="Đóng đăng ký" value={`12:00:00 ${selectedAuction.pickupTime}`} />
+                <DetailRow label="Bắt đầu đấu giá" value={`13:00:00 ${selectedAuction.pickupTime}`} />
+                <DetailRow label="Kết thúc đấu giá" value={`18:00:00 ${selectedAuction.pickupTime}`} />
+                <DetailRow label="Giá trần tối đa" value={selectedAuction.basePrice} valueColor="text-[#1B4965]" />
+                <DetailRow label="Bước giá tối thiểu" value="100.000 ₫" />
+                <DetailRow label="Số lượt ra giá tối đa" value="5 lần / nhà xe" />
+                <DetailRow label="Phí tham gia" value="50.000 ₫" />
+                <DetailRow label="Tiền đặt cọc" value="1.250.000 ₫" valueColor="text-amber-600" />
+                <DetailRow label="Kích thước thùng tối thiểu" value="6.2m × 2.1m × 2.2m" />
+              </Box>
+            </Box>
+
+            <Box className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <Typography variant="subtitle2" component="h3" className="!font-extrabold !text-[#1B4965] !mb-3">
+                2. Thông tin chi tiết hàng hóa & tuyến đường vận chuyển
+              </Typography>
+              <Box className="grid grid-cols-1 sm:grid-cols-2 gap-x-5">
+                <DetailRow label="Phân loại hàng hóa" value={selectedAuction.cargoType} valueColor="text-emerald-600" />
+                <DetailRow label="Kích thước kiện hàng" value="6.0m × 2.0m × 2.2m" />
+                <DetailRow label="Trọng lượng hàng hóa" value={selectedAuction.weight} />
+                <DetailRow label="Yêu cầu nhiệt độ" value="Nhiệt độ thường" />
+                <DetailRow label="Giá trị khai báo" value="187.500.000 ₫" />
+                <DetailRow label="Khung giờ nhận hàng" value={`10:00 - 14:00 (${selectedAuction.pickupTime})`} />
+                <DetailRow label="Khung giờ giao hàng" value={`10:00 - 16:00 (${selectedAuction.pickupTime})`} />
+              </Box>
+              <Box className="mt-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                <Typography variant="caption" className="!font-bold text-slate-500">Mô tả / yêu cầu đặc biệt</Typography>
+                <Typography variant="body2" className="!mt-1 !italic text-slate-700">
+                  Hàng linh kiện đóng pallet. Yêu cầu xe thùng kín bảo ôn chống ẩm mốc, có đầy đủ hóa đơn chứng từ.
+                </Typography>
+              </Box>
+              <Box className="mt-3 rounded-xl border border-[#1B4965]/10 bg-[#1B4965]/5 p-3 space-y-3">
+                <Box className="flex items-start gap-2">
+                  <Box className="h-7 w-7 shrink-0 rounded-full bg-sky-500 text-center text-sm font-bold leading-7 text-white">A</Box>
+                  <Box>
+                    <Typography variant="caption" className="!font-extrabold !text-sky-600">ĐỊA CHỈ NHẬN HÀNG (PICKUP POINT)</Typography>
+                    <Typography variant="body2" className="!font-bold text-slate-800">Kho Samsung Yên Bình - Thái Nguyên</Typography>
+                    <Typography variant="caption" className="text-slate-500">KCN Yên Bình, Phổ Yên, Thái Nguyên</Typography>
+                  </Box>
+                </Box>
+                <Box className="ml-3 border-l-2 border-dashed border-slate-300 pl-4 text-xs font-mono text-slate-400">➤ Tuyến vận chuyển lộ trình</Box>
+                <Box className="flex items-start gap-2">
+                  <Box className="h-7 w-7 shrink-0 rounded-full bg-emerald-500 text-center text-sm font-bold leading-7 text-white">B</Box>
+                  <Box>
+                    <Typography variant="caption" className="!font-extrabold !text-emerald-600">ĐỊA CHỈ TRẢ HÀNG (DELIVERY POINT)</Typography>
+                    <Typography variant="body2" className="!font-bold text-slate-800">Kho Cảng Đình Vũ - Hải Phòng</Typography>
+                    <Typography variant="caption" className="text-slate-500">Đông Hải 2, Quận Hải An, Hải Phòng</Typography>
+                  </Box>
+                </Box>
+                <Box className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                  <Typography variant="caption" className="!font-bold !text-amber-800">⚠ Ghi chú đặc biệt từ chủ hàng</Typography>
+                  <Typography variant="body2" className="!mt-0.5 !text-xs">Yêu cầu bốc xếp cẩn thận. Lái xe tự chuẩn bị dây tăng đai chằng buộc.</Typography>
+                </Box>
               </Box>
             </Box>
             

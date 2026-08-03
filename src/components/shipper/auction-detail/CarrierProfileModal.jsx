@@ -236,16 +236,15 @@ export default function CarrierProfileModal({
           Gọi hotline nhà xe
         </Button>
         <div className="flex gap-2">
-          <Link href={`/shipper/carriers/${carrier.code}`} passHref legacyBehavior>
-            <Button
-              component="a"
-              variant="outlined"
-              onClick={onClose}
-              className="!text-[#1B4965] !border-slate-300 hover:!bg-slate-50 !font-bold !capitalize !rounded-xl !text-xs"
-            >
-              Mở trang chi tiết riêng ↗
-            </Button>
-          </Link>
+          <Button
+            component={Link}
+            href={`/shipper/carriers/${carrier.code}`}
+            variant="outlined"
+            onClick={onClose}
+            className="!text-[#1B4965] !border-slate-300 hover:!bg-slate-50 !font-bold !capitalize !rounded-xl !text-xs"
+          >
+            Mở trang chi tiết riêng ↗
+          </Button>
           <Button
             onClick={onClose}
             variant="text"

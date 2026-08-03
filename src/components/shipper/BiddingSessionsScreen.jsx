@@ -4,11 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
-import BiddingItem from "./BiddingItem";
+import AuctionSessionCard from "@/components/auctions/AuctionSessionCard";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Dialog from "@mui/material/Dialog";
@@ -29,7 +28,12 @@ import MenuItem from "@mui/material/MenuItem";
 import FilterListIcon from "@mui/icons-material/FilterListOutlined";
 
 
-import PageHeader from "@/components/common/PageHeader";
+import {
+  ActionButton,
+  DetailDrawer,
+  DetailRow,
+  PageHeader,
+} from "@/components/common";
 
 // Mock Data representing professional logistics operations
 const INITIAL_SHIPMENTS = [
@@ -221,6 +225,8 @@ export default function BiddingSessionsScreen() {
   const [selectedShipmentId, setSelectedShipmentId] = useState(null);
   const [cancelReasonType, setCancelReasonType] = useState("Thay đổi kế hoạch kinh doanh");
   const [cancelReasonNote, setCancelReasonNote] = useState("");
+  const [selectedShipment, setSelectedShipment] = useState(null);
+  const [openDetailDrawer, setOpenDetailDrawer] = useState(false);
 
   // Map Tab index to Shipment status
   const tabStatusMap = [
@@ -282,6 +288,27 @@ export default function BiddingSessionsScreen() {
     handleCloseCancelDialog();
   };
 
+  const formatCurrency = (val) =>
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" })
+      .format(val || 0)
+      .replace("₫", "đ");
+
+  const formatDateTime = (value) =>
+    value
+      ? new Intl.DateTimeFormat("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(new Date(value))
+      : "Chưa có";
+
+  const handleViewDetail = (shipment) => {
+    setSelectedShipment(shipment);
+    setOpenDetailDrawer(true);
+  };
+
   return (
     <Box className="w-full min-h-screen">
       {/* Header section with CTA Action */}
@@ -294,22 +321,15 @@ export default function BiddingSessionsScreen() {
           { label: "Quản lý lô hàng" },
         ]}
         action={
-          <Link href="/shipper/bidding/create" passHref legacyBehavior>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              className="!rounded-2xl !py-3 !px-6 !text-sm !font-bold !capitalize shadow-lg hover:shadow-xl transition-all duration-300"
-              sx={{
-                background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                "&:hover": {
-                  background: "linear-gradient(135deg, #0D2B3E 0%, #1B4965 100%)",
-                },
-              }}
-            >
-              Tạo lô hàng mới
-            </Button>
-          </Link>
+          <ActionButton
+            component={Link}
+            href="/shipper/bidding/create"
+            variant="primary"
+            startIcon={<AddIcon />}
+            size="lg"
+          >
+            Tạo lô hàng mới
+          </ActionButton>
         }
       />
 
@@ -471,10 +491,10 @@ export default function BiddingSessionsScreen() {
         <Grid container spacing={3} alignItems="stretch">
           {filteredShipments.map((shipment) => (
             <Grid item xs={12} md={6} lg={4} key={shipment.id} className="!flex !flex-col">
-              <BiddingItem
+              <AuctionSessionCard
                 shipment={shipment}
                 onCancel={handleOpenCancelDialog}
-                onViewDetail={(id) => router.push(`/shipper/bidding/history?id=${id}`)}
+                onViewDetail={handleViewDetail}
               />
             </Grid>
           ))}
@@ -556,23 +576,169 @@ export default function BiddingSessionsScreen() {
           </Box>
         </DialogContent>
         <DialogActions className="!px-6 !pb-4 flex justify-end gap-3">
-          <Button
+          <ActionButton
             onClick={handleCloseCancelDialog}
             variant="text"
-            className="!text-slate-500 !font-bold !capitalize !rounded-xl"
           >
             Đóng
-          </Button>
-          <Button
+          </ActionButton>
+          <ActionButton
             onClick={handleConfirmCancel}
-            variant="contained"
-            color="error"
-            className="!bg-rose-500 hover:!bg-rose-600 !font-bold !capitalize !rounded-xl !px-5"
+            variant="danger"
           >
             Đồng ý Hủy
-          </Button>
+          </ActionButton>
         </DialogActions>
       </Dialog>
+
+      <DetailDrawer
+        open={openDetailDrawer}
+        onClose={() => setOpenDetailDrawer(false)}
+        variant="modal"
+        title="Chi tiết phiên vận chuyển"
+        width={560}
+      >
+        {selectedShipment && (
+          <Box className="space-y-4">
+            <Box className="rounded-2xl border border-slate-100 bg-white p-4">
+              <Typography className="mb-3 !font-bold text-[#1B4965]">
+                1. Thông tin đấu giá & yêu cầu vận chuyển
+              </Typography>
+              <DetailRow label="Mã lô hàng" value={selectedShipment.id} />
+              <DetailRow
+                label="Hình thức"
+                value={
+                  selectedShipment.auctionType === "SEALED"
+                    ? "Đấu giá kín"
+                    : "Đấu giá công khai"
+                }
+              />
+              <DetailRow
+                label="Trạng thái"
+                value={
+                  {
+                    pending_bids: "Chờ đấu giá",
+                    active_bids: "Đang đấu giá",
+                    awarded: "Đã chốt thầu",
+                    shipping: "Đang vận chuyển",
+                    completed: "Đã hoàn thành",
+                    cancelled: "Đã hủy",
+                  }[selectedShipment.status] || "Không rõ"
+                }
+              />
+              <DetailRow
+                label="Thời gian đóng thầu"
+                value={formatDateTime(selectedShipment.closeTime)}
+              />
+              <DetailRow
+                label="Giá trần tối đa"
+                value={formatCurrency(selectedShipment.maxPrice)}
+                valueColor="text-[#1B4965]"
+              />
+              <DetailRow
+                label="Giá thấp nhất / giá chốt"
+                value={formatCurrency(
+                  selectedShipment.finalPrice ||
+                    selectedShipment.currentLowestBid ||
+                    0
+                )}
+                valueColor="text-emerald-600"
+              />
+              <DetailRow
+                label="Số lượt ra giá"
+                value={`${selectedShipment.bidCount || 0} lượt`}
+              />
+            </Box>
+
+            <Box className="rounded-2xl border border-slate-100 bg-white p-4">
+              <Typography className="mb-3 !font-bold text-[#1B4965]">
+                2. Thông tin hàng hóa
+              </Typography>
+              <DetailRow label="Loại hàng" value={selectedShipment.goodsType} />
+              <DetailRow label="Trọng lượng" value={selectedShipment.weight} />
+              <DetailRow label="Thể tích/kích thước" value={selectedShipment.volume} />
+              <DetailRow
+                label="Yêu cầu nhiệt độ"
+                value={
+                  selectedShipment.goodsType.toLowerCase().includes("đông lạnh")
+                    ? "Xe lạnh"
+                    : "Nhiệt độ thường"
+                }
+              />
+            </Box>
+
+            <Box className="rounded-2xl border border-slate-100 bg-white p-4">
+              <Typography className="mb-3 !font-bold text-[#1B4965]">
+                3. Tuyến đường vận chuyển
+              </Typography>
+              <DetailRow
+                label="Điểm nhận"
+                value={`${selectedShipment.from.detail}, ${selectedShipment.from.province}`}
+              />
+              <DetailRow
+                label="Điểm giao"
+                value={`${selectedShipment.to.detail}, ${selectedShipment.to.province}`}
+              />
+            </Box>
+
+            {(selectedShipment.carrier || selectedShipment.cancelReason) && (
+              <Box className="rounded-2xl border border-slate-100 bg-white p-4">
+                <Typography className="mb-3 !font-bold text-[#1B4965]">
+                  4. Kết quả xử lý
+                </Typography>
+                {selectedShipment.carrier && (
+                  <>
+                    <DetailRow label="Nhà xe" value={selectedShipment.carrier} />
+                    <DetailRow
+                      label="Liên hệ nhà xe"
+                      value={selectedShipment.carrierPhone || "Chưa có"}
+                    />
+                  </>
+                )}
+                {selectedShipment.driverName && (
+                  <>
+                    <DetailRow label="Tài xế" value={selectedShipment.driverName} />
+                    <DetailRow
+                      label="Biển số"
+                      value={selectedShipment.driverPlate || "Chưa có"}
+                    />
+                  </>
+                )}
+                {selectedShipment.cancelReason && (
+                  <DetailRow
+                    label="Lý do hủy"
+                    value={selectedShipment.cancelReason}
+                    valueColor="text-rose-600"
+                  />
+                )}
+              </Box>
+            )}
+
+            <Box className="flex flex-col gap-2 sm:flex-row">
+              <ActionButton
+                variant="outlined"
+                fullWidth
+                onClick={() =>
+                  router.push(`/shipper/bidding/history?id=${selectedShipment.id}`)
+                }
+              >
+                Xem lịch sử thầu
+              </ActionButton>
+              {selectedShipment.status === "shipping" && (
+                <ActionButton
+                  variant="primary"
+                  fullWidth
+                  onClick={() =>
+                    router.push(`/shipper/tracking?id=${selectedShipment.id}`)
+                  }
+                >
+                  Theo dõi vận chuyển
+                </ActionButton>
+              )}
+            </Box>
+          </Box>
+        )}
+      </DetailDrawer>
     </Box>
   );
 }

@@ -21,6 +21,7 @@ import DialogActions from "@mui/material/DialogActions";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import Divider from "@mui/material/Divider";
+import Chip from "@mui/material/Chip";
 
 // Icons
 import LocalShippingIcon from "@mui/icons-material/LocalShippingOutlined";
@@ -150,7 +151,7 @@ export default function TrackingScreen() {
         subtitle="Theo dõi thời gian thực vị trí GPS, tiến trình bàn giao và giải ngân thanh toán."
         breadcrumbs={[
           { label: "Trang chủ", path: "/shipper/dashboard" },
-          { label: "Hợp đồng vận chuyển", path: "/shipper/contracts/active" },
+          { label: "Hợp đồng vận chuyển", path: "/shipper/contracts" },
           { label: "Giám sát đơn hàng" },
         ]}
       />

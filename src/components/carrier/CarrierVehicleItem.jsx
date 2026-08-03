@@ -1,7 +1,6 @@
 "use client";
 
 import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
@@ -10,6 +9,7 @@ import DirectionsCarIcon from "@mui/icons-material/DirectionsCarOutlined";
 import SettingsIcon from "@mui/icons-material/SettingsOutlined";
 import SpeedIcon from "@mui/icons-material/SpeedOutlined";
 import BuildCircleIcon from "@mui/icons-material/BuildCircleOutlined";
+import { AppCard } from "@/components/common";
 
 export default function CarrierVehicleItem({ vehicle, onViewDetail }) {
   const getVerificationDesign = (status) => {
@@ -50,20 +50,15 @@ export default function CarrierVehicleItem({ vehicle, onViewDetail }) {
   const isPending = vehicle.verification === 'PENDING';
 
   return (
-    <Card 
-      className="group hover:-translate-y-1 hover:shadow-xl transition-all duration-300 border border-slate-100/80 !rounded-3xl relative overflow-hidden h-full flex flex-col"
+    <AppCard
+      accent={isPending ? "warning" : "primary"}
       sx={{
-        background: "rgba(255, 255, 255, 0.8)",
-        backdropFilter: "blur(20px)",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.02)",
         "&:hover": {
           borderColor: isPending ? "rgba(245, 158, 11, 0.3)" : "rgba(27, 73, 101, 0.15)",
           boxShadow: isPending ? "0 12px 30px rgba(245, 158, 11, 0.1)" : "0 12px 30px rgba(27, 73, 101, 0.05)",
         }
       }}
     >
-      <Box className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-all duration-300 ${isPending ? 'from-amber-400 to-amber-200' : 'from-[#1B4965] to-[#62B6CB]'}`} />
-      
       <CardContent className="!p-6 space-y-4 flex-1">
         <div className="flex items-center justify-between">
           <Typography className="!font-mono !font-bold text-[#1B4965] text-lg flex items-center gap-2">
@@ -136,6 +131,6 @@ export default function CarrierVehicleItem({ vehicle, onViewDetail }) {
           Chi tiết
         </Button>
       </div>
-    </Card>
+    </AppCard>
   );
 }

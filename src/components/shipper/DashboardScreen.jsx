@@ -7,7 +7,6 @@ import {
   Box,
   Typography,
   Grid,
-  Card,
   CardContent,
   Button,
   Divider,
@@ -37,6 +36,7 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import RouteIcon from "@mui/icons-material/Route";
 
 import { PageHeader, StatCard } from "@/components/common";
+import AppCard from "@/components/common/AppCard";
 
 // Mock Data for Shipper Statistics & Charts
 const spendData = [
@@ -192,7 +192,7 @@ export default function DashboardScreen() {
             <Box className="flex flex-col gap-6">
               
               {/* Spending & Savings Chart */}
-              <Card className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+              <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
                 <CardContent className="p-6">
                   <Box className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
                     <Typography variant="h6" className="font-bold text-[#1B4965]">
@@ -285,10 +285,10 @@ export default function DashboardScreen() {
                     </ResponsiveContainer>
                   </Box>
                 </CardContent>
-              </Card>
+              </AppCard>
 
               {/* Active Shipments in transit */}
-              <Card className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+              <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
                 <CardContent className="p-6">
                   <Box className="flex items-center justify-between mb-4">
                     <Typography variant="h6" className="font-bold text-[#1B4965]">
@@ -356,7 +356,7 @@ export default function DashboardScreen() {
                     ))}
                   </Box>
                 </CardContent>
-              </Card>
+              </AppCard>
             </Box>
           </Grid>
 
@@ -365,7 +365,7 @@ export default function DashboardScreen() {
             <Box className="flex flex-col gap-6 h-full">
               
               {/* Ending Auctions */}
-              <Card className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+              <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
                 <CardContent className="p-6">
                   <Box className="flex items-center justify-between mb-4">
                     <Typography variant="h6" className="font-bold text-[#1B4965]">
@@ -433,10 +433,10 @@ export default function DashboardScreen() {
                     ))}
                   </Box>
                 </CardContent>
-              </Card>
+              </AppCard>
 
               {/* Quick Actions Card */}
-              <Card className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+              <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
                 <CardContent className="p-6">
                   <Typography variant="h6" className="font-bold text-[#1B4965] mb-4">
                     Thao tác nhanh
@@ -548,7 +548,7 @@ export default function DashboardScreen() {
                     </Grid>
                   </Grid>
                 </CardContent>
-              </Card>
+              </AppCard>
 
             </Box>
           </Grid>

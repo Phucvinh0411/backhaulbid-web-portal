@@ -1,7 +1,6 @@
 "use client";
 
 import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
@@ -10,6 +9,7 @@ import LocalShippingIcon from "@mui/icons-material/LocalShippingOutlined";
 import PinDropIcon from "@mui/icons-material/PinDropOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import Link from "next/link";
+import { AppCard } from "@/components/common";
 
 export default function CarrierTransportItem({ transport, onAssign, onViewDetail }) {
   const getStatusDesign = (status) => {
@@ -53,20 +53,14 @@ export default function CarrierTransportItem({ transport, onAssign, onViewDetail
   const destination = routeParts[1] || "---";
 
   return (
-    <Card 
-      className="group hover:-translate-y-1 hover:shadow-xl transition-all duration-300 border border-slate-100/80 !rounded-3xl relative overflow-hidden h-full flex flex-col"
+    <AppCard
       sx={{
-        background: "rgba(255, 255, 255, 0.8)",
-        backdropFilter: "blur(20px)",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.02)",
         "&:hover": {
           borderColor: "rgba(27, 73, 101, 0.15)",
           boxShadow: "0 12px 30px rgba(27, 73, 101, 0.05)",
         }
       }}
     >
-      <Box className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#1B4965] to-[#62B6CB] opacity-0 group-hover:opacity-100 transition-all duration-300" />
-      
       <CardContent className="!p-6 space-y-4 flex-1">
         <div className="flex items-center justify-between">
           <Typography className="!font-mono !font-bold text-[#1B4965] text-sm flex items-center gap-1.5">
@@ -194,6 +188,6 @@ export default function CarrierTransportItem({ transport, onAssign, onViewDetail
           </Button>
         )}
       </div>
-    </Card>
+    </AppCard>
   );
 }

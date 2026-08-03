@@ -1,6 +1,8 @@
 import { Roboto } from "next/font/google";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import "./globals.css";
 import { ThemeProvider } from "@/theme";
+
 
 const roboto = Roboto({
   subsets: ["latin", "vietnamese"],
@@ -18,11 +20,14 @@ export default function RootLayout({ children }) {
     <html
       lang="vi"
       className={`${roboto.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );

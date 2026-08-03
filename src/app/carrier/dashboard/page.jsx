@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Typography, Grid, Card, CardContent, Button, Divider, IconButton, Chip, Tooltip as MuiTooltip, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { Box, Typography, Grid, CardContent, Button, Divider, IconButton, Chip, Tooltip as MuiTooltip, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
@@ -10,6 +10,7 @@ import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import Link from "next/link";
 import { PageHeader, StatCard } from "@/components/common";
+import AppCard from "@/components/common/AppCard";
 
 // MOCK DATA
 const revenueData = [
@@ -117,7 +118,7 @@ export default function CarrierDashboard() {
             <Box className="flex flex-col gap-6">
 
               {/* Revenue Chart */}
-              <Card className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+              <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
                 <CardContent className="p-6">
                   <Box className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
                     <Typography variant="h6" className="font-bold text-[#1B4965]">Biểu đồ doanh thu (VNĐ)</Typography>
@@ -157,10 +158,10 @@ export default function CarrierDashboard() {
                     </ResponsiveContainer>
                   </Box>
                 </CardContent>
-              </Card>
+              </AppCard>
 
               {/* Active Transports */}
-              <Card className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+              <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
                 <CardContent className="p-6">
                   <Box className="flex items-center justify-between mb-4">
                     <Typography variant="h6" className="font-bold text-[#1B4965]">Chuyến xe đang chạy</Typography>
@@ -200,14 +201,14 @@ export default function CarrierDashboard() {
                     ))}
                   </Box>
                 </CardContent>
-              </Card>
+              </AppCard>
 
             </Box>
           </Grid>
 
           {/* Right Column: Hot Auctions */}
           <Grid item xs={12} md={4}>
-            <Card className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm h-full relative">
+            <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm h-full relative">
               <CardContent className="p-6 flex flex-col h-full">
                 <Box className="flex items-center justify-between mb-6">
                   <Typography variant="h6" className="font-bold text-[#1B4965]">Phiên thầu nổi bật</Typography>
@@ -260,7 +261,7 @@ export default function CarrierDashboard() {
                   Khám phá thêm
                 </Button>
               </CardContent>
-            </Card>
+            </AppCard>
           </Grid>
 
         </Grid>

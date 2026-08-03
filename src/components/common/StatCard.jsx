@@ -4,12 +4,12 @@
 
 "use client";
 
-import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import AppCard from "./AppCard";
 
 const gradients = {
   "#1B4965": {
@@ -58,8 +58,9 @@ export default function StatCard({ title, value, subtitle, icon: Icon, color = "
   };
 
   return (
-    <Card 
+    <AppCard
       className="group"
+      showAccent={false}
       sx={{
         background: styleConfig.bg,
         backdropFilter: "blur(20px)",
@@ -128,6 +129,6 @@ export default function StatCard({ title, value, subtitle, icon: Icon, color = "
           )}
         </Box>
       </CardContent>
-    </Card>
+    </AppCard>
   );
 }

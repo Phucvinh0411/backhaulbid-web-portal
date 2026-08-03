@@ -125,6 +125,14 @@ export default function ActionButton({
       } ${className}`}
       sx={{
         ...getVariantStyles(),
+        "&.Mui-disabled": {
+          background: "#E2E8F0",
+          backgroundImage: "none",
+          borderColor: "#CBD5E1",
+          color: "#475569",
+          boxShadow: "none",
+          opacity: 1,
+        },
         ...sx,
       }}
       {...props}

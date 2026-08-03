@@ -14,11 +14,14 @@ import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import LocalShippingTwoToneIcon from "@mui/icons-material/LocalShippingTwoTone";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import SettingsTwoToneIcon from "@mui/icons-material/SettingsTwoTone";
+import { appApiService } from "@/services/apiService";
 
 const SIDEBAR_WIDTH = 280;
 
@@ -50,6 +53,8 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
   const pathname = usePathname();
   const router = useRouter();
   const [openMenus, setOpenMenus] = useState({});
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
 
   useEffect(() => {
     const nextOpenMenus = {};
@@ -67,10 +72,21 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
     setOpenMenus((prev) => ({ ...prev, [path]: !prev[path] }));
   };
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+    setLogoutError("");
+
+    try {
+      await appApiService.post("/api/auth/logout");
       window.localStorage.removeItem("userRole");
-      router.push("/");
+      window.localStorage.removeItem("isEkycVerified");
+      router.replace("/login");
+      router.refresh();
+    } catch {
+      setLogoutError("Không thể đăng xuất. Vui lòng thử lại.");
+      setIsLoggingOut(false);
     }
   };
 
@@ -305,13 +321,17 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
             </IconButton>
           </Tooltip>
           <Tooltip title="Đăng xuất">
-            <IconButton
-              size="small"
-              onClick={handleLogout}
-              sx={{ color: "#94A3B8", "&:hover": { color: "#F43F5E" } }}
-            >
-              <LogoutRoundedIcon fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                size="small"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                aria-label="Đăng xuất"
+                sx={{ color: "#94A3B8", "&:hover": { color: "#F43F5E" } }}
+              >
+                <LogoutRoundedIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
       </Box>
@@ -319,25 +339,37 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
   );
 
   return (
-    <Drawer
-      variant={variant}
-      open={variant === "permanent" ? true : open}
-      onClose={onClose}
-      sx={{
-        width: SIDEBAR_WIDTH,
-        flexShrink: 0,
-        "& .MuiDrawer-paper": {
+    <>
+      <Drawer
+        variant={variant}
+        open={variant === "permanent" ? true : open}
+        onClose={onClose}
+        sx={{
           width: SIDEBAR_WIDTH,
-          boxSizing: "border-box",
-          border: "none",
-          background: "transparent",
-          p: variant === "permanent" ? 2.5 : 2,
-          pr: variant === "permanent" ? 1.25 : 2,
-        },
-      }}
-    >
-      {drawerContent}
-    </Drawer>
+          flexShrink: 0,
+          "& .MuiDrawer-paper": {
+            width: SIDEBAR_WIDTH,
+            boxSizing: "border-box",
+            border: "none",
+            background: "transparent",
+            p: variant === "permanent" ? 2.5 : 2,
+            pr: variant === "permanent" ? 1.25 : 2,
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+      <Snackbar
+        open={Boolean(logoutError)}
+        autoHideDuration={4000}
+        onClose={() => setLogoutError("")}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="error" variant="filled" onClose={() => setLogoutError("")}>
+          {logoutError}
+        </Alert>
+      </Snackbar>
+    </>
   );
 }
 
