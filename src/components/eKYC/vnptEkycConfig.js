@@ -1,0 +1,82 @@
+const REQUIRED_CONFIG_KEYS = [
+  "BACKEND_URL",
+  "TOKEN_KEY",
+  "TOKEN_ID",
+  "ACCESS_TOKEN",
+];
+
+const MINIMUM_TOKEN_VALIDITY_MS = 5 * 60 * 1000;
+
+export const VNPT_EKYC_ASSETS = Object.freeze({
+  FACE_SDK_SCRIPT: "/lib/VNPTBrowserSDKAppV4.1.0.js",
+  WEB_OVAL: "/lib/web-oval.json",
+  MOBILE_OVAL: "/lib/mobile-oval.json",
+  ENGLISH_TUTORIAL: "/lib/english-tutorial.mp4",
+  VIETNAMESE_TUTORIAL: "/lib/vietnamese-tutorial.mp4",
+});
+
+export const VNPT_DOCUMENT_FLOW_CONFIG = Object.freeze({
+  LIST_TYPE_DOCUMENT: [-1, 9],
+  DOCUMENT_TYPE_START: 999,
+});
+
+export function normalizeVnptAccessToken(accessToken) {
+  if (typeof accessToken !== "string") return "";
+
+  return accessToken.trim().replace(/^(Bearer\s+)+/i, "").trim();
+}
+
+function getJwtExpiryMs(accessToken) {
+  const token = normalizeVnptAccessToken(accessToken);
+  const segments = token.split(".");
+
+  if (segments.length !== 3) return null;
+
+  try {
+    const base64 = segments[1].replaceAll("-", "+").replaceAll("_", "/");
+    const paddedBase64 = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      "="
+    );
+    const bytes = Uint8Array.from(
+      globalThis.atob(paddedBase64),
+      (character) => character.charCodeAt(0)
+    );
+    const payload = JSON.parse(new globalThis.TextDecoder().decode(bytes));
+
+    return Number.isFinite(payload.exp) ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+export function validateVnptEkycConfig(config, nowMs = Date.now()) {
+  const normalizedConfig = {
+    ...config,
+    ACCESS_TOKEN: normalizeVnptAccessToken(config.ACCESS_TOKEN),
+  };
+  const missingKeys = REQUIRED_CONFIG_KEYS.filter(
+    (key) =>
+      typeof normalizedConfig[key] !== "string" ||
+      normalizedConfig[key].trim() === ""
+  );
+
+  if (missingKeys.length > 0) {
+    return { ok: false, code: "missing_config", missingKeys };
+  }
+
+  const expiresAt = getJwtExpiryMs(normalizedConfig.ACCESS_TOKEN);
+
+  if (expiresAt !== null && expiresAt <= nowMs) {
+    return { ok: false, code: "expired_token", expiresAt };
+  }
+
+  if (
+    expiresAt !== null &&
+    expiresAt <= nowMs + MINIMUM_TOKEN_VALIDITY_MS
+  ) {
+    return { ok: false, code: "token_expiring", expiresAt };
+  }
+
+  return { ok: true, expiresAt };
+}

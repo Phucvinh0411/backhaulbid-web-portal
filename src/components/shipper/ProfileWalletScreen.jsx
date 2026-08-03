@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
@@ -32,14 +31,16 @@ import BookIcon from "@mui/icons-material/ImportContactsOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
-import CloudUploadIcon from "@mui/icons-material/CloudUploadOutlined";
-import SaveIcon from "@mui/icons-material/SaveOutlined";
 import CloseIcon from "@mui/icons-material/Close";
-import CheckIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 import InfoIcon from "@mui/icons-material/InfoOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
+import AppCard from "@/components/common/AppCard";
 import WalletScreen from "@/components/wallet/WalletScreen";
+import EkycModal from "@/components/eKYC/EkycModal";
+import BusinessVerificationPanel from "@/components/businessVerification/BusinessVerificationPanel";
+import { axiosClient } from "@/configs/axiosClient";
+import { REPRESENTATIVE_VERIFICATION_STATUS_PATH } from "@/components/eKYC/representativeVerificationApi";
 
 // Mock Address Book
 const INITIAL_ADDRESSES = [
@@ -73,14 +74,32 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [addresses, setAddresses] = useState(INITIAL_ADDRESSES);
 
-  // States for Profile Info
-  const [companyName, setCompanyName] = useState("Công ty TNHH Logistics & Thương mại Toàn Cầu");
-  const [taxCode, setTaxCode] = useState("0102030405");
-  const [representative, setRepresentative] = useState("Nguyễn Minh Triết");
-  const [phone, setPhone] = useState("0903.111.222");
-  const [kycStatus, setKycStatus] = useState("verified"); // 'verified' or 'pending' or 'unverified'
-  const [uploadedDoc, setUploadedDoc] = useState("GPKD_ToanCau.pdf");
-  const [profileSuccessMsg, setProfileSuccessMsg] = useState("");
+  const [representativeStatus, setRepresentativeStatus] = useState("loading");
+  const [openEkycModal, setOpenEkycModal] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    axiosClient
+      .get(REPRESENTATIVE_VERIFICATION_STATUS_PATH)
+      .then(({ data }) => {
+        if (!active) return;
+        setRepresentativeStatus(
+          data?.status === "VERIFIED"
+            ? "verified"
+            : data?.status === "PENDING"
+              ? "pending"
+              : "unverified"
+        );
+      })
+      .catch(() => {
+        if (active) setRepresentativeStatus("unverified");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // States for Address Book Actions
   const [openAddressDialog, setOpenAddressDialog] = useState(false);
@@ -96,14 +115,6 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
-  };
-
-  // --- Profile eKYC Handlers ---
-  const handleSaveProfile = () => {
-    setProfileSuccessMsg("Thông tin hồ sơ và eKYC đã được cập nhật thành công.");
-    setTimeout(() => {
-      setProfileSuccessMsg("");
-    }, 3000);
   };
 
   // --- Address Book Handlers ---
@@ -205,7 +216,8 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
       {/* TAB CONTENT 1: PROFILE & eKYC */}
       {activeTab === 0 && (
         <div className="space-y-6 animate-fade-in">
-          <Card
+          <AppCard
+            showAccent={false}
             className="!rounded-3xl border border-slate-100"
             sx={{
               background: "rgba(255, 255, 255, 0.8)",
@@ -214,143 +226,54 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
             }}
           >
             <CardContent className="!p-6 sm:!p-8 space-y-6">
-              {profileSuccessMsg && (
-                <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 p-4 rounded-2xl flex items-center gap-2 animate-fade-in text-sm font-semibold">
-                  <CheckIcon /> {profileSuccessMsg}
-                </div>
-              )}
-
-              {/* Profile Corporate header */}
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex flex-col gap-4 rounded-2xl border border-sky-100 bg-sky-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <Typography variant="h6" className="!font-bold text-slate-700">
-                    Hồ sơ doanh nghiệp chủ hàng
+                  <Typography variant="subtitle1" className="!font-bold text-[#1B4965]">
+                    eKYC người đại diện pháp luật
                   </Typography>
-                  <Typography variant="caption" className="text-slate-400">
-                    Thông tin phục vụ phát hành hóa đơn đỏ và xác thực pháp lý điện tử
+                  <Typography variant="body2" className="text-slate-500">
+                    Định danh CCCD và khuôn mặt cá nhân. Quy trình này độc lập với hồ sơ doanh nghiệp.
                   </Typography>
                 </div>
-
-                <div>
-                  {kycStatus === "verified" ? (
-                    <Chip
-                      label="Đã xác minh eKYC"
-                      color="success"
-                      icon={<CheckIcon />}
-                      className="!font-extrabold !text-[0.72rem] bg-emerald-50 text-emerald-600 border border-emerald-100 px-1 py-3 rounded-full"
-                    />
-                  ) : (
-                    <Chip
-                      label="Đang chờ phê duyệt"
-                      color="warning"
-                      className="!font-extrabold !text-[0.72rem] bg-amber-50 text-amber-600 border border-amber-100 px-1 py-3 rounded-full"
-                    />
+                <div className="flex shrink-0 items-center gap-2">
+                  <Chip
+                    label={
+                      representativeStatus === "verified"
+                        ? "Đã xác thực"
+                        : representativeStatus === "pending"
+                          ? "Đang xử lý"
+                          : representativeStatus === "loading"
+                            ? "Đang kiểm tra"
+                            : "Chưa xác thực"
+                    }
+                    color={
+                      representativeStatus === "verified"
+                        ? "success"
+                        : representativeStatus === "pending"
+                          ? "warning"
+                          : "default"
+                    }
+                    size="small"
+                    className="!font-bold"
+                  />
+                  {representativeStatus !== "verified" && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      disabled={representativeStatus === "loading"}
+                      onClick={() => setOpenEkycModal(true)}
+                      className="!rounded-full !font-bold !normal-case"
+                      sx={{ backgroundColor: "#1B4965" }}
+                    >
+                      Xác thực ngay
+                    </Button>
                   )}
                 </div>
               </div>
 
-              {/* Profile Form */}
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Tên doanh nghiệp"
-                    fullWidth
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    InputProps={{ className: "!rounded-2xl" }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Mã số thuế"
-                    fullWidth
-                    value={taxCode}
-                    onChange={(e) => setTaxCode(e.target.value)}
-                    InputProps={{ className: "!rounded-2xl" }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Người đại diện pháp luật"
-                    fullWidth
-                    value={representative}
-                    onChange={(e) => setRepresentative(e.target.value)}
-                    InputProps={{ className: "!rounded-2xl" }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Số điện thoại liên hệ"
-                    fullWidth
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    InputProps={{ className: "!rounded-2xl" }}
-                  />
-                </Grid>
-
-                {/* eKYC Upload Section */}
-                <Grid item xs={12}>
-                  <Typography variant="body2" className="text-slate-500 font-bold mb-2">
-                    Tài liệu xác thực doanh nghiệp (Giấy phép ĐKKD hoặc CCCD đại diện)
-                  </Typography>
-
-                  <div className="border-2 border-dashed border-slate-200 hover:border-[#1B4965]/40 transition-all rounded-3xl p-6 bg-slate-50/50 flex flex-col items-center justify-center text-center cursor-pointer relative group">
-                    <input
-                      type="file"
-                      disabled
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-not-allowed"
-                    />
-                    <CloudUploadIcon className="!text-4xl text-slate-400 group-hover:text-[#1B4965] group-hover:scale-105 transition-all mb-2" />
-                    <Typography variant="body2" className="!font-bold text-slate-600">
-                      Tải lên giấy phép kinh doanh / tài liệu mới
-                    </Typography>
-                    <Typography variant="caption" className="text-slate-400">
-                      Hỗ trợ định dạng PDF, PNG, JPG tối đa 10MB.
-                    </Typography>
-                  </div>
-
-                  {uploadedDoc && (
-                    <div className="mt-3 flex items-center justify-between bg-emerald-50/30 border border-emerald-100/50 p-3 rounded-2xl">
-                      <div className="flex items-center gap-2">
-                        <span className="text-emerald-600 text-xl">📄</span>
-                        <div className="min-w-0">
-                          <Typography className="!font-bold text-slate-700 text-xs truncate">
-                            {uploadedDoc}
-                          </Typography>
-                          <Typography className="text-slate-400 text-[0.65rem]">
-                            Đã xác minh bởi Ban quản trị nền tảng
-                          </Typography>
-                        </div>
-                      </div>
-                      <Chip
-                        label="Hồ sơ gốc"
-                        size="small"
-                        className="!font-extrabold !text-[0.65rem] bg-emerald-100 text-emerald-800"
-                      />
-                    </div>
-                  )}
-                </Grid>
-              </Grid>
-
-              {/* Form Action Submit */}
-              <div className="pt-4 border-t border-slate-100 flex justify-end">
-                <Button
-                  variant="contained"
-                  startIcon={<SaveIcon />}
-                  onClick={handleSaveProfile}
-                  className="!rounded-2xl !py-3 !px-8 !font-bold !capitalize shadow-md hover:shadow-lg transition-all"
-                  sx={{
-                    background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)",
-                    "&:hover": {
-                      background: "linear-gradient(135deg, #0D2B3E 0%, #1B4965 100%)",
-                    },
-                  }}
-                >
-                  Lưu thay đổi
-                </Button>
-              </div>
+              <BusinessVerificationPanel />
             </CardContent>
-          </Card>
+          </AppCard>
         </div>
       )}
 
@@ -379,7 +302,8 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
           <Grid container spacing={3}>
             {addresses.map((addr) => (
               <Grid item xs={12} md={6} lg={4} key={addr.id}>
-                <Card
+                <AppCard
+                  showAccent={false}
                   className="group hover:border-[#1B4965]/20 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300 border border-slate-100 !rounded-3xl relative overflow-hidden"
                   sx={{
                     background: "rgba(255, 255, 255, 0.8)",
@@ -426,7 +350,7 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
                       </div>
                     </div>
                   </CardContent>
-                </Card>
+                </AppCard>
               </Grid>
             ))}
           </Grid>
@@ -510,6 +434,18 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Trigger eKYC Modal from Settings */}
+      {openEkycModal && (
+        <EkycModal 
+          open={openEkycModal} 
+          onClose={() => setOpenEkycModal(false)}
+          onComplete={() => {
+            setOpenEkycModal(false);
+            setRepresentativeStatus("verified");
+          }} 
+        />
+      )}
     </Box>
   );
 }

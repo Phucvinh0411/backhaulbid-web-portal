@@ -5,8 +5,44 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import Divider from "@mui/material/Divider";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
 
-export const DetailDrawer = ({ open, onClose, title, children, width = 450 }) => {
+export const DetailDrawer = ({ open, onClose, title, children, width = 450, variant = "drawer" }) => {
+  if (variant === "modal") {
+    return (
+      <Dialog
+        open={open}
+        onClose={onClose}
+        fullWidth
+        maxWidth="xl"
+        PaperProps={{
+          sx: {
+            width: "min(1120px, calc(100vw - 32px))",
+            maxHeight: "90vh",
+            borderRadius: { xs: 0, sm: "20px" },
+          },
+        }}
+      >
+        <DialogTitle className="flex items-center justify-between gap-4 border-b border-slate-100 !px-6 !py-4 !font-bold text-[#1B4965]">
+          {title}
+          <IconButton
+            onClick={onClose}
+            size="small"
+            aria-label="Đóng chi tiết"
+            className="bg-slate-100 text-slate-500 hover:bg-slate-200"
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers className="!bg-slate-50/40 !p-4 sm:!p-6">
+          {children}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Drawer 
       anchor="right" 

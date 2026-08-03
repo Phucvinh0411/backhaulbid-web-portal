@@ -29,12 +29,13 @@ export async function POST(request: Request) {
          return NextResponse.json({ success: false, message: 'Đăng nhập lỗi do không tìm thấy token' }, { status: 500 });
     }
 
-    const cookieStore = cookies();
-    const isProd = process.env.NODE_ENV === 'production';
+    const cookieStore = await cookies();
+    const useSecureCookies =
+      process.env.NODE_ENV === 'production' && process.env.COOKIE_SECURE !== 'false';
     
     cookieStore.set('accessToken', accessToken, {
       httpOnly: true,
-      secure: isProd,
+      secure: useSecureCookies,
       sameSite: 'strict',
       path: '/',
       maxAge: 15 * 60 // 15 phút
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
 
     cookieStore.set('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: isProd,
+      secure: useSecureCookies,
       sameSite: 'strict',
       path: '/',
       maxAge: 7 * 24 * 60 * 60 // 7 ngày

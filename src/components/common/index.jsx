@@ -6,5 +6,6 @@ export { default as DetailRow } from "./DetailRow";
 export { default as AuctionTypeBadge } from "./AuctionTypeBadge";
 export { default as AuctionStatusBadge } from "./AuctionStatusBadge";
 export { default as RoundedBox } from "./RoundedBox";
+export { default as AppCard } from "./AppCard";
 export { default as AsymmetricCornerBox } from "./AsymmetricCornerBox";
 export { default as ActionButton } from "./ActionButton";

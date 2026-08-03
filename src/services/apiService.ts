@@ -1,5 +1,5 @@
-import { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { axiosClient } from '../configs/axiosClient';
+import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { appApiClient, axiosClient } from '../configs/axiosClient';
 
 /**
  * Interface cho chuẩn response trả về từ Spring Boot (tùy theo cấu trúc dự án của bạn).
@@ -15,7 +15,7 @@ export interface ApiResponse<T = any> {
 /**
  * Trạm Axios chung (Wrapper) để gọi API, tự động bắt lỗi và ép kiểu dữ liệu
  */
-export const apiService = {
+const createApiService = (client: AxiosInstance) => ({
   /**
    * Phương thức GET
    * @param url Đường dẫn API (ví dụ: '/api/v1/companies')
@@ -23,7 +23,7 @@ export const apiService = {
    * @param config Cấu hình mở rộng của Axios
    */
   async get<T>(url: string, params?: object, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await axiosClient.get(url, { ...config, params });
+    const response: AxiosResponse<T> = await client.get(url, { ...config, params });
     return response.data;
   },
 
@@ -34,7 +34,7 @@ export const apiService = {
    * @param config Cấu hình mở rộng của Axios
    */
   async post<T>(url: string, data?: object, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await axiosClient.post(url, data, config);
+    const response: AxiosResponse<T> = await client.post(url, data, config);
     return response.data;
   },
 
@@ -42,7 +42,7 @@ export const apiService = {
    * Phương thức PUT (Dùng để update toàn bộ object)
    */
   async put<T>(url: string, data?: object, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await axiosClient.put(url, data, config);
+    const response: AxiosResponse<T> = await client.put(url, data, config);
     return response.data;
   },
 
@@ -50,7 +50,7 @@ export const apiService = {
    * Phương thức PATCH (Dùng để update 1 phần nhỏ của object)
    */
   async patch<T>(url: string, data?: object, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await axiosClient.patch(url, data, config);
+    const response: AxiosResponse<T> = await client.patch(url, data, config);
     return response.data;
   },
 
@@ -58,7 +58,13 @@ export const apiService = {
    * Phương thức DELETE
    */
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await axiosClient.delete(url, config);
+    const response: AxiosResponse<T> = await client.delete(url, config);
     return response.data;
   }
-};
+});
+
+// Dùng cho API của Spring Boot qua gateway.
+export const apiService = createApiService(axiosClient);
+
+// Dùng cho API Route cùng origin do Next.js cung cấp.
+export const appApiService = createApiService(appApiClient);

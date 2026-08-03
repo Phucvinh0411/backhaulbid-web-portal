@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
@@ -40,6 +39,7 @@ import SearchIcon from "@mui/icons-material/SearchOutlined";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalanceOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
+import AppCard from "@/components/common/AppCard";
 
 // Mock Transaction History for Shipper
 const SHIPPER_TRANSACTIONS = [
@@ -247,7 +247,7 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
     });
 
     result.sort((a, b) => {
-      let comparison = 0;
+      let comparison;
       if (orderBy === "amount") {
         comparison = a.amount - b.amount;
       } else if (orderBy === "time") {
@@ -284,7 +284,8 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
         {/* Balance & Info Cards */}
         <Grid container spacing={3}>
           <Grid item xs={12} md={5}>
-            <Card
+            <AppCard
+              showAccent={false}
               className="!rounded-3xl border border-white/20 h-full relative overflow-hidden"
               style={{
                 background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)",
@@ -321,13 +322,13 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
+            </AppCard>
           </Grid>
 
           {/* Quick stats / note card */}
           <Grid item xs={12} md={7}>
             {isShipper ? (
-              <Card className="!rounded-3xl border border-slate-100 h-full bg-white/70 backdrop-blur-md shadow-[0_8px_32px_0_rgba(27,73,101,0.02)]">
+              <AppCard showAccent={false} className="!rounded-3xl border border-slate-100 h-full bg-white/70 backdrop-blur-md shadow-[0_8px_32px_0_rgba(27,73,101,0.02)]">
                 <CardContent className="!p-6 flex flex-col justify-between h-full">
                   <div className="space-y-3.5">
                     <Typography variant="h6" className="!font-bold text-slate-800">
@@ -355,9 +356,9 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
                     <span>Nạp tiền siêu tốc bằng mã VietQR hỗ trợ liên ngân hàng 24/7 không mất phí.</span>
                   </div>
                 </CardContent>
-              </Card>
+              </AppCard>
             ) : (
-              <Card className="!rounded-3xl border border-slate-100 h-full bg-white/70 backdrop-blur-md shadow-[0_8px_32px_0_rgba(27,73,101,0.02)]">
+              <AppCard showAccent={false} className="!rounded-3xl border border-slate-100 h-full bg-white/70 backdrop-blur-md shadow-[0_8px_32px_0_rgba(27,73,101,0.02)]">
                 <CardContent className="!p-6 flex flex-col justify-between h-full">
                   <div className="space-y-4">
                     <Typography variant="h6" className="!font-bold text-slate-800">
@@ -392,13 +393,14 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
                     </Grid>
                   </div>
                 </CardContent>
-              </Card>
+              </AppCard>
             )}
           </Grid>
         </Grid>
 
         {/* Transaction History Card with Filters and Dynamic Drag Table */}
-        <Card
+        <AppCard
+          showAccent={false}
           className="!rounded-3xl border border-slate-100 !shadow-[0_8px_32px_0_rgba(27,73,101,0.02)] overflow-hidden"
           sx={{
             background: "rgba(255, 255, 255, 0.8)",
@@ -592,7 +594,7 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
               },
             }}
           />
-        </Card>
+        </AppCard>
       </div>
 
       {/* Wallet Action Dialog (Deposit / Withdraw simulation) */}

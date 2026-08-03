@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST() {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const currentRefreshToken = cookieStore.get('refreshToken')?.value;
 
     if (!currentRefreshToken) {
@@ -16,8 +16,9 @@ export async function POST() {
     // Đẩy refresh token lên cho backend xử lý
     const res = await fetch(`${gatewayUrl}/api/v1/auth/refresh`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: currentRefreshToken }),
+      headers: {
+        Cookie: `refreshToken=${encodeURIComponent(currentRefreshToken)}`,
+      },
     });
 
     if (!res.ok) {
@@ -29,12 +30,13 @@ export async function POST() {
     const data = await res.json();
     const newAccessToken = data.accessToken || data.data?.accessToken;
     
-    const isProd = process.env.NODE_ENV === 'production';
+    const useSecureCookies =
+      process.env.NODE_ENV === 'production' && process.env.COOKIE_SECURE !== 'false';
     
     if (newAccessToken) {
         cookieStore.set('accessToken', newAccessToken, {
           httpOnly: true,
-          secure: isProd,
+          secure: useSecureCookies,
           sameSite: 'strict',
           path: '/',
           maxAge: 15 * 60 // 15 phút

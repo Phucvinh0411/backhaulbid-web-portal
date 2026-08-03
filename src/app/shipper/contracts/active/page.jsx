@@ -1,7 +1,7 @@
 "use client";
 
-import TrackingScreen from "@/components/shipper/TrackingScreen";
+import ContractsManagementScreen from "@/components/contracts/ContractsManagementScreen";
 
 export default function ActiveContractPage() {
-  return <TrackingScreen />;
+  return <ContractsManagementScreen role="shipper" initialFilter="ACTIVE" />;
 }

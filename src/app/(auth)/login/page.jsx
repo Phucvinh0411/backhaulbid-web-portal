@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Box, Grid, Typography, TextField, Button,
-  Checkbox, FormControlLabel, Divider, useTheme, Alert, CircularProgress
+  Checkbox, FormControlLabel, useTheme, Alert, CircularProgress
 } from "@mui/material";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 
@@ -179,33 +179,6 @@ export default function LoginPage() {
                 </Button>
               </Box>
 
-              <Box sx={{ mt: 5 }}>
-                <Divider sx={{ "&::before, &::after": { borderColor: "divider" } }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ px: 1 }}>Đăng nhập thử nghiệm (Mock)</Typography>
-                </Divider>
-
-                <Grid container spacing={1.5} sx={{ mt: 2 }}>
-                  {[
-                    { label: "Admin", phone: "0900000001", password: "Admin@123" },
-                    { label: "Nhà xe", phone: "0900000002", password: "Carrier@123" },
-                    { label: "Chủ hàng", phone: "0900000003", password: "Shipper@123" },
-                  ].map((mock) => (
-                    <Grid item xs={4} key={mock.label}>
-                      <Button
-                        variant="outlined"
-                        fullWidth size="small"
-                        onClick={() => { setPhone(mock.phone); setPassword(mock.password); }}
-                        sx={{
-                          borderColor: "divider", color: "text.primary", borderRadius: "10px", py: 1, fontSize: "0.8rem",
-                          "&:hover": { bgcolor: "grey.50", borderColor: "primary.light" }
-                        }}
-                      >
-                        {mock.label}
-                      </Button>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
             </form>
           </Box>
         </Grid>

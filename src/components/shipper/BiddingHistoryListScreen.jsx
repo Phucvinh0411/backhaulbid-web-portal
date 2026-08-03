@@ -754,7 +754,7 @@ export default function BiddingHistoryListScreen() {
                                     <IconButton
                                       size="small"
                                       className="text-blue-600 hover:bg-blue-50 bg-slate-50"
-                                      onClick={() => router.push(`/shipper/contracts/active`)}
+                                      onClick={() => router.push(`/shipper/contracts?id=${shipment.id}`)}
                                     >
                                       <DescriptionIcon fontSize="small" />
                                     </IconButton>

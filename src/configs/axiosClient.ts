@@ -1,13 +1,20 @@
 import axios from 'axios';
 
-// Cấu hình Axios Client gọi thẳng tới Gateway
-export const axiosClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8080',
-  withCredentials: true, // Quan trọng: Cho phép trình duyệt đính kèm Cookie
+const sharedConfig = {
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
+};
+
+// Cấu hình Axios Client gọi thẳng tới Gateway
+export const axiosClient = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8080',
+  ...sharedConfig,
 });
+
+// Client gọi các API Route cùng origin của Next.js, ví dụ /api/auth/logout.
+export const appApiClient = axios.create(sharedConfig);
 
 // Response Interceptor xử lý tự động refresh token khi nhận 401
 axiosClient.interceptors.response.use(

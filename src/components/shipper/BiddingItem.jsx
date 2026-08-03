@@ -14,7 +14,13 @@ import { AuctionTypeBadge, AuctionStatusBadge, RoundedBox, AsymmetricCornerBox, 
  * Reusable BiddingItem card component representing a logistics shipment.
  * Provides custom styling, backgrounds, and action menus based on the current auction status.
  */
-export default function BiddingItem({ shipment, onCancel, onViewDetail }) {
+export default function BiddingItem({
+  shipment,
+  onCancel,
+  onViewDetail,
+  customActions,
+  statusLabelOverride,
+}) {
   // Helper to format currency
   const formatCurrency = (val) => {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" })
@@ -25,6 +31,7 @@ export default function BiddingItem({ shipment, onCancel, onViewDetail }) {
   // Calculate time remaining representation
   const getTimeRemaining = (endTimeStr) => {
     const end = new Date(endTimeStr);
+    if (Number.isNaN(end.getTime())) return "Theo lịch phiên";
     const now = new Date();
     const diffMs = end - now;
 
@@ -83,7 +90,11 @@ export default function BiddingItem({ shipment, onCancel, onViewDetail }) {
               <AuctionTypeBadge type={shipment.auctionType} size="md" />
             </div>
 
-            <AuctionStatusBadge status={shipment.status} labelOverride={design.label} size="md" />
+            <AuctionStatusBadge
+              status={shipment.status}
+              labelOverride={statusLabelOverride || design.label}
+              size="md"
+            />
           </div>
 
           {/* Main Title & Goods Info */}
@@ -206,10 +217,12 @@ export default function BiddingItem({ shipment, onCancel, onViewDetail }) {
 
         {/* Card Actions */}
         <div className="flex items-center justify-between pt-3 border-t border-slate-100 gap-3">
+          {customActions ? customActions : (
+          <>
           <ActionButton
             variant="text"
             size="sm"
-            onClick={() => onViewDetail && onViewDetail(shipment.id)}
+            onClick={() => onViewDetail && onViewDetail(shipment)}
           >
             Xem chi tiết
           </ActionButton>
@@ -222,6 +235,8 @@ export default function BiddingItem({ shipment, onCancel, onViewDetail }) {
             >
               Hủy thầu
             </ActionButton>
+          )}
+          </>
           )}
         </div>
       </div>

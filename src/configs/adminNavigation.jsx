@@ -3,6 +3,7 @@
 import {
   DashboardOutlined as DashboardIcon,
   PeopleOutlined as PeopleIcon,
+  FactCheckOutlined as FactCheckIcon,
   GavelOutlined as GavelIcon,
   ReportProblemOutlined as ReportProblemIcon,
   SettingsOutlined as SettingsIcon,
@@ -26,6 +27,11 @@ const adminNavigation = [
         title: "Quản lý người dùng",
         path: "/admin/users",
         icon: PeopleIcon,
+      },
+      {
+        title: "Duyệt doanh nghiệp",
+        path: "/admin/business-verifications",
+        icon: FactCheckIcon,
       },
       {
         title: "Giám sát đấu giá",

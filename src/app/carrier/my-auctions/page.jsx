@@ -161,7 +161,7 @@ export default function MyAuctionsPage() {
   const sortedAuctions = React.useMemo(() => {
     let result = [...filteredAuctions];
     result.sort((a, b) => {
-      let comparison = 0;
+      let comparison;
       if (orderBy === "basePrice") {
         const valA = parseInt(a.basePrice.replace(/\D/g, ""), 10) || 0;
         const valB = parseInt(b.basePrice.replace(/\D/g, ""), 10) || 0;
@@ -320,6 +320,7 @@ export default function MyAuctionsPage() {
       <DetailDrawer
         open={openDetailDrawer}
         onClose={() => setOpenDetailDrawer(false)}
+        variant="modal"
         title="Chi tiết Phiên Đấu Giá"
       >
         {selectedAuction && (

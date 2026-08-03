@@ -1,4 +1,5 @@
 import js from '@eslint/js';
+import nextPlugin from '@next/eslint-plugin-next';
 
 export default [
   {
@@ -7,12 +8,22 @@ export default [
       'build/**',
       '.next/**',
       'out/**',
+      'public/**',
       'node_modules/**',
       'coverage/**',
       '.vite/**',
     ],
   },
   js.configs.recommended,
+  {
+    plugins: {
+      '@next/next': nextPlugin,
+    },
+    rules: {
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs['core-web-vitals'].rules,
+    },
+  },
   {
     files: ['**/*.{js,jsx,mjs,cjs}'],
     languageOptions: {

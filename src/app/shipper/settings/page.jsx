@@ -1,7 +1,7 @@
 "use client";
 
-import ProfileWalletScreen from "@/components/shipper/ProfileWalletScreen";
+import AccountSettingsScreen from "@/components/settings/AccountSettingsScreen";
 
 export default function SettingsPage() {
-  return <ProfileWalletScreen initialTab={0} />;
+  return <AccountSettingsScreen role="shipper" />;
 }

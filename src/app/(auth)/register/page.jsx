@@ -47,8 +47,8 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-white flex">
       {/* Left Banner */}
-      <div className="hidden lg:flex lg:w-5/12 bg-blue-700 flex-col justify-between p-12 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-700/80 to-blue-900/90 z-10"></div>
+      <div className="hidden lg:flex lg:w-5/12 bg-[#1B4965] flex-col justify-between p-12 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1B4965]/80 to-[#0D2B3E]/90 z-10"></div>
         <div
           className="absolute inset-0 opacity-40 mix-blend-overlay z-0"
           style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1519003722824-194d4455aeb0?auto=format&fit=crop&q=80&w=1920")', backgroundSize: "cover", backgroundPosition: "center" }}
@@ -57,22 +57,22 @@ export default function RegisterPage() {
           <h1 className="text-2xl font-black tracking-tight mb-20">BackHaulBid.</h1>
           <div className="space-y-4 mb-24">
             <h2 className="text-4xl font-bold leading-tight">Secure B2B Logistics Login</h2>
-            <p className="text-blue-100 text-lg">Access your account and manage shipments efficiently.</p>
+            <p className="text-[#D8F3FA] text-lg">Access your account and manage shipments efficiently.</p>
           </div>
         </div>
         <div className="relative z-20 mt-auto">
           <h2 className="text-3xl font-bold mb-4">Chào mừng bạn đến với BackHaulBid</h2>
-          <p className="text-blue-100 mb-8 max-w-md">
+          <p className="text-[#D8F3FA] mb-8 max-w-md">
             Nền tảng đấu giá vận tải B2B hàng đầu. Tối ưu hóa chuỗi cung ứng, giảm thiểu chi phí và kết nối trực tiếp chủ hàng với chủ xe.
           </p>
           <div className="flex items-center space-x-4">
             <div className="flex -space-x-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="w-10 h-10 rounded-full border-2 border-blue-700" src="https://i.pravatar.cc/100?img=1" alt="Avatar" />
+              <img className="w-10 h-10 rounded-full border-2 border-[#1B4965]" src="https://i.pravatar.cc/100?img=1" alt="Avatar" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="w-10 h-10 rounded-full border-2 border-blue-700" src="https://i.pravatar.cc/100?img=2" alt="Avatar" />
+              <img className="w-10 h-10 rounded-full border-2 border-[#1B4965]" src="https://i.pravatar.cc/100?img=2" alt="Avatar" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="w-10 h-10 rounded-full border-2 border-blue-700" src="https://i.pravatar.cc/100?img=3" alt="Avatar" />
+              <img className="w-10 h-10 rounded-full border-2 border-[#1B4965]" src="https://i.pravatar.cc/100?img=3" alt="Avatar" />
             </div>
             <span className="text-sm font-medium">Tham gia cùng 10,000+ doanh nghiệp.</span>
           </div>
@@ -98,21 +98,21 @@ export default function RegisterPage() {
             <div>
               <p className="text-sm font-bold text-slate-700 mb-3">1. Bạn là ai?</p>
               <div className="grid grid-cols-2 gap-3">
-                <label className={`border rounded-xl p-4 flex flex-col cursor-pointer transition-all ${formData.role === "shipper" ? "border-blue-600 bg-blue-50/50 ring-1 ring-blue-600" : "border-slate-200 hover:border-slate-300"}`}>
+                <label className={`border rounded-xl p-4 flex flex-col cursor-pointer transition-all ${formData.role === "shipper" ? "border-[#1B4965] bg-[#1B4965]/5 ring-1 ring-[#1B4965]" : "border-slate-200 hover:border-slate-300"}`}>
                   <input type="radio" name="role" value="shipper" className="sr-only"
                     checked={formData.role === "shipper"} onChange={() => setFormData({...formData, role: "shipper"})} />
                   <div className="flex items-center mb-2">
-                    <svg className={`w-5 h-5 mr-2 ${formData.role === "shipper" ? "text-blue-600" : "text-slate-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-                    <span className={`font-semibold ${formData.role === "shipper" ? "text-blue-900" : "text-slate-700"}`}>Chủ Hàng</span>
+                    <svg className={`w-5 h-5 mr-2 ${formData.role === "shipper" ? "text-[#1B4965]" : "text-slate-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                    <span className={`font-semibold ${formData.role === "shipper" ? "text-[#0D2B3E]" : "text-slate-700"}`}>Chủ Hàng</span>
                   </div>
                   <span className="text-xs text-slate-500">Cần tìm xe vận chuyển hàng hóa.</span>
                 </label>
-                <label className={`border rounded-xl p-4 flex flex-col cursor-pointer transition-all ${formData.role === "carrier" ? "border-blue-600 bg-blue-50/50 ring-1 ring-blue-600" : "border-slate-200 hover:border-slate-300"}`}>
+                <label className={`border rounded-xl p-4 flex flex-col cursor-pointer transition-all ${formData.role === "carrier" ? "border-[#1B4965] bg-[#1B4965]/5 ring-1 ring-[#1B4965]" : "border-slate-200 hover:border-slate-300"}`}>
                   <input type="radio" name="role" value="carrier" className="sr-only"
                     checked={formData.role === "carrier"} onChange={() => setFormData({...formData, role: "carrier"})} />
                   <div className="flex items-center mb-2">
-                    <svg className={`w-5 h-5 mr-2 ${formData.role === "carrier" ? "text-blue-600" : "text-slate-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                    <span className={`font-semibold ${formData.role === "carrier" ? "text-blue-900" : "text-slate-700"}`}>Chủ Xe</span>
+                    <svg className={`w-5 h-5 mr-2 ${formData.role === "carrier" ? "text-[#1B4965]" : "text-slate-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                    <span className={`font-semibold ${formData.role === "carrier" ? "text-[#0D2B3E]" : "text-slate-700"}`}>Chủ Xe</span>
                   </div>
                   <span className="text-xs text-slate-500">Cần tìm nguồn hàng để vận chuyển.</span>
                 </label>
@@ -132,7 +132,7 @@ export default function RegisterPage() {
                   </div>
                   <input type="text" id="fullName"
                     value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none text-sm transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#1B4965]/20 focus:border-[#1B4965] outline-none text-sm transition-all"
                     placeholder="Nguyễn Văn A" />
                 </div>
               </div>
@@ -145,7 +145,7 @@ export default function RegisterPage() {
                   </div>
                   <input type="email" id="email" required
                     value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none text-sm transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#1B4965]/20 focus:border-[#1B4965] outline-none text-sm transition-all"
                     placeholder="name@company.com" />
                 </div>
               </div>
@@ -158,7 +158,7 @@ export default function RegisterPage() {
                   </div>
                   <input type="tel" id="phone" required
                     value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none text-sm transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#1B4965]/20 focus:border-[#1B4965] outline-none text-sm transition-all"
                     placeholder="090 123 4567" />
                 </div>
               </div>
@@ -171,7 +171,7 @@ export default function RegisterPage() {
                   </div>
                   <input type="password" id="password" required minLength="8"
                     value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none text-sm transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#1B4965]/20 focus:border-[#1B4965] outline-none text-sm transition-all"
                     placeholder="••••••••" />
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1">Ít nhất 8 ký tự, bao gồm chữ và số.</p>
@@ -181,7 +181,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors flex items-center justify-center disabled:opacity-60"
+              className="w-full py-3 bg-[#1B4965] text-white rounded-lg font-bold hover:bg-[#0D2B3E] transition-colors flex items-center justify-center disabled:opacity-60"
             >
               {loading ? "Đang xử lý..." : (
                 <>
@@ -192,12 +192,12 @@ export default function RegisterPage() {
             </button>
 
             <div className="text-center text-xs text-slate-500">
-              Bằng việc đăng ký, bạn đồng ý với <a href="#" className="text-blue-600 hover:underline font-medium">Điều khoản</a> và <a href="#" className="text-blue-600 hover:underline font-medium">Bảo mật</a> của chúng tôi.
+              Bằng việc đăng ký, bạn đồng ý với <a href="#" className="text-[#1B4965] hover:underline font-medium">Điều khoản</a> và <a href="#" className="text-[#1B4965] hover:underline font-medium">Bảo mật</a> của chúng tôi.
             </div>
 
             <div className="text-center text-sm">
               <span className="text-slate-600">Đã có tài khoản? </span>
-              <Link href="/login" className="text-blue-600 hover:underline font-bold">Đăng nhập</Link>
+              <Link href="/login" className="text-[#1B4965] hover:underline font-bold">Đăng nhập</Link>
             </div>
           </form>
         </div>
