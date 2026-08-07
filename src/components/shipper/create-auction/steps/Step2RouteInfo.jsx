@@ -69,7 +69,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
           sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <TextField
             fullWidth
             label="Người liên hệ tại điểm nhận"
@@ -148,7 +148,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
           sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <TextField
             fullWidth
             label="Người nhận tại điểm giao"

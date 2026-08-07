@@ -77,13 +77,47 @@ export default function CreateAuctionScreen() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const payload = {
+        title: form.goodsName,
+        goodsType: form.goodsCategory,
+        vehicleTypeRequired: form.requiredVehicleType,
+        origin: `${form.fromProvince} - ${form.fromLocationName}`,
+        destination: `${form.toProvince} - ${form.toLocationName}`,
+        weight: form.weight,
+        maxPrice: form.maxPrice.toString(),
+        notes: form.description,
+        isDepositRequired: form.depositAmount > 0,
+        depositAmount: form.depositAmount > 0 ? form.depositAmount.toString() : undefined,
+        registrationEndTime: new Date(form.regEndTime).toISOString(),
+        startTime: new Date(form.startTime).toISOString(),
+        endTime: new Date(form.endTime).toISOString(),
+        images: []
+      };
+
+      const response = await fetch("/api/bidding/auctions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Lỗi tạo phiên đấu giá");
+      }
+
       alert("🎉 Tạo cuộc đấu giá thành công! Đơn hàng đã được đưa vào danh sách chờ mở đăng ký.");
       router.push("/shipper/bidding/sessions");
-    }, 800);
+    } catch (error) {
+      alert(`Lỗi: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
