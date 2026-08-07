@@ -45,6 +45,20 @@ body {
 }
 
 /* ============================================
+   MUI + Tailwind CSS Fixes
+   ============================================ */
+/* Khắc phục lỗi viền input cắt ngang chữ (MUI OutlinedInput notch bug) do Tailwind reset */
+.MuiOutlinedInput-notchedOutline {
+  legend {
+    display: block !important;
+    width: auto !important;
+    padding: 0 !important;
+    visibility: hidden;
+  }
+}
+
+
+/* ============================================
    Keyframe Animations
    ============================================ */
 
