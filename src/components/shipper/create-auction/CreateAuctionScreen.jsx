@@ -104,7 +104,7 @@ export default function CreateAuctionScreen() {
       {/* Main Grid: Step Content (left 7) + Summary Sidebar (right 5) */}
       <Grid container spacing={3} alignItems="flex-start">
         {/* Left Column: Form Step */}
-        <Grid item xs={12} lg={7}>
+        <Grid item xs={12} md={7} lg={8}>
           {activeStep === 0 && <Step1GoodsInfo form={form} updateForm={updateForm} />}
           {activeStep === 1 && (
             <Step2RouteInfo
@@ -162,7 +162,7 @@ export default function CreateAuctionScreen() {
         </Grid>
 
         {/* Right Column: Live Sticky Summary Sidebar */}
-        <Grid item xs={12} lg={5}>
+        <Grid item xs={12} md={5} lg={4}>
           <SummarySidebar form={form} />
         </Grid>
       </Grid>
