@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
+import { toast } from "react-hot-toast";
+import { auctionService } from "@/services/auctionService";
 import AuctionSessionCard from "@/components/auctions/AuctionSessionCard";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -26,6 +29,13 @@ import CloseIcon from "@mui/icons-material/Close";
 import Grid from "@mui/material/Grid";
 import MenuItem from "@mui/material/MenuItem";
 import FilterListIcon from "@mui/icons-material/FilterListOutlined";
+import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
+import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
+import PlaceIcon from "@mui/icons-material/Place";
+import AdjustIcon from "@mui/icons-material/Adjust";
+import Divider from "@mui/material/Divider";
 
 
 import {
@@ -35,187 +45,75 @@ import {
   PageHeader,
 } from "@/components/common";
 
-// Mock Data representing professional logistics operations
-const INITIAL_SHIPMENTS = [
-  {
-    id: "LH-2026-9041",
-    goodsType: "Linh kiện điện tử",
-    weight: "5.2 tấn",
-    volume: "28 m³",
-    from: {
-      province: "Thái Nguyên",
-      detail: "Kho Samsung Yên Bình, Phổ Yên",
-    },
-    to: {
-      province: "Hải Phòng",
-      detail: "Cảng Đình Vũ, Quận Hải An",
-    },
-    maxPrice: 12500000,
-    currentLowestBid: 11200000,
-    bidCount: 4,
-    closeTime: "2026-07-04T18:00:00",
-    status: "active_bids", // đang đấu giá
-    auctionType: "PUBLIC",
-  },
-  {
-    id: "LH-2026-9042",
-    goodsType: "Thực phẩm đông lạnh (Thủy sản)",
-    weight: "8.0 tấn",
-    volume: "45 m³",
-    from: {
-      province: "Cà Mau",
-      detail: "Cụm CN Sông Đốc, Huyện Trần Văn Thời",
-    },
-    to: {
-      province: "TP. Hồ Chí Minh",
-      detail: "Kho lạnh Transimex, Khu Công Nghệ Cao Quận 9",
-    },
-    maxPrice: 28000000,
-    currentLowestBid: 26500000,
-    bidCount: 3,
-    closeTime: "2026-07-03T12:00:00",
-    status: "active_bids",
-    auctionType: "SEALED",
-  },
-  {
-    id: "LH-2026-9043",
-    goodsType: "Nông sản khô (Hạt điều)",
-    weight: "15.0 tấn",
-    volume: "60 m³",
-    from: {
-      province: "Bình Phước",
-      detail: "Kho xuất khẩu Đồng Phú",
-    },
-    to: {
-      province: "Bà Rịa - Vũng Tàu",
-      detail: "Cảng Cái Mép - Thị Vải, Phú Mỹ",
-    },
-    maxPrice: 18500000,
-    currentLowestBid: 0,
-    bidCount: 0,
-    closeTime: "2026-07-05T17:00:00",
-    status: "pending_bids", // chờ đấu giá
-    auctionType: "PUBLIC",
-  },
-  {
-    id: "LH-2026-9044",
-    goodsType: "Vật liệu xây dựng (Sắt thép)",
-    weight: "22.5 tấn",
-    volume: "18 m³",
-    from: {
-      province: "Quảng Ngãi",
-      detail: "KCN Dung Quất, Bình Sơn",
-    },
-    to: {
-      province: "Đà Nẵng",
-      detail: "Tổng kho Hòa Khánh, Liên Chiểu",
-    },
-    maxPrice: 16000000,
-    currentLowestBid: 14800000,
-    bidCount: 6,
-    closeTime: "2026-07-02T10:00:00",
-    status: "awarded", // đã chốt thầu
-    carrier: "Công ty Vận tải Phước An",
-    carrierPhone: "0905.888.999",
-    finalPrice: 14800000,
-    auctionType: "PUBLIC",
-  },
-  {
-    id: "LH-2026-9045",
-    goodsType: "Hàng tiêu dùng nhanh (FMCG)",
-    weight: "3.5 tấn",
-    volume: "22 m³",
-    from: {
-      province: "Bình Dương",
-      detail: "KCN VSIP I, Thuận An",
-    },
-    to: {
-      province: "Cần Thơ",
-      detail: "Trung tâm phân phối Mega Market, Cái Răng",
-    },
-    maxPrice: 9500000,
-    currentLowestBid: 8900000,
-    bidCount: 5,
-    closeTime: "2026-06-30T15:00:00",
-    status: "shipping", // đang vận chuyển
-    carrier: "Hợp tác xã Vận tải Hữu Nghị",
-    carrierPhone: "0918.222.333",
-    driverName: "Trần Văn Bình",
-    driverPlate: "51C-777.45",
-    finalPrice: 8900000,
-    auctionType: "PUBLIC",
-  },
-  {
-    id: "LH-2026-9046",
-    goodsType: "Trái cây xuất khẩu (Thanh long)",
-    weight: "10.0 tấn",
-    volume: "40 m³",
-    from: {
-      province: "Bình Thuận",
-      detail: "Vựa thu mua Hàm Thuận Nam",
-    },
-    to: {
-      province: "Lạng Sơn",
-      detail: "Bãi kiểm hóa Cửa khẩu Tân Thanh",
-    },
-    maxPrice: 42000000,
-    currentLowestBid: 39500000,
-    bidCount: 9,
-    closeTime: "2026-06-25T20:00:00",
-    status: "completed", // hoàn thành
-    carrier: "Logistics Bắc Nam T&T",
-    carrierPhone: "0977.345.678",
-    driverName: "Lê Minh Quốc",
-    driverPlate: "29H-123.56",
-    finalPrice: 39500000,
-    auctionType: "PUBLIC",
-  },
-  {
-    id: "LH-2026-9047",
-    goodsType: "Hóa chất (Sơn công nghiệp)",
-    weight: "6.0 tấn",
-    volume: "24 m³",
-    from: {
-      province: "Đồng Nai",
-      detail: "KCN Amata, Biên Hòa",
-    },
-    to: {
-      province: "Khánh Hòa",
-      detail: "Kho Sơn Đông Á, KCN Suối Dầu",
-    },
-    maxPrice: 15500000,
-    currentLowestBid: 14700000,
-    bidCount: 2,
-    closeTime: "2026-06-28T09:00:00",
-    status: "cancelled", // đã hủy
-    cancelReason: "Thay đổi lịch sản xuất tại nhà máy",
-    auctionType: "PUBLIC",
-  },
-  {
-    id: "LH-2026-9048",
-    goodsType: "Bao bì carton",
-    weight: "2.0 tấn",
-    volume: "35 m³",
-    from: {
-      province: "Hưng Yên",
-      detail: "KCN Phố Nối A",
-    },
-    to: {
-      province: "Bắc Giang",
-      detail: "Nhà máy Foxconn Quang Châu",
-    },
-    maxPrice: 6500000,
-    currentLowestBid: 5800000,
-    bidCount: 4,
-    closeTime: "2026-07-02T16:00:00",
-    status: "active_bids",
-    auctionType: "SEALED",
+// Backend status to Frontend status mapping
+const mapStatusToFrontend = (backendStatus) => {
+  switch (backendStatus) {
+    case "PENDING":
+    case "UPCOMING":
+      return "pending_bids";
+    case "ACTIVE":
+    case "IN_PROGRESS":
+      return "active_bids";
+    case "COMPLETED":
+    case "ENDED":
+      return "awarded";
+    case "CANCELLED":
+      return "cancelled";
+    default:
+      return "pending_bids";
   }
-];
+};
+
+// Helper to safely parse Decimal128 from MongoDB if it comes as object
+const parseDecimal = (val) => {
+  if (!val) return 0;
+  if (typeof val === 'object' && val.$numberDecimal) return parseFloat(val.$numberDecimal);
+  return parseFloat(val);
+};
+
+const mapBackendToShipment = (auction) => {
+  // If the auction has goodsInfo (from our old seed), use it, otherwise use direct properties
+  const goodsType = auction.goodsType || auction.goodsInfo?.goodsName || auction.title || "Không xác định";
+  const weight = auction.weight || auction.goodsInfo?.weight || 0;
+  const volume = auction.volume || auction.goodsInfo?.volume || 0;
+  
+  const fromProvince = auction.pickupLocation?.province || auction.route?.from?.province || auction.origin || "Không rõ";
+  const fromDetail = auction.pickupLocation?.address || auction.route?.from?.detailAddress || "Không rõ";
+  
+  const toProvince = auction.deliveryLocation?.province || auction.route?.to?.province || auction.destination || "Không rõ";
+  const toDetail = auction.deliveryLocation?.address || auction.route?.to?.detailAddress || "Không rõ";
+  
+  const closeTime = auction.endTime || auction.auctionConfig?.endTime || null;
+  const maxPrice = parseDecimal(auction.maxPrice || auction.auctionConfig?.maxPrice);
+  const auctionType = auction.auctionType || auction.auctionConfig?.auctionType || "PUBLIC";
+
+  return {
+    id: auction.id || auction._id || auction.auctionCode || "N/A",
+    goodsType,
+    weight: `${weight} tấn`,
+    volume: `${volume} m³`,
+    from: {
+      province: fromProvince,
+      detail: fromDetail,
+    },
+    to: {
+      province: toProvince,
+      detail: toDetail,
+    },
+    maxPrice,
+    currentLowestBid: 0, // Placeholder
+    bidCount: 0, // Placeholder
+    closeTime,
+    status: mapStatusToFrontend(auction.status),
+    auctionType,
+    originalData: auction
+  };
+};
 
 export default function BiddingSessionsScreen() {
   const router = useRouter();
-  const [shipments, setShipments] = useState(INITIAL_SHIPMENTS);
+  const [shipments, setShipments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0); // 0: Tất cả, 1: Chờ đấu giá, 2: Đang đấu giá, 3: Đã chốt, 4: Đang vận chuyển, 5: Hoàn thành, 6: Đã hủy
   const [searchQuery, setSearchQuery] = useState("");
   const [auctionTypeFilter, setAuctionTypeFilter] = useState("ALL"); // ALL, PUBLIC, SEALED
@@ -227,6 +125,25 @@ export default function BiddingSessionsScreen() {
   const [cancelReasonNote, setCancelReasonNote] = useState("");
   const [selectedShipment, setSelectedShipment] = useState(null);
   const [openDetailDrawer, setOpenDetailDrawer] = useState(false);
+
+  const fetchAuctions = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await auctionService.getShipperAuctions();
+      const auctionsData = res.data?.data || res.data || [];
+      const mappedShipments = auctionsData.map(mapBackendToShipment);
+      setShipments(mappedShipments);
+    } catch (error) {
+      console.error("Error fetching auctions:", error);
+      toast.error("Không thể tải danh sách phiên đấu giá");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAuctions();
+  }, [fetchAuctions]);
 
   // Map Tab index to Shipment status
   const tabStatusMap = [
@@ -270,22 +187,20 @@ export default function BiddingSessionsScreen() {
     setSelectedShipmentId(null);
   };
 
-  const handleConfirmCancel = () => {
+  const handleConfirmCancel = async () => {
     if (!selectedShipmentId) return;
 
-    setShipments((prev) =>
-      prev.map((item) =>
-        item.id === selectedShipmentId
-          ? {
-            ...item,
-            status: "cancelled",
-            cancelReason: cancelReasonNote ? `${cancelReasonType}: ${cancelReasonNote}` : cancelReasonType,
-          }
-          : item
-      )
-    );
-
-    handleCloseCancelDialog();
+    try {
+      const reasonStr = cancelReasonNote ? `${cancelReasonType}: ${cancelReasonNote}` : cancelReasonType;
+      await auctionService.cancelAuction(selectedShipmentId, reasonStr);
+      toast.success("Hủy phiên đấu giá thành công");
+      fetchAuctions();
+    } catch (error) {
+      console.error("Error cancelling auction:", error);
+      toast.error("Hủy phiên đấu giá thất bại");
+    } finally {
+      handleCloseCancelDialog();
+    }
   };
 
   const formatCurrency = (val) =>
@@ -471,7 +386,11 @@ export default function BiddingSessionsScreen() {
       </Box>
 
       {/* Grid List of Shipments */}
-      {filteredShipments.length === 0 ? (
+      {loading ? (
+        <Box className="flex items-center justify-center py-20">
+          <CircularProgress size={40} sx={{ color: "#1B4965" }} />
+        </Box>
+      ) : filteredShipments.length === 0 ? (
         <Card className="!rounded-3xl border border-dashed border-slate-200/80 !shadow-none bg-slate-50/20 py-16 text-center">
           <CardContent className="space-y-4">
             <div className="w-16 h-16 rounded-3xl bg-slate-100 flex items-center justify-center mx-auto text-2xl text-slate-400">
@@ -599,128 +518,152 @@ export default function BiddingSessionsScreen() {
         width={560}
       >
         {selectedShipment && (
-          <Box className="space-y-4">
-            <Box className="rounded-2xl border border-slate-100 bg-white p-4">
-              <Typography className="mb-3 !font-bold text-[#1B4965]">
-                1. Thông tin đấu giá & yêu cầu vận chuyển
-              </Typography>
-              <DetailRow label="Mã lô hàng" value={selectedShipment.id} />
-              <DetailRow
-                label="Hình thức"
-                value={
-                  selectedShipment.auctionType === "SEALED"
-                    ? "Đấu giá kín"
-                    : "Đấu giá công khai"
-                }
-              />
-              <DetailRow
-                label="Trạng thái"
-                value={
+          <Box className="space-y-5 px-1 pb-4">
+            {/* Header Section */}
+            <Box className="bg-gradient-to-br from-slate-50 to-slate-100/50 p-5 rounded-3xl border border-slate-200/60 shadow-sm relative overflow-hidden">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#1B4965]/5 rounded-full blur-2xl" />
+              <div className="flex items-center justify-between mb-4 relative z-10">
+                <span className="font-mono font-black text-[#1B4965] text-lg tracking-tight bg-white px-3 py-1 rounded-xl border border-slate-200/80 shadow-sm">
+                  {selectedShipment.id}
+                </span>
+                <span className={`px-3 py-1 rounded-xl text-xs font-bold ${
+                  selectedShipment.status === 'awarded' || selectedShipment.status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
+                  selectedShipment.status === 'cancelled' ? 'bg-rose-100 text-rose-800' :
+                  selectedShipment.status === 'active_bids' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800'
+                }`}>
                   {
-                    pending_bids: "Chờ đấu giá",
-                    active_bids: "Đang đấu giá",
-                    awarded: "Đã chốt thầu",
-                    shipping: "Đang vận chuyển",
-                    completed: "Đã hoàn thành",
-                    cancelled: "Đã hủy",
-                  }[selectedShipment.status] || "Không rõ"
-                }
-              />
-              <DetailRow
-                label="Thời gian đóng thầu"
-                value={formatDateTime(selectedShipment.closeTime)}
-              />
-              <DetailRow
-                label="Giá trần tối đa"
-                value={formatCurrency(selectedShipment.maxPrice)}
-                valueColor="text-[#1B4965]"
-              />
-              <DetailRow
-                label="Giá thấp nhất / giá chốt"
-                value={formatCurrency(
-                  selectedShipment.finalPrice ||
-                    selectedShipment.currentLowestBid ||
-                    0
+                    {
+                      pending_bids: "Chờ đấu giá",
+                      active_bids: "Đang đấu giá",
+                      awarded: "Đã chốt thầu",
+                      shipping: "Đang vận chuyển",
+                      completed: "Đã hoàn thành",
+                      cancelled: "Đã hủy",
+                    }[selectedShipment.status] || "Không rõ"
+                  }
+                </span>
+              </div>
+              <Typography variant="h6" className="!font-bold text-slate-800 relative z-10 leading-snug">
+                {selectedShipment.goodsType}
+              </Typography>
+            </Box>
+
+            {/* Auction Info Section */}
+            <Box className="bg-white p-5 rounded-3xl border border-slate-100 shadow-[0_4px_20px_0_rgba(0,0,0,0.03)] transition-all hover:shadow-[0_4px_24px_0_rgba(0,0,0,0.06)]">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100/80">
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                  <GavelOutlinedIcon fontSize="small" />
+                </div>
+                <Typography className="!font-extrabold text-slate-800">Cấu hình đấu giá</Typography>
+              </div>
+              <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+                <DetailRow label="Hình thức" value={selectedShipment.auctionType === "SEALED" ? "Đấu giá kín" : "Đấu giá công khai"} />
+                <DetailRow label="Lượt ra giá" value={`${selectedShipment.bidCount || 0} lượt`} />
+                <DetailRow label="Đóng thầu" value={formatDateTime(selectedShipment.closeTime)} />
+                <DetailRow label="Giá trần tối đa" value={formatCurrency(selectedShipment.maxPrice)} valueColor="text-slate-800 font-bold" />
+                {selectedShipment.status !== 'pending_bids' && (
+                  <div className="col-span-2 mt-2 bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100/50">
+                    <DetailRow 
+                      label="Giá thấp nhất / giá chốt" 
+                      value={formatCurrency(selectedShipment.finalPrice || selectedShipment.currentLowestBid || 0)} 
+                      valueColor="text-emerald-700 !text-[1.1rem] font-black" 
+                    />
+                  </div>
                 )}
-                valueColor="text-emerald-600"
-              />
-              <DetailRow
-                label="Số lượt ra giá"
-                value={`${selectedShipment.bidCount || 0} lượt`}
-              />
+              </div>
             </Box>
 
-            <Box className="rounded-2xl border border-slate-100 bg-white p-4">
-              <Typography className="mb-3 !font-bold text-[#1B4965]">
-                2. Thông tin hàng hóa
-              </Typography>
-              <DetailRow label="Loại hàng" value={selectedShipment.goodsType} />
-              <DetailRow label="Trọng lượng" value={selectedShipment.weight} />
-              <DetailRow label="Thể tích/kích thước" value={selectedShipment.volume} />
-              <DetailRow
-                label="Yêu cầu nhiệt độ"
-                value={
-                  selectedShipment.goodsType.toLowerCase().includes("đông lạnh")
-                    ? "Xe lạnh"
-                    : "Nhiệt độ thường"
-                }
-              />
+            {/* Route Section */}
+            <Box className="bg-white p-5 rounded-3xl border border-slate-100 shadow-[0_4px_20px_0_rgba(0,0,0,0.03)] transition-all hover:shadow-[0_4px_24px_0_rgba(0,0,0,0.06)]">
+              <div className="flex items-center gap-2 mb-5">
+                <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600">
+                  <LocalShippingOutlinedIcon fontSize="small" />
+                </div>
+                <Typography className="!font-extrabold text-slate-800">Lộ trình vận chuyển</Typography>
+              </div>
+              
+              <div className="relative pl-3 space-y-6 before:absolute before:inset-y-2 before:left-5 before:w-0.5 before:bg-slate-100 before:-z-10">
+                {/* Source */}
+                <div className="flex items-start gap-4">
+                  <div className="w-5 h-5 rounded-full bg-white border-4 border-sky-500 mt-0.5 shadow-sm shrink-0" />
+                  <div>
+                    <Typography className="!text-[0.75rem] !font-bold text-sky-600 uppercase tracking-wider mb-1">Điểm lấy hàng ({selectedShipment.from.province})</Typography>
+                    <Typography variant="body2" className="text-slate-700 font-medium">{selectedShipment.from.detail}</Typography>
+                  </div>
+                </div>
+                {/* Destination */}
+                <div className="flex items-start gap-4">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500 border-4 border-emerald-100 mt-0.5 shadow-sm shrink-0" />
+                  <div>
+                    <Typography className="!text-[0.75rem] !font-bold text-emerald-600 uppercase tracking-wider mb-1">Điểm giao hàng ({selectedShipment.to.province})</Typography>
+                    <Typography variant="body2" className="text-slate-700 font-medium">{selectedShipment.to.detail}</Typography>
+                  </div>
+                </div>
+              </div>
             </Box>
 
-            <Box className="rounded-2xl border border-slate-100 bg-white p-4">
-              <Typography className="mb-3 !font-bold text-[#1B4965]">
-                3. Tuyến đường vận chuyển
-              </Typography>
-              <DetailRow
-                label="Điểm nhận"
-                value={`${selectedShipment.from.detail}, ${selectedShipment.from.province}`}
-              />
-              <DetailRow
-                label="Điểm giao"
-                value={`${selectedShipment.to.detail}, ${selectedShipment.to.province}`}
-              />
+            {/* Goods Details Section */}
+            <Box className="bg-white p-5 rounded-3xl border border-slate-100 shadow-[0_4px_20px_0_rgba(0,0,0,0.03)] transition-all hover:shadow-[0_4px_24px_0_rgba(0,0,0,0.06)]">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100/80">
+                <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+                  <Inventory2OutlinedIcon fontSize="small" />
+                </div>
+                <Typography className="!font-extrabold text-slate-800">Thông tin hàng hóa</Typography>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <DetailRow label="Loại hàng" value={selectedShipment.goodsType} />
+                <DetailRow label="Trọng lượng" value={selectedShipment.weight} />
+                <DetailRow label="Thể tích" value={selectedShipment.volume} />
+                <DetailRow
+                  label="Yêu cầu đặc biệt"
+                  value={selectedShipment.goodsType.toLowerCase().includes("đông lạnh") ? "Bảo quản lạnh" : "Không có"}
+                />
+              </div>
             </Box>
 
+            {/* Carrier/Result Section */}
             {(selectedShipment.carrier || selectedShipment.cancelReason) && (
-              <Box className="rounded-2xl border border-slate-100 bg-white p-4">
-                <Typography className="mb-3 !font-bold text-[#1B4965]">
-                  4. Kết quả xử lý
-                </Typography>
+              <Box className="bg-white p-5 rounded-3xl border border-slate-100 shadow-[0_4px_20px_0_rgba(0,0,0,0.03)]">
+                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100/80">
+                  <div className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
+                    <AssignmentTurnedInOutlinedIcon fontSize="small" />
+                  </div>
+                  <Typography className="!font-extrabold text-slate-800">Kết quả xử lý</Typography>
+                </div>
+                
                 {selectedShipment.carrier && (
-                  <>
-                    <DetailRow label="Nhà xe" value={selectedShipment.carrier} />
-                    <DetailRow
-                      label="Liên hệ nhà xe"
-                      value={selectedShipment.carrierPhone || "Chưa có"}
-                    />
-                  </>
-                )}
-                {selectedShipment.driverName && (
-                  <>
-                    <DetailRow label="Tài xế" value={selectedShipment.driverName} />
-                    <DetailRow
-                      label="Biển số"
-                      value={selectedShipment.driverPlate || "Chưa có"}
-                    />
-                  </>
+                  <div className="space-y-4">
+                    <DetailRow label="Đơn vị vận chuyển" value={selectedShipment.carrier} valueColor="text-[#1B4965] font-bold" />
+                    <DetailRow label="Liên hệ nhà xe" value={selectedShipment.carrierPhone || "Chưa cập nhật"} />
+                    {selectedShipment.driverName && (
+                      <>
+                        <Divider className="!my-2 border-dashed" />
+                        <div className="flex justify-between items-center">
+                          <DetailRow label="Tài xế phụ trách" value={selectedShipment.driverName} />
+                          <span className="font-mono bg-slate-100 text-slate-700 px-2 py-1 rounded-lg text-xs font-bold border border-slate-200">
+                            {selectedShipment.driverPlate || "N/A"}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
                 {selectedShipment.cancelReason && (
-                  <DetailRow
-                    label="Lý do hủy"
-                    value={selectedShipment.cancelReason}
-                    valueColor="text-rose-600"
-                  />
+                  <Box className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
+                    <Typography className="!text-[0.75rem] text-rose-500 font-bold uppercase mb-1">Lý do hủy đơn</Typography>
+                    <Typography className="text-slate-700 font-medium">{selectedShipment.cancelReason}</Typography>
+                  </Box>
                 )}
               </Box>
             )}
 
-            <Box className="flex flex-col gap-2 sm:flex-row">
+            <Box className="flex flex-col gap-3 pt-2">
               <ActionButton
                 variant="outlined"
                 fullWidth
-                onClick={() =>
-                  router.push(`/shipper/bidding/history?id=${selectedShipment.id}`)
-                }
+                size="lg"
+                onClick={() => router.push(`/shipper/bidding/history?id=${selectedShipment.id}`)}
+                className="!rounded-2xl"
               >
                 Xem lịch sử thầu
               </ActionButton>
@@ -728,9 +671,9 @@ export default function BiddingSessionsScreen() {
                 <ActionButton
                   variant="primary"
                   fullWidth
-                  onClick={() =>
-                    router.push(`/shipper/tracking?id=${selectedShipment.id}`)
-                  }
+                  size="lg"
+                  onClick={() => router.push(`/shipper/tracking?id=${selectedShipment.id}`)}
+                  className="!rounded-2xl shadow-md"
                 >
                   Theo dõi vận chuyển
                 </ActionButton>

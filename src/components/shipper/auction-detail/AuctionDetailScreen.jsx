@@ -25,7 +25,16 @@ export default function AuctionDetailScreen({ id }) {
   const shipment = enrichShipmentDetails(rawShipment);
 
   const [bids, setBids] = useState([]);
-  const [countdown, setCountdown] = useState(930); // 15 mins 30 secs
+  
+  // Dynamically calculate countdown based on shipment.endTime
+  const getInitialCountdown = () => {
+    if (!shipment?.endTime) return 0;
+    const end = new Date(shipment.endTime).getTime();
+    let diff = Math.floor((end - Date.now()) / 1000);
+    return diff > 0 ? diff : 0;
+  };
+
+  const [countdown, setCountdown] = useState(getInitialCountdown());
   const [openOtpDialog, setOpenOtpDialog] = useState(false);
   const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
   const [isOtpSuccess, setIsOtpSuccess] = useState(false);
@@ -35,6 +44,7 @@ export default function AuctionDetailScreen({ id }) {
   const [selectedCarrier, setSelectedCarrier] = useState(null);
 
   const [openFullBidsModal, setOpenFullBidsModal] = useState(false);
+  const [selectedBidForPanel, setSelectedBidForPanel] = useState(null);
 
   useEffect(() => {
     if (shipment) {
@@ -44,15 +54,24 @@ export default function AuctionDetailScreen({ id }) {
 
   // Live Timer Countdown Effect
   useEffect(() => {
+    setCountdown(getInitialCountdown());
     const timer = setInterval(() => {
       setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [shipment?.endTime, shipment?.status]);
 
-  const lowestBidRaw = bids.find((b) => b.isLowest) || (bids.length > 0 ? bids[0] : null);
-  const lowestBidDetails = lowestBidRaw ? getCarrierDetails(lowestBidRaw) : null;
-  const lowestBidAmount = lowestBidRaw?.bidAmount || 0;
+  // Determine which bid to show on the right panel
+  const isSealed = shipment.auctionType === "SEALED";
+  const defaultBidRaw = bids.find((b) => b.isLowest) || (bids.length > 0 ? bids[0] : null);
+  
+  // For SEALED: use selected bid if any, otherwise default to lowest.
+  // For PUBLIC: always keep default (lowest) or selected if we want to allow it. User said "còn đấu giá công khai vẫn giữ như cũ" so we ignore selection for PUBLIC.
+  const displayedBidRaw = (isSealed && selectedBidForPanel) ? selectedBidForPanel : defaultBidRaw;
+  
+  const displayedBidDetails = displayedBidRaw ? getCarrierDetails(displayedBidRaw) : null;
+  const displayedBidAmount = displayedBidRaw?.bidAmount || 0;
+  const isDisplayedBidLowest = displayedBidRaw?.id === defaultBidRaw?.id;
 
   const handleOpenOtpDialog = (bid = null) => {
     setSelectedWinnerBid(bid);
@@ -126,6 +145,8 @@ export default function AuctionDetailScreen({ id }) {
               onOpenOtpDialog={handleOpenOtpDialog}
               onOpenCarrierModal={handleOpenCarrierModal}
               onOpenFullModal={() => setOpenFullBidsModal(true)}
+              onSelectBid={(bid) => setSelectedBidForPanel(bid)}
+              selectedBidId={selectedBidForPanel?.id}
               isSimplified={true}
             />
           </div>
@@ -136,8 +157,9 @@ export default function AuctionDetailScreen({ id }) {
           <LiveCountdownCard countdown={countdown} />
           <LowestBidCard
             shipment={shipment}
-            lowestBidDetails={lowestBidDetails}
-            lowestBidAmount={lowestBidAmount}
+            lowestBidDetails={displayedBidDetails}
+            lowestBidAmount={displayedBidAmount}
+            isDisplayedBidLowest={isDisplayedBidLowest}
             onOpenOtpDialog={handleOpenOtpDialog}
             onOpenCarrierModal={handleOpenCarrierModal}
           />
@@ -167,7 +189,7 @@ export default function AuctionDetailScreen({ id }) {
         setOtpValues={setOtpValues}
         isOtpSuccess={isOtpSuccess}
         onSubmitOtp={handleOtpSubmit}
-        winnerCarrierName={selectedWinnerBid ? selectedWinnerBid.carrierName : (lowestBidDetails ? lowestBidDetails.carrierName : "")}
+        winnerCarrierName={selectedWinnerBid ? selectedWinnerBid.carrierName : (displayedBidDetails ? displayedBidDetails.carrierName : "")}
       />
 
       {/* Modal 3: Carrier Profile Detail Dialog */}
