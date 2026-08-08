@@ -22,7 +22,7 @@ export default function StepNavigationHeader({ activeStep, setActiveStep }) {
         />
       </div>
 
-      <Stepper activeStep={activeStep} alternativeLabel className="w-full">
+      <Stepper activeStep={activeStep} connector={<div className="hidden" />} className="w-full flex justify-between gap-4 overflow-x-auto pb-2">
         {STEPS.map((step, idx) => {
           const isCompleted = idx < activeStep;
           const isActive = idx === activeStep;
@@ -46,7 +46,7 @@ export default function StepNavigationHeader({ activeStep, setActiveStep }) {
               >
                 <div className="cursor-pointer select-none">
                   <p
-                    className={`font-extrabold text-xs leading-tight ${
+                    className={`font-extrabold text-xs md:text-sm leading-tight whitespace-nowrap ${
                       isActive
                         ? "text-[#1B4965]"
                         : isCompleted

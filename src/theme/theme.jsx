@@ -117,6 +117,17 @@ const theme = createTheme({
         },
       },
     },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          // Fix label overlapping with border when Tailwind Preflight breaks the legend gap
+          backgroundColor: "#FFFFFF",
+          paddingLeft: "4px",
+          paddingRight: "4px",
+          borderRadius: "4px",
+        },
+      },
+    },
   },
 });
 

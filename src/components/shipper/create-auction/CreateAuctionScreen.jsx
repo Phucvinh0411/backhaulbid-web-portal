@@ -9,6 +9,8 @@ import Typography from "@mui/material/Typography";
 import ArrowBackIcon from "@mui/icons-material/ArrowBackOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForwardOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlined";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 
 import PageHeader from "@/components/common/PageHeader";
 
@@ -21,12 +23,73 @@ import Step1GoodsInfo from "./steps/Step1GoodsInfo";
 import Step2RouteInfo from "./steps/Step2RouteInfo";
 import Step3AuctionConfig from "./steps/Step3AuctionConfig";
 
+/**
+ * Helper: Maps the raw form state to the API payload required by bidding-service
+ */
+const mapFormToPayload = (form) => ({
+  title: form.goodsName.trim(),
+  goodsType: form.goodsCategory,
+  weight: Number(form.weight) || 0,
+  volume: Number(form.volume) || undefined,
+  goodsValue: form.goodsValue ? Number(form.goodsValue).toString() : undefined,
+  vehicleTypeRequired: form.requiredVehicleType,
+  requiredTemp: form.requiredTemp?.trim() || undefined,
+  vehicleSpecs: {
+    length: Number(form.vehicleLength) || undefined,
+    width: Number(form.vehicleWidth) || undefined,
+    height: Number(form.vehicleHeight) || undefined,
+  },
+  pickupLocation: {
+    locationName: form.fromLocationName?.trim() || "",
+    province: form.fromProvince?.trim() || "",
+    address: form.fromAddress?.trim() || "",
+    contactName: form.fromContactName?.trim() || undefined,
+    contactPhone: form.fromContactPhone?.trim() || undefined,
+    earliestTime: form.earliestPickup ? new Date(form.earliestPickup).toISOString() : undefined,
+    latestTime: form.latestPickup ? new Date(form.latestPickup).toISOString() : undefined,
+  },
+  deliveryLocation: {
+    locationName: form.toLocationName?.trim() || "",
+    province: form.toProvince?.trim() || "",
+    address: form.toAddress?.trim() || "",
+    contactName: form.toContactName?.trim() || undefined,
+    contactPhone: form.toContactPhone?.trim() || undefined,
+    earliestTime: form.earliestDelivery ? new Date(form.earliestDelivery).toISOString() : undefined,
+    latestTime: form.latestDelivery ? new Date(form.latestDelivery).toISOString() : undefined,
+  },
+  auctionType: form.auctionType || "PUBLIC",
+  maxPrice: (Number(form.maxPrice) || 0).toString(),
+  priceStep: (Number(form.priceStep) || 0).toString(),
+  maxBids: Number(form.maxBids) || undefined,
+  notes: form.description?.trim() || "",
+  isDepositRequired: Number(form.depositAmount) > 0,
+  depositAmount: Number(form.depositAmount) > 0 ? Number(form.depositAmount).toString() : undefined,
+  registrationEndTime: form.regEndTime ? new Date(form.regEndTime).toISOString() : new Date().toISOString(),
+  startTime: form.startTime ? new Date(form.startTime).toISOString() : new Date().toISOString(),
+  endTime: form.endTime ? new Date(form.endTime).toISOString() : new Date().toISOString(),
+  images: [],
+});
+
+/**
+ * Helper: Basic client-side validation before submission
+ */
+const validateForm = (form) => {
+  if (!form.goodsName || form.goodsName.trim() === "") return "Vui lòng nhập tên lô hàng.";
+  if (!form.weight || Number(form.weight) <= 0) return "Trọng lượng phải lớn hơn 0.";
+  if (!form.maxPrice || Number(form.maxPrice) <= 0) return "Vui lòng nhập giá trần hợp lệ.";
+  if (!form.regEndTime || !form.startTime || !form.endTime) return "Vui lòng chọn đầy đủ thời gian mở/đóng thầu.";
+  return null;
+};
+
 export default function CreateAuctionScreen() {
   const router = useRouter();
 
   const [activeStep, setActiveStep] = useState(0);
   const [form, setForm] = useState(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Snackbar State for beautiful notifications
+  const [toast, setToast] = useState({ open: false, message: "", severity: "info" });
 
   // Address book modal state
   const [addressModalOpen, setAddressModalOpen] = useState(false);
@@ -77,13 +140,52 @@ export default function CreateAuctionScreen() {
     }
   };
 
-  const handleSubmit = () => {
+  const showToast = (message, severity = "error") => {
+    setToast({ open: true, message, severity });
+  };
+
+  const handleCloseToast = (event, reason) => {
+    if (reason === "clickaway") return;
+    setToast((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleSubmit = async () => {
+    // 1. Validate Form
+    const validationError = validateForm(form);
+    if (validationError) {
+      showToast(validationError, "warning");
+      return;
+    }
+
+    // 2. Prepare Payload
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      const payload = mapFormToPayload(form);
+
+      const response = await fetch("/api/bidding/auctions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Lỗi tạo phiên đấu giá từ hệ thống.");
+      }
+
+      showToast("🎉 Tạo phiên đấu giá thành công! Đang chuyển hướng...", "success");
+      
+      // Delay redirection slightly to allow the user to read the success message
+      setTimeout(() => {
+        router.push("/shipper/bidding/sessions");
+      }, 1500);
+
+    } catch (error) {
+      showToast(`Lỗi: ${error.message}`, "error");
+    } finally {
       setIsSubmitting(false);
-      alert("🎉 Tạo cuộc đấu giá thành công! Đơn hàng đã được đưa vào danh sách chờ mở đăng ký.");
-      router.push("/shipper/bidding/sessions");
-    }, 800);
+    }
   };
 
   return (
@@ -104,7 +206,7 @@ export default function CreateAuctionScreen() {
       {/* Main Grid: Step Content (left 7) + Summary Sidebar (right 5) */}
       <Grid container spacing={3} alignItems="flex-start">
         {/* Left Column: Form Step */}
-        <Grid item xs={12} lg={7}>
+        <Grid item xs={12} md={7} lg={8}>
           {activeStep === 0 && <Step1GoodsInfo form={form} updateForm={updateForm} />}
           {activeStep === 1 && (
             <Step2RouteInfo
@@ -162,7 +264,7 @@ export default function CreateAuctionScreen() {
         </Grid>
 
         {/* Right Column: Live Sticky Summary Sidebar */}
-        <Grid item xs={12} lg={5}>
+        <Grid item xs={12} md={5} lg={4}>
           <SummarySidebar form={form} />
         </Grid>
       </Grid>
@@ -174,6 +276,23 @@ export default function CreateAuctionScreen() {
         onSelectAddress={handleSelectAddress}
         targetType={addressTarget}
       />
+
+      {/* Modern Toast Notifications */}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={4000}
+        onClose={handleCloseToast}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleCloseToast}
+          severity={toast.severity}
+          variant="filled"
+          sx={{ width: "100%", borderRadius: "12px", boxShadow: 3 }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
