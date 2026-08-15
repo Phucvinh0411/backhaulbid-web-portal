@@ -1,6 +1,4 @@
-// ─────────────────────────────────────────────────────────────────
-// Mock presets, static options, and helper utilities for Create Auction
-// ─────────────────────────────────────────────────────────────────
+// Static form options kept separate from the initial user-entered values.
 
 export const MOCK_ADDRESS_BOOK = [
   {
@@ -75,7 +73,6 @@ export const getParticipationFeeQuote = (maxPrice) => {
 };
 
 export const INITIAL_FORM_STATE = {
-  // Step 1: Goods Info
   goodsName: "",
   goodsCategory: "",
   weight: "",
@@ -89,63 +86,50 @@ export const INITIAL_FORM_STATE = {
   description: "",
   images: [],
 
-  // Step 2: Route Info (Pickup A -> Delivery B)
   fromLocationName: "",
   fromAddress: "",
   fromProvince: "",
   fromContactName: "",
   fromContactPhone: "",
-
   toLocationName: "",
   toAddress: "",
   toProvince: "",
   toContactName: "",
   toContactPhone: "",
-
   earliestPickup: "",
   latestPickup: "",
   earliestDelivery: "",
   latestDelivery: "",
 
-  // Step 3: Auction Config
-  auctionType: "PUBLIC", // "PUBLIC" | "SEALED"
-  maxPrice: 12500000,
-  priceStep: 100000,
-  participationFee: 50000,
-  isDepositRequired: true,
-  depositAmount: 1250000,
-  maxBids: 5,
-
-  regStartTime: "2026-08-08T12:00",
-  regEndTime: "2026-08-08T14:00",
-  startTime: "2026-08-08T15:00",
-  endTime: "2026-08-08T16:00",
-  auctionType: "PUBLIC", // Default to PUBLIC
+  auctionType: "PUBLIC",
   maxPrice: "",
   priceStep: "",
   participationFee: "",
+  isDepositRequired: true,
   depositAmount: "",
   maxBids: "",
-
   regStartTime: "",
   regEndTime: "",
   startTime: "",
   endTime: "",
 };
 
-export const formatCurrency = (val) => {
-  if (!val || isNaN(val)) return "0 đ";
-  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" })
-    .format(val)
+export const formatCurrency = (value) => {
+  if (!value || Number.isNaN(Number(value))) return "0 đ";
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  })
+    .format(value)
     .replace("₫", "đ");
 };
 
-export const formatDisplayNumber = (val) => {
-  if (!val || isNaN(val) || val <= 0) return "";
-  return new Intl.NumberFormat("vi-VN").format(val);
+export const formatDisplayNumber = (value) => {
+  if (!value || Number.isNaN(Number(value)) || Number(value) <= 0) return "";
+  return new Intl.NumberFormat("vi-VN").format(value);
 };
 
-export const parseDisplayNumber = (str) => {
-  if (!str) return 0;
-  return Number(str.replace(/[.\s]/g, "").replace(/[^0-9]/g, "")) || 0;
+export const parseDisplayNumber = (value) => {
+  if (!value) return 0;
+  return Number(String(value).replace(/[.\s]/g, "").replace(/[^0-9]/g, "")) || 0;
 };
