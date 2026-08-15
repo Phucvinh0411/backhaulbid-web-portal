@@ -1,28 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
-import CardActions from "@mui/material/CardActions";
 import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Collapse from "@mui/material/Collapse";
+import Alert from "@mui/material/Alert";
+import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
-import Divider from "@mui/material/Divider";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogActions from "@mui/material/DialogActions";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   FilterList as FilterListIcon,
-  LocalShipping as LocalShippingIcon,
-  CalendarToday as CalendarTodayIcon,
   ArrowForward as ArrowForwardIcon
 } from "@mui/icons-material";
 import Table from "@mui/material/Table";
@@ -33,72 +27,166 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import TableSortLabel from "@mui/material/TableSortLabel";
-import { PageHeader, ViewModeToggle, DetailDrawer, DetailRow } from "@/components/common";
+import { PageHeader, ViewModeToggle, DetailDrawer } from "@/components/common";
 import CarrierBiddingItem from "@/components/carrier/CarrierBiddingItem";
+import AuctionRegistrationDialog from "@/components/carrier/auction-detail/AuctionRegistrationDialog";
+import AuctionDetailContent from "@/components/carrier/auction-detail/AuctionDetailContent";
+import { getAuctionAccess, listAuctions } from "@/services/biddingApi";
+import { getMyVehicles } from "@/services/fleetApi";
+import { unwrapListData } from "@/services/responseData";
 
-const mockAuctions = [
-  {
-    id: "BID-2451",
-    origin: "Hà Nội",
-    destination: "Đà Nẵng",
-    cargoType: "Hàng điện tử",
-    weight: "15 Tấn",
-    pickupTime: "10/08/2026",
-    status: "OPEN_REGISTER",
-    basePrice: "12,000,000 ₫",
-  },
-  {
-    id: "BID-2452",
-    origin: "Hồ Chí Minh",
-    destination: "Cần Thơ",
-    cargoType: "Hàng tiêu dùng",
-    weight: "8 Tấn",
-    pickupTime: "11/08/2026",
-    status: "BIDDING",
-    basePrice: "5,500,000 ₫",
-    currentLowestBid: "5,200,000 ₫",
-  },
-  {
-    id: "BID-2453",
-    origin: "Hải Phòng",
-    destination: "Hà Nội",
-    cargoType: "Vật liệu xây dựng",
-    weight: "20 Tấn",
-    pickupTime: "12/08/2026",
-    status: "CLOSED",
-    basePrice: "4,000,000 ₫",
-  },
-  {
-    id: "BID-2454",
-    origin: "Đà Nẵng",
-    destination: "Quy Nhơn",
-    cargoType: "Hàng đông lạnh",
-    weight: "5 Tấn",
-    pickupTime: "15/08/2026",
-    status: "BIDDING",
-    basePrice: "8,000,000 ₫",
-    currentLowestBid: "7,800,000 ₫",
-    isRegistered: false,
-  },
-];
+const formatAuctionAmount = (value) =>
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value) || 0);
 
-const MOCK_VEHICLES = [
-  { id: "V1", plate: "29H-123.45", capacity: "15 Tấn", type: "Xe tải thùng kín" },
-  { id: "V2", plate: "30F-987.65", capacity: "10 Tấn", type: "Xe đông lạnh" },
-  { id: "V3", plate: "51C-456.78", capacity: "8 Tấn", type: "Xe tải mui bạt" },
-];
+const formatAuctionDate = (value) => {
+  if (!value) return "Chưa cập nhật";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Chưa cập nhật";
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+};
+
+const getRequestError = (error, fallback) => {
+  const message = error?.response?.data?.message;
+  return Array.isArray(message) ? message.join(", ") : message || fallback;
+};
+
+const REGISTERED_ACCESS_STATUSES = new Set([
+  "PAYMENT_INCOMPLETE",
+  "WAITING_FOR_START",
+  "AUCTION_OPEN",
+  "REGISTRATION_CANCELLED",
+]);
+
+const mapAuction = (auction, access) => {
+  const isRegistered = REGISTERED_ACCESS_STATUSES.has(access?.accessStatus);
+  const status = access?.accessStatus === "PAYMENT_INCOMPLETE"
+    ? "PAYMENT_INCOMPLETE"
+    : access?.accessStatus === "WAITING_FOR_START"
+      ? "WAITING_START"
+      : auction.roomOpen && isRegistered
+        ? "BIDDING"
+        : auction.registrationOpen
+          ? "OPEN_REGISTER"
+          : "CLOSED";
+
+  return {
+    ...auction,
+    goodsCategory: auction.goodsType,
+    volume: auction.volume,
+    goodsValue: Number(auction.goodsValue || 0),
+    requiredTemp: auction.requiredTemp,
+    requiredVehicleDims: auction.requiredVehicleDims,
+    description: auction.notes,
+    goodsNotes: auction.notes,
+    originAddress: auction.originAddress || auction.origin,
+    destinationAddress: auction.destinationAddress || auction.destination,
+    priceStep: Number(auction.priceStep || 0),
+    maxBids: auction.maxBids,
+    registrationStartTime: auction.registrationStartTime,
+    earliestPickup: auction.earliestPickup,
+    latestPickup: auction.latestPickup,
+    earliestDelivery: auction.earliestDelivery,
+    latestDelivery: auction.latestDelivery,
+    origin: auction.originLocationName || auction.origin || "Chưa cập nhật",
+    destination: auction.destinationLocationName || auction.destination || "Chưa cập nhật",
+    cargoType: auction.goodsType || auction.title || "Hàng hóa",
+    weight: `${auction.weight || 0} tấn`,
+    pickupTime: formatAuctionDate(auction.startTime),
+    basePrice: formatAuctionAmount(auction.maxPrice),
+    currentLowestBid: auction.currentLowestBid ? formatAuctionAmount(auction.currentLowestBid) : undefined,
+    participationFee: Number(auction.participationFeeAmount || 0),
+    isDepositRequired: Boolean(auction.isDepositRequired),
+    depositAmount: Number(auction.depositAmount || 0),
+    requiredVehicleType: auction.vehicleTypeRequired,
+    isRegistered,
+    accessStatus: access?.accessStatus,
+    status,
+  };
+};
 
 export default function AuctionsPage() {
+  const router = useRouter();
   const [showFilters, setShowFilters] = useState(false);
-  const [auctions, setAuctions] = useState(mockAuctions);
+  const [auctions, setAuctions] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [vehiclesLoading, setVehiclesLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [vehiclesError, setVehiclesError] = useState("");
   const [viewMode, setViewMode] = useState("CARD");
   const [registerDialog, setRegisterDialog] = useState({ open: false, auctionId: null });
-  const [selectedVehicle, setSelectedVehicle] = useState("");
+  const [registrationAuction, setRegistrationAuction] = useState(null);
   const [openDetailDrawer, setOpenDetailDrawer] = useState(false);
   const [selectedAuction, setSelectedAuction] = useState(null);
 
+  useEffect(() => {
+    let active = true;
+
+    const loadAuctions = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const responses = await Promise.all([
+          listAuctions({ status: "PENDING", page: 1, pageSize: 100 }),
+          listAuctions({ status: "OPEN", page: 1, pageSize: 100 }),
+        ]);
+        const rawAuctions = Array.from(
+          new Map(responses.flatMap((response) => unwrapListData(response)).map((auction) => [auction.id, auction])).values(),
+        );
+        const accessResults = await Promise.all(
+          rawAuctions.map(async (auction) => {
+            try {
+              return await getAuctionAccess(auction.id);
+            } catch {
+              return null;
+            }
+          }),
+        );
+        const mappedAuctions = rawAuctions
+          .map((auction, index) => mapAuction(auction, accessResults[index]))
+          .filter((auction) => auction.status !== "CLOSED");
+
+        if (active) setAuctions(mappedAuctions);
+      } catch (requestError) {
+        if (active) setError(getRequestError(requestError, "Không thể tải danh sách phiên đấu giá."));
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void loadAuctions();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadVehicles = async () => {
+      setVehiclesLoading(true);
+      setVehiclesError("");
+      try {
+        const response = await getMyVehicles();
+        if (active) setVehicles(Array.isArray(response) ? response : []);
+      } catch (requestError) {
+        if (active) setVehiclesError(getRequestError(requestError, "Không thể tải danh sách phương tiện."));
+      } finally {
+        if (active) setVehiclesLoading(false);
+      }
+    };
+
+    void loadVehicles();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const filteredAuctions = React.useMemo(() => {
-    return auctions.filter(a => a.status === 'OPEN_REGISTER' || (a.status === 'BIDDING' && a.isRegistered));
+    return auctions.filter((auction) => !auction.isRegistered && auction.status === "OPEN_REGISTER");
   }, [auctions]);
 
   const [columnsList, setColumnsList] = useState([
@@ -106,7 +194,7 @@ export default function AuctionsPage() {
     { id: 'origin', label: 'Tuyến đường', sortable: false },
     { id: 'cargoType', label: 'Hàng hóa' },
     { id: 'basePrice', label: 'Khởi điểm' },
-    { id: 'pickupTime', label: 'Thời gian bốc' },
+    { id: 'pickupTime', label: 'Bắt đầu phiên' },
     { id: 'status', label: 'Trạng thái' },
     { id: 'actions', label: 'Thao tác', align: 'right', sortable: false }
   ]);
@@ -158,28 +246,14 @@ export default function AuctionsPage() {
     setOpenDetailDrawer(true);
   };
 
-  const handleOpenRegister = (auctionId) => {
-    setRegisterDialog({ open: true, auctionId });
-    setSelectedVehicle("");
+  const handleOpenRegister = (auction) => {
+    setRegistrationAuction(auction);
+    setRegisterDialog({ open: true, auctionId: auction.id });
   };
 
   const handleCloseRegister = () => {
     setRegisterDialog({ open: false, auctionId: null });
-  };
-
-  const handleConfirmRegister = () => {
-    if (!selectedVehicle) {
-      alert("Vui lòng chọn một phương tiện để tham gia!");
-      return;
-    }
-    
-    // Update local state to mark as registered
-    setAuctions(prev => prev.map(a => 
-      a.id === registerDialog.auctionId ? { ...a, isRegistered: true } : a
-    ));
-    
-    alert(`Đã đăng ký tham gia phiên ${registerDialog.auctionId} thành công! Bạn sẽ nhận được thông báo khi phiên đấu giá bắt đầu.`);
-    handleCloseRegister();
+    setRegistrationAuction(null);
   };
 
   const getStatusChip = (status) => {
@@ -188,6 +262,10 @@ export default function AuctionsPage() {
         return <Chip label="Sắp diễn ra" color="info" size="small" className="font-semibold" />;
       case "BIDDING":
         return <Chip label="Đang đấu giá" color="success" size="small" className="font-semibold animate-pulse-glow" />;
+      case "WAITING_START":
+        return <Chip label="Chờ giờ mở phòng" color="warning" size="small" className="font-semibold" />;
+      case "PAYMENT_INCOMPLETE":
+        return <Chip label="Chưa hoàn tất thanh toán" color="error" size="small" className="font-semibold" />;
       case "CLOSED":
         return <Chip label="Đã đóng" color="default" size="small" className="font-semibold text-slate-500" />;
       default:
@@ -266,7 +344,21 @@ export default function AuctionsPage() {
         </Card>
       </Collapse>
 
-      {viewMode === "CARD" ? (
+      {error && <Alert severity="error" className="!mb-5 !rounded-xl">{error}</Alert>}
+      {loading && (
+        <Box className="flex min-h-48 items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white text-slate-500">
+          <CircularProgress size={22} /> Đang tải các phiên đấu giá thật...
+        </Box>
+      )}
+      {!loading && !error && filteredAuctions.length === 0 && (
+        <Card className="border border-slate-200 shadow-sm">
+          <CardContent className="py-12 text-center">
+            <Typography variant="h6" className="!font-extrabold !text-slate-800">Chưa có phiên đấu giá phù hợp</Typography>
+            <Typography className="!mt-2 !text-slate-500">Các phiên đang mở đăng ký hoặc phiên bạn đã đăng ký sẽ hiển thị ở đây.</Typography>
+          </CardContent>
+        </Card>
+      )}
+      {!loading && !error && filteredAuctions.length > 0 && (viewMode === "CARD" ? (
         <Grid container spacing={3}>
           {sortedAuctions.map((auction) => (
             <Grid item xs={12} md={6} lg={4} key={auction.id}>
@@ -306,6 +398,16 @@ export default function AuctionsPage() {
                         >
                           Vào phòng
                         </Button>
+                      ) : auction.status === 'PAYMENT_INCOMPLETE' ? (
+                        <Button
+                          component={Link}
+                          href={`/carrier/auctions/${auction.id}`}
+                          variant="contained"
+                          color="warning"
+                          sx={{ borderRadius: "10px", py: 1, flex: 1, fontSize: "0.8rem", fontWeight: "bold" }}
+                        >
+                          Hoàn tất thanh toán
+                        </Button>
                       ) : (
                         <Button 
                           variant="outlined"
@@ -321,7 +423,7 @@ export default function AuctionsPage() {
                         variant={auction.status === 'BIDDING' ? 'outlined' : 'contained'}
                         color={auction.status === 'BIDDING' ? 'inherit' : 'primary'}
                         sx={auction.status === 'BIDDING' ? { borderRadius: "10px", py: 1, flex: 1, fontSize: "0.8rem", fontWeight: "bold" } : { borderRadius: "10px", py: 1, flex: 1, fontSize: "0.8rem", fontWeight: "bold", backgroundColor: "#1B4965", "&:hover": { backgroundColor: "#0d2b3e" } }}
-                        onClick={() => auction.status !== 'BIDDING' && handleOpenRegister(auction.id)}
+                        onClick={() => auction.status !== 'BIDDING' && handleOpenRegister(auction)}
                         disabled={auction.status === 'BIDDING'}
                       >
                         {auction.status === 'BIDDING' ? 'Đã đóng' : 'Đăng ký'}
@@ -439,6 +541,17 @@ export default function AuctionsPage() {
                                 >
                                   Vào phòng
                                 </Button>
+                              ) : a.status === 'PAYMENT_INCOMPLETE' ? (
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="warning"
+                                  component={Link}
+                                  href={`/carrier/auctions/${a.id}`}
+                                  sx={{ borderRadius: "6px" }}
+                                >
+                                  Thanh toán
+                                </Button>
                               ) : (
                                 <Button 
                                   size="small" 
@@ -456,7 +569,7 @@ export default function AuctionsPage() {
                                 variant="contained" 
                                 color="primary"
                                 sx={{ borderRadius: "6px", backgroundColor: "#1B4965" }}
-                                onClick={() => handleOpenRegister(a.id)}
+                                onClick={() => handleOpenRegister(a)}
                                 disabled={a.status === 'BIDDING'}
                               >
                                 {a.status === 'BIDDING' ? 'Đã đóng' : 'Đăng ký'}
@@ -473,37 +586,20 @@ export default function AuctionsPage() {
             </TableBody>
           </Table>
         </TableContainer>
-      )}
+      ))}
 
-      {/* Modal Đăng ký tham gia đấu giá */}
-      <Dialog open={registerDialog.open} onClose={handleCloseRegister} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: "12px" } }}>
-        <DialogTitle className="font-bold text-[#1B4965]">Đăng ký tham gia đấu giá</DialogTitle>
-        <DialogContent>
-          <DialogContentText className="mb-4">
-            Để tham gia phiên đấu giá <strong>{registerDialog.auctionId}</strong>, bạn bắt buộc phải chọn trước phương tiện sẽ thực hiện chuyến hàng này.
-          </DialogContentText>
-          <TextField
-            select
-            fullWidth
-            label="Chọn phương tiện"
-            value={selectedVehicle}
-            onChange={(e) => setSelectedVehicle(e.target.value)}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
-          >
-            {MOCK_VEHICLES.map((v) => (
-              <MenuItem key={v.id} value={v.id}>
-                {v.plate} - {v.capacity} ({v.type})
-              </MenuItem>
-            ))}
-          </TextField>
-        </DialogContent>
-        <DialogActions className="px-6 pb-6 pt-2">
-          <Button onClick={handleCloseRegister} color="inherit" sx={{ borderRadius: "8px" }}>Hủy bỏ</Button>
-          <Button onClick={handleConfirmRegister} variant="contained" color="primary" sx={{ borderRadius: "8px", backgroundColor: "#1B4965" }}>
-            Xác nhận đăng ký
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <AuctionRegistrationDialog
+        open={registerDialog.open}
+        auction={registrationAuction}
+        vehicles={vehicles}
+        vehiclesLoading={vehiclesLoading}
+        vehiclesError={vehiclesError}
+        onClose={handleCloseRegister}
+        onCompleted={() => {
+          setRegisterDialog({ open: false, auctionId: null });
+          router.push("/carrier/my-auctions");
+        }}
+      />
       
       {/* Drawer Xem Chi tiết Phiên Đấu Giá (Marketplace) */}
       <DetailDrawer
@@ -514,105 +610,32 @@ export default function AuctionsPage() {
         width={560}
       >
         {selectedAuction && (
-          <Box className="space-y-5">
-            <Box className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <Box className="flex items-center justify-between gap-3 mb-3">
-                <Box>
-                  <Typography variant="overline" className="!font-bold !tracking-wider text-slate-400">
-                    Chủ hàng đăng tin
-                  </Typography>
-                  <Typography variant="body1" className="!font-extrabold text-[#1B4965]">
-                    Công ty Cổ phần Sữa Việt Nam (Vinamilk)
-                  </Typography>
-                </Box>
-                {getStatusChip(selectedAuction.status)}
-              </Box>
-              <Box className="grid grid-cols-1 sm:grid-cols-2 gap-x-5">
-                <DetailRow label="Mã phiên" value={selectedAuction.id} />
-                <DetailRow label="Loại yêu cầu" value="Xe tải thùng kín" />
-                <DetailRow label="Mở đăng ký" value={`08:00:00 ${selectedAuction.pickupTime}`} />
-                <DetailRow label="Đóng đăng ký" value={`12:00:00 ${selectedAuction.pickupTime}`} />
-                <DetailRow label="Bắt đầu đấu giá" value={`13:00:00 ${selectedAuction.pickupTime}`} />
-                <DetailRow label="Kết thúc đấu giá" value={`18:00:00 ${selectedAuction.pickupTime}`} />
-                <DetailRow label="Giá trần tối đa" value={selectedAuction.basePrice} valueColor="text-[#1B4965]" />
-                <DetailRow label="Bước giá tối thiểu" value="100.000 ₫" />
-                <DetailRow label="Số lượt ra giá tối đa" value="5 lần / nhà xe" />
-                <DetailRow label="Phí tham gia" value="50.000 ₫" />
-                <DetailRow label="Tiền đặt cọc" value="1.250.000 ₫" valueColor="text-amber-600" />
-                <DetailRow label="Kích thước thùng tối thiểu" value="6.2m × 2.1m × 2.2m" />
-              </Box>
-            </Box>
-
-            <Box className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <Typography variant="subtitle2" component="h3" className="!font-extrabold !text-[#1B4965] !mb-3">
-                2. Thông tin chi tiết hàng hóa & tuyến đường vận chuyển
-              </Typography>
-              <Box className="grid grid-cols-1 sm:grid-cols-2 gap-x-5">
-                <DetailRow label="Phân loại hàng hóa" value={selectedAuction.cargoType} valueColor="text-emerald-600" />
-                <DetailRow label="Kích thước kiện hàng" value="6.0m × 2.0m × 2.2m" />
-                <DetailRow label="Trọng lượng hàng hóa" value={selectedAuction.weight} />
-                <DetailRow label="Yêu cầu nhiệt độ" value="Nhiệt độ thường" />
-                <DetailRow label="Giá trị khai báo" value="187.500.000 ₫" />
-                <DetailRow label="Khung giờ nhận hàng" value={`10:00 - 14:00 (${selectedAuction.pickupTime})`} />
-                <DetailRow label="Khung giờ giao hàng" value={`10:00 - 16:00 (${selectedAuction.pickupTime})`} />
-              </Box>
-              <Box className="mt-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
-                <Typography variant="caption" className="!font-bold text-slate-500">Mô tả / yêu cầu đặc biệt</Typography>
-                <Typography variant="body2" className="!mt-1 !italic text-slate-700">
-                  Hàng linh kiện đóng pallet. Yêu cầu xe thùng kín bảo ôn chống ẩm mốc, có đầy đủ hóa đơn chứng từ.
-                </Typography>
-              </Box>
-              <Box className="mt-3 rounded-xl border border-[#1B4965]/10 bg-[#1B4965]/5 p-3 space-y-3">
-                <Box className="flex items-start gap-2">
-                  <Box className="h-7 w-7 shrink-0 rounded-full bg-sky-500 text-center text-sm font-bold leading-7 text-white">A</Box>
-                  <Box>
-                    <Typography variant="caption" className="!font-extrabold !text-sky-600">ĐỊA CHỈ NHẬN HÀNG (PICKUP POINT)</Typography>
-                    <Typography variant="body2" className="!font-bold text-slate-800">Kho Samsung Yên Bình - Thái Nguyên</Typography>
-                    <Typography variant="caption" className="text-slate-500">KCN Yên Bình, Phổ Yên, Thái Nguyên</Typography>
-                  </Box>
-                </Box>
-                <Box className="ml-3 border-l-2 border-dashed border-slate-300 pl-4 text-xs font-mono text-slate-400">➤ Tuyến vận chuyển lộ trình</Box>
-                <Box className="flex items-start gap-2">
-                  <Box className="h-7 w-7 shrink-0 rounded-full bg-emerald-500 text-center text-sm font-bold leading-7 text-white">B</Box>
-                  <Box>
-                    <Typography variant="caption" className="!font-extrabold !text-emerald-600">ĐỊA CHỈ TRẢ HÀNG (DELIVERY POINT)</Typography>
-                    <Typography variant="body2" className="!font-bold text-slate-800">Kho Cảng Đình Vũ - Hải Phòng</Typography>
-                    <Typography variant="caption" className="text-slate-500">Đông Hải 2, Quận Hải An, Hải Phòng</Typography>
-                  </Box>
-                </Box>
-                <Box className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                  <Typography variant="caption" className="!font-bold !text-amber-800">⚠ Ghi chú đặc biệt từ chủ hàng</Typography>
-                  <Typography variant="body2" className="!mt-0.5 !text-xs">Yêu cầu bốc xếp cẩn thận. Lái xe tự chuẩn bị dây tăng đai chằng buộc.</Typography>
-                </Box>
-              </Box>
-            </Box>
-            
-            {selectedAuction.status === 'OPEN_REGISTER' && !selectedAuction.isRegistered && (
-              <Button 
-                variant="contained" 
+          <AuctionDetailContent
+            auction={selectedAuction}
+            footer={selectedAuction.status === "OPEN_REGISTER" && !selectedAuction.isRegistered ? (
+              <Button
+                variant="contained"
                 fullWidth
                 onClick={() => {
                   setOpenDetailDrawer(false);
-                  handleOpenRegister(selectedAuction.id);
+                  handleOpenRegister(selectedAuction);
                 }}
-                sx={{ borderRadius: "8px", bgcolor: "#1B4965", "&:hover": { bgcolor: "#0d2b3e" }, mt: 2 }}
+                sx={{ borderRadius: "8px", bgcolor: "#1B4965", "&:hover": { bgcolor: "#0d2b3e" } }}
               >
                 Đăng ký tham gia ngay
               </Button>
-            )}
-            
-            {selectedAuction.status === 'BIDDING' && selectedAuction.isRegistered && (
-              <Button 
-                variant="contained" 
+            ) : selectedAuction.status === "BIDDING" && selectedAuction.isRegistered ? (
+              <Button
+                variant="contained"
                 fullWidth
                 component={Link}
                 href={`/carrier/auctions/${selectedAuction.id}`}
-                sx={{ borderRadius: "8px", bgcolor: "#10B981", "&:hover": { bgcolor: "#059669" }, mt: 2 }}
+                sx={{ borderRadius: "8px", bgcolor: "#10B981", "&:hover": { bgcolor: "#059669" } }}
               >
                 Vào phòng đấu giá
               </Button>
-            )}
-          </Box>
+            ) : null}
+          />
         )}
       </DetailDrawer>
     </Box>

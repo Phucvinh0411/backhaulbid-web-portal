@@ -36,7 +36,8 @@ export async function POST(request: Request) {
     cookieStore.set('accessToken', accessToken, {
       httpOnly: true,
       secure: useSecureCookies,
-      sameSite: 'strict',
+      // Allow top-level return navigation from the payment provider to keep the session.
+      sameSite: 'lax',
       path: '/',
       maxAge: 15 * 60 // 15 phút
     });
@@ -44,7 +45,8 @@ export async function POST(request: Request) {
     cookieStore.set('refreshToken', refreshToken, {
       httpOnly: true,
       secure: useSecureCookies,
-      sameSite: 'strict',
+      // Keep the refresh session available when the browser returns from an external provider.
+      sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 60 * 60 // 7 ngày
     });

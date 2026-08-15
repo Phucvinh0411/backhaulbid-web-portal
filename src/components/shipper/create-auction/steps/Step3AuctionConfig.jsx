@@ -2,16 +2,36 @@
 
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
+import Switch from "@mui/material/Switch";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import Typography from "@mui/material/Typography";
 import LockIcon from "@mui/icons-material/LockOutlined";
 import PublicIcon from "@mui/icons-material/PublicOutlined";
 import GavelIcon from "@mui/icons-material/GavelOutlined";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonthOutlined";
+import PaymentsIcon from "@mui/icons-material/PaymentsOutlined";
+import SecurityIcon from "@mui/icons-material/SecurityOutlined";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
-import { formatCurrency, formatDisplayNumber, parseDisplayNumber } from "../mockData";
+import {
+  formatDisplayNumber,
+  getParticipationFeeQuote,
+  parseDisplayNumber,
+} from "../mockData";
 
 export default function Step3AuctionConfig({ form, updateForm }) {
   const isSealed = form.auctionType === "SEALED";
+  const isDepositRequired = form.isDepositRequired ?? true;
+  const isParticipationFeeRequired = true;
+  const participationFeeQuote = getParticipationFeeQuote(form.maxPrice);
+
+  const setDepositRequired = (checked) => {
+    updateForm("isDepositRequired", checked);
+    if (checked && !form.depositAmount) {
+      updateForm("depositAmount", Math.floor((form.maxPrice || 0) * 0.1));
+    }
+    if (!checked) updateForm("depositAmount", 0);
+  };
 
   return (
     <div className="space-y-6">
@@ -110,8 +130,10 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             onChange={(e) => {
               const val = parseDisplayNumber(e.target.value);
               updateForm("maxPrice", val);
-              // Auto calculate 10% deposit
-              updateForm("depositAmount", Math.floor(val * 0.1));
+              updateForm("participationFee", getParticipationFeeQuote(val).amount);
+              if (isDepositRequired) {
+                updateForm("depositAmount", Math.floor(val * 0.1));
+              }
             }}
             placeholder="VD: 12.500.000"
             required
@@ -138,34 +160,76 @@ export default function Step3AuctionConfig({ form, updateForm }) {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <TextField
-            fullWidth
-            label="Tiền cọc trước nhà xe (10% trần)"
-            type="text"
-            inputMode="numeric"
-            value={formatDisplayNumber(form.depositAmount)}
-            onChange={(e) => updateForm("depositAmount", parseDisplayNumber(e.target.value))}
-            helperText="Hoàn lại khi hoàn thành chuyến"
-            InputProps={{
-              endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-slate-500">đ</span></InputAdornment>,
-            }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" }, "& input": { fontFamily: "monospace", fontWeight: 700 } }}
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className={`rounded-2xl border p-4 transition-colors ${isParticipationFeeRequired ? "border-sky-200 bg-sky-50/60" : "border-slate-200 bg-slate-50/60"}`}>
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-start gap-2.5">
+                <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isParticipationFeeRequired ? "bg-sky-100 text-sky-700" : "bg-slate-200 text-slate-500"}`}>
+                  <PaymentsIcon className="!text-[1.1rem]" />
+                </span>
+                <div>
+                  <p className="text-sm font-black text-slate-800">Phí tham gia</p>
+                  <p className="text-[0.7rem] text-slate-500 leading-relaxed mt-0.5">Phí dịch vụ, thu một lần khi nhà xe đăng ký.</p>
+                </div>
+              </div>
+            </div>
+            {isParticipationFeeRequired ? (
+              <TextField
+                fullWidth
+                label="Mức phí (VNĐ)"
+                type="text"
+                inputMode="numeric"
+                value={formatDisplayNumber(participationFeeQuote.amount)}
+                helperText={`Auto-calculated from max price (${participationFeeQuote.tier})`}
+                InputProps={{
+                  readOnly: true,
+                  endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-slate-500">đ</span></InputAdornment>,
+                }}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "14px", backgroundColor: "white" }, "& input": { fontFamily: "monospace", fontWeight: 700 } }}
+              />
+            ) : (
+              <p className="text-xs font-semibold text-slate-500 bg-white/70 border border-slate-200 rounded-xl px-3 py-2.5">Miễn phí tham gia phiên đấu giá.</p>
+            )}
+          </div>
 
-          <TextField
-            fullWidth
-            label="Phí tham gia phiên (VNĐ)"
-            type="text"
-            inputMode="numeric"
-            value={formatDisplayNumber(form.participationFee)}
-            onChange={(e) => updateForm("participationFee", parseDisplayNumber(e.target.value))}
-            InputProps={{
-              endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-slate-500">đ</span></InputAdornment>,
-            }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
-          />
+          <div className={`rounded-2xl border p-4 transition-colors ${isDepositRequired ? "border-amber-200 bg-amber-50/60" : "border-slate-200 bg-slate-50/60"}`}>
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-start gap-2.5">
+                <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isDepositRequired ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-500"}`}>
+                  <SecurityIcon className="!text-[1.1rem]" />
+                </span>
+                <div>
+                  <p className="text-sm font-black text-slate-800">Tiền đặt cọc</p>
+                  <p className="text-[0.7rem] text-slate-500 leading-relaxed mt-0.5">Khóa tạm trong ví, hoàn lại theo điều kiện phiên.</p>
+                </div>
+              </div>
+              <FormControlLabel
+                label=""
+                control={<Switch size="small" checked={isDepositRequired} onChange={(e) => setDepositRequired(e.target.checked)} color="warning" />}
+                sx={{ margin: 0 }}
+              />
+            </div>
+            {isDepositRequired ? (
+              <TextField
+                fullWidth
+                label="Mức cọc (VNĐ)"
+                type="text"
+                inputMode="numeric"
+                value={formatDisplayNumber(form.depositAmount)}
+                onChange={(e) => updateForm("depositAmount", parseDisplayNumber(e.target.value))}
+                helperText="Gợi ý mặc định: 10% giá trần"
+                InputProps={{
+                  endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-slate-500">đ</span></InputAdornment>,
+                }}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "14px", backgroundColor: "white" }, "& input": { fontFamily: "monospace", fontWeight: 700 } }}
+              />
+            ) : (
+              <p className="text-xs font-semibold text-slate-500 bg-white/70 border border-slate-200 rounded-xl px-3 py-2.5">Không yêu cầu nhà xe đặt cọc.</p>
+            )}
+          </div>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <TextField
             fullWidth
             label="Số lượt ra giá tối đa"
@@ -175,6 +239,10 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             helperText="Lần / nhà xe"
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-3 flex items-start gap-2.5">
+            <InfoOutlinedIcon className="!text-[1.1rem] text-slate-400 mt-0.5" />
+            <p className="text-[0.7rem] text-slate-500 leading-relaxed">Nhà xe sẽ thấy rõ từng khoản và tổng thanh toán trước khi xác nhận đăng ký.</p>
+          </div>
         </div>
       </div>
 

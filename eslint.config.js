@@ -12,6 +12,7 @@ export default [
       'node_modules/**',
       'coverage/**',
       '.vite/**',
+      '.gitnexus/**',
     ],
   },
   js.configs.recommended,

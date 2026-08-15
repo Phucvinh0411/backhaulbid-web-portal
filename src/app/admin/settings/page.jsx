@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import TextField from "@mui/material/TextField";
@@ -14,6 +15,7 @@ import CircleIcon from "@mui/icons-material/Circle";
 import DnsOutlinedIcon from "@mui/icons-material/DnsOutlined";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import LinearProgress from "@mui/material/LinearProgress";
+import { getAdminSettings, saveAdminSettings } from "@/services/adminSettingsApi";
 
 import {
   AdminPageHeader,
@@ -50,20 +52,49 @@ function SettingRow({ label, helper, children }) {
 
 export default function AdminSettingsPage() {
   const [maintenance, setMaintenance] = useState(false);
+  const [settings, setSettings] = useState({
+    platformName: "BackHaulBid",
+    systemEmail: "noreply@backhaulbid.vn",
+    supportPhone: "1900 8899",
+    timezone: "GMT+7",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState(null);
 
-  const handleSubmit = (event) => {
+  useEffect(() => {
+    let active = true;
+    getAdminSettings("general")
+      .then((response) => {
+        if (!active) return;
+        const values = response.values || {};
+        setSettings((current) => ({ ...current, ...values }));
+        setMaintenance(Boolean(values.maintenanceMode));
+      })
+      .catch(() => active && setFeedback({ severity: "error", message: "Không tải được cấu hình chung từ API." }))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, []);
+
+  const handleSave = async (event) => {
     event.preventDefault();
-    const data = new FormData(event.target);
-    const settings = Object.fromEntries(data.entries());
-    settings.maintenanceMode = maintenance;
-
-    console.log("General settings saved", settings);
-    alert("Đã lưu cấu hình chung thành công.");
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const values = Object.fromEntries(new FormData(event.currentTarget).entries());
+      values.maintenanceMode = maintenance;
+      await saveAdminSettings("general", values);
+      setFeedback({ severity: "success", message: "Đã lưu cấu hình chung." });
+    } catch {
+      setFeedback({ severity: "error", message: "Không thể lưu cấu hình chung." });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <AdminPageShell>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSave} key={loading ? "settings-loading" : "settings-loaded"}>
         <AdminPageHeader
           title="Cài đặt hệ thống"
           subtitle="Quản lý các thông số cấu hình cơ bản, múi giờ và trạng thái bảo trì của nền tảng."
@@ -73,37 +104,38 @@ export default function AdminSettingsPage() {
             { label: "Cấu hình chung" },
           ]}
           action={
-            <AdminPrimaryButton type="submit" startIcon={<SaveIcon />}>
+            <AdminPrimaryButton type="submit" disabled={loading || saving} startIcon={<SaveIcon />}>
               Lưu thay đổi
             </AdminPrimaryButton>
           }
         />
 
+        {feedback && <Alert severity={feedback.severity} sx={{ mt: 2 }}>{feedback.message}</Alert>}
         <Grid container spacing={3} sx={{ mt: 2 }}>
           {/* Cấu hình chung Form */}
           <Grid item xs={12} lg={8}>
             <AdminSectionCard title="Cấu hình hệ thống" subtitle="Các cài đặt cốt lõi toàn nền tảng">
               <Box sx={{ p: { xs: 2.5, md: 3.5 } }}>
                 <SettingRow label="Tên nền tảng" helper="Hiển thị trên tiêu đề và email gửi đi">
-                  <TextField name="platformName" defaultValue="BackHaulBid" fullWidth size="small" />
+                  <TextField name="platformName" defaultValue={settings.platformName} fullWidth size="small" disabled={loading} />
                 </SettingRow>
                 
                 <Divider sx={{ my: 1 }} />
                 
                 <SettingRow label="Email hệ thống" helper="Địa chỉ email dùng gửi thông báo tự động">
-                  <TextField name="systemEmail" defaultValue="noreply@backhaulbid.vn" fullWidth size="small" />
+                  <TextField name="systemEmail" defaultValue={settings.systemEmail} fullWidth size="small" disabled={loading} />
                 </SettingRow>
                 
                 <Divider sx={{ my: 1 }} />
                 
                 <SettingRow label="Hotline hỗ trợ" helper="Tổng đài chăm sóc khách hàng 24/7">
-                  <TextField name="supportPhone" defaultValue="1900 8899" fullWidth size="small" />
+                  <TextField name="supportPhone" defaultValue={settings.supportPhone} fullWidth size="small" disabled={loading} />
                 </SettingRow>
                 
                 <Divider sx={{ my: 1 }} />
 
                 <SettingRow label="Múi giờ hệ thống" helper="Thời gian áp dụng cho các phiên đấu giá">
-                  <TextField name="timezone" defaultValue="GMT+7" select fullWidth size="small">
+                  <TextField name="timezone" defaultValue={settings.timezone} select fullWidth size="small" disabled={loading}>
                     <MenuItem value="GMT+7">Hà Nội, Băng Cốc, Jakarta (GMT+7)</MenuItem>
                     <MenuItem value="GMT+8">Singapore, Bắc Kinh, Manila (GMT+8)</MenuItem>
                     <MenuItem value="GMT+0">Giờ chuẩn quốc tế (GMT+0)</MenuItem>
@@ -119,6 +151,7 @@ export default function AdminSettingsPage() {
                         checked={maintenance}
                         onChange={(e) => setMaintenance(e.target.checked)}
                         color="error"
+                        disabled={loading}
                       />
                     }
                     label={maintenance ? "Đang bật (Chỉ admin truy cập)" : "Đang tắt (Hoạt động bình thường)"}
@@ -139,10 +172,10 @@ export default function AdminSettingsPage() {
                   <CircleIcon color="success" sx={{ fontSize: 14, animation: "pulse 2s infinite" }} />
                   <Box>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "emerald.700", lineHeight: 1.2 }}>
-                      Ổn định
+                      Health endpoint not connected
                     </Typography>
                     <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                      Tất cả các dịch vụ đang chạy tốt
+                      Check Docker Compose and actuator for live service health
                     </Typography>
                   </Box>
                 </Box>
@@ -154,10 +187,10 @@ export default function AdminSettingsPage() {
                       Hiệu năng CPU
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 700, color: "primary.main" }}>
-                      24%
+                      Not available
                     </Typography>
                   </Box>
-                  <LinearProgress variant="determinate" value={24} sx={{ height: 6, borderRadius: 3, bgcolor: "rgba(0,0,0,0.04)" }} />
+                  <LinearProgress variant="determinate" value={0} sx={{ height: 6, borderRadius: 3, bgcolor: "rgba(0,0,0,0.04)" }} />
                 </Box>
 
                 {/* RAM usage */}
@@ -167,10 +200,10 @@ export default function AdminSettingsPage() {
                       Bộ nhớ RAM
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 700, color: "primary.main" }}>
-                      62% (10.2 GB / 16 GB)
+                      Not available
                     </Typography>
                   </Box>
-                  <LinearProgress variant="determinate" value={62} sx={{ height: 6, borderRadius: 3, bgcolor: "rgba(0,0,0,0.04)" }} />
+                  <LinearProgress variant="determinate" value={0} sx={{ height: 6, borderRadius: 3, bgcolor: "rgba(0,0,0,0.04)" }} />
                 </Box>
 
                 <Divider />
@@ -184,7 +217,7 @@ export default function AdminSettingsPage() {
                         Database Connection
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        Active (Pool: 15 / 50)
+                        No health API connected
                       </Typography>
                     </Box>
                   </Box>
@@ -196,7 +229,7 @@ export default function AdminSettingsPage() {
                         Chứng chỉ SSL
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600, color: "success.main" }}>
-                        Còn hạn 324 ngày
+                        Not available
                       </Typography>
                     </Box>
                   </Box>

@@ -4,9 +4,8 @@ import Typography from "@mui/material/Typography";
 import AccessTimeIcon from "@mui/icons-material/AccessTimeOutlined";
 import DynamicFeedIcon from "@mui/icons-material/DynamicFeedOutlined";
 import LockIcon from "@mui/icons-material/LockOutlined";
-import PublicIcon from "@mui/icons-material/PublicOutlined";
 
-import { formatTime } from "./mockData";
+import { formatTime } from "@/utils/auctionFormatters";
 
 export default function CarrierCountdownCard({ countdown, auctionType }) {
   const isSealed = auctionType === "SEALED";

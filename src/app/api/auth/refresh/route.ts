@@ -37,7 +37,8 @@ export async function POST() {
         cookieStore.set('accessToken', newAccessToken, {
           httpOnly: true,
           secure: useSecureCookies,
-          sameSite: 'strict',
+          // Allow top-level return navigation from the payment provider to keep the session.
+          sameSite: 'lax',
           path: '/',
           maxAge: 15 * 60 // 15 phút
         });

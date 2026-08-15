@@ -1,6 +1,10 @@
 "use client";
-import React from "react";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
 import Grid from "@mui/material/Grid";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -8,178 +12,105 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import TableSortLabel from "@mui/material/TableSortLabel";
 import Typography from "@mui/material/Typography";
-import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
-import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import AccountBalanceOutlinedIcon from "@mui/icons-material/AccountBalanceOutlined";
 import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
-import { StatCard } from "@/components/common";
+import VerifiedUserOutlinedIcon from "@mui/icons-material/VerifiedUserOutlined";
 import {
   AdminPageHeader,
   AdminPageShell,
-  AdminPrimaryButton,
   AdminSecondaryButton,
   AdminSectionCard,
   AdminStatusChip,
 } from "@/components/admin/AdminUI";
+import { identityApi } from "@/services/identityApi";
+import { getAdminDriverReviews, getAdminVehicleReviews } from "@/services/fleetApi";
+import { listAuctions } from "@/services/biddingApi";
+import { walletApi } from "@/services/walletApi";
+import { unwrapListData } from "@/services/responseData";
 
-const stats = [
-  {
-    title: "Tổng người dùng",
-    value: "1,240",
-    subtitle: "+5% so với tháng trước",
-    icon: GroupsOutlinedIcon,
-    color: "#1B4965",
-  },
-  {
-    title: "Doanh thu nền tảng",
-    value: "850Tr ₫",
-    subtitle: "+12% tăng trưởng",
-    icon: AccountBalanceWalletOutlinedIcon,
-    color: "#2E7D32",
-  },
-  {
-    title: "Đấu giá thành công",
-    value: "3,560",
-    subtitle: "+8% tỷ lệ chốt đơn",
-    icon: GavelOutlinedIcon,
-    color: "#62B6CB",
-  },
-];
-
-const pendingReports = [
-  {
-    id: "#RP-1024",
-    reportedUser: "Nguyễn Văn A",
-    reason: "Phá giá đấu giá",
-    date: "24/10/2026",
-    status: "PENDING",
-  },
-  {
-    id: "#RP-1023",
-    reportedUser: "Công ty Vận tải X",
-    reason: "Không thực hiện đơn hàng",
-    date: "23/10/2026",
-    status: "PENDING",
-  },
-  {
-    id: "#RP-1022",
-    reportedUser: "Trần Thị B",
-    reason: "Thái độ không phù hợp",
-    date: "22/10/2026",
-    status: "PENDING",
-  },
-  {
-    id: "#RP-1021",
-    reportedUser: "Lê Văn C",
-    reason: "Cung cấp thông tin giả",
-    date: "21/10/2026",
-    status: "RESOLVED",
-  },
-];
-
-const getReportStatus = (status) => {
-  if (status === "PENDING") {
-    return <AdminStatusChip label="Chờ xử lý" tone="warning" />;
-  }
-  return <AdminStatusChip label="Đã xử lý" tone="success" />;
-};
+const reviewTone = (status) => status === "PENDING" ? "warning" : status === "VERIFIED" ? "success" : "danger";
 
 export default function AdminDashboardPage() {
-  const [order, setOrder] = React.useState("asc");
-  const [orderBy, setOrderBy] = React.useState("date");
+  const [data, setData] = useState({ accounts: [], openAuctions: [], pendingAuctions: [], vehicles: [], drivers: [], walletSummary: null });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === "asc";
-    setOrder(isAsc ? "desc" : "asc");
-    setOrderBy(property);
-  };
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      identityApi.listAdminAccounts(),
+      listAuctions({ status: "OPEN", page: 1, pageSize: 100 }),
+      listAuctions({ status: "PENDING", page: 1, pageSize: 100 }),
+      getAdminVehicleReviews("PENDING"),
+      getAdminDriverReviews("PENDING"),
+      walletApi.getAdminSummary(),
+    ])
+      .then(([accounts, openAuctions, pendingAuctions, vehicles, drivers, walletSummary]) => {
+        if (!active) return;
+        setData({ accounts: accounts || [], openAuctions: unwrapListData(openAuctions), pendingAuctions: unwrapListData(pendingAuctions), vehicles: vehicles || [], drivers: drivers || [], walletSummary });
+      })
+      .catch((requestError) => {
+        if (active) setError(requestError?.response?.data?.message || "Không thể tải dữ liệu tổng quan admin.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  const sortedReports = React.useMemo(() => {
-    let result = [...pendingReports];
-    result.sort((a, b) => {
-      let comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
-      return order === "desc" ? -comparison : comparison;
-    });
-    return result;
-  }, [order, orderBy]);
+  const reviewRows = useMemo(() => [
+    ...data.vehicles.map((vehicle) => ({ id: vehicle.id, type: "Xe", subject: vehicle.licensePlate || "Chưa có biển số", owner: vehicle.carrierId || "Chưa cập nhật", status: vehicle.status || vehicle.verificationStatus })),
+    ...data.drivers.map((driver) => ({ id: driver.id, type: "Tài xế", subject: driver.fullName || "Chưa có tên", owner: driver.phone || "Chưa cập nhật", status: driver.status })),
+  ], [data.drivers, data.vehicles]);
+
+  if (loading) return <AdminPageShell><Box className="flex min-h-[320px] items-center justify-center gap-2 text-slate-500"><CircularProgress size={24} /> Đang tải tổng quan admin...</Box></AdminPageShell>;
+  if (error) return <AdminPageShell><Alert severity="error">{error}</Alert></AdminPageShell>;
 
   return (
     <AdminPageShell>
       <AdminPageHeader
         title="Bảng điều khiển Admin"
-        subtitle="Theo dõi sức khỏe vận hành, doanh thu và các tác vụ cần xử lý trên nền tảng."
-        breadcrumbs={[
-          { label: "Admin", path: "/admin" },
-          { label: "Tổng quan" },
-        ]}
-        action={
-          <AdminSecondaryButton startIcon={<FileDownloadOutlinedIcon />}>
-            Xuất báo cáo
-          </AdminSecondaryButton>
-        }
+        subtitle="Theo dõi dữ liệu tài khoản, đấu giá và các hồ sơ cần duyệt từ các service thật."
+        breadcrumbs={[{ label: "Admin", path: "/admin" }, { label: "Tổng quan" }]}
+        action={<AdminSecondaryButton component={Link} href="/admin/fleet-verifications">Mở duyệt đội xe</AdminSecondaryButton>}
       />
 
       <Grid container spacing={3}>
-        {stats.map((stat) => (
-          <Grid item xs={12} md={4} key={stat.title}>
-            <StatCard {...stat} />
-          </Grid>
-        ))}
+        <Grid item xs={12} md={3}><Stat title="Tổng người dùng" value={data.accounts.length} subtitle="Tài khoản identity service" icon={GroupsOutlinedIcon} tone="primary" /></Grid>
+        <Grid item xs={12} md={3}><Stat title="Phiên đang mở" value={data.openAuctions.length} subtitle={`${data.pendingAuctions.length} phiên đang chờ mở`} icon={GavelOutlinedIcon} tone="info" /></Grid>
+        <Grid item xs={12} md={3}><Stat title="Hồ sơ chờ duyệt" value={reviewRows.length} subtitle={`${data.vehicles.length} xe · ${data.drivers.length} tài xế`} icon={VerifiedUserOutlinedIcon} tone="warning" /></Grid>
+        <Grid item xs={12} md={3}><Stat title="Phí đấu giá" value={formatCurrency(data.walletSummary?.auctionFees)} subtitle={`${data.walletSummary?.successfulTransactions || 0} giao dịch thành công`} icon={AccountBalanceOutlinedIcon} tone="neutral" /></Grid>
       </Grid>
 
       <AdminSectionCard
-        title="Báo cáo vi phạm cần xử lý"
-        subtitle="Ưu tiên các hồ sơ mới phát sinh trong ngày."
-        action={<AdminSecondaryButton size="small">Xem tất cả</AdminSecondaryButton>}
-        sx={{ flex: 1 }}
+        title="Hồ sơ đội xe cần xử lý"
+        subtitle={reviewRows.length ? `${reviewRows.length} hồ sơ đang ở trạng thái PENDING` : "Không có hồ sơ PENDING trong dữ liệu hiện tại."}
+        action={<AdminSecondaryButton component={Link} href="/admin/fleet-verifications" size="small">Xem tất cả</AdminSecondaryButton>}
       >
-        <TableContainer>
-          <Table aria-label="Báo cáo vi phạm">
-            <TableHead sx={{ bgcolor: "rgba(27, 73, 101, 0.04)" }}>
-              <TableRow>
-                {[{id: 'id', label: 'ID báo cáo'}, {id: 'reportedUser', label: 'Người bị báo cáo'}, {id: 'reason', label: 'Lý do'}, {id: 'date', label: 'Ngày gửi'}, {id: 'status', label: 'Trạng thái'}, {id: 'actions', label: 'Hành động', align: 'right', sortable: false}].map(col => (
-                  <TableCell key={col.id} align={col.align || 'left'} sx={{ fontWeight: 600, color: "text.secondary" }}>
-                    {col.sortable !== false ? (
-                      <TableSortLabel
-                        active={orderBy === col.id}
-                        direction={orderBy === col.id ? order : "asc"}
-                        onClick={() => handleRequestSort(col.id)}
-                      >
-                        {col.label}
-                      </TableSortLabel>
-                    ) : col.label}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {sortedReports.map((row) => (
-                <TableRow key={row.id} hover sx={{ "&:last-child td": { borderBottom: 0 } }}>
-                  <TableCell sx={{ fontWeight: 700, color: "text.primary" }}>{row.id}</TableCell>
-                  <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>{row.reportedUser}</TableCell>
-                  <TableCell sx={{ color: "text.secondary" }}>{row.reason}</TableCell>
-                  <TableCell sx={{ color: "text.secondary" }}>{row.date}</TableCell>
-                  <TableCell>{getReportStatus(row.status)}</TableCell>
-                  <TableCell align="right">
-                    {row.status === "PENDING" ? (
-                      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-                        <AdminSecondaryButton size="small">Từ chối</AdminSecondaryButton>
-                        <AdminPrimaryButton size="small">Duyệt</AdminPrimaryButton>
-                      </Box>
-                    ) : (
-                      <Typography variant="body2" sx={{ color: "text.disabled", fontStyle: "italic" }}>
-                        Đã hoàn tất
-                      </Typography>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        {reviewRows.length === 0 ? <Box className="p-10 text-center text-slate-500">Không có tác vụ cần xử lý.</Box> : <TableContainer><Table aria-label="Hồ sơ đội xe cần xử lý"><TableHead sx={{ bgcolor: "rgba(27, 73, 101, 0.04)" }}><TableRow><TableCell sx={{ fontWeight: 700 }}>Loại hồ sơ</TableCell><TableCell sx={{ fontWeight: 700 }}>Đối tượng</TableCell><TableCell sx={{ fontWeight: 700 }}>Chủ hồ sơ / liên hệ</TableCell><TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell><TableCell align="right" sx={{ fontWeight: 700 }}>Thao tác</TableCell></TableRow></TableHead><TableBody>{reviewRows.slice(0, 10).map((row) => <TableRow key={`${row.type}-${row.id}`} hover><TableCell>{row.type}</TableCell><TableCell sx={{ fontWeight: 700, color: "primary.main" }}>{row.subject}</TableCell><TableCell sx={{ color: "text.secondary" }}>{row.owner}</TableCell><TableCell><AdminStatusChip label={row.status || "PENDING"} tone={reviewTone(row.status)} /></TableCell><TableCell align="right"><AdminSecondaryButton component={Link} href="/admin/fleet-verifications" size="small">Mở duyệt</AdminSecondaryButton></TableCell></TableRow>)}</TableBody></Table></TableContainer>}
       </AdminSectionCard>
+
+      <Box className="rounded-xl border border-slate-200 bg-slate-50 p-4"><Typography variant="body2" className="text-slate-600"><strong>Wallet sandbox:</strong> số liệu lấy từ giao dịch SUCCESS; việc chuyển tiền ra ngân hàng vẫn là quy trình duyệt thủ công.</Typography></Box>
     </AdminPageShell>
   );
+}
+
+function formatCurrency(value) {
+  if (value == null) return "Chưa có";
+  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(Number(value) || 0);
+}
+
+function Stat({ title, value, subtitle, icon: Icon, tone }) {
+  const styles = {
+    primary: { bg: "#EAF4F8", color: "#1B4965" },
+    info: { bg: "#EFF6FF", color: "#1D4ED8" },
+    warning: { bg: "#FFFBEB", color: "#B45309" },
+    neutral: { bg: "#F8FAFC", color: "#475569" },
+  };
+  const style = styles[tone] || styles.primary;
+  return <Box className="rounded-2xl border border-slate-200 bg-white/85 p-5 shadow-sm"><Box className="flex items-start justify-between gap-2"><Box><Typography variant="body2" className="font-bold text-slate-500">{title}</Typography><Typography variant="h4" className="mt-2 font-extrabold text-slate-800">{value}</Typography><Typography variant="caption" sx={{ color: style.color }} className="mt-2 block font-bold">{subtitle}</Typography></Box><Box className="flex h-11 w-11 items-center justify-center rounded-xl" sx={{ bgcolor: style.bg, color: style.color }}><Icon fontSize="small" /></Box></Box></Box>;
 }

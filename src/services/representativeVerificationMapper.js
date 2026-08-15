@@ -1,9 +1,3 @@
-export const REPRESENTATIVE_VERIFICATION_PATH =
-  "/api/v1/representative-verifications";
-
-export const REPRESENTATIVE_VERIFICATION_STATUS_PATH =
-  `${REPRESENTATIVE_VERIFICATION_PATH}/me`;
-
 function readText(value) {
   if (typeof value === "string" || typeof value === "number") {
     return String(value).trim();

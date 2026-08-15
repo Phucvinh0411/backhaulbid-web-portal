@@ -1,6 +1,4 @@
-// ─────────────────────────────────────────────────────────────────
-// Mock presets, static options, and helper utilities for Create Auction
-// ─────────────────────────────────────────────────────────────────
+// Static form options kept separate from the initial user-entered values.
 
 export const MOCK_ADDRESS_BOOK = [
   {
@@ -64,8 +62,17 @@ export const VEHICLE_TYPES = [
   "Xe tải siêu trường siêu trọng",
 ];
 
+export const getParticipationFeeQuote = (maxPrice) => {
+  const value = Number(maxPrice) || 0;
+
+  if (value <= 2000000) return { tier: "LEVEL_1", amount: 10000 };
+  if (value <= 5000000) return { tier: "LEVEL_2", amount: 20000 };
+  if (value <= 15000000) return { tier: "LEVEL_3", amount: 50000 };
+  if (value <= 50000000) return { tier: "LEVEL_4", amount: 100000 };
+  return { tier: "LEVEL_5", amount: 200000 };
+};
+
 export const INITIAL_FORM_STATE = {
-  // Step 1: Goods Info
   goodsName: "",
   goodsCategory: "",
   weight: "",
@@ -79,51 +86,50 @@ export const INITIAL_FORM_STATE = {
   description: "",
   images: [],
 
-  // Step 2: Route Info (Pickup A -> Delivery B)
   fromLocationName: "",
   fromAddress: "",
   fromProvince: "",
   fromContactName: "",
   fromContactPhone: "",
-
   toLocationName: "",
   toAddress: "",
   toProvince: "",
   toContactName: "",
   toContactPhone: "",
-
   earliestPickup: "",
   latestPickup: "",
   earliestDelivery: "",
   latestDelivery: "",
 
-  // Step 3: Auction Config
-  auctionType: "PUBLIC", // Default to PUBLIC
+  auctionType: "PUBLIC",
   maxPrice: "",
   priceStep: "",
   participationFee: "",
+  isDepositRequired: true,
   depositAmount: "",
   maxBids: "",
-
   regStartTime: "",
   regEndTime: "",
   startTime: "",
   endTime: "",
 };
 
-export const formatCurrency = (val) => {
-  if (!val || isNaN(val)) return "0 đ";
-  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" })
-    .format(val)
+export const formatCurrency = (value) => {
+  if (!value || Number.isNaN(Number(value))) return "0 đ";
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  })
+    .format(value)
     .replace("₫", "đ");
 };
 
-export const formatDisplayNumber = (val) => {
-  if (!val || isNaN(val) || val <= 0) return "";
-  return new Intl.NumberFormat("vi-VN").format(val);
+export const formatDisplayNumber = (value) => {
+  if (!value || Number.isNaN(Number(value)) || Number(value) <= 0) return "";
+  return new Intl.NumberFormat("vi-VN").format(value);
 };
 
-export const parseDisplayNumber = (str) => {
-  if (!str) return 0;
-  return Number(str.replace(/[.\s]/g, "").replace(/[^0-9]/g, "")) || 0;
+export const parseDisplayNumber = (value) => {
+  if (!value) return 0;
+  return Number(String(value).replace(/[.\s]/g, "").replace(/[^0-9]/g, "")) || 0;
 };

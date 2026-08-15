@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -9,10 +11,6 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import SaveIcon from "@mui/icons-material/Save";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 
 import {
   AdminPageHeader,
@@ -20,6 +18,7 @@ import {
   AdminPrimaryButton,
   AdminSectionCard,
 } from "@/components/admin/AdminUI";
+import { getAdminSettings, saveAdminSettings } from "@/services/adminSettingsApi";
 
 function SettingRow({ label, helper, children }) {
   return (
@@ -48,19 +47,45 @@ function SettingRow({ label, helper, children }) {
 }
 
 export default function AuctionSettingsPage() {
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const data = new FormData(event.target);
-    const settings = Object.fromEntries(data.entries());
-    settings.autoExtend = data.get("autoExtend") === "on";
+  const [settings, setSettings] = useState({
+    defaultAuctionTime: 30,
+    minBidIncrement: "50,000",
+    autoExtend: true,
+    extendDuration: 5,
+    paymentDeadline: 24,
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState(null);
 
-    console.log("Auction settings saved", settings);
-    alert("Đã lưu cấu hình luật đấu giá thành công.");
+  useEffect(() => {
+    let active = true;
+    getAdminSettings("auction")
+      .then((response) => active && setSettings((current) => ({ ...current, ...(response.values || {}) })))
+      .catch(() => active && setFeedback({ severity: "error", message: "Không tải được luật đấu giá từ API." }))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, []);
+
+  const handleSave = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const values = Object.fromEntries(new FormData(event.currentTarget).entries());
+      values.autoExtend = values.autoExtend === "on";
+      await saveAdminSettings("auction", values);
+      setFeedback({ severity: "success", message: "Đã lưu luật đấu giá." });
+    } catch {
+      setFeedback({ severity: "error", message: "Không thể lưu luật đấu giá." });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <AdminPageShell>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSave} key={loading ? "settings-loading" : "settings-loaded"}>
         <AdminPageHeader
           title="Luật đấu giá"
           subtitle="Thiết lập thời gian mặc định, bước giá tối thiểu và quy tắc gia hạn cho các phiên đấu giá ngược."
@@ -70,19 +95,20 @@ export default function AuctionSettingsPage() {
             { label: "Luật đấu giá" },
           ]}
           action={
-            <AdminPrimaryButton type="submit" startIcon={<SaveIcon />}>
+            <AdminPrimaryButton type="submit" disabled={loading || saving} startIcon={<SaveIcon />}>
               Lưu thay đổi
             </AdminPrimaryButton>
           }
         />
 
+        {feedback && <Alert severity={feedback.severity} sx={{ mt: 2 }}>{feedback.message}</Alert>}
         <Grid container spacing={3} sx={{ mt: 2 }}>
           {/* Cấu hình luật Form */}
           <Grid item xs={12} lg={8}>
             <AdminSectionCard title="Cấu hình quy tắc" subtitle="Thiết lập cơ chế tính giá và thời gian của phiên thầu">
               <Box sx={{ p: { xs: 2.5, md: 3.5 } }}>
                 <SettingRow label="Thời gian đếm ngược mặc định" helper="Áp dụng khi tạo phiên mới (Đơn vị: phút)">
-                  <TextField name="defaultAuctionTime" type="number" defaultValue={30} fullWidth size="small" />
+                  <TextField name="defaultAuctionTime" type="number" defaultValue={settings.defaultAuctionTime} fullWidth size="small" disabled={loading} />
                 </SettingRow>
                 
                 <Divider sx={{ my: 1 }} />
@@ -90,10 +116,11 @@ export default function AuctionSettingsPage() {
                 <SettingRow label="Bước giá tối thiểu" helper="Khoảng cách tối thiểu giữa 2 lần đặt giá">
                   <TextField
                     name="minBidIncrement"
-                    defaultValue="50,000"
+                    defaultValue={settings.minBidIncrement}
                     fullWidth
                     size="small"
                     InputProps={{ endAdornment: <InputAdornment position="end">VND</InputAdornment> }}
+                    disabled={loading}
                   />
                 </SettingRow>
                 
@@ -101,7 +128,7 @@ export default function AuctionSettingsPage() {
                 
                 <SettingRow label="Gia hạn tự động" helper="Cộng thêm thời gian nếu có lượt đặt giá cuối phiên">
                   <FormControlLabel
-                    control={<Switch name="autoExtend" defaultChecked color="primary" />}
+                    control={<Switch name="autoExtend" defaultChecked={Boolean(settings.autoExtend)} color="primary" disabled={loading} />}
                     label="Kích hoạt tự động gia hạn"
                     sx={{ "& .MuiFormControlLabel-label": { fontSize: "0.85rem", fontWeight: 600 } }}
                   />
@@ -110,13 +137,13 @@ export default function AuctionSettingsPage() {
                 <Divider sx={{ my: 1 }} />
 
                 <SettingRow label="Thời gian gia hạn cộng thêm" helper="Thời gian cộng thêm khi kích hoạt gia hạn (phút)">
-                  <TextField name="extendDuration" type="number" defaultValue={5} fullWidth size="small" />
+                  <TextField name="extendDuration" type="number" defaultValue={settings.extendDuration} fullWidth size="small" disabled={loading} />
                 </SettingRow>
 
                 <Divider sx={{ my: 1 }} />
 
                 <SettingRow label="Thời hạn thanh toán" helper="Thời gian tối đa để chủ hàng thanh toán sau khi chốt thầu (giờ)">
-                  <TextField name="paymentDeadline" type="number" defaultValue={24} fullWidth size="small" />
+                  <TextField name="paymentDeadline" type="number" defaultValue={settings.paymentDeadline} fullWidth size="small" disabled={loading} />
                 </SettingRow>
               </Box>
             </AdminSectionCard>

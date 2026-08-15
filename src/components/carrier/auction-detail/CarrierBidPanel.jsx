@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
 import Button from "@mui/material/Button";
@@ -13,7 +12,7 @@ import PublicIcon from "@mui/icons-material/PublicOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlined";
 import WarningIcon from "@mui/icons-material/WarningAmberOutlined";
 
-import { formatCurrency } from "./mockData";
+import { formatCurrency } from "@/utils/auctionFormatters";
 
 const QUICK_DROPS_PUBLIC = [50000, 100000, 200000, 500000];
 const QUICK_DROPS_SEALED = [100000, 200000, 500000, 1000000];
@@ -33,7 +32,7 @@ function validateBid({ value, maxPrice, currentLowest, remainingBids, isSealed }
   if (!value || isNaN(value) || value <= 0) return { ok: false, msg: "Vui lòng nhập số tiền hợp lệ." };
   if (value > maxPrice) return { ok: false, msg: `Giá thầu không được vượt giá trần (${formatCurrency(maxPrice)}).` };
   if (!isSealed && value >= currentLowest) return { ok: false, msg: "Giá thầu phải thấp hơn giá thấp nhất hiện tại." };
-  if (remainingBids <= 0) return { ok: false, msg: "Bạn đã hết lượt ra giá." };
+  if (remainingBids !== null && remainingBids <= 0) return { ok: false, msg: "Bạn đã hết lượt ra giá." };
   return { ok: true, msg: "" };
 }
 
@@ -104,7 +103,7 @@ function PublicBidPanel({ shipment, currentLowest, remainingBids, myBid, setMyBi
         sx={{ background: "linear-gradient(135deg, #10B981 0%, #059669 100%)", "&:hover": { background: "linear-gradient(135deg, #059669 0%, #047857 100%)" } }}
         startIcon={<GavelIcon />}
       >
-        {remainingBids > 0 ? `Đặt giá (còn ${remainingBids} lượt)` : "Hết lượt ra giá"}
+        {remainingBids === null ? "Đặt giá" : remainingBids > 0 ? `Đặt giá (còn ${remainingBids} lượt)` : "Hết lượt ra giá"}
       </Button>
     </div>
   );
@@ -126,7 +125,7 @@ function SealedBidPanel({ shipment, remainingBids, myBid, setMyBid, onSubmit, al
           <strong className="font-mono text-base">{formatCurrency(myBid)}</strong>
         </p>
         <p className="text-[0.7rem] text-amber-700 font-medium">
-          Bạn có thể điều chỉnh giá thầu trước khi phiên đóng thầu. Còn lại: <strong>{remainingBids} lượt</strong>.
+          Bạn có thể điều chỉnh giá thầu trước khi phiên đóng thầu.{remainingBids !== null && <> Còn lại: <strong>{remainingBids} lượt</strong>.</>}
         </p>
       </div>
     );
@@ -144,10 +143,12 @@ function SealedBidPanel({ shipment, remainingBids, myBid, setMyBid, onSubmit, al
             {formatCurrency(shipment.maxPrice)}
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-[0.68rem] text-slate-500">Số lượt còn lại</p>
-          <p className="font-black text-slate-800 text-xl">{remainingBids} lượt</p>
-        </div>
+        {remainingBids !== null && (
+          <div className="text-right">
+            <p className="text-[0.68rem] text-slate-500">Số lượt còn lại</p>
+            <p className="font-black text-slate-800 text-xl">{remainingBids} lượt</p>
+          </div>
+        )}
       </div>
 
       {/* Notice */}
@@ -199,7 +200,7 @@ function SealedBidPanel({ shipment, remainingBids, myBid, setMyBid, onSubmit, al
         sx={{ background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)", "&:hover": { background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)" } }}
         startIcon={<LockIcon />}
       >
-        {remainingBids > 0 ? `Gửi giá thầu bảo mật (còn ${remainingBids} lượt)` : "Hết lượt ra giá"}
+        {remainingBids === null ? "Gửi giá thầu bảo mật" : remainingBids > 0 ? `Gửi giá thầu bảo mật (còn ${remainingBids} lượt)` : "Hết lượt ra giá"}
       </Button>
     </div>
   );

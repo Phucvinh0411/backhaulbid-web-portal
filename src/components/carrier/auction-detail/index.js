@@ -5,3 +5,4 @@ export { default as CarrierCountdownCard } from "./CarrierCountdownCard";
 export { default as CarrierBidPanel } from "./CarrierBidPanel";
 export { default as CarrierBidHistoryCard } from "./CarrierBidHistoryCard";
 export { default as CarrierShipmentInfoCard } from "./CarrierShipmentInfoCard";
+export { default as AuctionDetailContent } from "./AuctionDetailContent";

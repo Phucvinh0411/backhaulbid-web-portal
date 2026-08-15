@@ -14,13 +14,14 @@ import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import SecurityIcon from "@mui/icons-material/SecurityOutlined";
 import { ActionButton } from "@/components/common";
 
-import { axiosClient } from "@/configs/axiosClient";
 import VNPTEkyc from "@/components/eKYC/VNPTEkyc";
 import {
-  REPRESENTATIVE_VERIFICATION_PATH,
   buildRepresentativeVerificationPayload,
   getRepresentativeVerificationFailureMessage,
-} from "@/components/eKYC/representativeVerificationApi";
+} from "@/services/representativeVerificationMapper";
+import {
+  submitRepresentativeVerification as submitRepresentativeVerificationRequest,
+} from "@/services/representativeVerificationApi";
 
 const ERROR_MESSAGES = {
   401: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
@@ -131,10 +132,7 @@ export default function EkycModal({ open = true, onClose, onComplete }) {
       setErrorMessage("");
 
       try {
-        const { data } = await axiosClient.post(
-          REPRESENTATIVE_VERIFICATION_PATH,
-          reviewData
-        );
+        const data = await submitRepresentativeVerificationRequest(reviewData);
 
         if (data?.status !== "VERIFIED") {
           setPhase("rejected");

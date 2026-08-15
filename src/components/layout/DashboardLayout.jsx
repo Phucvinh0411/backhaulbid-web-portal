@@ -7,9 +7,9 @@ import { useTheme } from "@mui/material/styles";
 import Sidebar, { SIDEBAR_WIDTH } from "./Sidebar";
 import Header from "./Header";
 import Footer from "./Footer";
-import adminNavigation from "@/configs/adminNavigation";
-import carrierNavigation from "@/configs/carrierNavigation";
-import defaultNavigation from "@/configs/navigation";
+import adminNavigation from "@/navigation/adminNavigation";
+import carrierNavigation from "@/navigation/carrierNavigation";
+import defaultNavigation from "@/navigation/navigation";
 
 export default function DashboardLayout({ children, role, userInfo }) {
   const navigation = role === "admin" ? adminNavigation : (role === "carrier" ? carrierNavigation : defaultNavigation);

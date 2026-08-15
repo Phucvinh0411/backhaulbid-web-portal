@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
+import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -14,11 +15,9 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import Divider from "@mui/material/Divider";
 import TextField from "@mui/material/TextField";
-import MenuItem from "@mui/material/MenuItem";
 import Avatar from "@mui/material/Avatar";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import { Add as AddIcon, Person as PersonIcon, Settings as SettingsIcon, FileUpload as FileUploadIcon } from "@mui/icons-material";
+import { Add as AddIcon, Person as PersonIcon, Settings as SettingsIcon, FileUpload as FileUploadIcon, Edit as EditIcon } from "@mui/icons-material";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Table from "@mui/material/Table";
@@ -28,22 +27,62 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
-import TableSortLabel from "@mui/material/TableSortLabel";
 import { PageHeader, ViewModeToggle, DetailDrawer } from "@/components/common";
+import { createDriverWithDocuments, deleteDriver, getMyDrivers, updateDriver, updateDriverWithDocuments } from "@/services/fleetApi";
+import { downloadCsvTemplate, parseSimpleCsv } from "@/services/csvImport";
 
-const mockDrivers = [
-  { id: "D1", name: "Nguyễn Văn Hùng", phone: "0901234567", licenseClass: "Hạng C", active: true, verification: "VERIFIED" },
-  { id: "D2", name: "Trần Tuấn Anh", phone: "0987654321", licenseClass: "Hạng FC", active: true, verification: "VERIFIED" },
-  { id: "D3", name: "Lê Hoàng Phúc", phone: "0912233445", licenseClass: "Hạng C", active: false, verification: "PENDING" }
-];
+const buildDriverDocumentFormData = (form, licenseImage) => {
+  const formData = new FormData();
+  formData.append("metadata", new globalThis.Blob([JSON.stringify({ fullName: form.fullName, phone: form.phone, licenseNumber: form.licenseNumber })], { type: "application/json" }));
+  formData.append("licenseImage", licenseImage);
+  return formData;
+};
+
+const buildDriverUpdateFormData = (form, licenseImage) => {
+  const formData = new FormData();
+  formData.append("metadata", new globalThis.Blob([JSON.stringify({ fullName: form.fullName, phone: form.phone, licenseNumber: form.licenseNumber })], { type: "application/json" }));
+  if (licenseImage) formData.append("licenseImage", licenseImage);
+  return formData;
+};
 
 export default function DriversPage() {
-  const [drivers, setDrivers] = useState(mockDrivers);
+  const [drivers, setDrivers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [filter, setFilter] = useState("ALL");
   const [viewMode, setViewMode] = useState("CARD");
   const [openModal, setOpenModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
   const [openImportModal, setOpenImportModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [importRows, setImportRows] = useState([]);
+  const [importFileName, setImportFileName] = useState("");
+  const [documentFiles, setDocumentFiles] = useState([]);
+  const [importStep, setImportStep] = useState(1);
+  const [createStep, setCreateStep] = useState(1);
+  const [licenseImage, setLicenseImage] = useState(null);
+  const [editLicenseImage, setEditLicenseImage] = useState(null);
+
+  const [form, setForm] = useState({ fullName: "", phone: "", licenseNumber: "", licenseImageUrl: "" });
+  const [editForm, setEditForm] = useState({ id: "", fullName: "", phone: "", licenseNumber: "", licenseImageUrl: "" });
+
+  const loadDrivers = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setDrivers(await getMyDrivers());
+    } catch (loadError) {
+      setError(loadError?.response?.data?.message || "Không thể tải danh sách tài xế.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDrivers();
+  }, []);
 
   const filteredDrivers = React.useMemo(() => {
     return drivers.filter(d => {
@@ -54,14 +93,8 @@ export default function DriversPage() {
     });
   }, [drivers, filter]);
 
-  const [order, setOrder] = useState("asc");
-  const [orderBy, setOrderBy] = useState("name");
-
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === "asc";
-    setOrder(isAsc ? "desc" : "asc");
-    setOrderBy(property);
-  };
+  const [order] = useState("asc");
+  const [orderBy] = useState("name");
 
   const sortedDrivers = React.useMemo(() => {
     let result = [...filteredDrivers];
@@ -72,11 +105,235 @@ export default function DriversPage() {
     return result;
   }, [filteredDrivers, order, orderBy]);
 
-  const handleOpen = () => setOpenModal(true);
+  const handleOpen = () => {
+    setForm({ fullName: "", phone: "", licenseNumber: "", licenseImageUrl: "" });
+    setLicenseImage(null);
+    setCreateStep(1);
+    setError("");
+    setOpenModal(true);
+  };
   const handleClose = () => setOpenModal(false);
 
-  const handleOpenImport = () => setOpenImportModal(true);
-  const handleCloseImport = () => setOpenImportModal(false);
+  const handleCreate = async () => {
+    if (createStep < 3) {
+      if (createStep === 1 && (!form.fullName || !form.phone || !form.licenseNumber)) {
+        setError("Vui long nhap du ho ten, so dien thoai va so GPLX.");
+        return;
+      }
+      if (createStep === 2 && !licenseImage) {
+        setError("Vui long upload anh GPLX.");
+        return;
+      }
+      setError("");
+      setCreateStep((current) => current + 1);
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await createDriverWithDocuments(buildDriverDocumentFormData(form, licenseImage));
+      await loadDrivers();
+      setOpenModal(false);
+      setSuccessMsg("Khai báo tài xế mới thành công! Hồ sơ đang chờ Admin duyệt.");
+    } catch (saveError) {
+      setError(saveError?.response?.data?.message || "Không thể gửi tài xế để duyệt.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreateBack = () => {
+    setError("");
+    setCreateStep((current) => Math.max(1, current - 1));
+  };
+
+  const handleLicenseImageChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    event.target.value = "";
+    if (!file) return;
+    if (!/^image\/(jpeg|png)$|^application\/pdf$/.test(file.type) || file.size > 5 * 1024 * 1024) {
+      setError("Anh GPLX chi nhan JPG, PNG hoac PDF, dung luong toi da 5MB.");
+      return;
+    }
+    setLicenseImage(file);
+    setError("");
+  };
+
+  const handleOpenEdit = (driver) => {
+    const d = driver || selectedDriver;
+    if (!d) return;
+    setEditForm({
+      id: d.id,
+      fullName: d.fullName || d.name || "",
+      phone: d.phone || "",
+      licenseNumber: d.licenseNumber || d.licenseClass || "",
+      licenseImageUrl: d.licenseImageUrl || "",
+    });
+    setEditLicenseImage(null);
+    setError("");
+    setOpenEditModal(true);
+  };
+  const handleCloseEdit = () => setOpenEditModal(false);
+
+  const handleSaveEdit = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      const metadata = {
+        fullName: editForm.fullName,
+        phone: editForm.phone,
+        licenseNumber: editForm.licenseNumber,
+        licenseImageUrl: editForm.licenseImageUrl,
+      };
+      if (editLicenseImage) {
+        await updateDriverWithDocuments(editForm.id, buildDriverUpdateFormData(metadata, editLicenseImage));
+      } else {
+        await updateDriver(editForm.id, metadata);
+      }
+      await loadDrivers();
+      setOpenEditModal(false);
+      if (selectedDriver) {
+        setSelectedDriver((prev) => ({
+          ...prev,
+          fullName: editForm.fullName,
+          name: editForm.fullName,
+          phone: editForm.phone,
+          licenseNumber: editForm.licenseNumber,
+          licenseClass: editForm.licenseNumber,
+          licenseImageUrl: editForm.licenseImageUrl,
+        }));
+      }
+      setSuccessMsg("Cập nhật thông tin tài xế thành công!");
+    } catch (updateError) {
+      setError(updateError?.response?.data?.message || "Không thể cập nhật thông tin tài xế.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditLicenseImageChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    event.target.value = "";
+    if (!file) return;
+    if (!/^image\/(jpeg|png)$|^application\/pdf$/.test(file.type) || file.size > 5 * 1024 * 1024) {
+      setError("Anh GPLX chi nhan JPG, PNG hoac PDF, dung luong toi da 5MB.");
+      return;
+    }
+    setEditLicenseImage(file);
+    setError("");
+  };
+
+  const handleDelete = async (driver) => {
+    if (!window.confirm("Ban co chac muon xoa tai xe nay?")) return;
+    try {
+      await deleteDriver(driver.id);
+      setDrivers((current) => current.filter((item) => item.id !== driver.id));
+      setSelectedDriver(null);
+      setSuccessMsg("Đã xóa tài xế khỏi danh sách.");
+    } catch (deleteError) {
+      setError(deleteError?.response?.data?.message || "Không thể xóa tài xế.");
+    }
+  };
+
+  const handleOpenImport = () => {
+    setImportRows([]);
+    setImportFileName("");
+    setDocumentFiles([]);
+    setImportStep(1);
+    setError("");
+    setOpenImportModal(true);
+  };
+  const handleCloseImport = () => {
+    if (!saving) setOpenImportModal(false);
+  };
+
+  const handleImportCsvFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      const rows = parseSimpleCsv(await file.text()).map((row) => ({
+        fullName: row.fullName,
+        phone: row.phone,
+        licenseNumber: row.licenseNumber,
+        licenseImageFile: row.licenseImageFile || row.licenseImage || row.licenseImageUrl || "",
+      }));
+      if (rows.some((row) => !row.fullName || !row.phone || !row.licenseNumber)) {
+        throw new Error("Mỗi dòng phải có fullName, phone và licenseNumber");
+      }
+      setImportRows(rows);
+      setImportFileName(file.name);
+      setError("");
+    } catch (importError) {
+      setImportRows([]);
+      setImportFileName("");
+      setError(importError.message || "Không thể đọc file CSV");
+    }
+  };
+
+  const handleImportDocumentFiles = (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (!files.length) return;
+    const invalidFile = files.find((file) => !/^image\/(jpeg|png)$|^application\/pdf$/.test(file.type) || file.size > 5 * 1024 * 1024);
+    if (invalidFile) {
+      setError(`Tệp ${invalidFile.name} không hợp lệ. Chỉ nhận JPG, PNG hoặc PDF, tối đa 5MB mỗi tệp.`);
+      return;
+    }
+    setDocumentFiles(files);
+    setError("");
+  };
+
+  const findImportDocument = (name) => documentFiles.find((file) => file.name.toLowerCase() === String(name || "").trim().toLowerCase());
+
+  const validateImportDocuments = () => {
+    const missing = importRows.filter((row) => !findImportDocument(row.licenseImageFile)).map((row) => row.fullName);
+    if (missing.length) {
+      setError(`Chưa tìm thấy ảnh hoặc file GPLX của ${missing.slice(0, 2).join(" và ")}${missing.length > 2 ? " và các tài xế liên quan" : ""}. Kiểm tra lại tên file trong CSV.`);
+      return false;
+    }
+    return true;
+  };
+
+  const handleBulkImport = async () => {
+    if (importStep < 3) {
+      if (importStep === 1 && !importRows.length) {
+        setError("Vui lòng tải file CSV thông tin trước khi tiếp tục.");
+        return;
+      }
+      if (importStep === 2 && !validateImportDocuments()) return;
+      setError("");
+      setImportStep((current) => current + 1);
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      for (const row of importRows) {
+        await createDriverWithDocuments(buildDriverDocumentFormData({
+          fullName: row.fullName,
+          phone: row.phone,
+          licenseNumber: row.licenseNumber,
+        }, findImportDocument(row.licenseImageFile)));
+      }
+      setSuccessMsg(`Đã gửi ${importRows.length} hồ sơ tài xế để Admin xét duyệt.`);
+      await loadDrivers();
+      setOpenImportModal(false);
+      setImportRows([]);
+      setImportFileName("");
+      setDocumentFiles([]);
+      setImportStep(1);
+    } catch (importError) {
+      setError(importError?.response?.data?.message || "Không thể gửi danh sách tài xế.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleImportBack = () => {
+    setError("");
+    setImportStep((current) => Math.max(1, current - 1));
+  };
 
   const handleOpenDetails = (driver) => setSelectedDriver(driver);
   const handleCloseDetails = () => setSelectedDriver(null);
@@ -141,13 +398,17 @@ export default function DriversPage() {
           <Tab value="PENDING" label="Chờ duyệt" />
           <Tab value="REJECTED" label="Bị từ chối" />
         </Tabs>
-
+        
         <ViewModeToggle 
           viewMode={viewMode}
           onChange={setViewMode}
           sx={{ mb: { xs: 2, sm: 0 } }}
         />
       </Box>
+
+      {error && <Box role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</Box>}
+      {successMsg && <Box role="status" className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{successMsg}</Box>}
+      {loading && <Box role="status" className="mb-4 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">Đang tải dữ liệu tài xế...</Box>}
 
       {filteredDrivers.length === 0 && (
         <Box className="text-center p-10 bg-white/50 backdrop-blur-md rounded-2xl border border-slate-200 mb-4">
@@ -159,43 +420,41 @@ export default function DriversPage() {
         <Grid container spacing={3}>
           {sortedDrivers.map((d) => (
             <Grid item xs={12} sm={6} md={4} key={d.id}>
-              <Card variant="outlined" className={`hover:shadow-md transition-shadow rounded-2xl h-full flex flex-col ${d.verification === 'PENDING' ? 'border-amber-200' : 'border-slate-200'}`}>
-                <CardContent className="flex-1">
-                  <Box className="flex justify-between items-start mb-3">
-                    <Box className="flex items-center gap-3">
-                      <Avatar sx={{ bgcolor: "#1B4965", width: 40, height: 40 }}>
-                        <PersonIcon />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="h6" className="font-bold text-slate-800 text-base">{d.name}</Typography>
-                        <Typography variant="body2" className="text-slate-500 font-mono">{d.id}</Typography>
-                      </Box>
+              <Card className="rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <Box className="flex items-center gap-4 mb-4">
+                    <Avatar sx={{ bgcolor: "#1B4965", width: 52, height: 52 }}>
+                      <PersonIcon />
+                    </Avatar>
+                    <Box className="min-w-0 flex-1">
+                      <Typography variant="h6" className="font-bold text-slate-800 truncate">{d.name || d.fullName}</Typography>
+                      <Typography variant="body2" className="text-slate-500">{d.phone}</Typography>
                     </Box>
                     {getVerificationChip(d.verification)}
                   </Box>
-                  
-                  <Box className="space-y-2 mb-4 mt-4">
-                    <Box className="flex justify-between">
-                      <Typography variant="body2" className="text-slate-500">SĐT:</Typography>
-                      <Typography variant="body2" className="font-semibold text-slate-800">{d.phone}</Typography>
-                    </Box>
-                    <Box className="flex justify-between">
-                      <Typography variant="body2" className="text-slate-500">Hạng GPLX:</Typography>
-                      <Typography variant="body2" className="font-semibold text-[#1B4965] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{d.licenseClass}</Typography>
-                    </Box>
-                    <Box className="flex justify-between">
-                      <Typography variant="body2" className="text-slate-500">Trạng thái:</Typography>
-                      <Typography variant="body2" className={`font-semibold ${d.active ? 'text-emerald-600' : 'text-slate-500'}`}>
-                        {d.active ? 'Đang làm việc' : 'Nghỉ phép'}
+
+                  <Box className="bg-slate-50 p-3 rounded-xl border border-slate-100 mb-4 flex justify-between">
+                    <div>
+                      <Typography variant="caption" className="text-slate-500 block">Số GPLX</Typography>
+                      <Typography variant="body2" className="font-bold text-[#1B4965]">{d.licenseClass || d.licenseNumber}</Typography>
+                    </div>
+                    <div className="text-right">
+                      <Typography variant="caption" className="text-slate-500 block">Trạng thái</Typography>
+                      <Typography variant="body2" className={d.active ? "text-emerald-600 font-bold" : "text-amber-600 font-bold"}>
+                        {d.active ? "Sẵn sàng" : "Chờ duyệt"}
                       </Typography>
-                    </Box>
+                    </div>
+                  </Box>
+
+                  <Box className="flex justify-end gap-2">
+                    <Button size="small" variant="text" startIcon={<EditIcon />} onClick={() => handleOpenEdit(d)} sx={{ fontWeight: 600 }}>
+                      Sửa
+                    </Button>
+                    <Button size="small" variant="outlined" startIcon={<SettingsIcon />} onClick={() => handleOpenDetails(d)} sx={{ fontWeight: 600 }}>
+                      Chi tiết
+                    </Button>
                   </Box>
                 </CardContent>
-                <Box className="p-3 pt-0 border-t border-slate-100 flex gap-2 justify-end">
-                  <Button size="small" variant="text" color="primary" startIcon={<SettingsIcon />} onClick={() => handleOpenDetails(d)}>
-                    Xem chi tiết
-                  </Button>
-                </Box>
               </Card>
             </Grid>
           ))}
@@ -205,19 +464,11 @@ export default function DriversPage() {
           <Table sx={{ minWidth: 650 }}>
             <TableHead className="bg-slate-50">
               <TableRow>
-                {[{id: 'name', label: 'Tài xế'}, {id: 'phone', label: 'Số điện thoại'}, {id: 'licenseClass', label: 'Hạng GPLX'}, {id: 'verification', label: 'Kiểm duyệt'}, {id: 'active', label: 'Trạng thái'}, {id: 'actions', label: 'Thao tác', align: 'right', sortable: false}].map(col => (
-                  <TableCell key={col.id} align={col.align || 'left'} className="font-bold text-slate-600">
-                    {col.sortable !== false ? (
-                      <TableSortLabel
-                        active={orderBy === col.id}
-                        direction={orderBy === col.id ? order : "asc"}
-                        onClick={() => handleRequestSort(col.id)}
-                      >
-                        {col.label}
-                      </TableSortLabel>
-                    ) : col.label}
-                  </TableCell>
-                ))}
+                <TableCell className="font-bold text-slate-600">Họ và tên</TableCell>
+                <TableCell className="font-bold text-slate-600">Số điện thoại</TableCell>
+                <TableCell className="font-bold text-slate-600">Số GPLX</TableCell>
+                <TableCell className="font-bold text-slate-600">Kiểm duyệt</TableCell>
+                <TableCell className="font-bold text-slate-600" align="right">Thao tác</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -225,38 +476,22 @@ export default function DriversPage() {
                 <TableRow key={d.id} hover className="transition-colors">
                   <TableCell>
                     <Box className="flex items-center gap-3">
-                      <Avatar sx={{ bgcolor: "#1B4965", width: 32, height: 32 }}>
-                        <PersonIcon sx={{ fontSize: 18 }} />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="body2" className="font-bold text-slate-800">{d.name}</Typography>
-                        <Typography variant="caption" className="text-slate-500 font-mono">{d.id}</Typography>
-                      </Box>
+                      <Avatar sx={{ bgcolor: "#1B4965", width: 32, height: 32 }}><PersonIcon sx={{ fontSize: 18 }} /></Avatar>
+                      <Typography variant="body2" className="font-bold text-slate-800">{d.name || d.fullName}</Typography>
                     </Box>
                   </TableCell>
-                  <TableCell><Typography variant="body2" className="text-slate-800">{d.phone}</Typography></TableCell>
-                  <TableCell>
-                    <Typography variant="body2" className="font-semibold text-[#1B4965] inline-block bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                      {d.licenseClass}
-                    </Typography>
-                  </TableCell>
+                  <TableCell><Typography variant="body2" className="text-slate-600">{d.phone}</Typography></TableCell>
+                  <TableCell><Typography variant="body2" className="font-mono font-bold text-[#1B4965]">{d.licenseClass || d.licenseNumber}</Typography></TableCell>
                   <TableCell>{getVerificationChip(d.verification)}</TableCell>
-                  <TableCell>
-                    <Typography variant="body2" className={`font-medium ${d.active ? 'text-emerald-600' : 'text-slate-500'}`}>
-                      {d.active ? 'Đang làm việc' : 'Nghỉ phép'}
-                    </Typography>
-                  </TableCell>
                   <TableCell align="right">
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      color="primary" 
-                      startIcon={<SettingsIcon />} 
-                      onClick={() => handleOpenDetails(d)}
-                      sx={{ borderRadius: "6px" }}
-                    >
-                      Xem chi tiết
-                    </Button>
+                    <Box className="flex justify-end gap-1">
+                      <Button size="small" variant="text" startIcon={<EditIcon />} onClick={() => handleOpenEdit(d)} sx={{ borderRadius: "6px" }}>
+                        Sửa
+                      </Button>
+                      <Button size="small" variant="outlined" startIcon={<SettingsIcon />} onClick={() => handleOpenDetails(d)} sx={{ borderRadius: "6px" }}>
+                        Chi tiết
+                      </Button>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}
@@ -266,155 +501,226 @@ export default function DriversPage() {
       )}
 
       {/* Modal Thêm tài xế mới */}
-      <Dialog open={openModal} onClose={handleClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: "12px" } }}>
-        <DialogTitle className="font-bold text-[#1B4965] border-b border-slate-100 pb-3">
-          Khai báo tài xế mới
+      <Dialog open={openModal} onClose={handleClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: "12px" } }}>
+        <DialogTitle sx={{ borderBottom: "1px solid #f1f5f9", pb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#1B4965" }}>Khai báo tài xế mới</Typography>
+          <Typography variant="body2" sx={{ mt: 0.5, color: "#64748b" }}>Hoàn thiện thông tin và hồ sơ trước khi gửi Admin xét duyệt.</Typography>
         </DialogTitle>
-        <DialogContent className="pt-5">
-          <Grid container spacing={4}>
-            {/* Cột trái: Thông tin */}
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" className="font-bold text-slate-800 mb-4 uppercase tracking-wider">
-                1. Thông tin cá nhân
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <TextField fullWidth label="Họ và tên" placeholder="VD: Nguyễn Văn A" required />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField fullWidth label="Số điện thoại" required />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField fullWidth label="Số CCCD" required />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField select fullWidth label="Hạng bằng lái" defaultValue="C" required>
-                    <MenuItem value="B2">Hạng B2</MenuItem>
-                    <MenuItem value="C">Hạng C</MenuItem>
-                    <MenuItem value="FC">Hạng FC (Xe container)</MenuItem>
-                    <MenuItem value="E">Hạng E</MenuItem>
-                  </TextField>
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField type="date" fullWidth label="Ngày hết hạn bằng lái" InputLabelProps={{ shrink: true }} required />
-                </Grid>
-              </Grid>
-            </Grid>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, px: 3, pt: 2 }} aria-label="Tiến trình khai báo tài xế">
+          {["Thông tin", "Hồ sơ", "Xác nhận"].map((label, index) => (
+            <Box key={label} sx={{
+              borderRadius: "8px",
+              border: "1px solid",
+              px: 1.5, py: 1,
+              textAlign: "center",
+              fontSize: "0.8125rem",
+              fontWeight: 600,
+              borderColor: createStep === index + 1 ? "#1B4965" : createStep > index + 1 ? "#a7f3d0" : "#e2e8f0",
+              bgcolor: createStep === index + 1 ? "#1B4965" : createStep > index + 1 ? "#ecfdf5" : "#f8fafc",
+              color: createStep === index + 1 ? "#fff" : createStep > index + 1 ? "#065f46" : "#94a3b8",
+              transition: "all 0.2s ease",
+            }}>{index + 1}. {label}</Box>
+          ))}
+        </Box>
+        <DialogContent sx={{ pt: 2.5, display: "flex", flexDirection: "column", gap: 2 }}>
+          {createStep === 1 && (
+            <Stack spacing={2} useFlexGap>
+              <TextField
+                fullWidth size="small" variant="outlined"
+                label="Họ và tên" placeholder="VD: Nguyễn Văn A"
+                required
+                value={form.fullName}
+                onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
+              />
+              <TextField
+                fullWidth size="small" variant="outlined"
+                label="Số điện thoại" placeholder="VD: 0901234567"
+                required
+                value={form.phone}
+                onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+              />
+              <TextField
+                fullWidth size="small" variant="outlined"
+                label="Số Giấy phép lái xe" placeholder="VD: 790123456789"
+                required
+                value={form.licenseNumber}
+                onChange={(e) => setForm((prev) => ({ ...prev, licenseNumber: e.target.value }))}
+              />
+            </Stack>
+          )}
 
-            {/* Cột phải: Xác minh */}
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" className="font-bold text-slate-800 mb-4 uppercase tracking-wider">
-                2. Tải lên Giấy tờ xác minh
-              </Typography>
-              <Box className="space-y-4">
-                <Box>
-                  <Typography variant="body2" className="font-medium text-slate-700 mb-1">
-                    Giấy phép lái xe (Mặt trước & Sau) <span className="text-red-500">*</span>
+          {createStep === 2 && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Card component="label" variant="outlined" sx={{
+                cursor: "pointer",
+                borderStyle: "dashed",
+                borderWidth: 2,
+                bgcolor: "#f8fafc",
+                transition: "border-color 0.2s",
+                "&:hover": { borderColor: "#1B4965" }
+              }}>
+                <input hidden type="file" accept="image/jpeg,image/png,application/pdf" onChange={handleLicenseImageChange} />
+                <CardContent sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, py: "16px !important" }}>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#334155" }}>Ảnh hoặc file GPLX *</Typography>
+                    <Typography variant="caption" sx={{ color: "#94a3b8" }}>JPG, PNG hoặc PDF, tối đa 5MB</Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: "#1B4965", whiteSpace: "nowrap", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {licenseImage?.name || "Chọn tệp"}
                   </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={6}>
-                      <Card variant="outlined" className="border-dashed border-2 hover:border-[#1B4965] transition-colors cursor-pointer bg-slate-50">
-                        <CardContent className="text-center py-4 flex flex-col items-center gap-1">
-                          <CloudUploadIcon sx={{ fontSize: 24, color: "#94A3B8" }} />
-                          <Typography variant="caption" className="text-slate-600 font-medium">Mặt trước</Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Card variant="outlined" className="border-dashed border-2 hover:border-[#1B4965] transition-colors cursor-pointer bg-slate-50">
-                        <CardContent className="text-center py-4 flex flex-col items-center gap-1">
-                          <CloudUploadIcon sx={{ fontSize: 24, color: "#94A3B8" }} />
-                          <Typography variant="caption" className="text-slate-600 font-medium">Mặt sau</Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  </Grid>
-                </Box>
+                </CardContent>
+              </Card>
+            </Box>
+          )}
 
-                <Box>
-                  <Typography variant="body2" className="font-medium text-slate-700 mb-1">
-                    Căn cước công dân (Mặt trước) <span className="text-red-500">*</span>
-                  </Typography>
-                  <Card variant="outlined" className="border-dashed border-2 hover:border-[#1B4965] transition-colors cursor-pointer bg-slate-50">
-                    <CardContent className="text-center py-4 flex flex-col items-center gap-1">
-                      <CloudUploadIcon sx={{ fontSize: 28, color: "#94A3B8" }} />
-                      <Typography variant="body2" className="text-slate-600">Tải lên Ảnh chụp</Typography>
-                    </CardContent>
-                  </Card>
-                </Box>
-              </Box>
-            </Grid>
-          </Grid>
-          
-          <Box className="mt-6 p-3 bg-blue-50 text-blue-800 rounded-lg text-sm border border-blue-100">
-            <strong>Lưu ý:</strong> Tài xế mới cần Admin kiểm tra bằng lái trước khi được phép nhận chuyến trên hệ thống.
+          {createStep === 3 && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, borderRadius: "12px", border: "1px solid #e2e8f0", bgcolor: "#f8fafc", p: 2.5 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1e293b" }}>Kiểm tra trước khi gửi</Typography>
+              <Typography variant="body2">Họ tên: <strong>{form.fullName}</strong></Typography>
+              <Typography variant="body2">Số GPLX: <strong>{form.licenseNumber}</strong></Typography>
+              <Typography variant="body2">Ảnh GPLX: <strong>{licenseImage?.name}</strong></Typography>
+              <Typography variant="caption" sx={{ color: "#64748b", display: "block" }}>Sau khi gửi, tài xế sẽ ở trạng thái Chờ duyệt để Admin kiểm tra hồ sơ.</Typography>
+            </Box>
+          )}
+
+          <Box sx={{ p: 1.5, bgcolor: "#eff6ff", color: "#1e40af", borderRadius: "8px", fontSize: "0.8125rem", border: "1px solid #bfdbfe" }}>
+            <strong>Lưu ý:</strong> Tài xế mới thêm sẽ ở trạng thái <strong>Chờ duyệt</strong> trước khi tham gia nhận chuyến.
           </Box>
         </DialogContent>
-        <DialogActions className="px-6 pb-6 pt-3 border-t border-slate-100">
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1.5, borderTop: "1px solid #f1f5f9" }}>
+          {createStep > 1 && <Button onClick={handleCreateBack} color="inherit" sx={{ borderRadius: "8px", fontWeight: 600 }}>Quay lại</Button>}
           <Button onClick={handleClose} color="inherit" sx={{ borderRadius: "8px", fontWeight: 600 }}>Hủy bỏ</Button>
-          <Button onClick={handleClose} variant="contained" sx={{ borderRadius: "8px", backgroundColor: "#1B4965", fontWeight: 600 }}>
-            Gửi yêu cầu xét duyệt
+          <Button onClick={handleCreate} disabled={saving} variant="contained" sx={{ borderRadius: "8px", bgcolor: "#1B4965", fontWeight: 600, "&:hover": { bgcolor: "#0d2b3e" } }}>
+            {saving ? "Đang gửi..." : createStep === 3 ? "Gửi yêu cầu xét duyệt" : "Tiếp tục"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Modal Import hàng loạt */}
-      <Dialog open={openImportModal} onClose={handleCloseImport} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: "12px" } }}>
-        <DialogTitle className="font-bold text-[#1B4965] border-b border-slate-100 pb-3">
-          Import Danh sách Tài xế
+      {/* Modal Chỉnh sửa thông tin tài xế */}
+      <Dialog open={openEditModal} onClose={handleCloseEdit} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: "12px" } }}>
+        <DialogTitle sx={{ borderBottom: "1px solid #f1f5f9", pb: 2, display: "flex", alignItems: "center", gap: 1 }}>
+          <EditIcon sx={{ color: "#1B4965", fontSize: 22 }} />
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#1B4965" }}>Chỉnh sửa thông tin Tài xế</Typography>
         </DialogTitle>
-        <DialogContent className="pt-5">
-          <Typography variant="body2" className="text-slate-600 mb-4">
-            Để thêm hàng nghìn tài xế nhanh chóng, vui lòng tải biểu mẫu Excel của chúng tôi, điền đầy đủ thông tin và tải lên lại hệ thống.
-          </Typography>
-          
-          <Box className="mb-6">
-            <Button 
-              variant="text" 
-              color="primary" 
-              startIcon={<FileDownloadIcon />}
-              sx={{ fontWeight: 600 }}
-            >
-              Tải xuống Biểu mẫu (Template.xlsx)
-            </Button>
-          </Box>
-
-          <Card variant="outlined" className="border-dashed border-2 hover:border-[#1B4965] transition-colors cursor-pointer bg-slate-50">
-            <CardContent className="text-center py-10 flex flex-col items-center gap-2">
-              <FileUploadIcon sx={{ fontSize: 40, color: "#1B4965" }} />
-              <Typography variant="subtitle1" className="font-semibold text-slate-700 mt-2">
-                Kéo thả file Excel/CSV vào đây
+        <DialogContent sx={{ pt: 2.5, display: "flex", flexDirection: "column", gap: 2 }}>
+          <TextField
+            fullWidth size="small" variant="outlined"
+            label="Họ và tên" required
+            value={editForm.fullName}
+            onChange={(e) => setEditForm((prev) => ({ ...prev, fullName: e.target.value }))}
+          />
+          <TextField
+            fullWidth size="small" variant="outlined"
+            label="Số điện thoại" required
+            value={editForm.phone}
+            onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
+          />
+          <TextField
+            fullWidth size="small" variant="outlined"
+            label="Số Giấy phép lái xe" required
+            value={editForm.licenseNumber}
+            onChange={(e) => setEditForm((prev) => ({ ...prev, licenseNumber: e.target.value }))}
+          />
+          <Card component="label" variant="outlined" sx={{
+            cursor: "pointer",
+            borderStyle: "dashed",
+            borderWidth: 2,
+            bgcolor: "#f8fafc",
+            transition: "border-color 0.2s",
+            "&:hover": { borderColor: "#1B4965" }
+          }}>
+            <input hidden type="file" accept="image/jpeg,image/png,application/pdf" onChange={handleEditLicenseImageChange} />
+            <CardContent sx={{ p: "10px 12px !important" }}>
+              <Typography variant="caption" sx={{ display: "block", color: "#64748b" }}>Thay ảnh GPLX (không bắt buộc)</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: "#1B4965", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {editLicenseImage?.name || "Giữ nguyên hồ sơ hiện tại"}
               </Typography>
-              <Typography variant="body2" className="text-slate-500">
-                hoặc <strong>Bấm để chọn file</strong> từ máy tính của bạn
-              </Typography>
-              <Typography variant="caption" className="text-slate-400 mt-1 block">Hỗ trợ: .xlsx, .csv, .zip (Tối đa 50MB)</Typography>
             </CardContent>
           </Card>
-          
-          <Box className="mt-4 p-4 bg-emerald-50 text-emerald-900 rounded-xl text-sm border border-emerald-100">
-            <Typography variant="subtitle2" className="font-bold mb-2 flex items-center gap-1 text-emerald-800">
-              <span className="text-lg">💡</span> Hướng dẫn import kèm hình ảnh (File .ZIP):
-            </Typography>
-            <ul className="list-disc pl-5 space-y-1.5 opacity-90">
-              <li>Nén file <strong>Excel</strong> và <strong>Toàn bộ ảnh</strong> vào chung một file <strong>.ZIP</strong>.</li>
-              <li><strong>Quy tắc đặt tên ảnh:</strong> Đặt theo số CCCD (Chỉ ghi số).<br/>
-                - Bằng lái: <code>[SoCCCD]_BangLai_Truoc.jpg</code> và <code>[SoCCCD]_BangLai_Sau.jpg</code><br/>
-                - CCCD: <code>[SoCCCD]_CCCD_Truoc.jpg</code>
-              </li>
-              <li>Hệ thống sẽ tự động phân tích và gán ảnh vào đúng tài xế cho bạn!</li>
-            </ul>
-          </Box>
         </DialogContent>
-        <DialogActions className="px-6 pb-6 pt-3 border-t border-slate-100">
-          <Button onClick={handleCloseImport} color="inherit" sx={{ borderRadius: "8px", fontWeight: 600 }}>Hủy bỏ</Button>
-          <Button onClick={handleCloseImport} variant="contained" sx={{ borderRadius: "8px", backgroundColor: "#1B4965", fontWeight: 600 }}>
-            Tiến hành Import
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1.5, borderTop: "1px solid #f1f5f9" }}>
+          <Button onClick={handleCloseEdit} color="inherit" sx={{ borderRadius: "8px", fontWeight: 600 }}>Hủy bỏ</Button>
+          <Button onClick={handleSaveEdit} disabled={saving || !editForm.fullName || !editForm.phone || !editForm.licenseNumber} variant="contained" sx={{ borderRadius: "8px", bgcolor: "#1B4965", fontWeight: 600, "&:hover": { bgcolor: "#0d2b3e" } }}>
+            {saving ? "Đang lưu..." : "Lưu thay đổi"}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Drawer Chi tiết Tài xế */}
+      <Dialog open={openImportModal} onClose={handleCloseImport} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: "12px" } }}>
+        <DialogTitle className="border-b border-slate-100 pb-3">
+          <Typography variant="h6" className="font-bold text-[#1B4965]">Nhập hồ sơ tài xế</Typography>
+          <Typography variant="body2" className="mt-1 text-slate-500">Gom thông tin và tài liệu theo từng bước để tránh nhầm file.</Typography>
+        </DialogTitle>
+        <DialogContent className="pt-5">
+          <Box className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="Tiến trình nhập hồ sơ">
+            {["Thông tin", "Hồ sơ", "Xác nhận"].map((label, index) => (
+              <Box key={label} className={`rounded-lg border px-3 py-2 text-center text-sm font-semibold ${importStep === index + 1 ? "border-[#1B4965] bg-[#1B4965] text-white" : importStep > index + 1 ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500"}`}>
+                {index + 1}. {label}
+              </Box>
+            ))}
+          </Box>
+
+          {importStep === 1 && (
+            <Box className="space-y-4">
+              <Box className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
+                <Typography variant="subtitle2" className="font-bold text-[#1B4965]">Bắt đầu bằng file thông tin</Typography>
+                <Typography variant="body2" className="mt-1 text-slate-600">Mỗi dòng CSV là một tài xế. Tên file GPLX ở cột cuối sẽ được đối chiếu ở bước tiếp theo.</Typography>
+              </Box>
+              <Box className="flex flex-wrap items-center justify-between gap-3">
+                <Typography variant="body2" className="text-slate-600">Định dạng: CSV, tối đa 500 dòng.</Typography>
+                <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />} onClick={() => downloadCsvTemplate("drivers-template.csv", "fullName,phone,licenseNumber,licenseImageFile\nNguyen Van A,0901234567,B2,gplx001.jpg\n")} sx={{ textTransform: "none", fontWeight: 600 }}>Tải file mẫu</Button>
+              </Box>
+              <Card component="label" htmlFor="driver-csv-input-v2" variant="outlined" className="cursor-pointer border-2 border-dashed bg-slate-50 transition-colors hover:border-[#1B4965]">
+                <input id="driver-csv-input-v2" hidden type="file" accept=".csv,text/csv" onChange={handleImportCsvFile} />
+                <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
+                  <FileUploadIcon sx={{ fontSize: 42, color: "#1B4965" }} />
+                  <Typography variant="subtitle1" className="font-semibold text-slate-700">{importFileName || "Chọn file CSV thông tin"}</Typography>
+                  <Typography variant="caption" className="text-slate-500">Bắt buộc có họ tên, số điện thoại, số GPLX và tên file GPLX.</Typography>
+                </CardContent>
+              </Card>
+              {importRows.length > 0 && <Box role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Đã đọc {importRows.length} dòng thông tin.</Box>}
+            </Box>
+          )}
+
+          {importStep === 2 && (
+            <Box className="space-y-4">
+              <Box className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
+                <Typography variant="subtitle2" className="font-bold text-[#1B4965]">Tải ảnh và tài liệu rời</Typography>
+                <Typography variant="body2" className="mt-1 text-slate-600">Không cần nén ZIP. Chọn các file JPG, PNG hoặc PDF có tên trùng với tên đã ghi trong CSV.</Typography>
+              </Box>
+              <Card component="label" htmlFor="driver-documents-input-v2" variant="outlined" className="cursor-pointer border-2 border-dashed bg-slate-50 transition-colors hover:border-[#1B4965]">
+                <input id="driver-documents-input-v2" hidden multiple type="file" accept="image/jpeg,image/png,application/pdf" onChange={handleImportDocumentFiles} />
+                <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
+                  <FileUploadIcon sx={{ fontSize: 42, color: "#1B4965" }} />
+                  <Typography variant="subtitle1" className="font-semibold text-slate-700">{documentFiles.length ? `Đã chọn ${documentFiles.length} file tài liệu` : "Chọn ảnh và file GPLX"}</Typography>
+                  <Typography variant="caption" className="text-slate-500">Mỗi file tối đa 5MB. Hệ thống sẽ đối chiếu đủ file cho từng tài xế.</Typography>
+                </CardContent>
+              </Card>
+              {documentFiles.length > 0 && <Box className="grid max-h-40 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">{documentFiles.map((file) => <Box key={file.name} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"><span className="font-medium">{file.name}</span><span className="ml-2 text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(2)}MB</span></Box>)}</Box>}
+            </Box>
+          )}
+
+          {importStep === 3 && (
+            <Box className="space-y-4">
+              <Box className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                <Typography variant="subtitle2" className="font-bold text-slate-800">Kiểm tra trước khi gửi</Typography>
+                <Typography variant="body2" className="mt-1 text-slate-600">{importRows.length} tài xế sẽ được tạo ở trạng thái Chờ duyệt. Admin sẽ kiểm tra từng bộ hồ sơ.</Typography>
+              </Box>
+              <Box className="max-h-60 space-y-2 overflow-y-auto">{importRows.map((row) => <Box key={row.fullName} className="grid grid-cols-1 gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm sm:grid-cols-2"><Typography className="font-semibold text-[#1B4965]">{row.fullName}</Typography><Typography className="truncate text-slate-600">GPLX: {row.licenseImageFile}</Typography></Box>)}</Box>
+              <Typography variant="caption" className="block text-slate-500">Sau khi gửi, hồ sơ sẽ xuất hiện trong danh sách Chờ duyệt của bạn.</Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions className="border-t border-slate-100 px-6 pb-5 pt-3">
+          {importStep > 1 && <Button onClick={handleImportBack} color="inherit" sx={{ borderRadius: "8px", fontWeight: 600 }}>Quay lại</Button>}
+          <Button onClick={handleCloseImport} color="inherit" sx={{ borderRadius: "8px", fontWeight: 600 }}>Hủy bỏ</Button>
+          <Button onClick={handleBulkImport} disabled={saving || (importStep === 1 && !importRows.length)} variant="contained" sx={{ borderRadius: "8px", backgroundColor: "#1B4965", fontWeight: 600 }}>
+            {saving ? "Đang gửi..." : importStep === 3 ? "Gửi hồ sơ" : "Tiếp tục"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <DetailDrawer 
         open={!!selectedDriver} 
         onClose={handleCloseDetails} 
@@ -432,54 +738,40 @@ export default function DriversPage() {
                 <PersonIcon fontSize="large" />
               </Avatar>
               <Box>
-                <Typography variant="h5" className="font-bold text-slate-800">{selectedDriver.name}</Typography>
+                <Typography variant="h5" className="font-bold text-slate-800">{selectedDriver.name || selectedDriver.fullName}</Typography>
                 <Typography variant="body1" className="text-slate-500">{selectedDriver.phone}</Typography>
               </Box>
             </Box>
             
             <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500">Hạng bằng lái</Typography>
-                <Typography variant="body1" className="font-medium text-[#1B4965]">{selectedDriver.licenseClass}</Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500">Số CCCD</Typography>
-                <Typography variant="body1" className="font-medium">0123456789</Typography>
+              <Grid item xs={12}>
+                <Typography variant="body2" className="text-slate-500">Số Giấy phép lái xe</Typography>
+                <Typography variant="body1" className="font-medium text-[#1B4965] font-mono font-bold">
+                  {selectedDriver.licenseClass || selectedDriver.licenseNumber}
+                </Typography>
               </Grid>
             </Grid>
 
             <Divider className="my-2" />
 
-            <Typography variant="subtitle2" className="font-bold text-slate-800">Giấy tờ kèm theo</Typography>
-            
-            <Typography variant="body2" className="text-slate-500 mb-1 mt-2">Bằng lái xe (Mặt trước & Mặt sau)</Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Box className="w-full h-24 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center relative overflow-hidden group">
-                  <img src="https://placehold.co/400x250/e2e8f0/64748b?text=Bang+Lai+Truoc" alt="Bằng lái trước" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                </Box>
-              </Grid>
-              <Grid item xs={6}>
-                <Box className="w-full h-24 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center relative overflow-hidden group">
-                  <img src="https://placehold.co/400x250/e2e8f0/64748b?text=Bang+Lai+Sau" alt="Bằng lái sau" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                </Box>
-              </Grid>
-            </Grid>
-
-            <Typography variant="body2" className="text-slate-500 mb-1 mt-4">Căn cước công dân (Mặt trước)</Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Box className="w-full h-24 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center relative overflow-hidden group">
-                  <img src="https://placehold.co/400x250/e2e8f0/64748b?text=CCCD+Truoc" alt="CCCD trước" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                </Box>
-              </Grid>
-            </Grid>
+            <Typography variant="subtitle2" className="font-bold text-slate-800">Ảnh chụp Giấy phép lái xe</Typography>
+            <Box className="w-full h-40 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center relative overflow-hidden group p-2">
+              {selectedDriver.licenseImageUrl ? (
+                <Button component="a" href={selectedDriver.licenseImageUrl} target="_blank" rel="noreferrer" size="small" variant="outlined">
+                  Mở ảnh bằng lái gốc
+                </Button>
+              ) : (
+                <Typography variant="caption" className="px-2 text-center text-slate-500">Chưa có ảnh bằng lái</Typography>
+              )}
+            </Box>
 
             <Box className="flex flex-col gap-3 mt-6">
-              <Button onClick={handleCloseDetails} variant="contained" fullWidth sx={{ borderRadius: "8px", backgroundColor: "#1B4965", fontWeight: 600 }}>
-                Cập nhật thông tin
+              <Button onClick={() => handleOpenEdit(selectedDriver)} startIcon={<EditIcon />} variant="contained" fullWidth sx={{ borderRadius: "8px", backgroundColor: "#1B4965", fontWeight: 600 }}>
+                Cập nhật thông tin tài xế
               </Button>
-              <Button color="error" variant="outlined" fullWidth sx={{ borderRadius: "8px" }}>Xóa tài xế</Button>
+              <Button onClick={() => handleDelete(selectedDriver)} color="error" variant="outlined" fullWidth sx={{ borderRadius: "8px" }}>
+                Xóa tài xế
+              </Button>
             </Box>
           </Box>
         )}

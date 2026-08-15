@@ -39,8 +39,7 @@ import AppCard from "@/components/common/AppCard";
 import WalletScreen from "@/components/wallet/WalletScreen";
 import EkycModal from "@/components/eKYC/EkycModal";
 import BusinessVerificationPanel from "@/components/businessVerification/BusinessVerificationPanel";
-import { axiosClient } from "@/configs/axiosClient";
-import { REPRESENTATIVE_VERIFICATION_STATUS_PATH } from "@/components/eKYC/representativeVerificationApi";
+import { getRepresentativeVerificationStatus } from "@/services/representativeVerificationApi";
 
 // Mock Address Book
 const INITIAL_ADDRESSES = [
@@ -80,9 +79,8 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
   useEffect(() => {
     let active = true;
 
-    axiosClient
-      .get(REPRESENTATIVE_VERIFICATION_STATUS_PATH)
-      .then(({ data }) => {
+    getRepresentativeVerificationStatus()
+      .then((data) => {
         if (!active) return;
         setRepresentativeStatus(
           data?.status === "VERIFIED"
