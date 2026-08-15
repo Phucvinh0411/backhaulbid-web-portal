@@ -41,6 +41,7 @@ export default function LowestBidCard({
   shipment,
   lowestBidDetails,
   lowestBidAmount,
+  isDisplayedBidLowest = true,
   onOpenOtpDialog,
   onOpenCarrierModal,
 }) {
@@ -70,17 +71,20 @@ export default function LowestBidCard({
         <div className="flex items-center justify-between">
           <div
             className={`inline-flex items-center gap-1.5 text-[0.68rem] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full border ${
-              isSealed
-                ? "bg-amber-100 text-amber-800 border-amber-200"
-                : "bg-emerald-100 text-emerald-800 border-emerald-200"
+              isDisplayedBidLowest
+                ? (isSealed ? "bg-amber-100 text-amber-800 border-amber-200" : "bg-emerald-100 text-emerald-800 border-emerald-200")
+                : "bg-blue-100 text-blue-800 border-blue-200"
             }`}
           >
-            {isSealed ? (
-              <LockIcon className="!text-[0.85rem]" />
+            {isDisplayedBidLowest ? (
+              isSealed ? <LockIcon className="!text-[0.85rem]" /> : <GavelIcon className="!text-[0.85rem]" />
             ) : (
-              <GavelIcon className="!text-[0.85rem]" />
+              <PersonIcon className="!text-[0.85rem]" />
             )}
-            {isSealed ? "Báo giá thấp nhất (Ẩn danh)" : "Báo giá thấp nhất hiện tại"}
+            {isDisplayedBidLowest
+              ? (isSealed ? "Báo giá thấp nhất (Ẩn danh)" : "Báo giá thấp nhất hiện tại")
+              : "Báo giá nhà xe được chọn"
+            }
           </div>
           {lowestBidDetails && (
             <span className="text-[0.68rem] text-slate-400 flex items-center gap-1 font-medium">

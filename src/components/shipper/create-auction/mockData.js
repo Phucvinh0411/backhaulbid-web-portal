@@ -76,36 +76,36 @@ export const getParticipationFeeQuote = (maxPrice) => {
 
 export const INITIAL_FORM_STATE = {
   // Step 1: Goods Info
-  goodsName: "Linh kiện điện tử (Màn hình điện thoại)",
-  goodsCategory: "Linh kiện điện tử",
-  weight: 5.2,
-  volume: 28,
-  goodsValue: 180000000,
-  requiredVehicleType: "Xe tải thùng kín",
-  vehicleLength: 6.2,
-  vehicleWidth: 2.1,
-  vehicleHeight: 2.2,
+  goodsName: "",
+  goodsCategory: "",
+  weight: "",
+  volume: "",
+  goodsValue: "",
+  requiredVehicleType: "",
+  vehicleLength: "",
+  vehicleWidth: "",
+  vehicleHeight: "",
   requiredTemp: "",
-  description: "Hàng linh kiện đóng pallet gỗ tissue chuẩn. Yêu cầu xe thùng kín bảo ôn chống ẩm.",
+  description: "",
   images: [],
 
   // Step 2: Route Info (Pickup A -> Delivery B)
-  fromLocationName: "Kho Samsung Yên Bình - Thái Nguyên",
-  fromAddress: "Cổng số 3, KCN Yên Bình, Phổ Yên",
-  fromProvince: "Thái Nguyên",
-  fromContactName: "Trần Thế Hải",
-  fromContactPhone: "0912.345.678",
+  fromLocationName: "",
+  fromAddress: "",
+  fromProvince: "",
+  fromContactName: "",
+  fromContactPhone: "",
 
-  toLocationName: "Kho Cảng Đình Vũ - Hải Phòng",
-  toAddress: "Cầu cảng số 2, Cảng Đình Vũ, Đông Hải 2, Hải An",
-  toProvince: "Hải Phòng",
-  toContactName: "Phạm Hồng Minh",
-  toContactPhone: "0904.445.555",
+  toLocationName: "",
+  toAddress: "",
+  toProvince: "",
+  toContactName: "",
+  toContactPhone: "",
 
-  earliestPickup: "2026-07-24T08:00",
-  latestPickup: "2026-07-24T12:00",
-  earliestDelivery: "2026-07-25T10:00",
-  latestDelivery: "2026-07-25T16:00",
+  earliestPickup: "",
+  latestPickup: "",
+  earliestDelivery: "",
+  latestDelivery: "",
 
   // Step 3: Auction Config
   auctionType: "PUBLIC", // "PUBLIC" | "SEALED"
@@ -120,6 +120,17 @@ export const INITIAL_FORM_STATE = {
   regEndTime: "2026-08-08T14:00",
   startTime: "2026-08-08T15:00",
   endTime: "2026-08-08T16:00",
+  auctionType: "PUBLIC", // Default to PUBLIC
+  maxPrice: "",
+  priceStep: "",
+  participationFee: "",
+  depositAmount: "",
+  maxBids: "",
+
+  regStartTime: "",
+  regEndTime: "",
+  startTime: "",
+  endTime: "",
 };
 
 export const formatCurrency = (val) => {

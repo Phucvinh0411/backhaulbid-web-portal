@@ -38,12 +38,14 @@ function AvatarBubble({ name, isWinner }) {
   );
 }
 
-function SealedBidRow({ bid, rank, onOpenCarrierModal, onOpenOtpDialog, shipmentStatus }) {
+function SealedBidRow({ bid, rank, onOpenCarrierModal, onOpenOtpDialog, shipmentStatus, onSelectBid, isSelected }) {
   return (
     <div
-      onClick={() => onOpenCarrierModal(bid)}
+      onClick={() => onSelectBid ? onSelectBid(bid) : onOpenCarrierModal(bid)}
       className={`group relative flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer transition-all border ${
-        bid.isLowest
+        isSelected
+          ? "bg-amber-100/80 border-amber-400 shadow-sm"
+          : bid.isLowest
           ? "bg-amber-50/70 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
           : "bg-white/60 border-slate-100 hover:border-slate-200 hover:bg-white"
       }`}
@@ -220,6 +222,8 @@ export default function BidsTable({
   onOpenOtpDialog,
   onOpenCarrierModal,
   onOpenFullModal,
+  onSelectBid,
+  selectedBidId,
   isSimplified = false,
   isModalView = false,
 }) {
@@ -329,6 +333,8 @@ export default function BidsTable({
               onOpenCarrierModal={onOpenCarrierModal}
               onOpenOtpDialog={onOpenOtpDialog}
               shipmentStatus={shipmentStatus}
+              onSelectBid={onSelectBid}
+              isSelected={selectedBidId === bid.id}
             />
           ))
         ) : (
