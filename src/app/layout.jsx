@@ -1,14 +1,6 @@
-import { Roboto } from "next/font/google";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import "./globals.css";
 import { ThemeProvider } from "@/theme";
-
-
-const roboto = Roboto({
-  subsets: ["latin", "vietnamese"],
-  weight: ["300", "400", "500", "700", "900"],
-  variable: "--font-roboto",
-});
 
 export const metadata = {
   title: "BackHaulBid - Nền tảng Giao dịch Vận tải B2B",
@@ -19,7 +11,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="vi"
-      className={`${roboto.variable} h-full antialiased`}
+      className="h-full antialiased"
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>

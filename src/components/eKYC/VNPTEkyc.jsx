@@ -11,7 +11,7 @@ import {
   VNPT_EKYC_ASSETS,
   normalizeVnptAccessToken,
   validateVnptEkycConfig,
-} from "./vnptEkycConfig";
+} from "@/configs/vnptEkycConfig";
 
 const VNPT_CONFIG = {
   BACKEND_URL: process.env.NEXT_PUBLIC_VNPT_EKYC_BACKEND_URL || "",

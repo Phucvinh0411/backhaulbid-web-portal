@@ -6,8 +6,7 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import SecurityIcon from "@mui/icons-material/Security";
 import EkycModal from "./EkycModal";
-import { axiosClient } from "@/configs/axiosClient";
-import { REPRESENTATIVE_VERIFICATION_STATUS_PATH } from "./representativeVerificationApi";
+import { getRepresentativeVerificationStatus } from "@/services/representativeVerificationApi";
 
 export default function EkycGuard({ children, role }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -17,9 +16,8 @@ export default function EkycGuard({ children, role }) {
   useEffect(() => {
     let active = true;
 
-    axiosClient
-      .get(REPRESENTATIVE_VERIFICATION_STATUS_PATH)
-      .then(({ data }) => {
+    getRepresentativeVerificationStatus()
+      .then((data) => {
         if (active) setIsVerified(data?.status === "VERIFIED");
       })
       .catch(() => {

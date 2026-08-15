@@ -6,6 +6,7 @@ import { ActionButton } from "@/components/common";
 const STATUS_MAP = {
   OPEN_REGISTER: "pending_bids",
   WAITING_START: "pending_bids",
+  PAYMENT_INCOMPLETE: "pending_bids",
   BIDDING: "active_bids",
   CLOSED: "awarded",
   CANCELLED: "cancelled",
@@ -38,6 +39,7 @@ export function normalizeCarrierAuction(auction) {
 }
 
 function getStatusLabel(auction, mode) {
+  if (auction.status === "PAYMENT_INCOMPLETE") return "Chưa hoàn tất thanh toán";
   if (auction.status === "OPEN_REGISTER") {
     return mode === "marketplace" ? "Sắp diễn ra" : "Chờ mở phiên";
   }

@@ -1,10 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
+import Chip from "@mui/material/Chip";
+import CircularProgress from "@mui/material/CircularProgress";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import Divider from "@mui/material/Divider";
+import Grid from "@mui/material/Grid";
+import IconButton from "@mui/material/IconButton";
+import MenuItem from "@mui/material/MenuItem";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -12,70 +23,100 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableSortLabel from "@mui/material/TableSortLabel";
-import Button from "@mui/material/Button";
-import Chip from "@mui/material/Chip";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
-import MenuItem from "@mui/material/MenuItem";
-import IconButton from "@mui/material/IconButton";
+import Typography from "@mui/material/Typography";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import PinDropIcon from "@mui/icons-material/PinDrop";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import Divider from "@mui/material/Divider";
-import Grid from "@mui/material/Grid";
-import CardContent from "@mui/material/CardContent";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import PinDropIcon from "@mui/icons-material/PinDrop";
 import { PageHeader, ViewModeToggle, DetailDrawer } from "@/components/common";
 import CarrierTransportItem from "@/components/carrier/CarrierTransportItem";
+import { getMyDrivers, getMyVehicles } from "@/services/fleetApi";
+import { contractApi } from "@/services/contractApi";
 
-const mockTransports = [
-  {
-    id: "TRP-9001",
-    auctionId: "BID-2451",
-    route: "Hà Nội - Đà Nẵng",
-    vehicle: "29H-123.45",
-    driver: null,
-    pin: null,
-    status: "WAITING_DRIVER", // Chờ điều phối
-  },
-  {
-    id: "TRP-9002",
-    auctionId: "BID-2420",
-    route: "Hải Phòng - Hà Nội",
-    vehicle: "30F-987.65",
-    driver: "Lê Văn B",
-    pin: "482019",
-    status: "IN_TRANSIT", // Đang giao
-  },
-  {
-    id: "TRP-8990",
-    auctionId: "BID-2310",
-    route: "Hồ Chí Minh - Cần Thơ",
-    vehicle: "51C-444.22",
-    driver: "Trần Văn C",
-    pin: "110293",
-    status: "COMPLETED", // Hoàn thành
-  },
-];
+const mapTripStatus = (trip) => {
+  if (trip.status === "WAITING_PICKUP") {
+    return trip.driverId ? "ASSIGNED" : "WAITING_DRIVER";
+  }
+  if (trip.status === "PICKED_UP" || trip.status === "IN_TRANSIT") return "IN_TRANSIT";
+  if (trip.status === "DELIVERED" || trip.status === "COMPLETED") return "COMPLETED";
+  return trip.status;
+};
 
-const mockDrivers = [
-  { id: "D1", name: "Nguyễn Văn A", phone: "0901234567" },
-  { id: "D2", name: "Lê Văn B", phone: "0912345678" },
-];
+const mapTrip = (trip, vehicles, drivers) => {
+  const vehicle = vehicles.find((item) => item.id === trip.vehicleId);
+  const driver = drivers.find((item) => item.id === trip.driverId);
+  return {
+    backendId: trip.id,
+    id: `TRP-${String(trip.id).slice(0, 8).toUpperCase()}`,
+    auctionId: trip.contractCode || trip.id,
+    route: `${trip.pickupLocation} - ${trip.deliveryLocation}`,
+    vehicle: vehicle?.plate || trip.vehicleId,
+    driver: driver?.name || (trip.driverId ? trip.driverId : null),
+    driverId: trip.driverId || "",
+    pin: trip.hasAssignmentPin ? "Đã cấp" : null,
+    status: mapTripStatus(trip),
+    agreedPrice: trip.agreedPrice,
+    latestTracking: trip.latestTracking,
+    pickupLocation: trip.pickupLocation,
+    deliveryLocation: trip.deliveryLocation,
+  };
+};
+
+const statusChip = (status) => {
+  const designs = {
+    WAITING_DRIVER: { label: "Chờ điều phối", color: "warning" },
+    ASSIGNED: { label: "Đã điều phối", color: "success" },
+    IN_TRANSIT: { label: "Đang vận chuyển", color: "info" },
+    COMPLETED: { label: "Hoàn thành", color: "success" },
+    CANCELLED: { label: "Đã hủy", color: "error" },
+  };
+  const design = designs[status] || { label: status, color: "default" };
+  return <Chip label={design.label} color={design.color} size="small" />;
+};
 
 export default function TransportsPage() {
   const [viewMode, setViewMode] = useState("CARD");
+  const [transports, setTransports] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [assignmentLoading, setAssignmentLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [openDetailsModal, setOpenDetailsModal] = useState(false);
   const [selectedTransport, setSelectedTransport] = useState(null);
   const [selectedDriver, setSelectedDriver] = useState("");
   const [generatedPin, setGeneratedPin] = useState("");
-
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("id");
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([contractApi.listTrips(), getMyVehicles(), getMyDrivers()])
+      .then(([trips, vehicles, carrierDrivers]) => {
+        if (!active) return;
+        const verifiedDrivers = (carrierDrivers || []).filter(
+          (driver) => driver.status === "VERIFIED",
+        );
+        setDrivers(verifiedDrivers);
+        setTransports(
+          (trips || []).map((trip) => mapTrip(trip, vehicles || [], carrierDrivers || [])),
+        );
+      })
+      .catch((error) => {
+        if (active) {
+          setLoadError(
+            error?.response?.data?.message || "Không thể tải danh sách chuyến vận chuyển.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === "asc";
@@ -83,19 +124,18 @@ export default function TransportsPage() {
     setOrderBy(property);
   };
 
-  const sortedTransports = React.useMemo(() => {
-    let result = [...mockTransports];
-    result.sort((a, b) => {
-      let comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
+  const sortedTransports = useMemo(() => {
+    return [...transports].sort((a, b) => {
+      const comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
       return order === "desc" ? -comparison : comparison;
     });
-    return result;
-  }, [order, orderBy]);
+  }, [order, orderBy, transports]);
 
   const handleOpenAssign = (transport) => {
     setSelectedTransport(transport);
-    setSelectedDriver("");
+    setSelectedDriver(transport.driverId || "");
     setGeneratedPin("");
+    setActionError("");
     setOpenDialog(true);
   };
 
@@ -104,93 +144,107 @@ export default function TransportsPage() {
     setOpenDetailsModal(true);
   };
 
-  const handleGeneratePin = () => {
-    // Mock PIN generation
-    const pin = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedPin(pin);
-  };
-
-  const getStatusChip = (status) => {
-    switch (status) {
-      case "WAITING_DRIVER":
-        return <Chip label="Chờ điều phối" color="warning" size="small" />;
-      case "IN_TRANSIT":
-        return <Chip label="Đang vận chuyển" color="info" size="small" />;
-      case "COMPLETED":
-        return <Chip label="Hoàn thành" color="success" size="small" />;
-      default:
-        return <Chip label={status} size="small" />;
+  const handleAssignDriver = async () => {
+    if (!selectedTransport || !selectedDriver) return;
+    setAssignmentLoading(true);
+    setActionError("");
+    try {
+      const result = await contractApi.assignDriver(selectedTransport.backendId, {
+        driverId: selectedDriver,
+      });
+      const driver = drivers.find((item) => item.id === selectedDriver);
+      const updated = {
+        ...selectedTransport,
+        driverId: selectedDriver,
+        driver: driver?.name || selectedDriver,
+        pin: "Đã cấp",
+        status: "ASSIGNED",
+      };
+      setGeneratedPin(result.assignmentPin);
+      setSelectedTransport(updated);
+      setTransports((current) =>
+        current.map((item) => (item.backendId === updated.backendId ? updated : item)),
+      );
+    } catch (error) {
+      setActionError(error?.response?.data?.message || "Không thể lưu điều phối tài xế.");
+    } finally {
+      setAssignmentLoading(false);
     }
   };
 
+  if (loading) {
+    return (
+      <Box className="flex min-h-[320px] items-center justify-center">
+        <CircularProgress aria-label="Đang tải chuyến vận chuyển" />
+      </Box>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Box className="p-4">
+        <Alert severity="error">{loadError}</Alert>
+      </Box>
+    );
+  }
+
   return (
     <Box className="animate-fade-in-up">
-      <PageHeader 
-        title="Quản lý Vận chuyển" 
-        subtitle="Điều phối tài xế, cấp mã PIN và theo dõi các chuyến hàng"
-        action={
-          <ViewModeToggle 
-            viewMode={viewMode}
-            onChange={setViewMode}
-          />
-        }
+      <PageHeader
+        title="Quản lý Vận chuyển"
+        subtitle="Điều phối tài xế, cấp mã PIN và theo dõi các chuyến hàng từ dữ liệu vận hành thật"
+        action={<ViewModeToggle viewMode={viewMode} onChange={setViewMode} />}
       />
 
-      {viewMode === "TABLE" ? (
+      {sortedTransports.length === 0 ? (
+        <Box className="mt-6 rounded-2xl border border-slate-200 bg-white/70 p-10 text-center">
+          <Typography variant="h6" className="text-slate-500">
+            Chưa có chuyến vận chuyển được gán cho nhà xe.
+          </Typography>
+        </Box>
+      ) : viewMode === "TABLE" ? (
         <Card className="glass mt-6">
           <TableContainer>
-            <Table aria-label="transports table">
+            <Table aria-label="Danh sách chuyến vận chuyển">
               <TableHead sx={{ backgroundColor: "rgba(241, 245, 249, 0.5)" }}>
                 <TableRow>
-                  {[{id: 'id', label: 'Mã Chuyến'}, {id: 'route', label: 'Tuyến đường'}, {id: 'vehicle', label: 'Phương tiện'}, {id: 'driver', label: 'Tài xế'}, {id: 'pin', label: 'Mã PIN'}, {id: 'status', label: 'Trạng thái'}, {id: 'actions', label: 'Thao tác', align: 'right', sortable: false}].map(col => (
-                    <TableCell key={col.id} align={col.align || 'left'} className="!font-bold">
-                      {col.sortable !== false ? (
-                        <TableSortLabel
-                          active={orderBy === col.id}
-                          direction={orderBy === col.id ? order : "asc"}
-                          onClick={() => handleRequestSort(col.id)}
-                        >
-                          {col.label}
-                        </TableSortLabel>
-                      ) : col.label}
+                  {["id", "route", "vehicle", "driver", "pin", "status"].map((column) => (
+                    <TableCell key={column} className="!font-bold">
+                      <TableSortLabel
+                        active={orderBy === column}
+                        direction={orderBy === column ? order : "asc"}
+                        onClick={() => handleRequestSort(column)}
+                      >
+                        {{
+                          id: "Mã chuyến",
+                          route: "Tuyến đường",
+                          vehicle: "Phương tiện",
+                          driver: "Tài xế",
+                          pin: "Mã PIN",
+                          status: "Trạng thái",
+                        }[column]}
+                      </TableSortLabel>
                     </TableCell>
                   ))}
+                  <TableCell align="right" className="!font-bold">Thao tác</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {sortedTransports.map((row) => (
-                  <TableRow key={row.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
-                    <TableCell component="th" scope="row" className="font-semibold text-[#1B4965]">
-                      {row.id}
-                    </TableCell>
+                  <TableRow key={row.backendId} hover>
+                    <TableCell className="font-semibold text-[#1B4965]">{row.id}</TableCell>
                     <TableCell>{row.route}</TableCell>
                     <TableCell>{row.vehicle}</TableCell>
-                    <TableCell>{row.driver || <Typography variant="caption" className="text-slate-400 italic">Chưa gán</Typography>}</TableCell>
-                    <TableCell>
-                      {row.pin ? (
-                        <Box className="flex items-center gap-1">
-                          <Typography variant="body2" className="font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                            {row.pin}
-                          </Typography>
-                        </Box>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell>{getStatusChip(row.status)}</TableCell>
+                    <TableCell>{row.driver || <Typography variant="caption" className="italic text-slate-400">Chưa gán</Typography>}</TableCell>
+                    <TableCell>{row.pin || "-"}</TableCell>
+                    <TableCell>{statusChip(row.status)}</TableCell>
                     <TableCell align="right">
                       <Box className="flex justify-end gap-2">
-                        <Button size="small" variant="outlined" color="inherit" startIcon={<InfoOutlinedIcon />} onClick={() => handleOpenDetails(row)}>
-                          Chi tiết
-                        </Button>
+                        <Button size="small" variant="outlined" startIcon={<InfoOutlinedIcon />} onClick={() => handleOpenDetails(row)}>Chi tiết</Button>
                         {row.status === "WAITING_DRIVER" ? (
-                          <Button size="small" variant="contained" color="primary" onClick={() => handleOpenAssign(row)}>
-                            Điều phối
-                          </Button>
+                          <Button size="small" variant="contained" onClick={() => handleOpenAssign(row)}>Điều phối</Button>
                         ) : (
-                          <Button size="small" variant="outlined" startIcon={<PinDropIcon />} component={Link} href={`/carrier/transports/${row.id}`}>
-                            Theo dõi
-                          </Button>
+                          <Button size="small" variant="outlined" startIcon={<PinDropIcon />} component={Link} href={`/carrier/transports/${row.backendId}`}>Theo dõi</Button>
                         )}
                       </Box>
                     </TableCell>
@@ -203,140 +257,62 @@ export default function TransportsPage() {
       ) : (
         <Grid container spacing={3} className="mt-2">
           {sortedTransports.map((row) => (
-            <Grid item xs={12} sm={6} md={4} key={row.id}>
-              <CarrierTransportItem
-                transport={row}
-                onAssign={handleOpenAssign}
-                onViewDetail={handleOpenDetails}
-              />
+            <Grid item xs={12} sm={6} md={4} key={row.backendId}>
+              <CarrierTransportItem transport={row} onAssign={handleOpenAssign} onViewDetail={handleOpenDetails} />
             </Grid>
           ))}
         </Grid>
       )}
 
-      {/* Assign Driver Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth PaperProps={{ className: "rounded-2xl" }}>
-        <DialogTitle className="text-[#1B4965] font-bold">
-          Điều phối chuyến {selectedTransport?.id}
-        </DialogTitle>
+        <DialogTitle className="font-bold text-[#1B4965]">Điều phối chuyến {selectedTransport?.id}</DialogTitle>
         <DialogContent dividers>
           <Box className="space-y-4 pt-2">
+            {actionError && <Alert severity="error">{actionError}</Alert>}
             <Typography variant="body2" className="text-slate-600">
-              Chọn tài xế thực hiện chuyến hàng này. Sau khi xác nhận, hệ thống sẽ tạo một Mã PIN duy nhất cho tài xế để xác nhận nhận hàng và giao hàng.
+              Chỉ tài xế đã được Admin xác minh mới xuất hiện. PIN được tạo tại backend và chỉ hiển thị sau khi lưu điều phối.
             </Typography>
-            
-            <TextField
-              select
-              fullWidth
-              label="Chọn tài xế"
-              value={selectedDriver}
-              onChange={(e) => setSelectedDriver(e.target.value)}
-            >
-              {mockDrivers.map((d) => (
-                <MenuItem key={d.id} value={d.id}>
-                  {d.name} - {d.phone}
-                </MenuItem>
+            <TextField select fullWidth label="Chọn tài xế" value={selectedDriver} onChange={(event) => setSelectedDriver(event.target.value)}>
+              {drivers.map((driver) => (
+                <MenuItem key={driver.id} value={driver.id}>{driver.name} - {driver.phone}</MenuItem>
               ))}
             </TextField>
-
-            {selectedDriver && !generatedPin && (
-              <Button variant="outlined" onClick={handleGeneratePin} fullWidth>
-                Khởi tạo Mã PIN
-              </Button>
-            )}
-
+            {drivers.length === 0 && <Alert severity="info">Chưa có tài xế đã xác minh để điều phối.</Alert>}
             {generatedPin && (
-              <Box className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-center">
-                <Typography variant="caption" className="text-emerald-700 font-semibold uppercase tracking-wider block mb-2">
-                  Mã PIN xác thực của tài xế
-                </Typography>
+              <Box className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-center">
+                <Typography variant="caption" className="mb-2 block font-semibold uppercase tracking-wider text-emerald-700">Mã PIN xác thực của tài xế</Typography>
                 <Box className="flex items-center justify-center gap-2">
-                  <Typography variant="h4" className="font-mono font-black text-emerald-800 tracking-widest">
-                    {generatedPin}
-                  </Typography>
-                  <IconButton size="small" color="success">
-                    <ContentCopyIcon fontSize="small" />
-                  </IconButton>
+                  <Typography variant="h4" className="font-mono font-black tracking-widest text-emerald-800">{generatedPin}</Typography>
+                  <IconButton size="small" color="success" aria-label="Sao chép mã PIN" onClick={() => navigator.clipboard?.writeText(generatedPin)}><ContentCopyIcon fontSize="small" /></IconButton>
                 </Box>
-                <Typography variant="caption" className="text-emerald-600 mt-2 block">
-                  Vui lòng gửi mã này cho tài xế hoặc họ có thể xem trên ứng dụng của tài xế.
-                </Typography>
+                <Typography variant="caption" className="mt-2 block text-emerald-600">Hãy gửi mã này cho tài xế trong phiên điều phối hiện tại.</Typography>
               </Box>
             )}
           </Box>
         </DialogContent>
         <DialogActions className="p-4">
           <Button onClick={() => setOpenDialog(false)} color="inherit">Hủy</Button>
-          <Button variant="contained" disabled={!generatedPin} onClick={() => setOpenDialog(false)}>
-            Lưu điều phối
+          <Button variant="contained" disabled={!selectedDriver || assignmentLoading} onClick={handleAssignDriver}>
+            {assignmentLoading ? "Đang lưu..." : generatedPin ? "Cấp lại PIN" : "Lưu điều phối"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Drawer Chi tiết đơn hàng vận chuyển */}
-      <DetailDrawer 
-        open={openDetailsModal} 
-        onClose={() => setOpenDetailsModal(false)} 
-        title={
-          <Box className="flex items-center justify-between w-full pr-4">
-            <span>Chi tiết Vận chuyển {selectedTransport?.id}</span>
-            {selectedTransport && getStatusChip(selectedTransport.status)}
-          </Box>
-        }
-      >
+      <DetailDrawer open={openDetailsModal} onClose={() => setOpenDetailsModal(false)} title={<Box className="flex w-full items-center justify-between pr-4"><span>Chi tiết chuyến {selectedTransport?.id}</span>{selectedTransport && statusChip(selectedTransport.status)}</Box>}>
         {selectedTransport && (
           <Box className="space-y-4">
-            <Typography variant="subtitle2" className="text-slate-500 font-bold uppercase">Thông tin Đấu giá</Typography>
+            <Typography variant="subtitle2" className="font-bold uppercase text-slate-500">Thông tin chuyến</Typography>
             <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500">Mã phiên đấu giá</Typography>
-                <Typography variant="body1" className="font-bold text-[#1B4965]">{selectedTransport.auctionId}</Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500">Tuyến đường</Typography>
-                <Typography variant="body1" className="font-bold">{selectedTransport.route}</Typography>
-              </Grid>
+              <Grid item xs={12}><Typography variant="body2" className="text-slate-500">Tuyến đường</Typography><Typography variant="body1" className="font-bold">{selectedTransport.route}</Typography></Grid>
+              <Grid item xs={6}><Typography variant="body2" className="text-slate-500">Phương tiện</Typography><Typography variant="body1" className="font-bold text-[#1B4965]">{selectedTransport.vehicle}</Typography></Grid>
+              <Grid item xs={6}><Typography variant="body2" className="text-slate-500">Giá thỏa thuận</Typography><Typography variant="body1" className="font-medium">{selectedTransport.agreedPrice == null ? "Chưa cập nhật" : new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(selectedTransport.agreedPrice)}</Typography></Grid>
             </Grid>
-
-            <Divider className="my-2" />
-            
-            <Typography variant="subtitle2" className="text-slate-500 font-bold uppercase">Thông tin Hàng hóa</Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500">Loại hàng</Typography>
-                <Typography variant="body1" className="font-medium">Hàng tổng hợp</Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500">Trọng lượng</Typography>
-                <Typography variant="body1" className="font-medium">10 Tấn</Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="body2" className="text-slate-500">Ngày bốc hàng dự kiến</Typography>
-                <Typography variant="body1" className="font-medium text-emerald-600">15/08/2026</Typography>
-              </Grid>
-            </Grid>
-
-            <Divider className="my-2" />
-
-            <Typography variant="subtitle2" className="text-slate-500 font-bold uppercase">Điều phối</Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500">Phương tiện (Đã đăng ký)</Typography>
-                <Typography variant="body1" className="font-bold text-[#1B4965]">{selectedTransport.vehicle}</Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500">Tài xế phụ trách</Typography>
-                <Typography variant="body1" className="font-medium">
-                  {selectedTransport.driver || <span className="text-amber-600 italic">Chưa điều phối</span>}
-                </Typography>
-              </Grid>
-            </Grid>
-            
-            <Box className="mt-6 flex justify-end">
-              <Button onClick={() => setOpenDetailsModal(false)} variant="contained" fullWidth sx={{ borderRadius: "8px", backgroundColor: "#1B4965", fontWeight: 600 }}>
-                Đóng
-              </Button>
-            </Box>
+            <Divider />
+            <Typography variant="subtitle2" className="font-bold uppercase text-slate-500">Điều phối</Typography>
+            <Typography variant="body1" className="font-medium">{selectedTransport.driver || <span className="italic text-amber-600">Chưa điều phối</span>}</Typography>
+            <Typography variant="body2" className="text-slate-500">PIN: {selectedTransport.pin || "Chưa cấp"}</Typography>
+            <Typography variant="body2" className="text-slate-500">Hành trình được tài xế cập nhật theo mốc thủ công. Mở chi tiết để xem timeline và bằng chứng.</Typography>
+            <Button component={Link} href={`/carrier/transports/${selectedTransport.backendId}`} variant="contained" fullWidth> Mở theo dõi chi tiết </Button>
           </Box>
         )}
       </DetailDrawer>

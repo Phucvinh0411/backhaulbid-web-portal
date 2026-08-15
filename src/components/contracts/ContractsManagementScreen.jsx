@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import Checkbox from "@mui/material/Checkbox";
@@ -33,6 +34,7 @@ import {
   ViewModeToggle,
 } from "@/components/common";
 import ContractItem, { getContractStatusDesign } from "./ContractItem";
+import { contractApi } from "@/services/contractApi";
 
 export const CONTRACT_FILTERS = [
   { value: "ALL", label: "Tất cả" },
@@ -108,6 +110,8 @@ export default function ContractsManagementScreen({
   const [openDetailDrawer, setOpenDetailDrawer] = useState(false);
   const [openSignDialog, setOpenSignDialog] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [signing, setSigning] = useState(false);
+  const [actionError, setActionError] = useState("");
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("id");
 
@@ -146,20 +150,33 @@ export default function ContractsManagementScreen({
   const openSign = (contract) => {
     setSelectedContract(contract);
     setAgreeTerms(false);
+    setActionError("");
     setOpenSignDialog(true);
   };
 
-  const handleSign = () => {
+  const handleSign = async () => {
     if (selectedContract) {
-      setItems((current) =>
-        current.map((contract) =>
-          contract.id === selectedContract.id
-            ? { ...contract, status: "ACTIVE" }
-            : contract
-        )
-      );
+      setSigning(true);
+      setActionError("");
+      try {
+        if (selectedContract.backendId) {
+          const response = await contractApi.sign(selectedContract.backendId);
+          const status = response?.status === "SIGNED" ? "ACTIVE" : "PENDING_SIGNATURE";
+          setItems((current) => current.map((contract) =>
+            contract.id === selectedContract.id ? { ...contract, status } : contract,
+          ));
+        } else {
+          setItems((current) => current.map((contract) =>
+            contract.id === selectedContract.id ? { ...contract, status: "ACTIVE" } : contract,
+          ));
+        }
+        setOpenSignDialog(false);
+      } catch (error) {
+        setActionError(error?.response?.data?.message || "Không thể ký hợp đồng.");
+      } finally {
+        setSigning(false);
+      }
     }
-    setOpenSignDialog(false);
   };
 
   const title = isShipper ? "Quản lý hợp đồng vận chuyển" : "Quản lý hợp đồng";
@@ -452,6 +469,7 @@ export default function ContractsManagementScreen({
         <DialogContent className="!pt-5">
           {selectedContract && (
             <Box className="space-y-4">
+              {actionError && <Alert severity="error">{actionError}</Alert>}
               <Typography variant="body2" className="text-slate-600">
                 Bạn đang thực hiện ký xác nhận hợp đồng{" "}
                 <strong>{selectedContract.id}</strong>. Chữ ký số này có giá trị
@@ -492,10 +510,10 @@ export default function ContractsManagementScreen({
           </ActionButton>
           <ActionButton
             variant="primary"
-            disabled={!agreeTerms}
+            disabled={!agreeTerms || signing}
             onClick={handleSign}
           >
-            Xác nhận ký
+            {signing ? "Đang ký..." : "Xác nhận ký"}
           </ActionButton>
         </DialogActions>
       </Dialog>

@@ -21,6 +21,13 @@ export default function CarrierTransportItem({ transport, onAssign, onViewDetail
           textColor: "#D97706", // amber-600
           borderColor: "#FDE68A", // amber-200
         };
+      case "ASSIGNED":
+        return {
+          label: "Đã điều phối",
+          bgColor: "#ECFDF5",
+          textColor: "#059669",
+          borderColor: "#D1FAE5",
+        };
       case "IN_TRANSIT":
         return {
           label: "Đang vận chuyển",
@@ -177,7 +184,7 @@ export default function CarrierTransportItem({ transport, onAssign, onViewDetail
         ) : (
           <Button
             component={Link}
-            href={`/carrier/transports/${transport.id}`}
+            href={`/carrier/transports/${transport.backendId || transport.id}`}
             variant="outlined"
             size="small"
             startIcon={<PinDropIcon />}

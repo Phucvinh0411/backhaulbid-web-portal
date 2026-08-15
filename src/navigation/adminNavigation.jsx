@@ -6,6 +6,7 @@ import {
   FactCheckOutlined as FactCheckIcon,
   GavelOutlined as GavelIcon,
   ReportProblemOutlined as ReportProblemIcon,
+  AccountBalanceWalletOutlined as WalletIcon,
   SettingsOutlined as SettingsIcon,
 } from "@mui/icons-material";
 
@@ -34,9 +35,19 @@ const adminNavigation = [
         icon: FactCheckIcon,
       },
       {
+        title: "Duyệt đội xe",
+        path: "/admin/fleet-verifications",
+        icon: FactCheckIcon,
+      },
+      {
         title: "Giám sát đấu giá",
         path: "/admin/operations",
         icon: GavelIcon,
+      },
+      {
+        title: "Duyệt rút tiền ví",
+        path: "/admin/wallets",
+        icon: WalletIcon,
       },
       {
         title: "Báo cáo khiếu nại",

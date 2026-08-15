@@ -2,16 +2,16 @@
 
 import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
-import LocalShippingIcon from "@mui/icons-material/LocalShippingOutlined";
 import NavigationIcon from "@mui/icons-material/NavigationOutlined";
 import LockIcon from "@mui/icons-material/LockOutlined";
 import PublicIcon from "@mui/icons-material/PublicOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlined";
 
-import { formatCurrency } from "./mockData";
+import { formatCurrency, getParticipationFeeQuote } from "./mockData";
 
 export default function SummarySidebar({ form }) {
   const isSealed = form.auctionType === "SEALED";
+  const participationFeeQuote = getParticipationFeeQuote(form.maxPrice);
 
   return (
     <div className="bg-white/95 rounded-3xl border border-slate-200/80 p-5 shadow-sm space-y-4 sticky top-6">
@@ -106,9 +106,14 @@ export default function SummarySidebar({ form }) {
         </div>
 
         <div className="pt-2 border-t border-slate-800 flex justify-between text-[0.68rem] text-slate-400">
+          <span>Phí tham gia (bắt buộc):</span>
+          <span className="font-mono font-bold text-sky-300">{formatCurrency(participationFeeQuote.amount)}</span>
+        </div>
+
+        {form.isDepositRequired !== false && <div className="pt-2 border-t border-slate-800 flex justify-between text-[0.68rem] text-slate-400">
           <span>Tiền đặt cọc nhà xe (10%):</span>
           <span className="font-mono font-bold text-amber-400">{formatCurrency(form.depositAmount)}</span>
-        </div>
+        </div>}
       </div>
 
       <div className="text-[0.68rem] text-slate-400 flex items-center gap-1.5 font-medium">

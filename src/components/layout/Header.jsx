@@ -5,7 +5,6 @@ import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import Badge from "@mui/material/Badge";
 import Avatar from "@mui/material/Avatar";
 import InputBase from "@mui/material/InputBase";
 import Tooltip from "@mui/material/Tooltip";
@@ -188,21 +187,7 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
                 "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" },
               }}
             >
-              <Badge
-                badgeContent={4}
-                color="error"
-                sx={{
-                  "& .MuiBadge-badge": {
-                    fontSize: "0.62rem",
-                    height: 16,
-                    minWidth: 16,
-                    background: "linear-gradient(135deg, #F43F5E 0%, #E11D48 100%)",
-                    boxShadow: "0 2px 4px rgba(244, 63, 94, 0.3)",
-                  },
-                }}
-              >
-                <NotificationsTwoToneIcon fontSize="small" />
-              </Badge>
+              <NotificationsTwoToneIcon fontSize="small" />
             </IconButton>
           </Tooltip>
 

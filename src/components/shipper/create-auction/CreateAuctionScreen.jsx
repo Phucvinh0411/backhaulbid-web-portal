@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
-import Typography from "@mui/material/Typography";
+import Alert from "@mui/material/Alert";
 import ArrowBackIcon from "@mui/icons-material/ArrowBackOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForwardOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlined";
@@ -20,6 +20,7 @@ import AddressBookModal from "./AddressBookModal";
 import Step1GoodsInfo from "./steps/Step1GoodsInfo";
 import Step2RouteInfo from "./steps/Step2RouteInfo";
 import Step3AuctionConfig from "./steps/Step3AuctionConfig";
+import { createAuction } from "@/services/biddingApi";
 
 export default function CreateAuctionScreen() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function CreateAuctionScreen() {
   const [activeStep, setActiveStep] = useState(0);
   const [form, setForm] = useState(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   // Address book modal state
   const [addressModalOpen, setAddressModalOpen] = useState(false);
@@ -77,13 +79,69 @@ export default function CreateAuctionScreen() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsSubmitting(true);
-    setTimeout(() => {
+    setSubmitError("");
+
+    try {
+      await createAuction({
+        title: form.goodsName,
+        goodsType: form.goodsCategory,
+        auctionType: form.auctionType,
+        vehicleTypeRequired: form.requiredVehicleType,
+        origin: form.fromLocationName || form.fromAddress,
+        originLocationName: form.fromLocationName,
+        originAddress: form.fromAddress,
+        originProvince: form.fromProvince,
+        originContactName: form.fromContactName,
+        originContactPhone: form.fromContactPhone,
+        destination: form.toLocationName || form.toAddress,
+        destinationLocationName: form.toLocationName,
+        destinationAddress: form.toAddress,
+        destinationProvince: form.toProvince,
+        destinationContactName: form.toContactName,
+        destinationContactPhone: form.toContactPhone,
+        weight: Number(form.weight),
+        volume: Number(form.volume),
+        goodsValue: String(form.goodsValue),
+        requiredVehicleDims: {
+          length: Number(form.vehicleLength),
+          width: Number(form.vehicleWidth),
+          height: Number(form.vehicleHeight),
+        },
+        ...(form.requiredTemp !== ""
+          ? { requiredTemp: Number(form.requiredTemp) }
+          : {}),
+        maxPrice: String(form.maxPrice),
+        priceStep: String(form.priceStep),
+        maxBids: Number(form.maxBids),
+        images: (form.images || []).filter((image) => /^https?:\/\//.test(image)),
+        notes: form.description,
+        isDepositRequired: form.isDepositRequired !== false,
+        ...(form.isDepositRequired !== false
+          ? { depositAmount: String(form.depositAmount) }
+          : {}),
+        registrationStartTime: new Date(form.regStartTime).toISOString(),
+        registrationEndTime: new Date(form.regEndTime).toISOString(),
+        startTime: new Date(form.startTime).toISOString(),
+        endTime: new Date(form.endTime).toISOString(),
+        earliestPickup: new Date(form.earliestPickup).toISOString(),
+        latestPickup: new Date(form.latestPickup).toISOString(),
+        earliestDelivery: new Date(form.earliestDelivery).toISOString(),
+        latestDelivery: new Date(form.latestDelivery).toISOString(),
+      });
+
       setIsSubmitting(false);
-      alert("🎉 Tạo cuộc đấu giá thành công! Đơn hàng đã được đưa vào danh sách chờ mở đăng ký.");
       router.push("/shipper/bidding/sessions");
-    }, 800);
+    } catch (error) {
+      const message = error?.response?.data?.message;
+      setSubmitError(
+        Array.isArray(message)
+          ? message.join(", ")
+          : message || "Không thể tạo phiên đấu giá. Vui lòng kiểm tra lại dữ liệu.",
+      );
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -114,6 +172,12 @@ export default function CreateAuctionScreen() {
             />
           )}
           {activeStep === 2 && <Step3AuctionConfig form={form} updateForm={updateForm} />}
+
+          {submitError && (
+            <Alert severity="error" className="!mt-5 !rounded-2xl">
+              {submitError}
+            </Alert>
+          )}
 
           {/* Wizard Action Footer */}
           <div className="flex items-center justify-between pt-6 border-t border-slate-200/80 mt-6">

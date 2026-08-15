@@ -64,6 +64,16 @@ export const VEHICLE_TYPES = [
   "Xe tải siêu trường siêu trọng",
 ];
 
+export const getParticipationFeeQuote = (maxPrice) => {
+  const value = Number(maxPrice) || 0;
+
+  if (value <= 2000000) return { tier: "LEVEL_1", amount: 10000 };
+  if (value <= 5000000) return { tier: "LEVEL_2", amount: 20000 };
+  if (value <= 15000000) return { tier: "LEVEL_3", amount: 50000 };
+  if (value <= 50000000) return { tier: "LEVEL_4", amount: 100000 };
+  return { tier: "LEVEL_5", amount: 200000 };
+};
+
 export const INITIAL_FORM_STATE = {
   // Step 1: Goods Info
   goodsName: "Linh kiện điện tử (Màn hình điện thoại)",
@@ -102,13 +112,14 @@ export const INITIAL_FORM_STATE = {
   maxPrice: 12500000,
   priceStep: 100000,
   participationFee: 50000,
+  isDepositRequired: true,
   depositAmount: 1250000,
   maxBids: 5,
 
-  regStartTime: "2026-07-23T12:00",
-  regEndTime: "2026-07-23T14:00",
-  startTime: "2026-07-23T15:00",
-  endTime: "2026-07-23T16:00",
+  regStartTime: "2026-08-08T12:00",
+  regEndTime: "2026-08-08T14:00",
+  startTime: "2026-08-08T15:00",
+  endTime: "2026-08-08T16:00",
 };
 
 export const formatCurrency = (val) => {

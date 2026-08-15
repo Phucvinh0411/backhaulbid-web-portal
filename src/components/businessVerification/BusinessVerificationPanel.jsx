@@ -15,9 +15,7 @@ import WarningIcon from "@mui/icons-material/WarningAmberOutlined";
 
 import { ActionButton } from "@/components/common";
 import { axiosClient } from "@/configs/axiosClient";
-import {
-  REPRESENTATIVE_VERIFICATION_STATUS_PATH,
-} from "@/components/eKYC/representativeVerificationApi";
+import { getRepresentativeVerificationStatus } from "@/services/representativeVerificationApi";
 import {
   BUSINESS_VERIFICATION_PATH,
   BUSINESS_VERIFICATION_STATUS_PATH,
@@ -142,9 +140,8 @@ export default function BusinessVerificationPanel({
         );
       });
 
-    axiosClient
-      .get(REPRESENTATIVE_VERIFICATION_STATUS_PATH)
-      .then(({ data }) => {
+    getRepresentativeVerificationStatus()
+      .then((data) => {
         if (!active) return;
         setRepresentative({
           status: data?.status || "NOT_SUBMITTED",

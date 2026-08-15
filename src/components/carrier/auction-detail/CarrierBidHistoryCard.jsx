@@ -5,7 +5,7 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import GavelIcon from "@mui/icons-material/GavelOutlined";
 import LockIcon from "@mui/icons-material/LockOutlined";
 
-import { formatCurrency } from "./mockData";
+import { formatCurrency } from "@/utils/auctionFormatters";
 
 function HistoryRow({ entry, isSealed, index }) {
   const isWinner = index === 0; // Lowest (first after sort)

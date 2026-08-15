@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import InputAdornment from "@mui/material/InputAdornment";
@@ -18,6 +20,7 @@ import {
   AdminPrimaryButton,
   AdminSectionCard,
 } from "@/components/admin/AdminUI";
+import { getAdminSettings, saveAdminSettings } from "@/services/adminSettingsApi";
 
 function SettingRow({ label, helper, children }) {
   return (
@@ -46,18 +49,44 @@ function SettingRow({ label, helper, children }) {
 }
 
 export default function PaymentSettingsPage() {
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const data = new FormData(event.target);
-    const settings = Object.fromEntries(data.entries());
+  const [settings, setSettings] = useState({
+    commissionRate: 5,
+    minDepositShipper: "1,000,000",
+    minDepositCarrier: "500,000",
+    paymentGateway: "vnpay",
+    maxWithdrawLimit: "50,000,000",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState(null);
 
-    console.log("Payment settings saved", settings);
-    alert("Đã lưu cấu hình thanh toán thành công.");
+  useEffect(() => {
+    let active = true;
+    getAdminSettings("payment")
+      .then((response) => active && setSettings((current) => ({ ...current, ...(response.values || {}) })))
+      .catch(() => active && setFeedback({ severity: "error", message: "Không tải được cấu hình thanh toán từ API." }))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, []);
+
+  const handleSave = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const values = Object.fromEntries(new FormData(event.currentTarget).entries());
+      await saveAdminSettings("payment", values);
+      setFeedback({ severity: "success", message: "Đã lưu cấu hình thanh toán." });
+    } catch {
+      setFeedback({ severity: "error", message: "Không thể lưu cấu hình thanh toán." });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <AdminPageShell>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSave} key={loading ? "settings-loading" : "settings-loaded"}>
         <AdminPageHeader
           title="Thanh toán & ký quỹ"
           subtitle="Quản lý tỷ lệ hoa hồng nền tảng, mức ký quỹ tối thiểu và cấu hình rút nạp dòng tiền."
@@ -67,19 +96,20 @@ export default function PaymentSettingsPage() {
             { label: "Thanh toán & ký quỹ" },
           ]}
           action={
-            <AdminPrimaryButton type="submit" startIcon={<SaveIcon />}>
+            <AdminPrimaryButton type="submit" disabled={loading || saving} startIcon={<SaveIcon />}>
               Lưu thay đổi
             </AdminPrimaryButton>
           }
         />
 
+        {feedback && <Alert severity={feedback.severity} sx={{ mt: 2 }}>{feedback.message}</Alert>}
         <Grid container spacing={3} sx={{ mt: 2 }}>
           {/* Cấu hình tài chính Form */}
           <Grid item xs={12} lg={8}>
             <AdminSectionCard title="Cấu hình tài chính" subtitle="Cài đặt hoa hồng, ký quỹ toàn hệ thống">
               <Box sx={{ p: { xs: 2.5, md: 3.5 } }}>
                 <SettingRow label="Hoa hồng nền tảng" helper="Khấu trừ trực tiếp trên tổng giá trị giao dịch (%)">
-                  <TextField name="commissionRate" type="number" defaultValue={5} fullWidth size="small" />
+                  <TextField name="commissionRate" type="number" defaultValue={settings.commissionRate} fullWidth size="small" disabled={loading} />
                 </SettingRow>
                 
                 <Divider sx={{ my: 1 }} />
@@ -87,10 +117,11 @@ export default function PaymentSettingsPage() {
                 <SettingRow label="Ký quỹ tối thiểu (Chủ hàng)" helper="Hạn mức giữ tiền để đảm bảo khả năng thanh toán">
                   <TextField
                     name="minDepositShipper"
-                    defaultValue="1,000,000"
+                    defaultValue={settings.minDepositShipper}
                     fullWidth
                     size="small"
                     InputProps={{ endAdornment: <InputAdornment position="end">VND</InputAdornment> }}
+                    disabled={loading}
                   />
                 </SettingRow>
                 
@@ -99,17 +130,18 @@ export default function PaymentSettingsPage() {
                 <SettingRow label="Ký quỹ tối thiểu (Nhà xe)" helper="Đảm bảo trách nhiệm không bùng chuyến">
                   <TextField
                     name="minDepositCarrier"
-                    defaultValue="500,000"
+                    defaultValue={settings.minDepositCarrier}
                     fullWidth
                     size="small"
                     InputProps={{ endAdornment: <InputAdornment position="end">VND</InputAdornment> }}
+                    disabled={loading}
                   />
                 </SettingRow>
                 
                 <Divider sx={{ my: 1 }} />
 
                 <SettingRow label="Cổng thanh toán mặc định" helper="Phương thức nạp/rút tiền hệ thống">
-                  <TextField name="paymentGateway" defaultValue="vnpay" select fullWidth size="small">
+                  <TextField name="paymentGateway" defaultValue={settings.paymentGateway} select fullWidth size="small" disabled={loading}>
                     <MenuItem value="vnpay">Cổng thanh toán VNPay</MenuItem>
                     <MenuItem value="momo">Ví điện tử MoMo</MenuItem>
                     <MenuItem value="bank">Chuyển khoản Ngân hàng tự động</MenuItem>
@@ -121,10 +153,11 @@ export default function PaymentSettingsPage() {
                 <SettingRow label="Hạn mức rút tiền tối đa" helper="Hạn mức trong một giao dịch rút (VND)">
                   <TextField
                     name="maxWithdrawLimit"
-                    defaultValue="50,000,000"
+                    defaultValue={settings.maxWithdrawLimit}
                     fullWidth
                     size="small"
                     InputProps={{ endAdornment: <InputAdornment position="end">VND</InputAdornment> }}
+                    disabled={loading}
                   />
                 </SettingRow>
               </Box>
@@ -146,7 +179,7 @@ export default function PaymentSettingsPage() {
                       Tổng số dư ký quỹ đảm bảo
                     </Typography>
                     <Typography variant="h6" sx={{ fontWeight: 800, color: "text.primary" }}>
-                      1,420,500,000 ₫
+                      Chưa có API tổng hợp
                     </Typography>
                   </Box>
                 </Box>
@@ -161,7 +194,7 @@ export default function PaymentSettingsPage() {
                       Doanh thu hoa hồng tạm giữ
                     </Typography>
                     <Typography variant="h6" sx={{ fontWeight: 800, color: "success.main" }}>
-                      184,200,000 ₫
+                      Chưa có API tổng hợp
                     </Typography>
                   </Box>
                 </Box>

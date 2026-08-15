@@ -1,5 +1,4 @@
 import { DashboardLayout } from "@/components/layout";
-import shipperNavigation from "@/configs/shipperNavigation";
 
 export const metadata = {
   title: "Shipper | BackHaulBid",

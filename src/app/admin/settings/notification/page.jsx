@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useEffect } from "react";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Switch from "@mui/material/Switch";
 import Typography from "@mui/material/Typography";
 import SaveIcon from "@mui/icons-material/Save";
 import Grid from "@mui/material/Grid";
-import Divider from "@mui/material/Divider";
 import NotificationsActiveOutlinedIcon from "@mui/icons-material/NotificationsActiveOutlined";
-import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import SmartphoneOutlinedIcon from "@mui/icons-material/SmartphoneOutlined";
 
@@ -18,27 +18,52 @@ import {
   AdminPrimaryButton,
   AdminSectionCard,
 } from "@/components/admin/AdminUI";
+import { getAdminSettings, saveAdminSettings } from "@/services/adminSettingsApi";
 
 export default function NotificationSettingsPage() {
   const [sms, setSms] = useState(true);
   const [email, setEmail] = useState(true);
   const [push, setPush] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState(null);
 
-  const handleSubmit = (event) => {
+  useEffect(() => {
+    let active = true;
+    getAdminSettings("notification")
+      .then((response) => {
+        if (!active) return;
+        const values = response.values || {};
+        if (typeof values.smsNotifications === "boolean") setSms(values.smsNotifications);
+        if (typeof values.emailNotifications === "boolean") setEmail(values.emailNotifications);
+        if (typeof values.pushNotifications === "boolean") setPush(values.pushNotifications);
+      })
+      .catch(() => active && setFeedback({ severity: "error", message: "Không tải được cấu hình thông báo từ API." }))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, []);
+
+  const handleSave = async (event) => {
     event.preventDefault();
-    const settings = {
-      smsNotifications: sms,
-      emailNotifications: email,
-      pushNotifications: push,
-    };
-
-    console.log("Notification settings saved", settings);
-    alert("Đã lưu cấu hình thông báo thành công.");
+    setSaving(true);
+    setFeedback(null);
+    try {
+      await saveAdminSettings("notification", {
+        smsNotifications: sms,
+        emailNotifications: email,
+        pushNotifications: push,
+      });
+      setFeedback({ severity: "success", message: "Đã lưu cấu hình thông báo." });
+    } catch {
+      setFeedback({ severity: "error", message: "Không thể lưu cấu hình thông báo." });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <AdminPageShell>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSave}>
         <AdminPageHeader
           title="Cấu hình thông báo"
           subtitle="Tùy chỉnh các kênh gửi tin nhắn (SMS, Email, Web Push) tự động toàn diện trên hệ thống."
@@ -48,11 +73,13 @@ export default function NotificationSettingsPage() {
             { label: "Cấu hình thông báo" },
           ]}
           action={
-            <AdminPrimaryButton type="submit" startIcon={<SaveIcon />}>
+            <AdminPrimaryButton type="submit" disabled={loading || saving} startIcon={<SaveIcon />}>
               Lưu thay đổi
             </AdminPrimaryButton>
           }
         />
+
+        {feedback && <Alert severity={feedback.severity} sx={{ mt: 2 }}>{feedback.message}</Alert>}
 
         <Grid container spacing={3} sx={{ mt: 2 }}>
           {/* Cấu hình kênh thông báo Form */}
@@ -83,7 +110,7 @@ export default function NotificationSettingsPage() {
                       </Typography>
                     </Box>
                   </Box>
-                  <Switch checked={sms} onChange={(e) => setSms(e.target.checked)} name="smsNotifications" color="primary" />
+                  <Switch checked={sms} onChange={(e) => setSms(e.target.checked)} name="smsNotifications" color="primary" disabled={loading} />
                 </Box>
 
                 {/* Email Channel */}
@@ -109,7 +136,7 @@ export default function NotificationSettingsPage() {
                       </Typography>
                     </Box>
                   </Box>
-                  <Switch checked={email} onChange={(e) => setEmail(e.target.checked)} name="emailNotifications" color="primary" />
+                  <Switch checked={email} onChange={(e) => setEmail(e.target.checked)} name="emailNotifications" color="primary" disabled={loading} />
                 </Box>
 
                 {/* Web Push Notification */}
@@ -135,7 +162,7 @@ export default function NotificationSettingsPage() {
                       </Typography>
                     </Box>
                   </Box>
-                  <Switch checked={push} onChange={(e) => setPush(e.target.checked)} name="pushNotifications" color="primary" />
+                  <Switch checked={push} onChange={(e) => setPush(e.target.checked)} name="pushNotifications" color="primary" disabled={loading} />
                 </Box>
 
               </Box>

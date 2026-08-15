@@ -14,8 +14,7 @@ import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 import { ActionButton, AppCard, PageHeader } from "@/components/common";
 import BusinessVerificationPanel from "@/components/businessVerification/BusinessVerificationPanel";
 import EkycModal from "@/components/eKYC/EkycModal";
-import { axiosClient } from "@/configs/axiosClient";
-import { REPRESENTATIVE_VERIFICATION_STATUS_PATH } from "@/components/eKYC/representativeVerificationApi";
+import { getRepresentativeVerificationStatus } from "@/services/representativeVerificationApi";
 
 const ROLE_COPY = {
   carrier: {
@@ -93,9 +92,8 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
   useEffect(() => {
     let active = true;
 
-    axiosClient
-      .get(REPRESENTATIVE_VERIFICATION_STATUS_PATH)
-      .then(({ data }) => {
+    getRepresentativeVerificationStatus()
+      .then((data) => {
         if (!active) return;
         setEkyc({
           status:
