@@ -27,17 +27,17 @@ const SIDEBAR_WIDTH = 280;
 
 const fallbackProfiles = {
   shipper: {
-    name: "Nguyễn Minh Triết",
+    name: "Tài khoản Chủ hàng",
     email: "shipper@backhaulbid.vn",
     roleName: "Chủ hàng",
-    avatarLetter: "T",
+    avatarLetter: "C",
     settingsPath: "/shipper/settings",
   },
   carrier: {
-    name: "Trần Văn Bình",
+    name: "Tài khoản Nhà xe",
     email: "carrier@backhaulbid.vn",
     roleName: "Nhà xe",
-    avatarLetter: "B",
+    avatarLetter: "N",
     settingsPath: "/carrier/settings",
   },
   admin: {

@@ -25,14 +25,14 @@ const defaultUser = {
 
 const fallbackProfiles = {
   shipper: {
-    name: "Nguyễn Minh Triết",
+    name: "Tài khoản Chủ hàng",
     roleName: "Chủ hàng",
-    avatarLetter: "T",
+    avatarLetter: "C",
   },
   carrier: {
-    name: "Trần Văn Bình",
+    name: "Tài khoản Nhà xe",
     roleName: "Nhà xe",
-    avatarLetter: "B",
+    avatarLetter: "N",
   },
   admin: {
     name: "Quản trị viên",
