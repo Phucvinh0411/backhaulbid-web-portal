@@ -45,121 +45,86 @@ import ClearIcon from "@mui/icons-material/ClearOutlined";
 import PageHeader from "@/components/common/PageHeader";
 
 // Mock Data matching existing shipments
-const INITIAL_SHIPMENTS = [
-  {
-    id: "LH-2026-9041",
-    goodsType: "Linh kiện điện tử (Màn hình điện thoại)",
-    weight: "5.2 tấn",
-    volume: "28 m³",
-    from: { province: "Thái Nguyên", detail: "Kho Samsung Yên Bình, Phổ Yên" },
-    to: { province: "Hải Phòng", detail: "Cảng Đình Vũ, Quận Hải An" },
-    maxPrice: 12500000,
-    currentLowestBid: 11200000,
-    bidCount: 4,
-    dateCreated: "2026-07-02",
-    status: "active_bids", // đang đấu giá
-  },
-  {
-    id: "LH-2026-9042",
-    goodsType: "Thực phẩm đông lạnh (Thủy sản)",
-    weight: "8.0 tấn",
-    volume: "45 m³",
-    from: { province: "Cà Mau", detail: "Cụm CN Sông Đốc, Huyện Trần Văn Thời" },
-    to: { province: "TP. Hồ Chí Minh", detail: "Kho lạnh Transimex, Khu Công Nghệ Cao Quận 9" },
-    maxPrice: 28000000,
-    currentLowestBid: 26500000,
-    bidCount: 3,
-    dateCreated: "2026-07-02",
-    status: "active_bids",
-  },
-  {
-    id: "LH-2026-9043",
-    goodsType: "Nông sản khô (Hạt điều)",
-    weight: "15.0 tấn",
-    volume: "60 m³",
-    from: { province: "Bình Phước", detail: "Kho xuất khẩu Đồng Phú" },
-    to: { province: "Bà Rịa - Vũng Tàu", detail: "Cảng Cái Mép - Thị Vải, Phú Mỹ" },
-    maxPrice: 18500000,
+
+import { auctionService } from "@/services/auctionService";
+import CircularProgress from "@mui/material/CircularProgress";
+
+const mapStatusToFrontend = (backendStatus) => {
+  switch (backendStatus) {
+    case "PENDING":
+    case "UPCOMING":
+      return "pending_bids";
+    case "ACTIVE":
+    case "IN_PROGRESS":
+    case "OPEN":
+      return "active_bids";
+    case "COMPLETED":
+    case "ENDED":
+      return "awarded";
+    case "CANCELLED":
+      return "cancelled";
+    default:
+      return "pending_bids";
+  }
+};
+
+const parseDecimal = (val) => {
+  if (!val) return 0;
+  if (typeof val === 'object' && val.$numberDecimal) return parseFloat(val.$numberDecimal);
+  return parseFloat(val);
+};
+
+const mapBackendToShipment = (auction) => {
+  const goodsType = auction.goodsType || auction.title || "Không xác định";
+  const weight = auction.weight || 0;
+  const volume = auction.volume || 0;
+  
+  const fromProvince = auction.pickupLocation?.province || auction.origin || "Không rõ";
+  const fromDetail = auction.pickupLocation?.address || "Không rõ";
+  
+  const toProvince = auction.deliveryLocation?.province || auction.destination || "Không rõ";
+  const toDetail = auction.deliveryLocation?.address || "Không rõ";
+  
+  const maxPrice = parseDecimal(auction.maxPrice);
+
+  return {
+    id: auction.id || auction._id || "N/A",
+    goodsType,
+    weight: `${weight} tấn`,
+    volume: `${volume} m³`,
+    from: { province: fromProvince, detail: fromDetail },
+    to: { province: toProvince, detail: toDetail },
+    maxPrice,
     currentLowestBid: 0,
     bidCount: 0,
-    dateCreated: "2026-07-03",
-    status: "pending_bids", // chờ đấu giá
-  },
-  {
-    id: "LH-2026-9044",
-    goodsType: "Vật liệu xây dựng (Sắt thép)",
-    weight: "22.5 tấn",
-    volume: "18 m³",
-    from: { province: "Quảng Ngãi", detail: "KCN Dung Quất, Bình Sơn" },
-    to: { province: "Đà Nẵng", detail: "Tổng kho Hòa Khánh, Liên Chiểu" },
-    maxPrice: 16000000,
-    currentLowestBid: 14800000,
-    bidCount: 6,
-    dateCreated: "2026-07-01",
-    status: "awarded", // đã chốt thầu
-    carrier: "Công ty Vận tải Phước An",
-    finalPrice: 14800000,
-  },
-  {
-    id: "LH-2026-9045",
-    goodsType: "Hàng tiêu dùng nhanh (FMCG)",
-    weight: "3.5 tấn",
-    volume: "22 m³",
-    from: { province: "Bình Dương", detail: "KCN VSIP I, Thuận An" },
-    to: { province: "Cần Thơ", detail: "Trung tâm phân phối Mega Market, Cái Răng" },
-    maxPrice: 9500000,
-    currentLowestBid: 8900000,
-    bidCount: 5,
-    dateCreated: "2026-06-30",
-    status: "shipping", // đang vận chuyển
-    carrier: "Hợp tác xã Vận tải Hữu Nghị",
-    finalPrice: 8900000,
-  },
-  {
-    id: "LH-2026-9046",
-    goodsType: "Trái cây xuất khẩu (Thanh long)",
-    weight: "10.0 tấn",
-    volume: "40 m³",
-    from: { province: "Bình Thuận", detail: "Vựa thu mua Hàm Thuận Nam" },
-    to: { province: "Lạng Sơn", detail: "Bãi kiểm hóa Cửa khẩu Tân Thanh" },
-    maxPrice: 42000000,
-    currentLowestBid: 39500000,
-    bidCount: 9,
-    dateCreated: "2026-06-24",
-    status: "completed", // hoàn thành
-    carrier: "Logistics Bắc Nam T&T",
-    finalPrice: 39500000,
-  },
-  {
-    id: "LH-2026-9047",
-    goodsType: "Hóa chất (Sơn công nghiệp)",
-    weight: "6.0 tấn",
-    volume: "24 m³",
-    from: { province: "Đồng Nai", detail: "KCN Amata, Biên Hòa" },
-    to: { province: "Khánh Hòa", detail: "Kho Sơn Đông Á, KCN Suối Dầu" },
-    maxPrice: 15500000,
-    currentLowestBid: 14700000,
-    bidCount: 2,
-    dateCreated: "2026-06-27",
-    status: "cancelled", // đã hủy
-    cancelReason: "Thay đổi lịch sản xuất tại nhà máy",
-  },
-  {
-    id: "LH-2026-9048",
-    goodsType: "Bao bì carton",
-    weight: "2.0 tấn",
-    volume: "35 m³",
-    from: { province: "Hưng Yên", detail: "KCN Phố Nối A" },
-    to: { province: "Bắc Giang", detail: "Nhà máy Foxconn Quang Châu" },
-    maxPrice: 6500000,
-    currentLowestBid: 5800000,
-    bidCount: 4,
-    dateCreated: "2026-07-02",
-    status: "active_bids",
-  }
-];
+    dateCreated: auction.createdAt || new Date().toISOString(),
+    status: mapStatusToFrontend(auction.status),
+    originalData: auction,
+    finalPrice: 0,
+    carrier: null,
+  };
+};
 
 export default function BiddingHistoryListScreen() {
+  const [shipmentsData, setShipmentsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAuctions = async () => {
+      try {
+        setLoading(true);
+        const res = await auctionService.getShipperAuctions();
+        const auctionsData = res.data?.data || res.data || [];
+        setShipmentsData(auctionsData.map(mapBackendToShipment));
+      } catch (error) {
+        console.error("Error fetching auctions:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAuctions();
+  }, []);
+
   const router = useRouter();
 
   // Search & Filter State
@@ -222,21 +187,21 @@ export default function BiddingHistoryListScreen() {
 
   // Extract provinces lists dynamically
   const originProvinces = useMemo(() => {
-    return Array.from(new Set(INITIAL_SHIPMENTS.map((s) => s.from.province))).sort();
-  }, []);
+    return Array.from(new Set(shipmentsData.map((s) => s.from.province))).sort();
+  }, [shipmentsData]);
 
   const destProvinces = useMemo(() => {
-    return Array.from(new Set(INITIAL_SHIPMENTS.map((s) => s.to.province))).sort();
-  }, []);
+    return Array.from(new Set(shipmentsData.map((s) => s.to.province))).sort();
+  }, [shipmentsData]);
 
   // Compute live KPI analytics
   const kpis = useMemo(() => {
-    const total = INITIAL_SHIPMENTS.length;
-    const active = INITIAL_SHIPMENTS.filter((s) => s.status === "active_bids").length;
-    const completed = INITIAL_SHIPMENTS.filter((s) => s.status === "completed").length;
+    const total = shipmentsData.length;
+    const active = shipmentsData.filter((s) => s.status === "active_bids").length;
+    const completed = shipmentsData.filter((s) => s.status === "completed").length;
     
     // Total savings computed
-    const totalSavings = INITIAL_SHIPMENTS.reduce((sum, s) => {
+    const totalSavings = shipmentsData.reduce((sum, s) => {
       if (s.status === "cancelled") return sum;
       const finalPrice = s.finalPrice || s.currentLowestBid || 0;
       if (finalPrice > 0) {
@@ -246,7 +211,7 @@ export default function BiddingHistoryListScreen() {
     }, 0);
 
     return { total, active, completed, totalSavings };
-  }, []);
+  }, [shipmentsData]);
 
   // Status options helper
   const getStatusDetails = (status) => {
@@ -270,7 +235,7 @@ export default function BiddingHistoryListScreen() {
 
   // Filter & Sort Logic
   const filteredAndSortedShipments = useMemo(() => {
-    let result = [...INITIAL_SHIPMENTS];
+    let result = [...shipmentsData];
 
     // 1. Text Search Filter (Id, goods type, province name, detail)
     if (searchTerm.trim() !== "") {
@@ -620,7 +585,14 @@ export default function BiddingHistoryListScreen() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedShipments.length === 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={columnsList.length} align="center" className="!py-16 !border-slate-100">
+                    <CircularProgress size={40} sx={{ color: "#1B4965" }} />
+                  </TableCell>
+                </TableRow>
+              ) : 
+              paginatedShipments.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={columnsList.length} align="center" className="!py-16 !border-slate-100">
                     <Typography variant="body2" className="text-slate-400 font-medium">

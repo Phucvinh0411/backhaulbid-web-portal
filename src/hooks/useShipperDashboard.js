@@ -48,11 +48,11 @@ export const useShipperDashboard = (timeFilter) => {
 
         // Ending Auctions (Top 3 open auctions sorted by some criteria)
         const endingAuctions = openAuctions.slice(0, 3).map((a) => ({
-          id: a.id,
+          id: a.id || a._id,
           goodsType: a.goodsType || a.title || "Hàng hóa",
-          route: `${a.originLocationName || a.origin || "?"} → ${a.destinationLocationName || a.destination || "?"}`,
-          maxPrice: a.maxPrice,
-          currentLowest: a.currentLowestBid || a.maxPrice,
+          route: `${a.pickupLocation?.province || a.origin || "?"} → ${a.deliveryLocation?.province || a.destination || "?"}`,
+          maxPrice: a.maxPrice?.$numberDecimal || a.maxPrice || 0,
+          currentLowest: a.currentLowestBid?.$numberDecimal || a.currentLowestBid || a.maxPrice?.$numberDecimal || a.maxPrice || 0,
           bidCount: a.totalBids || 0,
           timeLeft: "Đang mở", // Would calculate from a.endTime if available
         }));

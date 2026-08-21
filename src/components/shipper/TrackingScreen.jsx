@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { getAuction } from "@/services/biddingApi";
+import CircularProgress from "@mui/material/CircularProgress";
 import dynamic from "next/dynamic";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -57,23 +60,6 @@ const ROUTE_POINTS = [
 const CURRENT_POS = [10.2458, 105.9583]; // Vĩnh Long
 
 // Mock Driver & Vehicle details
-const SHIPMENT_TRACKING_INFO = {
-  id: "LH-2026-9045",
-  goodsType: "Hàng tiêu dùng nhanh (FMCG)",
-  weight: "3.5 tấn",
-  carrier: "Hợp tác xã Vận tải Hữu Nghị",
-  driverName: "Trần Văn Bình",
-  driverPhone: "0918.222.333",
-  vehiclePlate: "51C-777.45",
-  vehicleType: "Xe tải thùng kín 5 tấn",
-  from: "KCN VSIP I, Thuận An, Bình Dương",
-  to: "Mega Market Cái Răng, Cần Thơ",
-  currentGps: "10.2458° N, 105.9583° E",
-  currentRoad: "Quốc lộ 1A, Đoạn qua Thành phố Vĩnh Long, Tỉnh Vĩnh Long",
-  speed: "54 km/h"
-};
-
-// Shipping Timeline Stages
 const TIMELINE_STAGES = [
   {
     label: "Đã đến điểm lấy hàng",
@@ -98,6 +84,44 @@ const TIMELINE_STAGES = [
 ];
 
 export default function TrackingScreen() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id");
+  const [trackingInfo, setTrackingInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrackingInfo = async () => {
+      if (!id) return;
+      try {
+        setLoading(true);
+        const res = await getAuction(id);
+        const data = res.data?.data || res.data;
+        if (data) {
+          setTrackingInfo({
+            id: data.id || data._id || id,
+            goodsType: data.goodsType || "Hàng hóa",
+            weight: data.weight ? `${data.weight} tấn` : "N/A",
+            carrier: data.winningBidId ? "Đơn vị vận chuyển (Đã chốt)" : "Chưa xác định",
+            driverName: "Chưa cập nhật",
+            driverPhone: "Chưa cập nhật",
+            vehiclePlate: "Chưa cập nhật",
+            vehicleType: data.vehicleTypeRequired || "N/A",
+            from: data.pickupLocation?.address || "N/A",
+            to: data.deliveryLocation?.address || "N/A",
+            currentGps: "Đang chờ chuyến",
+            currentRoad: "Chưa khởi hành",
+            speed: "0 km/h"
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching tracking:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTrackingInfo();
+  }, [id]);
+
   const [activeStep, setActiveStep] = useState(2); // Start at "Đang di chuyển"
   const [isCompleted, setIsCompleted] = useState(false);
   const [openEmergencyDialog, setOpenEmergencyDialog] = useState(false);
@@ -143,7 +167,10 @@ export default function TrackingScreen() {
     setIsReviewed(true);
   };
 
-  return (
+  
+  if (loading) return <Box className="w-full h-screen flex justify-center items-center"><CircularProgress /></Box>;
+  if (!trackingInfo) return <Box className="w-full p-8 text-center text-slate-500">Không tìm thấy thông tin chuyến đi</Box>;
+return (
     <Box className="w-full min-h-screen">
       {/* Page Header */}
       <PageHeader
@@ -189,7 +216,7 @@ export default function TrackingScreen() {
                 <div className="space-y-1">
                   <Typography className="!text-[0.65rem] text-slate-400 font-bold uppercase tracking-wider">Hành trình chi tiết</Typography>
                   <Typography variant="body2" className="!font-bold text-slate-700 leading-tight">
-                    Từ: {SHIPMENT_TRACKING_INFO.from} → Đến: {SHIPMENT_TRACKING_INFO.to}
+                    Từ: {(trackingInfo || {}).from} → Đến: {(trackingInfo || {}).to}
                   </Typography>
                 </div>
               </div>
@@ -354,32 +381,32 @@ export default function TrackingScreen() {
               <div className="space-y-3.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-medium">Đơn vị chủ quản:</span>
-                  <strong className="text-slate-700">{SHIPMENT_TRACKING_INFO.carrier}</strong>
+                  <strong className="text-slate-700">{(trackingInfo || {}).carrier}</strong>
                 </div>
 
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-medium">Tài xế điều khiển:</span>
-                  <strong className="text-slate-700">{SHIPMENT_TRACKING_INFO.driverName}</strong>
+                  <strong className="text-slate-700">{(trackingInfo || {}).driverName}</strong>
                 </div>
 
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-medium">Số điện thoại liên hệ:</span>
                   <div className="flex items-center gap-1">
                     <PhoneIcon className="text-slate-400 !text-[0.9rem]" />
-                    <strong className="text-[#1B4965] font-mono">{SHIPMENT_TRACKING_INFO.driverPhone}</strong>
+                    <strong className="text-[#1B4965] font-mono">{(trackingInfo || {}).driverPhone}</strong>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-medium">Biển kiểm soát:</span>
                   <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-slate-700 font-mono font-bold">
-                    {SHIPMENT_TRACKING_INFO.vehiclePlate}
+                    {(trackingInfo || {}).vehiclePlate}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-medium">Dòng xe:</span>
-                  <strong className="text-slate-600">{SHIPMENT_TRACKING_INFO.vehicleType}</strong>
+                  <strong className="text-slate-600">{(trackingInfo || {}).vehicleType}</strong>
                 </div>
               </div>
             </CardContent>

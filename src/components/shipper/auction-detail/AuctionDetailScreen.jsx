@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { getAuction, listBids } from "@/services/biddingApi";
+import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import PageHeader from "@/components/common/PageHeader";
@@ -21,10 +23,96 @@ import CarrierProfileModal from "./CarrierProfileModal";
 
 export default function AuctionDetailScreen({ id }) {
   const router = useRouter();
-  const rawShipment = AUCTION_SHIPMENTS_MAP[id] || AUCTION_SHIPMENTS_MAP["LH-2026-9041"];
-  const shipment = enrichShipmentDetails(rawShipment);
 
+  const [shipment, setShipment] = useState(null);
   const [bids, setBids] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!id) return;
+      try {
+        setLoading(true);
+        const [auctionRes, bidsRes] = await Promise.all([
+          getAuction(id),
+          listBids(id, { page: 1, limit: 100 })
+        ]);
+        
+        const data = auctionRes.data?.data || auctionRes.data || {};
+        
+        // Map backend data to frontend expected format
+        const mappedShipment = {
+          id: data.id || data._id || id,
+          status: data.status,
+          auctionType: data.auctionType || "PUBLIC",
+          goodsType: data.goodsType || data.title || "Hàng hóa",
+          weight: data.weight ? `${data.weight} tấn` : "N/A",
+          volume: data.volume ? `${data.volume} m³` : "N/A",
+          maxPrice: data.maxPrice?.$numberDecimal || data.maxPrice || 0,
+          endTime: data.endTime,
+          startTime: data.startTime,
+          regStartTime: data.registrationStartTime,
+          regEndTime: data.registrationEndTime,
+          from: {
+            name: data.pickupLocation?.locationName || "Không rõ",
+            address: data.pickupLocation?.address || "Không rõ",
+          },
+          to: {
+            name: data.deliveryLocation?.locationName || "Không rõ",
+            address: data.deliveryLocation?.address || "Không rõ",
+          },
+          description: data.notes || "Không có ghi chú",
+          auctionCreator: "Chủ hàng",
+          priceStep: data.priceStep?.$numberDecimal || data.priceStep || 100000,
+          maxBids: data.maxBids || 5,
+          participationFee: data.participationFeeAmount?.$numberDecimal || 0,
+          depositAmount: data.depositAmount?.$numberDecimal || 0,
+          requiredVehicleType: data.vehicleTypeRequired || "N/A",
+          requiredVehicleDims: data.vehicleSpecs || {},
+          earliestPickup: data.pickupLocation?.earliestTime,
+          latestPickup: data.pickupLocation?.latestTime,
+          earliestDelivery: data.deliveryLocation?.earliestTime,
+          latestDelivery: data.deliveryLocation?.latestTime,
+          goodsCategory: data.goodsType,
+          requiredTemp: data.requiredTemp,
+          goodsValue: data.goodsValue?.$numberDecimal || 0,
+          goodsNotes: data.notes,
+        };
+        
+        setShipment(mappedShipment);
+        
+        const bidsData = bidsRes.data?.data || bidsRes.data || [];
+        setBids(bidsData.map(b => ({
+          id: b.id || b._id,
+          carrierName: b.carrierName || "Nhà xe",
+          carrierCode: b.carrierId,
+          bidAmount: b.bidAmount?.$numberDecimal || b.bidAmount,
+          time: new Date(b.createdAt).toLocaleString(),
+          isLowest: false, // We'll compute this if needed
+          originalBid: b
+        })));
+        
+      } catch (error) {
+        console.error("Error fetching auction details:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <Box className="w-full min-h-screen flex justify-center items-center">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!shipment) {
+    return <Box className="w-full p-8 text-center">Không tìm thấy thông tin phiên đấu giá.</Box>;
+  }
+
   
   // Dynamically calculate countdown based on shipment.endTime
   const getInitialCountdown = () => {
@@ -46,11 +134,7 @@ export default function AuctionDetailScreen({ id }) {
   const [openFullBidsModal, setOpenFullBidsModal] = useState(false);
   const [selectedBidForPanel, setSelectedBidForPanel] = useState(null);
 
-  useEffect(() => {
-    if (shipment) {
-      setBids(shipment.bids || []);
-    }
-  }, [id]);
+
 
   // Live Timer Countdown Effect
   useEffect(() => {
