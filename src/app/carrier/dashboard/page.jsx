@@ -33,6 +33,7 @@ import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import Link from "next/link";
 import { PageHeader, StatCard } from "@/components/common";
+import EmptyRouteDialog from "@/components/carrier/EmptyRouteDialog";
 import AppCard from "@/components/common/AppCard";
 import { getMyVehicles } from "@/services/fleetApi";
 import { contractApi } from "@/services/contractApi";
@@ -167,12 +168,18 @@ export default function CarrierDashboard() {
 
   useEffect(() => {
     let active = true;
+
+    const safeFetch = (promise, fallback = []) => promise.catch((err) => {
+      console.warn("API fetch warning:", err);
+      return fallback;
+    });
+
     Promise.all([
-      getMyVehicles(),
-      contractApi.listTrips(),
-      listAuctions({ status: "OPEN", page: 1, pageSize: 100 }),
-      listAuctions({ status: "PENDING", page: 1, pageSize: 100 }),
-      listMyRegistrations({ page: 1, pageSize: 100 }),
+      safeFetch(getMyVehicles()),
+      safeFetch(contractApi.listTrips()),
+      safeFetch(listAuctions({ status: "OPEN", page: 1, pageSize: 100 })),
+      safeFetch(listAuctions({ status: "PENDING", page: 1, pageSize: 100 })),
+      safeFetch(listMyRegistrations({ page: 1, pageSize: 100 })),
     ])
       .then(([vehicles, trips, openAuctions, pendingAuctions, registrations]) => {
         if (!active) return;
@@ -182,14 +189,15 @@ export default function CarrierDashboard() {
         ].filter((auction, index, items) => items.findIndex((candidate) => candidate.id === auction.id) === index);
         setDashboard({
           vehicles: vehicles || [],
-          trips: trips || [],
+          trips: unwrapListData(trips),
           auctions: auctionItems.map(mapAuction),
           registrations: unwrapListData(registrations),
           wallet: null,
         });
       })
       .catch((requestError) => {
-        if (active) setError(requestError?.response?.data?.message || "Không thể tải dữ liệu trung tâm điều hành.");
+        if (active) setError("Không thể tải dữ liệu trung tâm điều hành.");
+        console.error(requestError);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -211,6 +219,8 @@ export default function CarrierDashboard() {
   const totalPages = Math.max(1, Math.ceil(dashboard.auctions.length / itemsPerPage));
   const currentAuctions = dashboard.auctions.slice((auctionPage - 1) * itemsPerPage, auctionPage * itemsPerPage);
 
+  const [emptyRouteOpen, setEmptyRouteOpen] = useState(false);
+
   const handleTimeChange = (event, newTime) => {
     if (newTime !== null) setTimeFilter(newTime);
   };
@@ -225,7 +235,25 @@ export default function CarrierDashboard() {
 
   return (
     <Box className="animate-fade-in-up pb-12 w-full mt-2 flex flex-col gap-6">
-      <PageHeader title="Trung tâm điều hành" subtitle="Tổng quan hoạt động kinh doanh và vận tải" />
+      <PageHeader 
+        title="Trung tâm điều hành" 
+        subtitle="Tổng quan hoạt động kinh doanh và vận tải" 
+        action={
+          <Button 
+            variant="contained" 
+            startIcon={<LocalShippingIcon />}
+            onClick={() => setEmptyRouteOpen(true)}
+            sx={{ bgcolor: "#1B4965", "&:hover": { bgcolor: "#0a1929" }, borderRadius: "8px" }}
+          >
+            Khai báo xe rỗng
+          </Button>
+        }
+      />
+      <EmptyRouteDialog 
+        open={emptyRouteOpen} 
+        onClose={() => setEmptyRouteOpen(false)} 
+        vehicles={dashboard.vehicles} 
+      />
       {error && <Alert severity="error" className="!rounded-xl">{error}</Alert>}
 
       <Grid container spacing={3}>

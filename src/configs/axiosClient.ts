@@ -37,7 +37,7 @@ axiosClient.interceptors.response.use(
         }
       } catch (refreshError) {
         // Nếu API refresh lỗi (hết hạn refreshToken) -> Chuyển về trang đăng nhập
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
            window.location.href = '/login';
         }
         return Promise.reject(refreshError);

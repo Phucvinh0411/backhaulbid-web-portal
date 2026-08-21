@@ -1,10 +1,10 @@
 import { apiService } from "./apiService";
 
 export const contractApi = {
-  listMine: (params) => apiService.get("/api/v1/contracts/mine", params),
+  listMine: (params) => apiService.get("/api/v1/contracts/mine", params).catch(() => []),
   get: (contractId) => apiService.get(`/api/v1/contracts/${contractId}`),
   sign: (contractId) => apiService.patch(`/api/v1/contracts/${contractId}/sign`),
-  listTrips: (params) => apiService.get("/api/v1/trips/mine", params),
+  listTrips: (params) => apiService.get("/api/v1/trips/mine", params).catch(() => []),
   getTrip: (tripId) => apiService.get(`/api/v1/trips/${tripId}`),
   updateTripStatus: (tripId, payload) =>
     apiService.patch(`/api/v1/trips/${tripId}/status`, payload),

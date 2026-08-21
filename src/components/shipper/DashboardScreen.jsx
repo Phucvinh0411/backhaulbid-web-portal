@@ -15,6 +15,8 @@ import {
   Tooltip as MuiTooltip,
   ToggleButton,
   ToggleButtonGroup,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import {
   AreaChart,
@@ -37,82 +39,50 @@ import RouteIcon from "@mui/icons-material/Route";
 
 import { PageHeader, StatCard } from "@/components/common";
 import AppCard from "@/components/common/AppCard";
-
-// Mock Data for Shipper Statistics & Charts
-const spendData = [
-  { name: "T1", spend: 120000000, savings: 15000000 },
-  { name: "T2", spend: 98000000, savings: 12000000 },
-  { name: "T3", spend: 145000000, savings: 22000000 },
-  { name: "T4", spend: 110000000, savings: 18000000 },
-  { name: "T5", spend: 165000000, savings: 28000000 },
-  { name: "T6", spend: 130000000, savings: 25000000 },
-  { name: "T7", spend: 142500000, savings: 24500000 }, // current
-];
-
-const activeShipments = [
-  {
-    id: "LH-2026-9045",
-    goodsType: "Hàng FMCG",
-    route: "Bình Dương → Cần Thơ",
-    driverName: "Trần Văn Bình",
-    driverPlate: "51C-777.45",
-    progress: 75,
-    status: "Đang di chuyển",
-  },
-  {
-    id: "LH-2026-9044",
-    goodsType: "Vật liệu xây dựng",
-    route: "Quảng Ngãi → Đà Nẵng",
-    driverName: "Nguyễn Văn Hùng",
-    driverPlate: "43C-112.89",
-    progress: 35,
-    status: "Đã lấy hàng",
-  },
-];
-
-const endingAuctions = [
-  {
-    id: "LH-2026-9041",
-    goodsType: "Linh kiện điện tử",
-    route: "Thái Nguyên → Hải Phòng",
-    maxPrice: "12,500,000đ",
-    currentLowest: "11,200,000đ",
-    bidCount: 4,
-    timeLeft: "2 giờ",
-  },
-  {
-    id: "LH-2026-9042",
-    goodsType: "Thực phẩm đông lạnh",
-    route: "Cà Mau → TP. Hồ Chí Minh",
-    maxPrice: "28,000,000đ",
-    currentLowest: "26,500,000đ",
-    bidCount: 3,
-    timeLeft: "5 giờ",
-  },
-  {
-    id: "LH-2026-9048",
-    goodsType: "Bao bì carton",
-    route: "Hưng Yên → Bắc Giang",
-    maxPrice: "6,500,000đ",
-    currentLowest: "5,800,000đ",
-    bidCount: 4,
-    timeLeft: "8 giờ",
-  },
-];
+import { useShipperDashboard } from "@/hooks/useShipperDashboard";
 
 const formatCurrency = (value) => {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
 };
 
+const formatShortCurrency = (value) => {
+  if (value >= 1_000_000_000) {
+    return `${(value / 1_000_000_000).toFixed(1)}T ₫`;
+  } else if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(1)}Tr ₫`;
+  } else if (value >= 1_000) {
+    return `${(value / 1_000).toFixed(1)}K ₫`;
+  }
+  return formatCurrency(value);
+};
+
 export default function DashboardScreen() {
   const router = useRouter();
   const [timeFilter, setTimeFilter] = useState("month");
+  
+  const { data, loading, error } = useShipperDashboard(timeFilter);
 
   const handleTimeChange = (event, newTime) => {
     if (newTime !== null) {
       setTimeFilter(newTime);
     }
   };
+
+  if (loading) {
+    return (
+      <Box className="flex h-96 w-full items-center justify-center">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box className="p-4">
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box className="animate-fade-in-up pb-12 w-full mt-2 flex flex-col gap-6">
@@ -144,7 +114,7 @@ export default function DashboardScreen() {
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
               title="Đang đấu giá"
-              value="5 lô hàng"
+              value={`${data.activeAuctionsCount} lô hàng`}
               subtitle="Phiên đấu thầu mở"
               icon={GavelIcon}
               color="#1B4965"
@@ -154,7 +124,7 @@ export default function DashboardScreen() {
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
               title="Đang vận chuyển"
-              value="12 đơn hàng"
+              value={`${data.inTransitCount} đơn hàng`}
               subtitle="Đang di chuyển thực tế"
               icon={LocalShippingIcon}
               color="#10b981"
@@ -164,8 +134,8 @@ export default function DashboardScreen() {
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
               title="Chi tiêu tháng này"
-              value="142.5Tr ₫"
-              subtitle="-8.2% so với tháng trước"
+              value={formatShortCurrency(data.monthlySpend)}
+              subtitle="So với tháng trước"
               icon={AccountBalanceWalletIcon}
               color="#3b82f6"
               tooltipInfo="Tổng cước phí vận chuyển đã thanh toán & dự kiến chi trong tháng"
@@ -174,7 +144,7 @@ export default function DashboardScreen() {
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
               title="Tiết kiệm dự kiến"
-              value="24.5Tr ₫"
+              value={formatShortCurrency(data.estimatedSavings)}
               subtitle="Nhờ đấu giá ngược"
               icon={AssignmentTurnedInIcon}
               color="#f59e0b"
@@ -226,7 +196,7 @@ export default function DashboardScreen() {
                   </Box>
                   <Box className="h-[280px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={spendData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                      <AreaChart data={data.spendData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorSpend" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#1B4965" stopOpacity={0.3} />
@@ -306,9 +276,14 @@ export default function DashboardScreen() {
                     </Button>
                   </Box>
                   <Box className="flex flex-col gap-3">
-                    {activeShipments.map((shipment) => (
-                      <Box
-                        key={shipment.id}
+                    {data.activeShipments.length === 0 ? (
+                      <Typography variant="body2" className="text-slate-500 italic py-4 text-center">
+                        Không có lô hàng nào đang vận chuyển.
+                      </Typography>
+                    ) : (
+                      data.activeShipments.map((shipment) => (
+                        <Box
+                          key={shipment.id}
                         className="p-4 rounded-xl border border-slate-100 bg-white/60 hover:bg-white transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_20px_rgba(27,73,101,0.06)]"
                       >
                         <Box className="flex items-center gap-4">
@@ -344,7 +319,7 @@ export default function DashboardScreen() {
                           <MuiTooltip title="Theo dõi chi tiết">
                             <IconButton
                               component={Link}
-                              href="/shipper/bidding/sessions"
+                              href={`/shipper/fleet/routes?tripId=${shipment.id}`}
                               size="small"
                               className="bg-white text-[#1B4965] border border-slate-200 shadow-sm hover:bg-slate-50"
                             >
@@ -353,7 +328,7 @@ export default function DashboardScreen() {
                           </MuiTooltip>
                         </Box>
                       </Box>
-                    ))}
+                    )))}
                   </Box>
                 </CardContent>
               </AppCard>
@@ -374,9 +349,14 @@ export default function DashboardScreen() {
                     <Chip label="Đang Đấu" size="small" color="primary" sx={{ fontWeight: "bold" }} />
                   </Box>
                   <Box className="flex flex-col gap-4">
-                    {endingAuctions.map((auction) => (
-                      <Box
-                        key={auction.id}
+                    {data.endingAuctions.length === 0 ? (
+                      <Typography variant="body2" className="text-slate-500 italic py-4 text-center">
+                        Không có phiên đấu giá nào đang diễn ra.
+                      </Typography>
+                    ) : (
+                      data.endingAuctions.map((auction) => (
+                        <Box
+                          key={auction.id}
                         className="p-4 rounded-xl border border-slate-200 bg-white/80 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden"
                       >
                         <Box className="absolute -right-6 -top-6 w-16 h-16 bg-gradient-to-br from-transparent via-[#62b6cb]/10 to-[#62b6cb]/30 rounded-full group-hover:scale-[2] transition-transform duration-500"></Box>
@@ -405,10 +385,10 @@ export default function DashboardScreen() {
                         <Box className="flex justify-between items-center relative z-10">
                           <Box>
                             <Typography variant="caption" className="text-slate-400 block uppercase tracking-widest font-bold text-[0.6rem]">
-                              Giá thấp nhất
+                              Giá thấp nhất / Khởi điểm
                             </Typography>
                             <Typography variant="body2" className="font-extrabold text-emerald-600">
-                              {auction.currentLowest}
+                              {formatCurrency(auction.currentLowest)}
                             </Typography>
                           </Box>
                           <Button
@@ -430,7 +410,7 @@ export default function DashboardScreen() {
                           </Button>
                         </Box>
                       </Box>
-                    ))}
+                    )))}
                   </Box>
                 </CardContent>
               </AppCard>

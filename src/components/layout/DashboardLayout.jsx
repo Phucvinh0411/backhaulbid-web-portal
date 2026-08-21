@@ -21,7 +21,13 @@ export default function DashboardLayout({ children, role, userInfo }) {
 
   useEffect(() => {
     fetch("/api/auth/me")
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status === 401) {
+          window.location.href = "/login";
+          throw new Error("Unauthorized");
+        }
+        return res.json();
+      })
       .then((resData) => {
         if (resData.success && resData.data) {
           const u = resData.data;

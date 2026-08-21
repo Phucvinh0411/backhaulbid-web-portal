@@ -13,7 +13,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
 import { createAuction } from "@/services/biddingApi";
-import { INITIAL_FORM_STATE } from "./mockData";
+import { INITIAL_FORM_STATE, getParticipationFeeQuote } from "./mockData";
 import StepNavigationHeader from "./StepNavigationHeader";
 import SummarySidebar from "./SummarySidebar";
 import AddressBookModal from "./AddressBookModal";
@@ -63,6 +63,7 @@ const mapFormToPayload = (form) => ({
   auctionType: form.auctionType || "PUBLIC",
   maxPrice: Number(form.maxPrice).toString(),
   priceStep: Number(form.priceStep).toString(),
+  participationFeeTier: getParticipationFeeQuote(form.maxPrice).tier,
   maxBids: form.maxBids ? Number(form.maxBids) : undefined,
   notes: form.description?.trim() || "",
   isDepositRequired: form.isDepositRequired !== false,
@@ -168,7 +169,34 @@ export default function CreateAuctionScreen() {
     setSubmitError("");
 
     try {
-      await createAuction(mapFormToPayload(form));
+      const res = await createAuction(mapFormToPayload(form));
+      
+      const newAuctionId = res?.data?._id || res?.data?.id || "DEMO_ID";
+
+      // Đẩy thông báo lên backend Notification Service
+      try {
+        await fetch("/api/v1/notifications/internal/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: "55555555-5555-5555-5555-555555555555",
+            title: form.goodsName,
+            message: "Hệ thống vừa tìm thấy 1 lộ trình phù hợp với xe rỗng của bạn!",
+            referenceId: newAuctionId,
+            type: "NEW_AUCTION"
+          })
+        });
+      } catch(err) {
+        console.error("Lỗi khi đẩy thông báo", err);
+      }
+
+      // Giả lập phát sự kiện (event) qua localStorage để tab của Nhà Xe nhận được thông báo ngay lập tức
+      localStorage.setItem("NEW_MATCHING_AUCTION", JSON.stringify({
+        id: newAuctionId,
+        title: form.goodsName,
+        timestamp: Date.now()
+      }));
+
       showToast("Tạo phiên đấu giá thành công! Đang chuyển hướng...", "success");
       window.setTimeout(() => {
         router.push("/shipper/bidding/sessions");

@@ -7,7 +7,7 @@ import LockIcon from "@mui/icons-material/LockOutlined";
 import PublicIcon from "@mui/icons-material/PublicOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlined";
 
-import { formatCurrency, getParticipationFeeQuote } from "./mockData";
+import { formatCurrency, getParticipationFeeQuote, getCreationFeeQuote } from "./mockData";
 
 export default function SummarySidebar({ form }) {
   const isSealed = form.auctionType === "SEALED";
@@ -108,6 +108,11 @@ export default function SummarySidebar({ form }) {
         <div className="pt-2 border-t border-slate-800 flex justify-between text-[0.68rem] text-slate-400">
           <span>Phí tham gia (bắt buộc):</span>
           <span className="font-mono font-bold text-sky-300">{formatCurrency(participationFeeQuote.amount)}</span>
+        </div>
+
+        <div className="pt-2 border-t border-slate-800 flex justify-between text-[0.68rem] text-slate-400">
+          <span>Phí tạo phiên (bắt buộc):</span>
+          <span className="font-mono font-bold text-rose-300">{formatCurrency(getCreationFeeQuote(form.maxPrice).amount)}</span>
         </div>
 
         {form.isDepositRequired !== false && <div className="pt-2 border-t border-slate-800 flex justify-between text-[0.68rem] text-slate-400">
