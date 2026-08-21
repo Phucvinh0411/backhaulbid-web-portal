@@ -69,11 +69,14 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
   useEffect(() => {
     if (role !== "carrier") return;
 
+    const effectiveId = userInfo?.companyId || userInfo?.id;
+
     // Fetch initial history from real backend API
     const fetchNotifications = async () => {
+      if (!effectiveId) return;
       try {
         const res = await fetch("/api/v1/notifications/mine", {
-          headers: { "X-User-Id": "55555555-5555-5555-5555-555555555555" }
+          headers: { "X-User-Id": effectiveId }
         });
         if (res.ok) {
           const data = await res.json();
@@ -99,7 +102,9 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
 
     socket.on("connect", () => {
       console.log("Connected to notification socket");
-      socket.emit("identify", { userId: "55555555-5555-5555-5555-555555555555" });
+      if (effectiveId) {
+        socket.emit("identify", { userId: effectiveId });
+      }
     });
 
     socket.on("new_notification", (notif) => {
@@ -133,13 +138,15 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
       window.removeEventListener("storage", handleStorage);
       socket.disconnect();
     };
-  }, [role]);
+  }, [role, userInfo?.id, userInfo?.companyId]);
 
   const markAllAsRead = async () => {
+    const effectiveId = userInfo?.companyId || userInfo?.id;
+    if (!effectiveId) return;
     try {
       await fetch("/api/v1/notifications/mark-all-read", {
         method: "POST",
-        headers: { "X-User-Id": "55555555-5555-5555-5555-555555555555" }
+        headers: { "X-User-Id": effectiveId }
       });
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch(err) {}

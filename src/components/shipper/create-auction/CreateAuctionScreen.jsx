@@ -173,29 +173,7 @@ export default function CreateAuctionScreen() {
       
       const newAuctionId = res?.data?._id || res?.data?.id || "DEMO_ID";
 
-      // Đẩy thông báo lên backend Notification Service
-      try {
-        await fetch("/api/v1/notifications/internal/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: "55555555-5555-5555-5555-555555555555",
-            title: form.goodsName,
-            message: "Hệ thống vừa tìm thấy 1 lộ trình phù hợp với xe rỗng của bạn!",
-            referenceId: newAuctionId,
-            type: "NEW_AUCTION"
-          })
-        });
-      } catch(err) {
-        console.error("Lỗi khi đẩy thông báo", err);
-      }
-
-      // Giả lập phát sự kiện (event) qua localStorage để tab của Nhà Xe nhận được thông báo ngay lập tức
-      localStorage.setItem("NEW_MATCHING_AUCTION", JSON.stringify({
-        id: newAuctionId,
-        title: form.goodsName,
-        timestamp: Date.now()
-      }));
+      // (Real notifications will be handled by the backend BiddingGateway communicating with Fleet and Notification services)
 
       showToast("Tạo phiên đấu giá thành công! Đang chuyển hướng...", "success");
       window.setTimeout(() => {
