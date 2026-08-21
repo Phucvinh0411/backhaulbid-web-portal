@@ -113,8 +113,8 @@ export default function Step1GoodsInfo({ form, updateForm }) {
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           >
             {VEHICLE_TYPES.map((v) => (
-              <MenuItem key={v} value={v}>
-                {v}
+              <MenuItem key={v.value} value={v.value}>
+                {v.label}
               </MenuItem>
             ))}
           </TextField>

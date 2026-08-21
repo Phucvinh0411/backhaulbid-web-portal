@@ -15,7 +15,7 @@ export const getAuctionAccess = (auctionId) =>
   apiService.get(biddingPath(`/auctions/${auctionId}/registrations/access`));
 
 export const listMyRegistrations = (params) =>
-  apiService.get(biddingPath("/registrations/mine"), params);
+  apiService.get(biddingPath("/my-registrations"), params);
 
 export const registerForAuction = (auctionId, payload) =>
   apiService.post(

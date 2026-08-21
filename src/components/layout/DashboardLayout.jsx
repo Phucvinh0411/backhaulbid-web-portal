@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
@@ -17,6 +17,35 @@ export default function DashboardLayout({ children, role, userInfo }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(userInfo);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => {
+        if (res.status === 401) {
+          window.location.href = "/login";
+          throw new Error("Unauthorized");
+        }
+        return res.json();
+      })
+      .then((resData) => {
+        if (resData.success && resData.data) {
+          const u = resData.data;
+          const displayName = u.fullName || u.phone || "Người dùng";
+          setCurrentUser({
+            name: displayName,
+            email: u.email || (u.phone ? `${u.phone}@backhaulbid.local` : ""),
+            avatar: displayName.charAt(0).toUpperCase(),
+            role: u.role === "SHIPPER" ? "Chủ hàng" : (u.role === "CARRIER" ? "Nhà xe" : "Quản trị viên"),
+            companyName: u.companyName,
+            settingsPath: role === "carrier" ? "/carrier/settings" : "/shipper/settings",
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("Could not fetch user profile from DB:", err);
+      });
+  }, [role]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -43,14 +72,14 @@ export default function DashboardLayout({ children, role, userInfo }) {
           open={mobileOpen}
           onClose={handleDrawerToggle}
           navigation={navigation}
-          userInfo={userInfo}
+          userInfo={currentUser}
         />
       ) : (
-        <Sidebar variant="permanent" navigation={navigation} userInfo={userInfo} />
+        <Sidebar variant="permanent" navigation={navigation} userInfo={currentUser} />
       )}
 
       {/* Header - Floating next to sidebar */}
-      <Header onMenuToggle={handleDrawerToggle} userInfo={userInfo} role={role} />
+      <Header onMenuToggle={handleDrawerToggle} userInfo={currentUser} role={role} />
 
       {/* Main content area */}
       <Box

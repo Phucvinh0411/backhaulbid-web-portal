@@ -8,6 +8,11 @@ import NavigationIcon from "@mui/icons-material/NavigationOutlined";
 import ImportContactsIcon from "@mui/icons-material/ImportContactsOutlined";
 import AccessTimeIcon from "@mui/icons-material/AccessTimeOutlined";
 
+import Autocomplete from "@mui/material/Autocomplete";
+import { VIETNAM_PROVINCES } from "@/utils/provinces";
+
+const PROVINCE_NAMES = VIETNAM_PROVINCES.map((p) => p.name);
+
 export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) {
   return (
     <div className="space-y-6">
@@ -48,14 +53,22 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
 
-          <TextField
-            fullWidth
-            label="Tỉnh / Thành phố"
-            value={form.fromProvince}
-            onChange={(e) => updateForm("fromProvince", e.target.value)}
-            placeholder="VD: Thái Nguyên"
-            required
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
+          <Autocomplete
+            freeSolo
+            options={PROVINCE_NAMES}
+            value={form.fromProvince || ""}
+            onChange={(event, newValue) => updateForm("fromProvince", newValue || "")}
+            onInputChange={(event, newInputValue) => updateForm("fromProvince", newInputValue)}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                fullWidth
+                label="Tỉnh / Thành phố"
+                placeholder="VD: Thái Nguyên"
+                required
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
+              />
+            )}
           />
         </div>
 
@@ -127,14 +140,22 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
 
-          <TextField
-            fullWidth
-            label="Tỉnh / Thành phố"
-            value={form.toProvince}
-            onChange={(e) => updateForm("toProvince", e.target.value)}
-            placeholder="VD: Hải Phòng"
-            required
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
+          <Autocomplete
+            freeSolo
+            options={PROVINCE_NAMES}
+            value={form.toProvince || ""}
+            onChange={(event, newValue) => updateForm("toProvince", newValue || "")}
+            onInputChange={(event, newInputValue) => updateForm("toProvince", newInputValue)}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                fullWidth
+                label="Tỉnh / Thành phố"
+                placeholder="VD: Hải Phòng"
+                required
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
+              />
+            )}
           />
         </div>
 

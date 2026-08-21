@@ -55,11 +55,12 @@ export const GOODS_CATEGORIES = [
 ];
 
 export const VEHICLE_TYPES = [
-  "Xe tải thùng kín",
-  "Xe tải thùng bạt",
-  "Xe tải container lạnh",
-  "Xe đầu kéo rơ-móoc sàn",
-  "Xe tải siêu trường siêu trọng",
+  { value: "TRUCK_SMALL", label: "Xe tải nhỏ" },
+  { value: "TRUCK_MEDIUM", label: "Xe tải trung" },
+  { value: "TRUCK_HEAVY", label: "Xe tải nặng" },
+  { value: "CONTAINER_TRACTOR", label: "Xe đầu kéo container" },
+  { value: "REFRIGERATED_TRUCK", label: "Xe tải đông lạnh" },
+  { value: "SPECIALIZED_TRUCK", label: "Xe chuyên dụng" },
 ];
 
 export const getParticipationFeeQuote = (maxPrice) => {
@@ -70,6 +71,13 @@ export const getParticipationFeeQuote = (maxPrice) => {
   if (value <= 15000000) return { tier: "LEVEL_3", amount: 50000 };
   if (value <= 50000000) return { tier: "LEVEL_4", amount: 100000 };
   return { tier: "LEVEL_5", amount: 200000 };
+};
+
+export const getCreationFeeQuote = (maxPrice) => {
+  const value = Number(maxPrice) || 0;
+  if (value < 10000000) return { tier: "LEVEL_1", amount: 50000 };
+  if (value < 50000000) return { tier: "LEVEL_2", amount: 100000 };
+  return { tier: "LEVEL_3", amount: 150000 };
 };
 
 export const INITIAL_FORM_STATE = {

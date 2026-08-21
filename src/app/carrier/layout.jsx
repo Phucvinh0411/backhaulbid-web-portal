@@ -5,10 +5,10 @@ export const metadata = {
 };
 
 const carrierUser = {
-  name: "Nguyễn Văn Chủ Xe",
-  email: "carrier@transport.vn",
-  avatar: "C",
-  role: "Chủ xe",
+  name: "Trần Văn Xe (Carrier)",
+  email: "carrier123@backhaulbid.local",
+  avatar: "X",
+  role: "Nhà xe",
   settingsPath: "/carrier/settings",
 };
 

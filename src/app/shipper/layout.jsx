@@ -5,9 +5,9 @@ export const metadata = {
 };
 
 const shipperUser = {
-  name: "Nguyễn Minh Triết",
-  email: "shipper@backhaulbid.vn",
-  avatar: "T",
+  name: "Nguyễn Văn Hàng (Shipper)",
+  email: "shipper123@backhaulbid.local",
+  avatar: "H",
   role: "Chủ hàng",
   settingsPath: "/shipper/settings",
 };
