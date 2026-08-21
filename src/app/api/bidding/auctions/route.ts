@@ -54,7 +54,8 @@ export async function GET(request: Request) {
       headers: { 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`
-      }
+      },
+      cache: 'no-store'
     });
 
     const data = await res.json().catch(() => null);
