@@ -177,7 +177,7 @@ export default function CreateAuctionScreen() {
 
       showToast("Tạo phiên đấu giá thành công! Đang chuyển hướng...", "success");
       window.setTimeout(() => {
-        router.push("/shipper/bidding/sessions");
+        window.location.href = "/shipper/bidding/sessions";
       }, 1500);
     } catch (error) {
       const responseMessage = error?.response?.data?.message;
