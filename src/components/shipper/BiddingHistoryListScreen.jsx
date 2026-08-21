@@ -87,6 +87,9 @@ const mapBackendToShipment = (auction) => {
   
   const maxPrice = parseDecimal(auction.maxPrice);
 
+  const currentLowestBid = parseDecimal(auction.currentLowestBid) || 0;
+  const finalPrice = parseDecimal(auction.finalPrice) || 0;
+
   return {
     id: auction.id || auction._id || "N/A",
     goodsType,
@@ -95,13 +98,13 @@ const mapBackendToShipment = (auction) => {
     from: { province: fromProvince, detail: fromDetail },
     to: { province: toProvince, detail: toDetail },
     maxPrice,
-    currentLowestBid: 0,
-    bidCount: 0,
+    currentLowestBid,
+    finalPrice,
+    bidCount: auction.totalBids || auction.bidCount || 0,
     dateCreated: auction.createdAt || new Date().toISOString(),
     status: mapStatusToFrontend(auction.status),
     originalData: auction,
-    finalPrice: 0,
-    carrier: null,
+    carrier: auction.winningBidId ? "Đơn vị vận chuyển (Đã chốt)" : null,
   };
 };
 

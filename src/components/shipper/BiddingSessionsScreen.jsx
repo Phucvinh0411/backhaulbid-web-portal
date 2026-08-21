@@ -86,6 +86,9 @@ const mapBackendToShipment = (auction) => {
   const closeTime = auction.endTime || auction.auctionConfig?.endTime || null;
   const maxPrice = parseDecimal(auction.maxPrice || auction.auctionConfig?.maxPrice);
   const auctionType = auction.auctionType || auction.auctionConfig?.auctionType || "PUBLIC";
+  
+  const currentLowestBid = parseDecimal(auction.currentLowestBid) || 0;
+  const finalPrice = parseDecimal(auction.finalPrice) || 0;
 
   return {
     id: auction.id || auction._id || auction.auctionCode || "N/A",
@@ -101,11 +104,16 @@ const mapBackendToShipment = (auction) => {
       detail: toDetail,
     },
     maxPrice,
-    currentLowestBid: 0, // Placeholder
-    bidCount: 0, // Placeholder
+    currentLowestBid,
+    finalPrice,
+    bidCount: auction.totalBids || auction.bidCount || 0,
     closeTime,
     status: mapStatusToFrontend(auction.status),
     auctionType,
+    carrier: auction.winningBidId ? "Đơn vị vận chuyển (Đã chốt)" : null,
+    driverName: null,
+    driverPlate: null,
+    cancelReason: auction.cancelReason,
     originalData: auction
   };
 };
