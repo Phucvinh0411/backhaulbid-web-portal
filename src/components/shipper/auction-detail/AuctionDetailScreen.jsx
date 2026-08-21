@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getAuction, listBids } from "@/services/biddingApi";
+import { auctionService } from "@/services/auctionService";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
@@ -34,8 +34,8 @@ export default function AuctionDetailScreen({ id }) {
       try {
         setLoading(true);
         const [auctionRes, bidsRes] = await Promise.all([
-          getAuction(id),
-          listBids(id, { page: 1, limit: 100 })
+          auctionService.getAuctionById(id),
+          auctionService.listBids(id, { page: 1, limit: 100 })
         ]);
         
         const data = auctionRes.data?.data || auctionRes.data || {};
