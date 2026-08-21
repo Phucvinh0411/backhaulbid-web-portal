@@ -38,7 +38,9 @@ export default function AuctionDetailScreen({ id }) {
           auctionService.listBids(id, { page: 1, limit: 100 })
         ]);
         
-        const data = auctionRes.data?.data || auctionRes.data || {};
+        // Next.js API routes configured with appApiService return the data directly
+        // However, if it's wrapped in { data: ... }, we handle it, else use auctionRes itself
+        const data = auctionRes?.data || auctionRes || {};
         
         // Map backend data to frontend expected format
         const mappedShipment = {
