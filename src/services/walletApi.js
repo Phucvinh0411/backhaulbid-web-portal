@@ -4,7 +4,9 @@ import { apiService } from "./apiService";
 export const walletApi = {
   getMyWallet: () => apiService.get("/api/v1/wallets/me"),
   listTransactions: (params) => apiService.get("/api/v1/wallets/me/transactions", params),
-  createSepayTopUp: (amount) => apiService.post("/api/v1/payments/sepay/top-ups", { amount }),
+  createSepayTopUp: (amount, returnUrl) =>
+    apiService.post("/api/v1/payments/sepay/top-ups", { amount, returnUrl }),
+  getSepayTopUpStatus: (invoiceNumber) => apiService.get(`/api/v1/payments/sepay/top-ups/${invoiceNumber}`),
   createWithdrawal: (payload) => apiService.post("/api/v1/wallets/me/withdrawals", payload),
   listWithdrawals: (params) => apiService.get("/api/v1/wallets/me/withdrawals", params),
   getAdminSummary: () => apiService.get("/api/v1/admin/wallet-withdrawals/summary"),

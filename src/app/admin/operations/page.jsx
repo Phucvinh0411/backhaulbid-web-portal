@@ -7,25 +7,12 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Typography from "@mui/material/Typography";
 import { AdminPageHeader, AdminPageShell, AdminPrimaryButton } from "@/components/admin/AdminUI";
 import AuctionMonitorView from "@/components/admin/AuctionMonitorView";
+import useAuctionSocket from "@/hooks/useAuctionSocket";
 import { cancelAuction, flagAuction, listAuctions, listBids } from "@/services/biddingApi";
 import { getPageItems, unwrapListData } from "@/services/responseData";
 
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
-
-const getTimeRemaining = (endTime) => {
-  const remaining = new Date(endTime).getTime() - Date.now();
-  if (!Number.isFinite(remaining) || remaining <= 0) return "Đã kết thúc";
-
-  const totalSeconds = Math.floor(remaining / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  return hours > 0
-    ? `${hours}h ${String(minutes).padStart(2, "0")}p`
-    : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-};
 
 const getImageSource = (images) => {
   if (!Array.isArray(images)) return null;
@@ -44,10 +31,12 @@ const mapAuction = async (auction) => {
     });
 
     bids = unwrapListData(bidsResponse).map((bid) => ({
+      id: bid.id,
       time: bid.bidTime
         ? new Date(bid.bidTime).toLocaleTimeString("vi-VN", {
             hour: "2-digit",
             minute: "2-digit",
+            second: "2-digit",
           })
         : "--:--",
       bid: Number(bid.bidAmount),
@@ -65,7 +54,9 @@ const mapAuction = async (auction) => {
     title: auction.title || auction.cargoDescription || "Phiên đấu giá vận chuyển",
     route: `${auction.originLocationName || auction.origin || "Chưa xác định"} → ${auction.destinationLocationName || auction.destination || "Chưa xác định"}`,
     vehicleType: auction.vehicleTypeRequired || "Chưa xác định",
-    timeRemaining: getTimeRemaining(auction.endTime),
+    auctionType: auction.auctionType || "PUBLIC",
+    startTime: auction.startTime,
+    endTime: auction.endTime,
     currentBid: amounts.length ? Math.min(...amounts) : maxPrice,
     activeBidders: new Set(bids.map((item) => item.carrierId).filter(Boolean)).size,
     status: auction.status,
@@ -75,6 +66,10 @@ const mapAuction = async (auction) => {
     image: getImageSource(auction.images),
     fraudFlag: Boolean(auction.fraudFlag),
     fraudReason: auction.fraudReason || "",
+    winningBidAmount: auction.winningBidId
+      ? bids.find((bid) => bid.id === auction.winningBidId)?.bid ?? null
+      : null,
+    lastBidAt: null,
   };
 };
 
@@ -82,19 +77,24 @@ export default function AdminOperationsPage() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { joinMonitor, on, connected } = useAuctionSocket();
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
 
     try {
-      const [openResponse, pendingResponse] = await Promise.all([
+      const [openResponse, pendingResponse, completedResponse, cancelledResponse] = await Promise.all([
         listAuctions({ status: "OPEN", page: 1, pageSize: 100 }),
         listAuctions({ status: "PENDING", page: 1, pageSize: 100 }),
+        listAuctions({ status: "COMPLETED", page: 1, pageSize: 100 }),
+        listAuctions({ status: "CANCELLED", page: 1, pageSize: 100 }),
       ]);
       const auctions = [
         ...getPageItems(openResponse),
         ...getPageItems(pendingResponse),
+        ...getPageItems(completedResponse),
+        ...getPageItems(cancelledResponse),
       ];
       const mapped = await Promise.all(auctions.map(mapAuction));
       setSessions(mapped);
@@ -109,6 +109,73 @@ export default function AdminOperationsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    const offBidPlaced = on("bidPlaced", (payload) => {
+      const auctionId = payload?.auctionId;
+      const bid = payload?.bid;
+      if (!auctionId || !bid) return;
+
+      setSessions((current) =>
+        current.map((session) => {
+          if (session.id !== auctionId) return session;
+          if (bid.id && session.bidHistory.some((item) => item.id === bid.id)) return session;
+
+          const amount = Number(bid.bidAmount);
+          const bidDate = new Date(bid.bidTime);
+          const entry = {
+            id: bid.id,
+            time: Number.isNaN(bidDate.getTime())
+              ? "--:--"
+              : bidDate.toLocaleTimeString("vi-VN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                }),
+            bid: amount,
+            carrierId: bid.carrierId,
+          };
+          const bidHistory = [...session.bidHistory, entry];
+
+          return {
+            ...session,
+            bidHistory,
+            currentBid:
+              Number.isFinite(amount) && (session.currentBid == null || amount < session.currentBid)
+                ? amount
+                : session.currentBid,
+            activeBidders: new Set(bidHistory.map((item) => item.carrierId).filter(Boolean)).size,
+            lastBidAt: Date.now(),
+          };
+        }),
+      );
+    });
+
+    const offStatusChanged = on("auctionStatusChanged", (payload) => {
+      const auctionId = payload?.auctionId;
+      if (!auctionId) return;
+
+      setSessions((current) =>
+        current.map((session) => {
+          if (session.id !== auctionId) return session;
+          return {
+            ...session,
+            status: payload.status || session.status,
+            endTime: payload.endTime || session.endTime,
+            winningBidAmount:
+              payload.winningBidAmount != null ? Number(payload.winningBidAmount) : session.winningBidAmount,
+          };
+        }),
+      );
+    });
+
+    joinMonitor().catch(() => {});
+
+    return () => {
+      offBidPlaced();
+      offStatusChanged();
+    };
+  }, [joinMonitor, on]);
 
   if (loading) {
     return (
@@ -173,6 +240,7 @@ export default function AdminOperationsPage() {
       ) : (
         <AuctionMonitorView
           sessions={sessions}
+          live={connected}
           onCancelAuction={async (auctionId) => {
             await cancelAuction(auctionId);
             setSessions((current) =>

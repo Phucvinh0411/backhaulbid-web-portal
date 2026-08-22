@@ -13,9 +13,5 @@ const shipperUser = {
 };
 
 export default function ShipperLayout({ children }) {
-  return (
-    <DashboardLayout role="shipper" userInfo={shipperUser}>
-      {children}
-    </DashboardLayout>
-  );
+  return <DashboardLayout role="shipper">{children}</DashboardLayout>;
 }

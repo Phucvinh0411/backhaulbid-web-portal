@@ -41,8 +41,8 @@ const fallbackProfiles = {
     settingsPath: "/carrier/settings",
   },
   admin: {
-    name: "Quản trị viên",
-    email: "admin@backhaulbid.vn",
+    name: "Tài khoản",
+    email: "",
     roleName: "Quản trị viên",
     avatarLetter: "A",
     settingsPath: "/admin/settings",

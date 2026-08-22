@@ -6,8 +6,11 @@ import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
+import CircularProgress from "@mui/material/CircularProgress";
+import Dialog from "@mui/material/Dialog";
 import InputAdornment from "@mui/material/InputAdornment";
 import MenuItem from "@mui/material/MenuItem";
+import TableContainer from "@mui/material/TableContainer";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Link from "next/link";
@@ -365,5 +368,44 @@ export function AdminSecondaryButton({ children, sx, ...props }) {
     >
       {children}
     </Button>
+  );
+}
+
+export function AdminLoadingState({ label = "Đang tải dữ liệu...", minHeight = 220 }) {
+  return (
+    <Box role="status" aria-label={label} sx={{ minHeight, display: "grid", placeItems: "center", gap: 1, color: adminColors.muted }}>
+      <CircularProgress size={28} />
+      <Typography variant="body2">{label}</Typography>
+    </Box>
+  );
+}
+
+export function AdminEmptyState({ children = "Không có dữ liệu phù hợp.", minHeight = 160 }) {
+  return (
+    <Box role="status" sx={{ minHeight, display: "grid", placeItems: "center", px: 3, py: 5, textAlign: "center", color: adminColors.muted }}>
+      <Typography variant="body2">{children}</Typography>
+    </Box>
+  );
+}
+
+export function AdminTableContainer({ children, minWidth = 720 }) {
+  return <TableContainer sx={{ overflowX: "auto", "& .MuiTable-root": { minWidth } }}>{children}</TableContainer>;
+}
+
+export function AdminDialog({ children, PaperProps, ...props }) {
+  return (
+    <Dialog
+      {...props}
+      PaperProps={{
+        ...PaperProps,
+        sx: {
+          borderRadius: 3,
+          border: `1px solid ${adminColors.border}`,
+          ...PaperProps?.sx,
+        },
+      }}
+    >
+      {children}
+    </Dialog>
   );
 }

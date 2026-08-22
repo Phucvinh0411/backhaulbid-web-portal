@@ -19,7 +19,7 @@ ARG NEXT_PUBLIC_GATEWAY_URL=http://localhost:8080
 ENV NEXT_PUBLIC_GATEWAY_URL=${NEXT_PUBLIC_GATEWAY_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npm run build
+RUN npm run build -- --webpack
 
 # Stage 3: Production runner
 FROM node:20-alpine AS runner

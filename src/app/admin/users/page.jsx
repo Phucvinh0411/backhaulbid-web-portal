@@ -4,8 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
-import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -14,7 +12,6 @@ import IconButton from "@mui/material/IconButton";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
@@ -23,6 +20,9 @@ import Typography from "@mui/material/Typography";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
+  AdminDialog,
+  AdminLoadingState,
+  AdminTableContainer,
   AdminPageHeader,
   AdminPageShell,
   AdminPrimaryButton,
@@ -145,7 +145,7 @@ export default function AdminUsersPage() {
   };
 
   if (loading) {
-    return <Box className="flex min-h-[320px] items-center justify-center"><CircularProgress aria-label="Đang tải người dùng" /></Box>;
+    return <AdminPageShell><AdminLoadingState label="Đang tải người dùng..." /></AdminPageShell>;
   }
 
   if (loadError) {
@@ -164,7 +164,7 @@ export default function AdminUsersPage() {
           <AdminSearchField value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); setPage(0); }} placeholder="Tìm tên, email, mã hồ sơ..." />
           <AdminSelectField value={filterType} onChange={(event) => { setFilterType(event.target.value); setPage(0); }} options={typeOptions} />
         </AdminToolbar>
-        <TableContainer>
+        <AdminTableContainer minWidth={960}>
           <Table aria-label="Danh sách người dùng">
             <TableHead sx={{ bgcolor: "rgba(27, 73, 101, 0.04)" }}>
               <TableRow>
@@ -190,18 +190,18 @@ export default function AdminUsersPage() {
               {paginatedUsers.length === 0 && <TableRow><TableCell colSpan={6} align="center" sx={{ py: 6, color: "text.secondary" }}>Không có hồ sơ phù hợp.</TableCell></TableRow>}
             </TableBody>
           </Table>
-        </TableContainer>
+        </AdminTableContainer>
         <TablePagination rowsPerPageOptions={[5, 10, 25]} component="div" count={filteredUsers.length} rowsPerPage={rowsPerPage} page={page} onPageChange={(_, nextPage) => setPage(nextPage)} onRowsPerPageChange={(event) => { setRowsPerPage(parseInt(event.target.value, 10)); setPage(0); }} />
       </AdminSectionCard>
 
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: "12px" } }}>
+      <AdminDialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
         <DialogTitle sx={{ borderBottom: "1px solid", borderColor: "divider", py: 2 }}><Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}><Avatar sx={{ bgcolor: "rgba(27, 73, 101, 0.08)", color: "primary.main", fontWeight: 700 }}>{selectedUser?.displayName?.[0] || "?"}</Avatar><Box><Typography variant="h6" sx={{ fontWeight: 700 }}>Chi tiết tài khoản</Typography><Typography variant="body2" sx={{ color: "text.secondary" }}>{selectedUser?.displayName}</Typography></Box></Box></DialogTitle>
         <DialogContent sx={{ pt: 3 }}>
           {actionError && <Alert severity="error" sx={{ mb: 2 }}>{actionError}</Alert>}
           {selectedUser && <Grid container spacing={3}><Grid item xs={12} md={6}><Typography variant="subtitle2" sx={{ color: "text.secondary", fontWeight: 700, mb: 1.5 }}>Thông tin tài khoản</Typography><Box sx={{ p: 2, border: "1px solid", borderColor: "divider", borderRadius: "10px" }}>{[["Tên hiển thị", selectedUser.displayName], ["Email", selectedUser.email || "Chưa có"], ["Số điện thoại", selectedUser.phone], ["Vai trò", typeLabels[selectedUser.role] || selectedUser.role], ["Ngày đăng ký", formatDate(selectedUser.registeredAt)]].map(([label, value]) => <Box key={label} sx={{ py: 1, borderBottom: "1px solid", borderColor: "divider" }}><Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>{label}</Typography><Typography variant="body2" sx={{ fontWeight: 600 }}>{value}</Typography></Box>)}<Box sx={{ pt: 1.25 }}><Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, display: "block", mb: 0.75 }}>Trạng thái xác minh/tài khoản</Typography><StatusChip user={selectedUser} /></Box></Box></Grid><Grid item xs={12} md={6}><Typography variant="subtitle2" sx={{ color: "text.secondary", fontWeight: 700, mb: 1.5 }}>Dữ liệu xác minh</Typography><Box sx={{ p: 2, border: "1px solid", borderColor: "divider", borderRadius: "10px" }}><Typography variant="body2">Trạng thái eKYC/doanh nghiệp: <strong>{selectedUser.verificationStatus || "Chưa có dữ liệu"}</strong></Typography><Typography variant="body2" sx={{ mt: 1 }}>Doanh nghiệp: <strong>{selectedUser.companyName || "Cá nhân hoặc chưa khai báo"}</strong></Typography></Box></Grid></Grid>}
         </DialogContent>
         <DialogActions sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}><AdminSecondaryButton onClick={() => setOpenDialog(false)}>Đóng</AdminSecondaryButton>{selectedUser && selectedUser.status !== "ACTIVE" && <AdminPrimaryButton disabled={actionLoading} onClick={() => handleStatusChange("ACTIVE")}>{actionLoading ? "Đang cập nhật..." : "Kích hoạt tài khoản"}</AdminPrimaryButton>}{selectedUser && selectedUser.status === "ACTIVE" && <AdminPrimaryButton disabled={actionLoading} onClick={() => handleStatusChange("BLOCKED")} sx={{ bgcolor: "error.main", "&:hover": { bgcolor: "error.dark" } }}>{actionLoading ? "Đang cập nhật..." : "Khóa tài khoản"}</AdminPrimaryButton>}</DialogActions>
-      </Dialog>
+      </AdminDialog>
     </AdminPageShell>
   );
 }

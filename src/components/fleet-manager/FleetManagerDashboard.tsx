@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { emptyRouteService, EmptyRoute } from '@/services/emptyRouteService';
+import { identityApi } from '@/services/identityApi';
+import { getMyVehicles } from '@/services/fleetApi';
 import { useSocket } from '@/hooks/useSocket';
 
 export interface MatchingEvent {
@@ -13,9 +15,12 @@ export interface MatchingEvent {
 }
 
 export default function FleetManagerDashboard() {
-  // Giả lập lấy thông tin từ Store/Context (ví dụ: Zustand)
-  const currentCompanyId = "COMPANY_123";
-  const currentUserId = "USER_456";
+  const [currentAccount, setCurrentAccount] = useState<{ accountId?: string } | null>(null);
+  const [vehicles, setVehicles] = useState<Array<{ id?: string; plate?: string; licensePlate?: string }>>([]);
+  const [loadError, setLoadError] = useState('');
+
+  const currentCompanyId = currentAccount?.accountId;
+  const currentUserId = currentAccount?.accountId;
 
   const { listen } = useSocket({ companyId: currentCompanyId, userId: currentUserId });
 
@@ -28,39 +33,47 @@ export default function FleetManagerDashboard() {
   const [formData, setFormData] = useState({
     truckId: '',
     expectedEmptyTime: '',
-    latitude: 10.762622, // Mặc định TP.HCM
-    longitude: 106.660172
+    latitude: '',
+    longitude: ''
   });
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([identityApi.getCurrentAccount(), getMyVehicles()])
+      .then(([account, accountVehicles]) => {
+        if (!active) return;
+        setCurrentAccount(account);
+        setVehicles(accountVehicles);
+      })
+      .catch((error) => {
+        if (!active) return;
+        setLoadError(error?.response?.data?.message || 'Không thể tải thông tin tài khoản và đội xe.');
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Fetch dữ liệu khởi tạo
   useEffect(() => {
+    if (!currentCompanyId) return undefined;
     const fetchRoutes = async () => {
       setIsLoading(true);
+      setLoadError('');
       try {
         const data = await emptyRouteService.getEmptyRoutesByCompany(currentCompanyId);
-        // Trong môi trường thật (nếu API chưa được Mock), hàm này có thể văng lỗi. 
-        // Hãy đảm bảo Backend đã hoạt động.
         setEmptyRoutes(data || []);
       } catch (error) {
         console.error("Lỗi khi tải danh sách xe rỗng:", error);
-        // Nếu API lỗi, fallback về data mẫu để có giao diện
-        setEmptyRoutes([
-          {
-            id: 'RT-001',
-            truckId: '51C-123.45',
-            companyId: currentCompanyId,
-            expectedEmptyTime: new Date().toISOString(),
-            latitude: 10.8231,
-            longitude: 106.6297,
-            status: 'PENDING'
-          }
-        ]);
+        setEmptyRoutes([]);
+        setLoadError('Không thể tải danh sách xe rỗng từ hệ thống.');
       } finally {
         setIsLoading(false);
       }
     };
     fetchRoutes();
-  }, []);
+  }, [currentCompanyId]);
 
   // Đăng ký nhận sự kiện Socket Real-time
   useEffect(() => {
@@ -95,8 +108,15 @@ export default function FleetManagerDashboard() {
   // Xử lý Submit Form khai báo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.truckId || !formData.expectedEmptyTime) {
+    if (!formData.truckId || !formData.expectedEmptyTime || !currentCompanyId) {
       toast.error('Vui lòng điền đủ thông tin Biển số xe và Thời gian dự kiến');
+      return;
+    }
+
+    const latitude = Number(formData.latitude);
+    const longitude = Number(formData.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      toast.error('Vui lòng nhập tọa độ hợp lệ.');
       return;
     }
 
@@ -107,8 +127,8 @@ export default function FleetManagerDashboard() {
         companyId: currentCompanyId,
         // Chuyển đối thời gian từ input datetime-local sang chuẩn ISO để đẩy xuống Backend
         expectedEmptyTime: new Date(formData.expectedEmptyTime).toISOString(),
-        latitude: formData.latitude,
-        longitude: formData.longitude,
+        latitude,
+        longitude,
       };
 
       const newRoute = await emptyRouteService.createEmptyRoute(payload);
@@ -152,9 +172,11 @@ export default function FleetManagerDashboard() {
                     className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5 border"
                   >
                     <option value="">-- Chọn xe --</option>
-                    <option value="51C-123.45">51C-123.45 (Xe tải 5 tấn)</option>
-                    <option value="29C-888.88">29C-888.88 (Container Lạnh)</option>
-                    <option value="43C-678.90">43C-678.90 (Xe thùng bạt)</option>
+                    {vehicles.map((vehicle) => {
+                      const plate = vehicle.plate || vehicle.licensePlate;
+                      if (!plate) return null;
+                      return <option key={vehicle.id || plate} value={plate}>{plate}</option>;
+                    })}
                   </select>
                 </div>
 
@@ -176,7 +198,7 @@ export default function FleetManagerDashboard() {
                       type="number" 
                       step="any"
                       value={formData.latitude}
-                      onChange={(e) => setFormData({...formData, latitude: parseFloat(e.target.value)})}
+                      onChange={(e) => setFormData({...formData, latitude: e.target.value})}
                       className="w-1/2 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5 border text-sm"
                       placeholder="Lat"
                     />
@@ -184,7 +206,7 @@ export default function FleetManagerDashboard() {
                       type="number" 
                       step="any"
                       value={formData.longitude}
-                      onChange={(e) => setFormData({...formData, longitude: parseFloat(e.target.value)})}
+                      onChange={(e) => setFormData({...formData, longitude: e.target.value})}
                       className="w-1/2 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5 border text-sm"
                       placeholder="Lng"
                     />
@@ -229,6 +251,7 @@ export default function FleetManagerDashboard() {
               </div>
               
               <div className="flex-1 overflow-auto">
+                {loadError && <div className="m-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{loadError}</div>}
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>

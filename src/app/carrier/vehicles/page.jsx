@@ -30,24 +30,9 @@ import Paper from "@mui/material/Paper";
 import TableSortLabel from "@mui/material/TableSortLabel";
 import { PageHeader, ViewModeToggle, DetailDrawer } from "@/components/common";
 import CarrierVehicleItem from "@/components/carrier/CarrierVehicleItem";
-import { createVehicleWithDocuments, deactivateVehicle, getMyVehicles, updateVehicle, updateVehicleWithDocuments } from "@/services/fleetApi";
+import { createVehicle, deactivateVehicle, getMyVehicles, updateVehicle } from "@/services/fleetApi";
 import { downloadCsvTemplate, parseSimpleCsv } from "@/services/csvImport";
-
-const buildVehicleDocumentFormData = (form, documents) => {
-  const formData = new FormData();
-  formData.append("metadata", new globalThis.Blob([JSON.stringify({ ...form, payloadCapacity: Number(form.payloadCapacity) })], { type: "application/json" }));
-  formData.append("registration", documents.registration);
-  formData.append("inspection", documents.inspection);
-  return formData;
-};
-
-const buildVehicleUpdateFormData = (form, documents) => {
-  const formData = new FormData();
-  formData.append("metadata", new globalThis.Blob([JSON.stringify({ ...form, payloadCapacity: Number(form.payloadCapacity) })], { type: "application/json" }));
-  if (documents.registration) formData.append("registration", documents.registration);
-  if (documents.inspection) formData.append("inspection", documents.inspection);
-  return formData;
-};
+import { mediaApi } from "@/services/mediaApi";
 
 export default function VehiclesPage() {
   const [vehicles, setVehicles] = useState([]);
@@ -179,7 +164,15 @@ export default function VehiclesPage() {
     setSaving(true);
     setError("");
     try {
-      await createVehicleWithDocuments(buildVehicleDocumentFormData(form, documents));
+      let registrationUrl = form.registrationUrl || "";
+      if (documents.registration) {
+        registrationUrl = await mediaApi.uploadFile(documents.registration, "vehicles/registration");
+      }
+      let inspectionUrl = form.inspectionUrl || "";
+      if (documents.inspection) {
+        inspectionUrl = await mediaApi.uploadFile(documents.inspection, "vehicles/inspection");
+      }
+      await createVehicle({ ...form, payloadCapacity: Number(form.payloadCapacity), registrationUrl, inspectionUrl });
       await loadVehicles();
       setOpenModal(false);
       setSuccessMsg("Thêm phương tiện mới thành công! Hồ sơ đang chờ Admin duyệt.");
@@ -233,11 +226,17 @@ export default function VehiclesPage() {
         vehicleType: editForm.vehicleType,
         bodyType: editForm.bodyType,
       };
-      if (editDocuments.registration || editDocuments.inspection) {
-        await updateVehicleWithDocuments(editForm.id, buildVehicleUpdateFormData(metadata, editDocuments));
-      } else {
-        await updateVehicle(editForm.id, metadata);
+      let registrationUrl = editForm.registrationUrl;
+      let inspectionUrl = editForm.inspectionUrl;
+      if (editDocuments.registration) {
+        registrationUrl = await mediaApi.uploadFile(editDocuments.registration, "vehicles/registration");
       }
+      if (editDocuments.inspection) {
+        inspectionUrl = await mediaApi.uploadFile(editDocuments.inspection, "vehicles/inspection");
+      }
+      metadata.registrationUrl = registrationUrl;
+      metadata.inspectionUrl = inspectionUrl;
+      await updateVehicle(editForm.id, metadata);
       await loadVehicles();
       setOpenEditModal(false);
       if (selectedVehicle) {
@@ -366,15 +365,22 @@ export default function VehiclesPage() {
     setError("");
     try {
       for (const row of importRows) {
-        await createVehicleWithDocuments(buildVehicleDocumentFormData({
+        const registrationUrl = await mediaApi.uploadFile(
+          findImportDocument(row.registrationFile),
+          "vehicles/registration"
+        );
+        const inspectionUrl = await mediaApi.uploadFile(
+          findImportDocument(row.inspectionFile),
+          "vehicles/inspection"
+        );
+        await createVehicle({
           licensePlate: row.licensePlate,
           payloadCapacity: row.payloadCapacity,
           vehicleType: row.vehicleType,
           bodyType: row.bodyType,
-        }, {
-          registration: findImportDocument(row.registrationFile),
-          inspection: findImportDocument(row.inspectionFile),
-        }));
+          registrationUrl,
+          inspectionUrl,
+        });
       }
       setSuccessMsg(`Đã gửi ${importRows.length} hồ sơ phương tiện để Admin xét duyệt.`);
       await loadVehicles();

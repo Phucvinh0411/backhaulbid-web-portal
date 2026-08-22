@@ -15,7 +15,7 @@ import CircleIcon from "@mui/icons-material/Circle";
 import DnsOutlinedIcon from "@mui/icons-material/DnsOutlined";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import LinearProgress from "@mui/material/LinearProgress";
-import { getAdminSettings, saveAdminSettings } from "@/services/adminSettingsApi";
+import { getAdminSettings, getGatewayHealth, saveAdminSettings } from "@/services/adminSettingsApi";
 
 import {
   AdminPageHeader,
@@ -52,12 +52,8 @@ function SettingRow({ label, helper, children }) {
 
 export default function AdminSettingsPage() {
   const [maintenance, setMaintenance] = useState(false);
-  const [settings, setSettings] = useState({
-    platformName: "BackHaulBid",
-    systemEmail: "noreply@backhaulbid.vn",
-    supportPhone: "1900 8899",
-    timezone: "GMT+7",
-  });
+  const [settings, setSettings] = useState({});
+  const [serverHealth, setServerHealth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -73,6 +69,9 @@ export default function AdminSettingsPage() {
       })
       .catch(() => active && setFeedback({ severity: "error", message: "Không tải được cấu hình chung từ API." }))
       .finally(() => active && setLoading(false));
+    getGatewayHealth()
+      .then((response) => active && setServerHealth(response?.status === "UP"))
+      .catch(() => active && setServerHealth(false));
     return () => { active = false; };
   }, []);
 
@@ -117,25 +116,25 @@ export default function AdminSettingsPage() {
             <AdminSectionCard title="Cấu hình hệ thống" subtitle="Các cài đặt cốt lõi toàn nền tảng">
               <Box sx={{ p: { xs: 2.5, md: 3.5 } }}>
                 <SettingRow label="Tên nền tảng" helper="Hiển thị trên tiêu đề và email gửi đi">
-                  <TextField name="platformName" defaultValue={settings.platformName} fullWidth size="small" disabled={loading} />
+                  <TextField name="platformName" defaultValue={settings.platformName ?? ""} fullWidth size="small" disabled={loading} />
                 </SettingRow>
                 
                 <Divider sx={{ my: 1 }} />
                 
                 <SettingRow label="Email hệ thống" helper="Địa chỉ email dùng gửi thông báo tự động">
-                  <TextField name="systemEmail" defaultValue={settings.systemEmail} fullWidth size="small" disabled={loading} />
+                  <TextField name="systemEmail" defaultValue={settings.systemEmail ?? ""} fullWidth size="small" disabled={loading} />
                 </SettingRow>
                 
                 <Divider sx={{ my: 1 }} />
                 
                 <SettingRow label="Hotline hỗ trợ" helper="Tổng đài chăm sóc khách hàng 24/7">
-                  <TextField name="supportPhone" defaultValue={settings.supportPhone} fullWidth size="small" disabled={loading} />
+                  <TextField name="supportPhone" defaultValue={settings.supportPhone ?? ""} fullWidth size="small" disabled={loading} />
                 </SettingRow>
                 
                 <Divider sx={{ my: 1 }} />
 
                 <SettingRow label="Múi giờ hệ thống" helper="Thời gian áp dụng cho các phiên đấu giá">
-                  <TextField name="timezone" defaultValue={settings.timezone} select fullWidth size="small" disabled={loading}>
+                  <TextField name="timezone" defaultValue={settings.timezone ?? ""} select fullWidth size="small" disabled={loading}>
                     <MenuItem value="GMT+7">Hà Nội, Băng Cốc, Jakarta (GMT+7)</MenuItem>
                     <MenuItem value="GMT+8">Singapore, Bắc Kinh, Manila (GMT+8)</MenuItem>
                     <MenuItem value="GMT+0">Giờ chuẩn quốc tế (GMT+0)</MenuItem>
@@ -169,13 +168,13 @@ export default function AdminSettingsPage() {
                 
                 {/* Status indicator */}
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 2, bgcolor: "rgba(16, 185, 129, 0.06)", border: "1px solid rgba(16, 185, 129, 0.15)", borderRadius: 3 }}>
-                  <CircleIcon color="success" sx={{ fontSize: 14, animation: "pulse 2s infinite" }} />
+                  <CircleIcon color={serverHealth ? "success" : "disabled"} sx={{ fontSize: 14, animation: serverHealth ? "pulse 2s infinite" : "none" }} />
                   <Box>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "emerald.700", lineHeight: 1.2 }}>
-                      Health endpoint not connected
+                      {serverHealth === null ? "Đang kiểm tra hệ thống" : serverHealth ? "Hệ thống đang hoạt động" : "Không kết nối được health endpoint"}
                     </Typography>
                     <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                      Check Docker Compose and actuator for live service health
+                      Trạng thái được đọc trực tiếp từ actuator của API gateway
                     </Typography>
                   </Box>
                 </Box>
@@ -217,7 +216,7 @@ export default function AdminSettingsPage() {
                         Database Connection
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        No health API connected
+                        {serverHealth === null ? "Đang kiểm tra..." : serverHealth ? "Đã kết nối" : "Không kết nối"}
                       </Typography>
                     </Box>
                   </Box>

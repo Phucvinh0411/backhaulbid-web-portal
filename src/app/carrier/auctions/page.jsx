@@ -121,6 +121,16 @@ export default function AuctionsPage() {
   const [registrationAuction, setRegistrationAuction] = useState(null);
   const [openDetailDrawer, setOpenDetailDrawer] = useState(false);
   const [selectedAuction, setSelectedAuction] = useState(null);
+  const emptyFilters = {
+    origin: "",
+    destination: "",
+    goodsType: "",
+    status: "",
+    pickupDate: "",
+    minPrice: "",
+  };
+  const [draftFilters, setDraftFilters] = useState(emptyFilters);
+  const [activeFilters, setActiveFilters] = useState(emptyFilters);
 
   useEffect(() => {
     let active = true;
@@ -186,8 +196,29 @@ export default function AuctionsPage() {
   }, []);
 
   const filteredAuctions = React.useMemo(() => {
-    return auctions.filter((auction) => !auction.isRegistered && auction.status === "OPEN_REGISTER");
-  }, [auctions]);
+    return auctions.filter((auction) => {
+      if (auction.isRegistered || auction.status !== "OPEN_REGISTER") return false;
+      const contains = (value, query) => String(value || "").toLowerCase().includes(query.toLowerCase());
+      if (activeFilters.origin && !contains(auction.origin, activeFilters.origin)) return false;
+      if (activeFilters.destination && !contains(auction.destination, activeFilters.destination)) return false;
+      if (activeFilters.goodsType && !contains(auction.cargoType, activeFilters.goodsType)) return false;
+      if (activeFilters.status && auction.status !== activeFilters.status) return false;
+      if (activeFilters.pickupDate && !String(auction.startTime || "").startsWith(activeFilters.pickupDate)) return false;
+      if (activeFilters.minPrice && Number(auction.maxPrice || 0) < Number(activeFilters.minPrice)) return false;
+      return true;
+    });
+  }, [activeFilters, auctions]);
+
+  const updateDraftFilter = (name, value) => {
+    setDraftFilters((previous) => ({ ...previous, [name]: value }));
+  };
+
+  const applyFilters = () => setActiveFilters({ ...draftFilters });
+
+  const clearFilters = () => {
+    setDraftFilters({ ...emptyFilters });
+    setActiveFilters({ ...emptyFilters });
+  };
 
   const [columnsList, setColumnsList] = useState([
     { id: 'id', label: 'Mã phiên' },
@@ -307,13 +338,13 @@ export default function AuctionsPage() {
           <CardContent>
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="Điểm đi" placeholder="VD: Hà Nội" size="small" />
+                <TextField fullWidth label="Điểm đi" placeholder="VD: Hà Nội" size="small" value={draftFilters.origin} onChange={(event) => updateDraftFilter("origin", event.target.value)} />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="Điểm đến" placeholder="VD: Đà Nẵng" size="small" />
+                <TextField fullWidth label="Điểm đến" placeholder="VD: Đà Nẵng" size="small" value={draftFilters.destination} onChange={(event) => updateDraftFilter("destination", event.target.value)} />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
-                <TextField select fullWidth label="Loại hàng" defaultValue="" size="small">
+                <TextField select fullWidth label="Loại hàng" value={draftFilters.goodsType} onChange={(event) => updateDraftFilter("goodsType", event.target.value)} size="small">
                   <MenuItem value="">Tất cả</MenuItem>
                   <MenuItem value="dien_tu">Hàng điện tử</MenuItem>
                   <MenuItem value="tieu_dung">Hàng tiêu dùng</MenuItem>
@@ -322,22 +353,20 @@ export default function AuctionsPage() {
                 </TextField>
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
-                <TextField select fullWidth label="Trạng thái" defaultValue="" size="small">
+                <TextField select fullWidth label="Trạng thái" value={draftFilters.status} onChange={(event) => updateDraftFilter("status", event.target.value)} size="small">
                   <MenuItem value="">Tất cả</MenuItem>
                   <MenuItem value="OPEN_REGISTER">Sắp diễn ra</MenuItem>
-                  <MenuItem value="BIDDING">Đang đấu giá</MenuItem>
-                  <MenuItem value="CLOSED">Đã đóng</MenuItem>
                 </TextField>
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
-                <TextField type="date" fullWidth label="Ngày bốc hàng" InputLabelProps={{ shrink: true }} size="small" />
+                <TextField type="date" fullWidth label="Ngày bốc hàng" InputLabelProps={{ shrink: true }} size="small" value={draftFilters.pickupDate} onChange={(event) => updateDraftFilter("pickupDate", event.target.value)} />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
-                <TextField fullWidth label="Giá thấp nhất" placeholder="VNĐ" type="number" size="small" />
+                <TextField fullWidth label="Giá thấp nhất" placeholder="VNĐ" type="number" size="small" value={draftFilters.minPrice} onChange={(event) => updateDraftFilter("minPrice", event.target.value)} />
               </Grid>
               <Grid item xs={12} sm={12} md={6} className="flex justify-end items-end gap-2">
-                <Button variant="text" color="inherit">Xóa lọc</Button>
-                <Button variant="contained" color="primary">Áp dụng</Button>
+                <Button variant="text" color="inherit" onClick={clearFilters}>Xóa lọc</Button>
+                <Button variant="contained" color="primary" onClick={applyFilters}>Áp dụng</Button>
               </Grid>
             </Grid>
           </CardContent>

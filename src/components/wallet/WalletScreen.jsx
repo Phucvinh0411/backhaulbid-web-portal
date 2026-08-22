@@ -78,6 +78,11 @@ function submitCheckoutForm(checkout) {
   form.remove();
 }
 
+function formatWalletInput(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  return digits ? new Intl.NumberFormat("vi-VN").format(Number(digits)) : "";
+}
+
 export default function WalletScreen({ role = "shipper", standalone = true }) {
   const isShipper = role === "shipper";
   const [balance, setBalance] = useState(0);
@@ -99,6 +104,7 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
   const [accountHolderName, setAccountHolderName] = useState("");
   const [walletActionError, setWalletActionError] = useState("");
   const [walletActionLoading, setWalletActionLoading] = useState(false);
+  const [pendingTopUp, setPendingTopUp] = useState(null);
   const [order, setOrder] = useState("desc");
   const [orderBy, setOrderBy] = useState("time");
 
@@ -129,6 +135,60 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
       active = false;
     };
   }, [role]);
+
+  const refreshWallet = async () => {
+    const [wallet, transactionPage, withdrawalPage] = await Promise.all([
+      walletApi.getMyWallet(),
+      walletApi.listTransactions({ page: 1, pageSize: 100 }),
+      walletApi.listWithdrawals({ page: 1, pageSize: 20 }),
+    ]);
+    setBalance(Number(wallet.availableBalance || 0));
+    setFrozenBalance(Number(wallet.frozenBalance || 0));
+    setTransactions((transactionPage.data || []).map(toTableTransaction));
+    setWithdrawals(withdrawalPage.data || []);
+  };
+
+  useEffect(() => {
+    if (!pendingTopUp) return undefined;
+
+    let active = true;
+    let checking = false;
+    const checkTopUp = async () => {
+      if (checking) return;
+      checking = true;
+      try {
+        const status = await walletApi.getSepayTopUpStatus(pendingTopUp);
+        if (!active) return;
+        if (status.status === "PAID") {
+          setPendingTopUp(null);
+          await refreshWallet();
+          setWalletMessage("Nạp tiền thành công. Số dư đã được cập nhật.");
+        } else if (["EXPIRED", "FAILED", "CANCELLED"].includes(status.status)) {
+          setPendingTopUp(null);
+          setWalletMessage("Đơn nạp tiền không hoàn tất.");
+        }
+      } catch {
+        // SePay may deliver the IPN a few seconds after the checkout finishes.
+      } finally {
+        checking = false;
+      }
+    };
+
+    checkTopUp();
+    const intervalId = window.setInterval(checkTopUp, 4000);
+    const timeoutId = window.setTimeout(() => {
+      if (active) {
+        setPendingTopUp(null);
+        setWalletMessage("Đơn nạp đang chờ IPN. Vui lòng tải lại sau khi thanh toán.");
+      }
+    }, 15 * 60 * 1000);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [pendingTopUp]);
 
   const formatCurrency = (value) =>
     new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
@@ -177,8 +237,10 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
         setOpenWalletDialog(false);
         setWalletMessage(`\u0110\u00e3 g\u1eedi y\u00eau c\u1ea7u r\u00fat ${formatCurrency(amount)}. S\u1ed1 ti\u1ec1n \u0111\u01b0\u1ee3c t\u1ea1m gi\u1eef \u0111\u1ebfn khi admin x\u1eed l\u00fd.`);
       } else {
-        const checkout = await walletApi.createSepayTopUp(amount);
+        const returnUrl = `${window.location.origin}${window.location.pathname}`;
+        const checkout = await walletApi.createSepayTopUp(amount, returnUrl);
         submitCheckoutForm(checkout);
+        setPendingTopUp(checkout.invoiceNumber);
         setOpenWalletDialog(false);
         setWalletMessage(`Đã tạo đơn nạp ${formatCurrency(amount)}. Hoàn tất thanh toán ở tab mới để hệ thống nhận IPN.`);
       }
@@ -378,12 +440,15 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
           )}
           <TextField
             label={walletActionType === "deposit" ? "Số tiền nạp (VND)" : "Số tiền rút (VND)"}
-            type="number"
+            type="text"
+            inputMode="numeric"
             placeholder="Tối thiểu 10.000"
             fullWidth
-            value={walletAmount}
-            onChange={(event) => setWalletAmount(event.target.value)}
+            value={formatWalletInput(walletAmount)}
+            onChange={(event) => setWalletAmount(event.target.value.replace(/\D/g, ""))}
             disabled={walletActionLoading}
+            helperText="Tự động phân tách hàng nghìn để dễ kiểm tra"
+            inputProps={{ "aria-label": walletActionType === "deposit" ? "Số tiền nạp bằng VND" : "Số tiền rút bằng VND" }}
             InputProps={{ className: "!rounded-2xl", startAdornment: <InputAdornment position="start">₫</InputAdornment> }}
           />
           {walletActionType === "withdraw" && (
@@ -397,7 +462,7 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
         </DialogContent>
         <DialogActions className="!px-6 !pb-4 flex justify-end gap-3">
           <Button onClick={() => setOpenWalletDialog(false)} variant="text" className="!text-slate-500 !font-bold !capitalize !rounded-xl">Hủy</Button>
-          <Button onClick={handleWalletActionSubmit} disabled={!walletAmount || walletActionLoading} variant="contained" className="!font-bold !capitalize !rounded-xl !px-5" sx={{ background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)" }}>
+          <Button onClick={handleWalletActionSubmit} disabled={!walletAmount || walletActionLoading} variant="contained" className="!font-bold !capitalize !rounded-xl !px-5 !text-white" sx={{ background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)", "&:hover": { background: "linear-gradient(135deg, #15415A 0%, #081E2B 100%)" }, "&.Mui-disabled": { background: "#94A3B8", color: "#F8FAFC" } }}>
             {walletActionLoading ? <CircularProgress size={20} className="!text-white" /> : walletActionType === "deposit" ? "Tạo đơn thanh toán" : "Gửi yêu cầu rút"}
           </Button>
         </DialogActions>

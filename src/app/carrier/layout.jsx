@@ -13,9 +13,5 @@ const carrierUser = {
 };
 
 export default function CarrierLayout({ children }) {
-  return (
-    <DashboardLayout role="carrier" userInfo={carrierUser}>
-      {children}
-    </DashboardLayout>
-  );
+  return <DashboardLayout role="carrier">{children}</DashboardLayout>;
 }

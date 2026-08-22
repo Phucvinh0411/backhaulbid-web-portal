@@ -7,12 +7,9 @@ import Typography from "@mui/material/Typography";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TablePagination from "@mui/material/TablePagination";
-import Paper from "@mui/material/Paper";
-import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
@@ -26,6 +23,7 @@ import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import {
+  AdminDialog,
   AdminPageHeader,
   AdminMetricCard,
   AdminPageShell,
@@ -34,6 +32,7 @@ import {
   AdminSecondaryButton,
   AdminSectionCard,
   AdminStatusChip,
+  AdminTableContainer,
   AdminToolbar,
 } from "@/components/admin/AdminUI";
 import { walletApi } from "@/services/walletApi";
@@ -244,7 +243,7 @@ export default function AdminWalletsPage() {
           />
         </AdminToolbar>
 
-        <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 2, overflowX: "auto" }}>
+        <AdminTableContainer minWidth={900}>
           <Table sx={{ minWidth: 900 }} aria-label="Danh sách yêu cầu rút tiền" aria-busy={loading}>
             <TableHead sx={{ bgcolor: "#F8FAFC" }}>
               <TableRow>
@@ -305,7 +304,7 @@ export default function AdminWalletsPage() {
               )}
             </TableBody>
           </Table>
-        </TableContainer>
+        </AdminTableContainer>
 
         <TablePagination
           component="div"
@@ -324,7 +323,7 @@ export default function AdminWalletsPage() {
       </AdminSectionCard>
 
       {/* Dialog Xác nhận Duyệt rút tiền */}
-      <Dialog open={openApproveDialog} onClose={() => !actionLoading && setOpenApproveDialog(false)} maxWidth="xs" fullWidth>
+      <AdminDialog open={openApproveDialog} onClose={() => !actionLoading && setOpenApproveDialog(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, color: "#1B4965" }}>Xác nhận Chuyển tiền Rút</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           {selectedItem && (
@@ -349,10 +348,10 @@ export default function AdminWalletsPage() {
             {actionLoading ? "Đang xử lý..." : "Xác nhận Đã chuyển tiền"}
           </AdminPrimaryButton>
         </DialogActions>
-      </Dialog>
+      </AdminDialog>
 
       {/* Dialog Từ chối Rút tiền */}
-      <Dialog open={openRejectDialog} onClose={() => !actionLoading && setOpenRejectDialog(false)} maxWidth="sm" fullWidth>
+      <AdminDialog open={openRejectDialog} onClose={() => !actionLoading && setOpenRejectDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, color: "#DC2626" }}>Từ chối Yêu cầu Rút tiền</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           {selectedItem && (
@@ -387,7 +386,7 @@ export default function AdminWalletsPage() {
             {actionLoading ? "Đang xử lý..." : "Xác nhận Từ chối & Hoàn tiền"}
           </AdminPrimaryButton>
         </DialogActions>
-      </Dialog>
+      </AdminDialog>
     </AdminPageShell>
   );
 }

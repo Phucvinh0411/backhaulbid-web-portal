@@ -30,10 +30,10 @@ import HelpOutlineRoundedIcon from "@mui/icons-material/HelpOutlineRounded";
 import { SIDEBAR_WIDTH } from "./Sidebar";
 
 const defaultUser = {
-  name: "Quản trị viên",
-  email: "admin@backhaulbid.vn",
-  avatar: "A",
-  role: "Quản trị viên",
+  name: "Tài khoản",
+  email: "",
+  avatar: "T",
+  role: "Đang tải thông tin",
   settingsPath: "/settings",
 };
 
@@ -49,7 +49,7 @@ const fallbackProfiles = {
     avatarLetter: "N",
   },
   admin: {
-    name: "Quản trị viên",
+    name: "Tài khoản",
     roleName: "Quản trị viên",
     avatarLetter: "A",
   },

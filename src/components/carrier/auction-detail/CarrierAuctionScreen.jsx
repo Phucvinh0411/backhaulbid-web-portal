@@ -7,6 +7,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import PageHeader from "@/components/common/PageHeader";
 
 import { getAuction, listBids, placeBid } from "@/services/biddingApi";
+import useAuctionSocket from "@/hooks/useAuctionSocket";
 
 import AuctionTypeBanner from "./AuctionTypeBanner";
 import CarrierCountdownCard from "./CarrierCountdownCard";
@@ -77,6 +78,9 @@ const formatBidTime = (value) => {
   return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(date);
 };
 
+const formatMoney = (value) =>
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(toNumber(value));
+
 export default function CarrierAuctionScreen({ id }) {
   const [realAuction, setRealAuction] = useState(null);
   const [loadError, setLoadError] = useState("");
@@ -109,32 +113,41 @@ export default function CarrierAuctionScreen({ id }) {
   const [countdown, setCountdown] = useState(0);
   const [currentLowest, setCurrentLowest] = useState(0);
   const [myBid, setMyBid] = useState(0);
-  const remainingBids = null;
+  const [remainingBids, setRemainingBids] = useState(null);
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [bidError, setBidError] = useState("");
   const [bidHistory, setBidHistory] = useState([]);
   const currentLowestRef = useRef(currentLowest);
+  const myCarrierIdRef = useRef("");
+  const [sealedBidCount, setSealedBidCount] = useState(0);
+  const [auctionResult, setAuctionResult] = useState(null);
+  const [socketJoined, setSocketJoined] = useState(false);
+  const { disconnect, joinAuction, placeBid: placeBidSocket, on, connected } = useAuctionSocket();
 
   useEffect(() => {
     if (!shipment) return;
     const maxPrice = toNumber(shipment.maxPrice);
     setCurrentLowest(maxPrice);
-    setMyBid(Math.max(maxPrice - 800000, 1));
+    setMyBid(0);
+    setRemainingBids(null);
     setBidHistory([]);
     setAlreadySubmitted(false);
     setBidError("");
+    setSealedBidCount(0);
+    setAuctionResult(null);
 
     let active = true;
     listBids(id, { page: 1, pageSize: 100, sortOrder: "asc" })
       .then((response) => {
         if (!active) return;
         const bids = response?.data || [];
+        setRemainingBids(response?.pagination?.remainingBids ?? null);
         const amounts = bids.map((bid) => toNumber(bid.bidAmount)).filter((amount) => amount > 0);
         setCurrentLowest(amounts.length ? Math.min(maxPrice, ...amounts) : maxPrice);
         setBidHistory(bids.map((bid) => ({
           id: bid.id,
-          isMe: false,
-          bidder: "Nhà xe ẩn danh",
+          isMe: Boolean(isSealed || (myCarrierIdRef.current && bid.carrierId === myCarrierIdRef.current)),
+          bidder: isSealed ? "Bạn" : "Nhà xe ẩn danh",
           amount: toNumber(bid.bidAmount),
           time: formatBidTime(bid.bidTime),
         })));
@@ -162,13 +175,95 @@ export default function CarrierAuctionScreen({ id }) {
     return () => window.clearInterval(interval);
   }, [access?.canEnter, shipment]);
 
+  useEffect(() => {
+    if (!shipment || access?.canEnter !== true) return undefined;
+    let disposed = false;
+    const unsubscribers = [];
+
+    joinAuction(id)
+      .then((joinData) => {
+        if (disposed) return;
+        myCarrierIdRef.current = joinData?.carrierId || "";
+        setSocketJoined(true);
+
+        unsubscribers.push(
+          on("bidPlaced", (payload) => {
+            if (!payload || payload.auctionId !== id) return;
+            if (payload.sealed) {
+              setSealedBidCount((count) => count + 1);
+              return;
+            }
+            const bid = payload.bid;
+            if (!bid) return;
+            const amount = toNumber(bid.bidAmount);
+            const mine = Boolean(myCarrierIdRef.current) && bid.carrierId === myCarrierIdRef.current;
+            setCurrentLowest((previous) => Math.min(previous, amount));
+            setBidHistory((history) =>
+              history.some((entry) => entry.id === bid.id)
+                ? history
+                : [
+                    {
+                      id: bid.id,
+                      isMe: mine,
+                      bidder: mine ? "Bạn" : "Nhà xe ẩn danh",
+                      amount,
+                      time: formatBidTime(bid.bidTime),
+                    },
+                    ...history,
+                  ],
+            );
+          }),
+        );
+
+        unsubscribers.push(
+          on("auctionStatusChanged", (payload) => {
+            if (!payload || payload.auctionId !== id) return;
+            if (payload.status === "COMPLETED") {
+              setAuctionResult({ status: "COMPLETED", winningBidAmount: payload.winningBidAmount || null });
+            } else if (payload.status === "CANCELLED") {
+              setAuctionResult({ status: "CANCELLED", winningBidAmount: null });
+            } else if (payload.status === "OPEN") {
+              setAuctionResult(null);
+            }
+          }),
+        );
+      })
+      .catch(() => {
+        if (!disposed) setSocketJoined(false);
+      });
+
+    return () => {
+      disposed = true;
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+      disconnect();
+    };
+  }, [access?.canEnter, id, shipment, joinAuction, on, disconnect]);
+
   const handleAccessChange = useCallback((nextAccess) => {
     setAccess(nextAccess);
   }, []);
 
+  const applySuccessfulBid = (createdBid) => {
+    const bidAmount = toNumber(createdBid?.bidAmount || myBid);
+    setCurrentLowest((previous) => (isSealed ? previous : Math.min(previous, bidAmount)));
+    setBidHistory((history) =>
+      history.some((entry) => entry.id === createdBid?.id)
+        ? history
+        : [
+            { id: createdBid?.id || Date.now(), isMe: true, bidder: "Bạn", amount: bidAmount, time: "Vừa xong" },
+            ...history,
+          ],
+    );
+    setAlreadySubmitted(true);
+  };
+
   const handleSubmit = async () => {
     setBidError("");
 
+    if (auctionResult) {
+      setBidError("Phiên đấu giá đã kết thúc, không thể đặt giá thêm.");
+      return;
+    }
     if (!isSealed && myBid >= currentLowestRef.current) {
       setBidError("Giá thầu phải thấp hơn giá thấp nhất hiện tại.");
       return;
@@ -178,20 +273,33 @@ export default function CarrierAuctionScreen({ id }) {
       return;
     }
 
+    const bidAmountPayload = String(myBid);
+    const idempotencyKey = globalThis.crypto?.randomUUID?.() || `bid-${Date.now()}-${Math.random()}`;
+
+    if (connected) {
+      try {
+        const result = await placeBidSocket(id, bidAmountPayload, idempotencyKey);
+        if (result?.ok && result?.bid) {
+          applySuccessfulBid(result.bid);
+          return;
+        }
+        setBidError(result?.message || "Không thể đặt giá lúc này.");
+        return;
+      } catch (error) {
+        // Socket dropped mid-request; fall back to REST below.
+      }
+    }
+
     try {
-      const createdBid = await placeBid(id, { bidAmount: String(myBid) });
-      const bidAmount = toNumber(createdBid.bidAmount || myBid);
-      setCurrentLowest((previous) => (isSealed ? previous : Math.min(previous, bidAmount)));
-      setBidHistory((history) => [
-        { id: createdBid.id || Date.now(), isMe: true, amount: bidAmount, time: "Vừa xong" },
-        ...history,
-      ]);
-      setAlreadySubmitted(true);
+      const createdBid = await placeBid(id, {
+        bidAmount: bidAmountPayload,
+        idempotencyKey,
+      });
+      applySuccessfulBid(createdBid);
     } catch (error) {
       const message = error?.response?.data?.message;
       setBidError(Array.isArray(message) ? message.join(", ") : message || "Không thể đặt giá lúc này.");
     }
-    return;
   };
 
   if (!shipment && !loadError) {
@@ -200,6 +308,7 @@ export default function CarrierAuctionScreen({ id }) {
   if (!shipment) return <Alert severity="error">{loadError || "Không tìm thấy phiên đấu giá."}</Alert>;
 
   const canEnterRoom = access?.canEnter === true;
+  const isLive = socketJoined && connected;
   const detailStatus = access?.accessStatus === "PAYMENT_INCOMPLETE"
     ? "PAYMENT_INCOMPLETE"
     : canEnterRoom
@@ -227,6 +336,37 @@ export default function CarrierAuctionScreen({ id }) {
 
       {canEnterRoom && (
         <>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold ${
+                isLive
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-amber-200 bg-amber-50 text-amber-700"
+              }`}
+            >
+              <span className={`h-2 w-2 rounded-full ${isLive ? "animate-pulse bg-emerald-500" : "bg-amber-500"}`}></span>
+              {isLive ? "Trực tiếp" : "Đang kết nối lại…"}
+            </span>
+            {isSealed && sealedBidCount > 0 && !auctionResult && (
+              <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                Vừa có {sealedBidCount} lượt gửi giá thầu kín
+              </span>
+            )}
+          </div>
+
+          {auctionResult?.status === "COMPLETED" && (
+            <Alert severity="success" className="!mb-4 !rounded-2xl">
+              Phiên đấu giá đã kết thúc.
+              {auctionResult.winningBidAmount
+                ? ` Giá trúng thấp nhất: ${formatMoney(auctionResult.winningBidAmount)}.`
+                : ""}
+            </Alert>
+          )}
+          {auctionResult?.status === "CANCELLED" && (
+            <Alert severity="warning" className="!mb-4 !rounded-2xl">
+              Phiên đấu giá đã bị hủy bởi hệ thống.
+            </Alert>
+          )}
           {bidError && <Alert severity="error" className="!mb-4 !rounded-2xl">{bidError}</Alert>}
           <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-[7fr_5fr]">
             <div className="relative min-h-[420px] lg:min-h-0">

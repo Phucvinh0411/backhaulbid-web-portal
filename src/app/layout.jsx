@@ -5,6 +5,9 @@ import { ThemeProvider } from "@/theme";
 export const metadata = {
   title: "BackHaulBid - Nền tảng Giao dịch Vận tải B2B",
   description: "Nền tảng đấu giá và giao dịch vận tải B2B hàng đầu Việt Nam",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({ children }) {

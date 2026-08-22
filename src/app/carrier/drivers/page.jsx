@@ -28,22 +28,9 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { PageHeader, ViewModeToggle, DetailDrawer } from "@/components/common";
-import { createDriverWithDocuments, deleteDriver, getMyDrivers, updateDriver, updateDriverWithDocuments } from "@/services/fleetApi";
+import { createDriver, deleteDriver, getMyDrivers, updateDriver } from "@/services/fleetApi";
 import { downloadCsvTemplate, parseSimpleCsv } from "@/services/csvImport";
-
-const buildDriverDocumentFormData = (form, licenseImage) => {
-  const formData = new FormData();
-  formData.append("metadata", new globalThis.Blob([JSON.stringify({ fullName: form.fullName, phone: form.phone, licenseNumber: form.licenseNumber })], { type: "application/json" }));
-  formData.append("licenseImage", licenseImage);
-  return formData;
-};
-
-const buildDriverUpdateFormData = (form, licenseImage) => {
-  const formData = new FormData();
-  formData.append("metadata", new globalThis.Blob([JSON.stringify({ fullName: form.fullName, phone: form.phone, licenseNumber: form.licenseNumber })], { type: "application/json" }));
-  if (licenseImage) formData.append("licenseImage", licenseImage);
-  return formData;
-};
+import { mediaApi } from "@/services/mediaApi";
 
 export default function DriversPage() {
   const [drivers, setDrivers] = useState([]);
@@ -131,7 +118,11 @@ export default function DriversPage() {
     setSaving(true);
     setError("");
     try {
-      await createDriverWithDocuments(buildDriverDocumentFormData(form, licenseImage));
+      let uploadedUrl = form.licenseImageUrl;
+      if (licenseImage) {
+        uploadedUrl = await mediaApi.uploadFile(licenseImage, "drivers/license");
+      }
+      await createDriver({ ...form, licenseImageUrl: uploadedUrl });
       await loadDrivers();
       setOpenModal(false);
       setSuccessMsg("Khai báo tài xế mới thành công! Hồ sơ đang chờ Admin duyệt.");
@@ -185,11 +176,12 @@ export default function DriversPage() {
         licenseNumber: editForm.licenseNumber,
         licenseImageUrl: editForm.licenseImageUrl,
       };
+      let uploadedUrl = editForm.licenseImageUrl;
       if (editLicenseImage) {
-        await updateDriverWithDocuments(editForm.id, buildDriverUpdateFormData(metadata, editLicenseImage));
-      } else {
-        await updateDriver(editForm.id, metadata);
+        uploadedUrl = await mediaApi.uploadFile(editLicenseImage, "drivers/license");
       }
+      metadata.licenseImageUrl = uploadedUrl;
+      await updateDriver(editForm.id, metadata);
       await loadDrivers();
       setOpenEditModal(false);
       if (selectedDriver) {
@@ -200,7 +192,7 @@ export default function DriversPage() {
           phone: editForm.phone,
           licenseNumber: editForm.licenseNumber,
           licenseClass: editForm.licenseNumber,
-          licenseImageUrl: editForm.licenseImageUrl,
+          licenseImageUrl: uploadedUrl,
         }));
       }
       setSuccessMsg("Cập nhật thông tin tài xế thành công!");
@@ -310,11 +302,16 @@ export default function DriversPage() {
     setError("");
     try {
       for (const row of importRows) {
-        await createDriverWithDocuments(buildDriverDocumentFormData({
+        const licenseImageUrl = await mediaApi.uploadFile(
+          findImportDocument(row.licenseImageFile),
+          "drivers/license"
+        );
+        await createDriver({
           fullName: row.fullName,
           phone: row.phone,
           licenseNumber: row.licenseNumber,
-        }, findImportDocument(row.licenseImageFile)));
+          licenseImageUrl,
+        });
       }
       setSuccessMsg(`Đã gửi ${importRows.length} hồ sơ tài xế để Admin xét duyệt.`);
       await loadDrivers();

@@ -24,6 +24,7 @@ import {
   validateAuthorizationLetter,
   validateBusinessLicense,
 } from "./businessVerificationApi";
+import { mediaApi } from "../../services/mediaApi";
 
 const STATUS_PRESENTATION = {
   NOT_STARTED: { label: "Chưa bắt đầu", color: "default" },
@@ -258,33 +259,31 @@ export default function BusinessVerificationPanel({
       return;
     }
 
-    const formData = new FormData();
-    formData.append("taxCode", lookup.taxCode);
-    formData.append("companyName", lookup.companyName);
-    formData.append("businessAddress", lookup.address);
-    formData.append("legalRepresentativeName", lookup.legalRepresentative);
-    formData.append("ekycRepresentativeName", representative.name);
-    formData.append(
-      "representativeMatched",
-      String(representativeComparison === "MATCH")
-    );
-    formData.append(
-      "requiresAuthorization",
-      String(requiresAuthorization)
-    );
-    formData.append("businessLicense", license);
-    if (requiresAuthorization) {
-      formData.append("authorizationLetter", authorizationLetter);
-    }
-
     setPhase("submitting");
     setMessage("");
 
     try {
+      let businessLicenseUrl = "";
+      if (license) {
+        businessLicenseUrl = await mediaApi.uploadFile(license, "business-verifications/licenses");
+      }
+      let authorizationLetterUrl = "";
+      if (requiresAuthorization && authorizationLetter) {
+        authorizationLetterUrl = await mediaApi.uploadFile(authorizationLetter, "business-verifications/authorization");
+      }
+
+      const params = new globalThis.URLSearchParams();
+      params.append("taxCode", lookup.taxCode);
+      params.append("ekycRepresentativeName", representative.name);
+      params.append("businessLicenseUrl", businessLicenseUrl);
+      if (authorizationLetterUrl) {
+        params.append("authorizationLetterUrl", authorizationLetterUrl);
+      }
+
       const { data } = await axiosClient.post(
         BUSINESS_VERIFICATION_PATH,
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        params,
+        { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
       );
       setVerification(data);
       setLicense(null);

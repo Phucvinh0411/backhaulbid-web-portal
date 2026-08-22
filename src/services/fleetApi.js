@@ -39,30 +39,10 @@ export const getMyVehicles = async () => {
 
 export const createVehicle = (payload) => apiService.post("/api/v1/vehicles", payload);
 
-export const createVehicleWithDocuments = (formData) =>
-  apiService.post("/api/v1/vehicles/with-documents", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-
 export const createVehiclesBulk = (payload) => apiService.post("/api/v1/vehicles/bulk", payload);
-
-export const importVehiclesZip = (formData) =>
-  apiService.post("/api/v1/vehicles/import-zip", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-
-export const previewVehiclesZip = (formData) =>
-  apiService.post("/api/v1/vehicles/import-zip/preview", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
 
 export const updateVehicle = (vehicleId, payload) =>
   apiService.patch(`/api/v1/vehicles/${vehicleId}`, payload);
-
-export const updateVehicleWithDocuments = (vehicleId, formData) =>
-  apiService.patch(`/api/v1/vehicles/${vehicleId}/with-documents`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
 
 export const deactivateVehicle = (vehicleId) =>
   apiService.delete(`/api/v1/vehicles/${vehicleId}`);
@@ -81,30 +61,10 @@ export const getMyDrivers = async () => {
 
 export const createDriver = (payload) => apiService.post("/api/v1/drivers", payload);
 
-export const createDriverWithDocuments = (formData) =>
-  apiService.post("/api/v1/drivers/with-documents", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-
 export const createDriversBulk = (payload) => apiService.post("/api/v1/drivers/bulk", payload);
-
-export const importDriversZip = (formData) =>
-  apiService.post("/api/v1/drivers/import-zip", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-
-export const previewDriversZip = (formData) =>
-  apiService.post("/api/v1/drivers/import-zip/preview", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
 
 export const updateDriver = (driverId, payload) =>
   apiService.patch(`/api/v1/drivers/${driverId}`, payload);
-
-export const updateDriverWithDocuments = (driverId, formData) =>
-  apiService.patch(`/api/v1/drivers/${driverId}/with-documents`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
 
 export const deleteDriver = (driverId) => apiService.delete(`/api/v1/drivers/${driverId}`);
 

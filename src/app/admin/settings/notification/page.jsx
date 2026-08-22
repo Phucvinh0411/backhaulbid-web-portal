@@ -21,9 +21,9 @@ import {
 import { getAdminSettings, saveAdminSettings } from "@/services/adminSettingsApi";
 
 export default function NotificationSettingsPage() {
-  const [sms, setSms] = useState(true);
-  const [email, setEmail] = useState(true);
-  const [push, setPush] = useState(true);
+  const [sms, setSms] = useState(null);
+  const [email, setEmail] = useState(null);
+  const [push, setPush] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -110,7 +110,7 @@ export default function NotificationSettingsPage() {
                       </Typography>
                     </Box>
                   </Box>
-                  <Switch checked={sms} onChange={(e) => setSms(e.target.checked)} name="smsNotifications" color="primary" disabled={loading} />
+                  <Switch checked={sms === true} onChange={(e) => setSms(e.target.checked)} name="smsNotifications" color="primary" disabled={loading} />
                 </Box>
 
                 {/* Email Channel */}
@@ -136,7 +136,7 @@ export default function NotificationSettingsPage() {
                       </Typography>
                     </Box>
                   </Box>
-                  <Switch checked={email} onChange={(e) => setEmail(e.target.checked)} name="emailNotifications" color="primary" disabled={loading} />
+                  <Switch checked={email === true} onChange={(e) => setEmail(e.target.checked)} name="emailNotifications" color="primary" disabled={loading} />
                 </Box>
 
                 {/* Web Push Notification */}
@@ -162,7 +162,7 @@ export default function NotificationSettingsPage() {
                       </Typography>
                     </Box>
                   </Box>
-                  <Switch checked={push} onChange={(e) => setPush(e.target.checked)} name="pushNotifications" color="primary" disabled={loading} />
+                  <Switch checked={push === true} onChange={(e) => setPush(e.target.checked)} name="pushNotifications" color="primary" disabled={loading} />
                 </Box>
 
               </Box>

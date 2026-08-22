@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
@@ -46,6 +46,35 @@ export default function DashboardLayout({ children, role, userInfo }) {
         console.error("Could not fetch user profile from DB:", err);
       });
   }, [role]);
+  const [currentUser, setCurrentUser] = useState(userInfo || null);
+
+  useEffect(() => {
+    let active = true;
+    identityApi.getCurrentAccount()
+      .then((account) => {
+        if (!active) return;
+        const roleLabels = {
+          ADMIN: "Quản trị viên",
+          CARRIER: "Chủ xe",
+          SHIPPER: "Chủ hàng",
+          DRIVER: "Tài xế",
+        };
+        const name = account.fullName || account.email || account.phone || "Tài khoản";
+        setCurrentUser({
+          name,
+          email: account.email || account.phone || "",
+          avatar: name.charAt(0).toUpperCase(),
+          role: roleLabels[account.role] || account.role || "Tài khoản",
+          settingsPath: `/${role}/settings`,
+        });
+      })
+      .catch(() => {
+        if (active) setCurrentUser(userInfo || null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [role, userInfo]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -128,3 +157,4 @@ export default function DashboardLayout({ children, role, userInfo }) {
     </Box>
   );
 }
+
