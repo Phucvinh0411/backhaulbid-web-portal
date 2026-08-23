@@ -135,9 +135,15 @@ export function loadFrontendEnvironment({
   );
 
   if (Object.keys(existingFrontendEnvironment).length === 0) {
-    throw new Error(
-      "Không tìm thấy cấu hình dùng chung tại be/backhaulbid-infrastructure/.env và cũng không có biến frontend trong môi trường hiện tại.",
-    );
+    if (process.env.CI) {
+      console.warn(
+        "[shared-env] CẢNH BÁO: Không tìm thấy cấu hình dùng chung và biến môi trường (Bỏ qua do đang chạy trên CI).",
+      );
+    } else {
+      throw new Error(
+        "Không tìm thấy cấu hình dùng chung tại be/backhaulbid-infrastructure/.env và cũng không có biến frontend trong môi trường hiện tại.",
+      );
+    }
   }
 
   return {
