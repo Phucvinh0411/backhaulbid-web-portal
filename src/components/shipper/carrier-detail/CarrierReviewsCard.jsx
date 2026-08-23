@@ -16,12 +16,17 @@ export default function CarrierReviewsCard({ reviews = [] }) {
           </Typography>
         </div>
         <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
-          <StarIcon className="!text-[0.85rem]" /> 4.95 / 5.0 ⭐⭐⭐⭐⭐
+          <StarIcon className="!text-[0.85rem]" />
+          {reviews.length ? "Có dữ liệu đánh giá" : "Chưa có dữ liệu đánh giá"}
         </span>
       </div>
 
       <div className="space-y-3">
-        {reviews.map((rev) => (
+        {reviews.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
+            Hệ thống chưa có đánh giá đã xác thực cho nhà xe này.
+          </p>
+        ) : reviews.map((rev) => (
           <div key={rev.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
             <div className="flex items-center justify-between">
               <strong className="text-slate-800 text-xs font-bold">{rev.shipperName}</strong>

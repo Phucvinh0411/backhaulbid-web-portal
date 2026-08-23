@@ -14,17 +14,27 @@ import {
 } from "@/services/biddingApi";
 import { getMyVehicles } from "@/services/fleetApi";
 import { formatCurrency } from "@/utils/auctionFormatters";
+import { getApiErrorMessage } from "@/services/errorMessage";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import AuctionRegistrationDialog from "./AuctionRegistrationDialog";
 
 const formatRemaining = (date) => {
-  const seconds = Math.max(0, Math.floor((new Date(date).getTime() - Date.now()) / 1000));
+  const seconds = Math.max(
+    0,
+    Math.floor((new Date(date).getTime() - Date.now()) / 1000),
+  );
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const remainingSeconds = seconds % 60;
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
 };
 
-export default function CarrierRegistrationGate({ auctionId, shipment, onAccessChange }) {
+export default function CarrierRegistrationGate({
+  auctionId,
+  shipment,
+  onAccessChange,
+}) {
+  const { notify } = useGlobalNotification();
   const [access, setAccess] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -49,12 +59,16 @@ export default function CarrierRegistrationGate({ auctionId, shipment, onAccessC
       updateAccess(nextAccess);
       setError("");
     } catch (requestError) {
-      const message = requestError?.response?.data?.message;
-      setError(Array.isArray(message) ? message.join(", ") : message || "Không thể kiểm tra quyền tham gia phiên đấu giá.");
+      const nextError = getApiErrorMessage(
+        requestError,
+        "Không thể kiểm tra quyền tham gia phiên đấu giá. Vui lòng thử lại.",
+      );
+      setError(nextError);
+      notify.error(nextError);
     } finally {
       setLoading(false);
     }
-  }, [auctionId, updateAccess]);
+  }, [auctionId, notify, updateAccess]);
 
   useEffect(() => {
     void loadAccess();
@@ -70,8 +84,12 @@ export default function CarrierRegistrationGate({ auctionId, shipment, onAccessC
       })
       .catch((requestError) => {
         if (!active) return;
-        const message = requestError?.response?.data?.message;
-        setVehiclesError(Array.isArray(message) ? message.join(", ") : message || "Không thể tải phương tiện đã xác minh.");
+        const nextError = getApiErrorMessage(
+          requestError,
+          "Không thể tải phương tiện đã xác minh. Vui lòng thử lại.",
+        );
+        setVehiclesError(nextError);
+        notify.error(nextError);
       })
       .finally(() => {
         if (active) setVehiclesLoading(false);
@@ -80,7 +98,7 @@ export default function CarrierRegistrationGate({ auctionId, shipment, onAccessC
     return () => {
       active = false;
     };
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     const startTime = access?.startTime || shipment?.startTime;
@@ -94,7 +112,8 @@ export default function CarrierRegistrationGate({ auctionId, shipment, onAccessC
 
   const paymentSummary = useMemo(() => {
     const fee = Number(shipment?.participationFee || 0);
-    const depositRequired = shipment?.isDepositRequired ?? Number(shipment?.depositAmount || 0) > 0;
+    const depositRequired =
+      shipment?.isDepositRequired ?? Number(shipment?.depositAmount || 0) > 0;
     const deposit = depositRequired ? Number(shipment.depositAmount || 0) : 0;
     return { fee, deposit, depositRequired, total: fee + deposit };
   }, [shipment]);
@@ -116,10 +135,15 @@ export default function CarrierRegistrationGate({ auctionId, shipment, onAccessC
       await retryRegistrationPayment(auctionId, access.registrationId, {
         idempotencyKey: globalThis.crypto.randomUUID(),
       });
+      notify.success("Đã gửi lại yêu cầu thanh toán đăng ký.");
       await loadAccess();
     } catch (requestError) {
-      const message = requestError?.response?.data?.message;
-      setError(Array.isArray(message) ? message.join(", ") : message || "Không thể hoàn tất thanh toán.");
+      const nextError = getApiErrorMessage(
+        requestError,
+        "Không thể hoàn tất thanh toán. Vui lòng kiểm tra số dư rồi thử lại.",
+      );
+      setError(nextError);
+      notify.error(nextError);
       await loadAccess();
     } finally {
       setSubmitting(false);
@@ -148,65 +172,116 @@ export default function CarrierRegistrationGate({ auctionId, shipment, onAccessC
   return (
     <>
       <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      {error && <Alert severity="error" className="!mb-4 !rounded-2xl">{error}</Alert>}
+        {error && (
+          <Alert severity="error" className="!mb-4 !rounded-2xl">
+            {error}
+          </Alert>
+        )}
 
-      {status === "REGISTRATION_REQUIRED" && (
-        <div className="space-y-4">
-          <div>
-            <p className="text-xs font-black uppercase tracking-wider text-slate-400">Điều kiện tham gia</p>
-            <h2 className="mt-1 text-lg font-black text-slate-800">Đăng ký và hoàn tất thanh toán trước hạn đóng đăng ký</h2>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
-              <PaymentsIcon className="text-sky-700" />
-              <p className="mt-2 text-xs font-bold text-slate-500">Phí tham gia bắt buộc</p>
-              <p className="font-mono text-lg font-black text-sky-800">{formatCurrency(paymentSummary.fee)}</p>
+        {status === "REGISTRATION_REQUIRED" && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+                Điều kiện tham gia
+              </p>
+              <h2 className="mt-1 text-lg font-black text-slate-800">
+                Đăng ký và hoàn tất thanh toán trước hạn đóng đăng ký
+              </h2>
             </div>
-            <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-              <SecurityIcon className="text-amber-700" />
-              <p className="mt-2 text-xs font-bold text-slate-500">Tiền đặt cọc</p>
-              <p className="font-mono text-lg font-black text-amber-800">
-                {paymentSummary.depositRequired ? formatCurrency(paymentSummary.deposit) : "Không yêu cầu"}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
+                <PaymentsIcon className="text-sky-700" />
+                <p className="mt-2 text-xs font-bold text-slate-500">
+                  Phí tham gia bắt buộc
+                </p>
+                <p className="font-mono text-lg font-black text-sky-800">
+                  {formatCurrency(paymentSummary.fee)}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                <SecurityIcon className="text-amber-700" />
+                <p className="mt-2 text-xs font-bold text-slate-500">
+                  Tiền đặt cọc
+                </p>
+                <p className="font-mono text-lg font-black text-amber-800">
+                  {paymentSummary.depositRequired
+                    ? formatCurrency(paymentSummary.deposit)
+                    : "Không yêu cầu"}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4">
+              <span className="text-sm font-bold text-slate-600">
+                Tổng cần thanh toán/khóa
+              </span>
+              <span className="font-mono text-lg font-black text-slate-900">
+                {formatCurrency(paymentSummary.total)}
+              </span>
+            </div>
+            <Button
+              variant="contained"
+              onClick={handleRegister}
+              disabled={submitting}
+              className="!rounded-2xl !px-6 !py-3 !font-bold"
+            >
+              {submitting ? "Đang xử lý..." : "Đăng ký tham gia"}
+            </Button>
+          </div>
+        )}
+
+        {status === "PAYMENT_INCOMPLETE" && (
+          <div className="space-y-3">
+            <p className="text-lg font-black text-slate-800">
+              Đăng ký đã tạo nhưng thanh toán chưa hoàn tất
+            </p>
+            <p className="text-sm text-slate-500">
+              Bạn có thể thử lại trước khi phiên bắt đầu. Nếu quá thời điểm bắt
+              đầu, hệ thống sẽ khóa thao tác này.
+            </p>
+            <Button
+              variant="contained"
+              onClick={handleRetryPayment}
+              disabled={submitting}
+              className="!rounded-2xl !px-6 !py-3 !font-bold"
+            >
+              {submitting ? "Đang xử lý..." : "Thử lại thanh toán"}
+            </Button>
+          </div>
+        )}
+
+        {status === "WAITING_FOR_START" && (
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-emerald-600">
+                Đã đăng ký thành công
+              </p>
+              <p className="mt-1 text-lg font-black text-slate-800">
+                Phòng sẽ mở khi đến giờ bắt đầu
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Bạn chưa thể xem phòng hoặc đặt giá trước thời điểm này.
               </p>
             </div>
+            <div className="rounded-2xl bg-emerald-50 px-5 py-3 text-center text-emerald-800">
+              <AccessTimeIcon />
+              <p className="font-mono text-xl font-black">{remaining}</p>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4">
-            <span className="text-sm font-bold text-slate-600">Tổng cần thanh toán/khóa</span>
-            <span className="font-mono text-lg font-black text-slate-900">{formatCurrency(paymentSummary.total)}</span>
-          </div>
-          <Button variant="contained" onClick={handleRegister} disabled={submitting} className="!rounded-2xl !px-6 !py-3 !font-bold">
-            {submitting ? "Đang xử lý..." : "Đăng ký tham gia"}
-          </Button>
-        </div>
-      )}
+        )}
 
-      {status === "PAYMENT_INCOMPLETE" && (
-        <div className="space-y-3">
-          <p className="text-lg font-black text-slate-800">Đăng ký đã tạo nhưng thanh toán chưa hoàn tất</p>
-          <p className="text-sm text-slate-500">Bạn có thể thử lại trước khi phiên bắt đầu. Nếu quá thời điểm bắt đầu, hệ thống sẽ khóa thao tác này.</p>
-          <Button variant="contained" onClick={handleRetryPayment} disabled={submitting} className="!rounded-2xl !px-6 !py-3 !font-bold">
-            {submitting ? "Đang xử lý..." : "Thử lại thanh toán"}
-          </Button>
-        </div>
-      )}
-
-      {status === "WAITING_FOR_START" && (
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-black uppercase tracking-wider text-emerald-600">Đã đăng ký thành công</p>
-            <p className="mt-1 text-lg font-black text-slate-800">Phòng sẽ mở khi đến giờ bắt đầu</p>
-              <p className="mt-1 text-sm text-slate-500">Bạn chưa thể xem phòng hoặc đặt giá trước thời điểm này.</p>
-          </div>
-          <div className="rounded-2xl bg-emerald-50 px-5 py-3 text-center text-emerald-800">
-            <AccessTimeIcon />
-            <p className="font-mono text-xl font-black">{remaining}</p>
-          </div>
-        </div>
-      )}
-
-      {status === "REGISTRATION_CLOSED" && <p className="font-black text-slate-700">Phiên đã đóng đăng ký, không thể tham gia thêm.</p>}
-      {status === "AUCTION_COMPLETED" && <p className="font-black text-slate-700">Phiên đấu giá đã kết thúc.</p>}
-        {status === "AUCTION_CANCELLED" && <p className="font-black text-slate-700">Phiên đấu giá đã bị hủy.</p>}
+        {status === "REGISTRATION_CLOSED" && (
+          <p className="font-black text-slate-700">
+            Phiên đã đóng đăng ký, không thể tham gia thêm.
+          </p>
+        )}
+        {status === "AUCTION_COMPLETED" && (
+          <p className="font-black text-slate-700">
+            Phiên đấu giá đã kết thúc.
+          </p>
+        )}
+        {status === "AUCTION_CANCELLED" && (
+          <p className="font-black text-slate-700">Phiên đấu giá đã bị hủy.</p>
+        )}
       </div>
 
       <AuctionRegistrationDialog

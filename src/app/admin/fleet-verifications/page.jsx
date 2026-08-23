@@ -3,43 +3,69 @@
 import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Chip from "@mui/material/Chip";
-import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
-import Paper from "@mui/material/Paper";
-import Tab from "@mui/material/Tab";
-import Tabs from "@mui/material/Tabs";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { PageHeader } from "@/components/common";
+import {
+  AdminDialog,
+  AdminEmptyState,
+  AdminLoadingState,
+  AdminPageHeader,
+  AdminPageShell,
+  AdminPrimaryButton,
+  AdminSecondaryButton,
+  AdminSectionCard,
+  AdminSelectField,
+  AdminStatusChip,
+  AdminTableContainer,
+  AdminToolbar,
+} from "@/components/admin/AdminUI";
 import {
   getAdminDriverReviews,
   getAdminVehicleReviews,
   reviewAdminDriver,
   reviewAdminVehicle,
 } from "@/services/fleetApi";
+import { getApiErrorMessage } from "@/services/errorMessage";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
-const statusLabel = {
-  PENDING: "Chờ duyệt",
-  VERIFIED: "Đã duyệt",
-  REJECTED: "Từ chối",
-  INACTIVE: "Vô hiệu hóa",
+const STATUS_META = {
+  PENDING: { label: "Chờ duyệt", tone: "warning" },
+  VERIFIED: { label: "Đã duyệt", tone: "success" },
+  REJECTED: { label: "Từ chối", tone: "danger" },
+  INACTIVE: { label: "Vô hiệu hóa", tone: "neutral" },
 };
 
+const statusOptions = (tab) => [
+  { value: "PENDING", label: "Chờ duyệt" },
+  { value: "VERIFIED", label: "Đã duyệt" },
+  { value: "REJECTED", label: "Từ chối" },
+  ...(tab === "drivers" ? [{ value: "INACTIVE", label: "Vô hiệu hóa" }] : []),
+];
+
+function ReviewStatusChip({ status }) {
+  const meta = STATUS_META[status] || {
+    label: status || "Chưa rõ",
+    tone: "neutral",
+  };
+  return <AdminStatusChip label={meta.label} tone={meta.tone} />;
+}
+
 export default function FleetVerificationsPage() {
+  const notify = useGlobalNotification();
   const [tab, setTab] = useState("vehicles");
   const [status, setStatus] = useState("PENDING");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [reviewing, setReviewing] = useState(null);
   const [detailRow, setDetailRow] = useState(null);
   const [reason, setReason] = useState("");
@@ -47,151 +73,400 @@ export default function FleetVerificationsPage() {
 
   const loadReviews = async () => {
     setLoading(true);
-    setError("");
     try {
-      const data = tab === "vehicles"
-        ? await getAdminVehicleReviews(status)
-        : await getAdminDriverReviews(status === "INACTIVE" ? "EXPIRED" : status);
+      const data =
+        tab === "vehicles"
+          ? await getAdminVehicleReviews(status)
+          : await getAdminDriverReviews(
+              status === "INACTIVE" ? "EXPIRED" : status,
+            );
       setRows(Array.isArray(data) ? data : []);
     } catch (loadError) {
-      setError(loadError?.response?.data?.message || "Không thể tải hồ sơ đội xe.");
+      notify.error(
+        getApiErrorMessage(
+          loadError,
+          "Không thể tải hồ sơ đội xe. Vui lòng thử lại.",
+        ),
+      );
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadReviews();
-  }, [tab, status]);
+    void loadReviews();
+  }, [notify, status, tab]);
 
-  const openReview = (row, decision) => {
-    setReason("");
-    setReviewing({ row, decision });
+  const changeTab = (nextTab) => {
+    setTab(nextTab);
+    setStatus("PENDING");
   };
-
-  const openDetail = (row) => setDetailRow(row);
 
   const submitReview = async () => {
     if (!reviewing) return;
     if (reviewing.decision === "REJECT" && !reason.trim()) {
-      setError("Cần nhập lý do từ chối.");
+      notify.warning("Cần nhập lý do từ chối.");
       return;
     }
     setSaving(true);
-    setError("");
     try {
-      const review = { decision: reviewing.decision, reason: reason.trim() || null };
-      if (tab === "vehicles") await reviewAdminVehicle(reviewing.row.id, review);
+      const review = {
+        decision: reviewing.decision,
+        reason: reason.trim() || null,
+      };
+      if (tab === "vehicles")
+        await reviewAdminVehicle(reviewing.row.id, review);
       else await reviewAdminDriver(reviewing.row.id, review);
+      notify.success("Đã cập nhật kết quả duyệt hồ sơ đội xe.");
       setReviewing(null);
       await loadReviews();
     } catch (reviewError) {
-      setError(reviewError?.response?.data?.message || "Không thể cập nhật kết quả duyệt.");
+      notify.error(
+        getApiErrorMessage(
+          reviewError,
+          "Không thể cập nhật kết quả duyệt. Vui lòng thử lại.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Box className="animate-fade-in-up">
-      <PageHeader
+    <AdminPageShell>
+      <AdminPageHeader
         title="Duyệt đội xe"
-        subtitle="Kiểm tra và phê duyệt xe, tài xế trước khi tham gia vận chuyển"
-        breadcrumbs={[{ label: "Tổng quan", path: "/admin" }, { label: "Duyệt đội xe", path: "/admin/fleet-verifications" }]}
+        subtitle="Kiểm tra và phê duyệt phương tiện, tài xế trước khi tham gia vận chuyển."
+        breadcrumbs={[
+          { label: "Admin", path: "/admin" },
+          { label: "Vận hành", path: "/admin/fleet-verifications" },
+          { label: "Duyệt đội xe" },
+        ]}
       />
 
-      {error && <Box role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</Box>}
-
-      <Paper elevation={0} className="overflow-hidden rounded-2xl border border-slate-200">
-        <Tabs value={tab} onChange={(_, value) => setTab(value)} className="border-b border-slate-200 px-3">
-          <Tab value="vehicles" label="Phương tiện" sx={{ textTransform: "none", fontWeight: 700 }} />
-          <Tab value="drivers" label="Tài xế" sx={{ textTransform: "none", fontWeight: 700 }} />
-        </Tabs>
-
-        <Box className="flex flex-wrap items-center gap-2 p-4">
-          {['PENDING', 'VERIFIED', 'REJECTED'].map((value) => (
-            <Button key={value} size="small" variant={status === value ? "contained" : "outlined"} onClick={() => setStatus(value)}>
-              {statusLabel[value]}
-            </Button>
-          ))}
+      <AdminSectionCard>
+        <Box
+          sx={{
+            px: 2.5,
+            pt: 1,
+            borderBottom: "1px solid #E2E8F0",
+            bgcolor: "rgba(248,250,252,0.72)",
+          }}
+        >
+          <Tabs
+            value={tab}
+            onChange={(_, value) => changeTab(value)}
+            aria-label="Loại hồ sơ đội xe"
+          >
+            <Tab
+              value="vehicles"
+              label="Phương tiện"
+              sx={{ textTransform: "none", fontWeight: 800 }}
+            />
+            <Tab
+              value="drivers"
+              label="Tài xế"
+              sx={{ textTransform: "none", fontWeight: 800 }}
+            />
+          </Tabs>
         </Box>
+        <AdminToolbar
+          title="Hồ sơ chờ duyệt"
+          subtitle={`${rows.length} hồ sơ phù hợp`}
+        >
+          <AdminSelectField
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            options={statusOptions(tab)}
+            minWidth={180}
+          />
+        </AdminToolbar>
 
         {loading ? (
-          <Box role="status" className="p-8 text-center text-slate-500">Đang tải hồ sơ...</Box>
+          <AdminLoadingState label="Đang tải hồ sơ đội xe..." />
         ) : rows.length === 0 ? (
-          <Box role="status" className="p-8 text-center text-slate-500">Không có hồ sơ phù hợp.</Box>
+          <AdminEmptyState>Không có hồ sơ phù hợp.</AdminEmptyState>
         ) : (
-          <TableContainer>
-            <Table>
-              <TableHead className="bg-slate-50">
+          <AdminTableContainer minWidth={760}>
+            <Table aria-label="Danh sách hồ sơ đội xe">
+              <TableHead sx={{ bgcolor: "rgba(27, 73, 101, 0.04)" }}>
                 <TableRow>
-                  <TableCell className="font-bold">Đối tượng</TableCell>
-                  <TableCell className="font-bold">Chủ xe</TableCell>
-                  <TableCell className="font-bold">Thông tin</TableCell>
-                  <TableCell className="font-bold">Trạng thái</TableCell>
-                  <TableCell align="right" className="font-bold">Thao tác</TableCell>
+                  {[
+                    "Đối tượng",
+                    "Chủ xe",
+                    "Thông tin",
+                    "Trạng thái",
+                    "Thao tác",
+                  ].map((label) => (
+                    <TableCell
+                      key={label}
+                      sx={{ fontWeight: 800, color: "text.secondary" }}
+                      align={label === "Thao tác" ? "right" : "left"}
+                    >
+                      {label}
+                    </TableCell>
+                  ))}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {rows.map((row) => (
                   <TableRow key={row.id} hover>
                     <TableCell>
-                      <Typography className="font-semibold">{tab === "vehicles" ? row.licensePlate : row.fullName}</Typography>
-                      <Typography variant="caption" className="font-mono text-slate-500">{row.id}</Typography>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {tab === "vehicles" ? row.licensePlate : row.fullName}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {row.id}
+                      </Typography>
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{tab === "vehicles" ? row.carrierId : "—"}</TableCell>
+                    <TableCell
+                      sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}
+                    >
+                      {tab === "vehicles" ? row.carrierId : "—"}
+                    </TableCell>
                     <TableCell>
-                      {tab === "vehicles" ? `${row.vehicleType} · ${row.payloadCapacity} tấn` : `${row.phone} · GPLX ${row.licenseNumber}`}
+                      {tab === "vehicles"
+                        ? `${row.vehicleType || "Chưa rõ"} · ${row.payloadCapacity || "?"} tấn`
+                        : `${row.phone || "Chưa có SĐT"} · GPLX ${row.licenseNumber || "?"}`}
                     </TableCell>
-                    <TableCell><Chip size="small" label={statusLabel[row.status] || row.status} /></TableCell>
+                    <TableCell>
+                      <ReviewStatusChip status={row.status} />
+                    </TableCell>
                     <TableCell align="right">
-                      <Button size="small" variant="text" onClick={() => openDetail(row)}>Xem ho so</Button>
-                      {row.status === "PENDING" && (
-                        <Box className="flex justify-end gap-2">
-                          <Button size="small" variant="contained" onClick={() => openReview(row, "APPROVE")}>Duyệt</Button>
-                          <Button size="small" color="error" variant="outlined" onClick={() => openReview(row, "REJECT")}>Từ chối</Button>
-                        </Box>
-                      )}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          gap: 1,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <AdminSecondaryButton
+                          size="small"
+                          onClick={() => setDetailRow(row)}
+                        >
+                          Xem hồ sơ
+                        </AdminSecondaryButton>
+                        {row.status === "PENDING" && (
+                          <>
+                            <AdminPrimaryButton
+                              size="small"
+                              onClick={() => {
+                                setReason("");
+                                setReviewing({ row, decision: "APPROVE" });
+                              }}
+                            >
+                              Duyệt
+                            </AdminPrimaryButton>
+                            <AdminSecondaryButton
+                              size="small"
+                              onClick={() => {
+                                setReason("");
+                                setReviewing({ row, decision: "REJECT" });
+                              }}
+                              sx={{ color: "#BE123C", borderColor: "#FECDD3" }}
+                            >
+                              Từ chối
+                            </AdminSecondaryButton>
+                          </>
+                        )}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </TableContainer>
+          </AdminTableContainer>
         )}
-      </Paper>
+      </AdminSectionCard>
 
-      <Dialog open={!!detailRow} onClose={() => setDetailRow(null)} fullWidth maxWidth="sm">
-        <DialogTitle>Hồ sơ {tab === "vehicles" ? "xe" : "tài xế"}</DialogTitle>
-        <DialogContent className="space-y-3">
-          {detailRow && <>
-            <Typography variant="body2"><strong>{tab === "vehicles" ? "Biển số" : "Họ tên"}:</strong> {tab === "vehicles" ? detailRow.licensePlate : detailRow.fullName}</Typography>
-            <Typography variant="body2"><strong>{tab === "vehicles" ? "Chủ xe" : "Số điện thoại"}:</strong> {tab === "vehicles" ? detailRow.carrierId : detailRow.phone}</Typography>
-            {tab === "vehicles" ? (
-              <Box className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {[{ label: "Cà vẹt / đăng ký", url: detailRow.registrationDocumentUrl }, { label: "Đăng kiểm", url: detailRow.inspectionDocumentUrl }].map((document) => <Box key={document.label} className="rounded-lg border border-slate-200 p-3"><Typography variant="caption" className="block text-slate-500">{document.label}</Typography>{document.url ? <Button component="a" href={document.url} target="_blank" rel="noreferrer" size="small">Mở tài liệu</Button> : <Typography variant="body2" className="text-red-600">Thiếu tài liệu</Typography>}</Box>)}
+      <AdminDialog
+        open={Boolean(detailRow)}
+        onClose={() => setDetailRow(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle
+          sx={{ borderBottom: "1px solid #E2E8F0", fontWeight: 800 }}
+        >
+          Hồ sơ {tab === "vehicles" ? "phương tiện" : "tài xế"}
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          {detailRow && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Box
+                sx={{
+                  p: 2,
+                  bgcolor: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  Trạng thái
+                </Typography>
+                <Box sx={{ mt: 0.75 }}>
+                  <ReviewStatusChip status={detailRow.status} />
+                </Box>
               </Box>
-            ) : <Box className="rounded-lg border border-slate-200 p-3"><Typography variant="caption" className="block text-slate-500">Ảnh GPLX</Typography>{detailRow.licenseImageUrl ? <Button component="a" href={detailRow.licenseImageUrl} target="_blank" rel="noreferrer" size="small">Mở tài liệu</Button> : <Typography variant="body2" className="text-red-600">Thiếu tài liệu</Typography>}</Box>}
-          </>}
-        </DialogContent>
-        <DialogActions><Button onClick={() => setDetailRow(null)}>Đóng</Button></DialogActions>
-      </Dialog>
-
-      <Dialog open={!!reviewing} onClose={() => !saving && setReviewing(null)} fullWidth maxWidth="sm">
-        <DialogTitle>{reviewing?.decision === "APPROVE" ? "Duyệt hồ sơ" : "Từ chối hồ sơ"}</DialogTitle>
-        <DialogContent>
-          {reviewing?.decision === "REJECT" && (
-            <TextField autoFocus fullWidth multiline minRows={3} label="Lý do từ chối" value={reason} onChange={(event) => setReason(event.target.value)} sx={{ mt: 1 }} />
+              <Typography variant="body2">
+                <strong>{tab === "vehicles" ? "Biển số" : "Họ tên"}:</strong>{" "}
+                {tab === "vehicles"
+                  ? detailRow.licensePlate
+                  : detailRow.fullName}
+              </Typography>
+              <Typography variant="body2">
+                <strong>
+                  {tab === "vehicles" ? "Chủ xe" : "Số điện thoại"}:
+                </strong>{" "}
+                {tab === "vehicles" ? detailRow.carrierId : detailRow.phone}
+              </Typography>
+              {tab === "vehicles" ? (
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                    gap: 1.5,
+                  }}
+                >
+                  {[
+                    {
+                      label: "Cà vẹt / đăng ký",
+                      url: detailRow.registrationDocumentUrl,
+                    },
+                    {
+                      label: "Đăng kiểm",
+                      url: detailRow.inspectionDocumentUrl,
+                    },
+                  ].map((document) => (
+                    <Box
+                      key={document.label}
+                      sx={{
+                        p: 1.5,
+                        border: "1px solid #E2E8F0",
+                        borderRadius: 2,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{ display: "block", color: "text.secondary" }}
+                      >
+                        {document.label}
+                      </Typography>
+                      {document.url ? (
+                        <Button
+                          component="a"
+                          href={document.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          size="small"
+                        >
+                          Mở tài liệu
+                        </Button>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "#BE123C", mt: 0.5 }}
+                        >
+                          Thiếu tài liệu
+                        </Typography>
+                      )}
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Box
+                  sx={{ p: 1.5, border: "1px solid #E2E8F0", borderRadius: 2 }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{ display: "block", color: "text.secondary" }}
+                  >
+                    Ảnh GPLX
+                  </Typography>
+                  {detailRow.licenseImageUrl ? (
+                    <Button
+                      component="a"
+                      href={detailRow.licenseImageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      size="small"
+                    >
+                      Mở tài liệu
+                    </Button>
+                  ) : (
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "#BE123C", mt: 0.5 }}
+                    >
+                      Thiếu tài liệu
+                    </Typography>
+                  )}
+                </Box>
+              )}
+            </Box>
           )}
-          {reviewing?.decision === "APPROVE" && <Typography className="text-slate-600">Xác nhận hồ sơ này đã hợp lệ và cho phép sử dụng trong hệ thống?</Typography>}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setReviewing(null)} disabled={saving}>Hủy</Button>
-          <Button onClick={submitReview} disabled={saving} variant="contained" color={reviewing?.decision === "REJECT" ? "error" : "primary"}>
-            Xác nhận
-          </Button>
+        <DialogActions sx={{ p: 2, borderTop: "1px solid #E2E8F0" }}>
+          <AdminSecondaryButton onClick={() => setDetailRow(null)}>
+            Đóng
+          </AdminSecondaryButton>
         </DialogActions>
-      </Dialog>
-    </Box>
+      </AdminDialog>
+
+      <AdminDialog
+        open={Boolean(reviewing)}
+        onClose={() => !saving && setReviewing(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle sx={{ fontWeight: 800 }}>
+          {reviewing?.decision === "APPROVE" ? "Duyệt hồ sơ" : "Từ chối hồ sơ"}
+        </DialogTitle>
+        <DialogContent>
+          {reviewing?.decision === "REJECT" ? (
+            <TextField
+              autoFocus
+              fullWidth
+              multiline
+              minRows={3}
+              label="Lý do từ chối"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              sx={{ mt: 1 }}
+            />
+          ) : (
+            <Typography color="text.secondary">
+              Xác nhận hồ sơ này hợp lệ và cho phép sử dụng trong hệ thống?
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <AdminSecondaryButton
+            onClick={() => setReviewing(null)}
+            disabled={saving}
+          >
+            Hủy
+          </AdminSecondaryButton>
+          <AdminPrimaryButton
+            onClick={() => void submitReview()}
+            disabled={saving}
+            sx={
+              reviewing?.decision === "REJECT"
+                ? { bgcolor: "#BE123C", "&:hover": { bgcolor: "#9F1239" } }
+                : undefined
+            }
+          >
+            {saving ? "Đang lưu..." : "Xác nhận"}
+          </AdminPrimaryButton>
+        </DialogActions>
+      </AdminDialog>
+    </AdminPageShell>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Paper from "@mui/material/Paper";
 import Rating from "@mui/material/Rating";
 import StarIcon from "@mui/icons-material/Star";
 import VerifiedIcon from "@mui/icons-material/Verified";

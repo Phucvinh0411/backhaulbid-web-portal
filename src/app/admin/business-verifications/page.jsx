@@ -4,14 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
-import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
@@ -22,6 +20,8 @@ import WarningIcon from "@mui/icons-material/WarningAmberOutlined";
 
 import {
   AdminPageHeader,
+  AdminDialog,
+  AdminTableContainer,
   AdminPageShell,
   AdminPrimaryButton,
   AdminSecondaryButton,
@@ -132,6 +132,16 @@ export default function AdminBusinessVerificationsPage() {
   };
 
   const downloadDocument = async (documentType = "businessLicense") => {
+    const s3Url = documentType === "authorizationLetter"
+      ? selected?.authorizationLetterUrl
+      : selected?.businessLicenseUrl;
+    if (!/^https:\/\//i.test(s3Url || "")) {
+      setErrorMessage("Tài liệu S3 không có URL hợp lệ.");
+      return;
+    }
+    window.open(s3Url, "_blank", "noopener,noreferrer");
+    if (s3Url) return;
+
     try {
       const { data } = await axiosClient.get(
         businessVerificationDocumentPath(selected.id, documentType),
@@ -197,7 +207,7 @@ export default function AdminBusinessVerificationsPage() {
           </Box>
         ) : (
           <>
-            <TableContainer>
+            <AdminTableContainer minWidth={900}>
               <Table aria-label="Danh sách hồ sơ xác minh doanh nghiệp">
               <TableHead sx={{ bgcolor: "rgba(27, 73, 101, 0.04)" }}>
                 <TableRow>
@@ -258,7 +268,7 @@ export default function AdminBusinessVerificationsPage() {
                 ))}
               </TableBody>
               </Table>
-            </TableContainer>
+            </AdminTableContainer>
             <TablePagination
               component="div"
               count={totalItems}
@@ -275,7 +285,7 @@ export default function AdminBusinessVerificationsPage() {
         )}
       </AdminSectionCard>
 
-      <Dialog
+      <AdminDialog
         open={Boolean(selected)}
         onClose={submitting ? undefined : () => setSelected(null)}
         maxWidth="sm"
@@ -389,7 +399,7 @@ export default function AdminBusinessVerificationsPage() {
             </>
           )}
         </DialogActions>
-      </Dialog>
+      </AdminDialog>
     </AdminPageShell>
   );
 }

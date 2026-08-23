@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardOutlined as DashboardIcon, GavelOutlined as GavelIcon, LocalShippingOutlined as LocalShippingIcon, AccountCircleOutlined as AccountCircleIcon, AssignmentTurnedInOutlined as AssignmentTurnedInIcon, AccountBalanceWalletOutlined as AccountBalanceWalletIcon, DirectionsCarOutlined as DirectionsCarIcon, PersonOutline as PersonIcon } from "@mui/icons-material";
+import { DashboardOutlined as DashboardIcon, GavelOutlined as GavelIcon, LocalShippingOutlined as LocalShippingIcon, AccountCircleOutlined as AccountCircleIcon, AssignmentTurnedInOutlined as AssignmentTurnedInIcon, AccountBalanceWalletOutlined as AccountBalanceWalletIcon, DirectionsCarOutlined as DirectionsCarIcon, ReportProblemOutlined as ReportProblemIcon } from "@mui/icons-material";
 
 const carrierNavigation = [
   {
@@ -40,6 +40,11 @@ const carrierNavigation = [
         title: "Hợp đồng",
         path: "/carrier/contracts",
         icon: AssignmentTurnedInIcon,
+      },
+      {
+        title: "Khiếu nại",
+        path: "/carrier/complaints",
+        icon: ReportProblemIcon,
       },
       {
         title: "Đội xe",

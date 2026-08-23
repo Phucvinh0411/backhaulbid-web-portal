@@ -13,20 +13,17 @@ import CloseIcon from "@mui/icons-material/Close";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import SecurityIcon from "@mui/icons-material/SecurityOutlined";
 import { ActionButton } from "@/components/common";
+import { dispatchGlobalNotification } from "@/components/common/NotificationPopup";
 
 import VNPTEkyc from "@/components/eKYC/VNPTEkyc";
 import {
   buildRepresentativeVerificationPayload,
   getRepresentativeVerificationFailureMessage,
+  getRepresentativeVerificationSaveErrorMessage,
 } from "@/services/representativeVerificationMapper";
 import {
   submitRepresentativeVerification as submitRepresentativeVerificationRequest,
 } from "@/services/representativeVerificationApi";
-
-const ERROR_MESSAGES = {
-  401: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
-  403: "Tài khoản hiện tại không có quyền xác thực người đại diện.",
-};
 
 function maskIdentityNumber(identityNumber) {
   const value = String(identityNumber || "");
@@ -100,6 +97,14 @@ export default function EkycModal({ open = true, onClose, onComplete }) {
   const [reviewData, setReviewData] = useState(null);
   const [documentPreview, setDocumentPreview] = useState(null);
   const [attempt, setAttempt] = useState(0);
+  const showError = useCallback((message) => {
+    setErrorMessage(message);
+    dispatchGlobalNotification({
+      type: "error",
+      title: "Xác thực eKYC chưa hoàn tất",
+      message,
+    });
+  }, []);
 
   const handleVnptResult = useCallback((vnptResult) => {
     setErrorMessage("");
@@ -111,12 +116,12 @@ export default function EkycModal({ open = true, onClose, onComplete }) {
     } catch (error) {
       setReviewData(null);
       setPhase("error");
-      setErrorMessage(
+      showError(
         error.message ||
           "Kết quả VNPT eKYC chưa đầy đủ. Vui lòng thực hiện lại quy trình."
       );
     }
-  }, []);
+  }, [showError]);
 
   const handleDocumentResult = useCallback((documentResult) => {
     const preview = normalizeDocumentResult(documentResult);
@@ -136,7 +141,7 @@ export default function EkycModal({ open = true, onClose, onComplete }) {
 
         if (data?.status !== "VERIFIED") {
           setPhase("rejected");
-          setErrorMessage(
+          showError(
             data?.failureReason ||
               getRepresentativeVerificationFailureMessage(reviewData)
           );
@@ -145,17 +150,11 @@ export default function EkycModal({ open = true, onClose, onComplete }) {
 
         setPhase("success");
       } catch (error) {
-        const status = error.response?.status;
         setPhase("error");
-        setErrorMessage(
-          ERROR_MESSAGES[status] ||
-            error.response?.data?.message ||
-            error.message ||
-            "Không thể lưu kết quả eKYC. Vui lòng thử lại."
-        );
+        showError(getRepresentativeVerificationSaveErrorMessage(error));
       }
     },
-    [reviewData]
+    [reviewData, showError]
   );
 
   const retry = () => {

@@ -1,12 +1,13 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { getInternalGatewayUrl } from '@/config/serverConfig';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     
     // Ưu tiên dùng INTERNAL_GATEWAY_URL (khi chạy trong Docker) để server-to-server call, nếu không có thì fallback về NEXT_PUBLIC
-    const gatewayUrl = process.env.INTERNAL_GATEWAY_URL || process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8080';
+    const gatewayUrl = getInternalGatewayUrl();
     
     // Proxy call tới API Gateway Backend
     const res = await fetch(`${gatewayUrl}/api/v1/auth/login`, {

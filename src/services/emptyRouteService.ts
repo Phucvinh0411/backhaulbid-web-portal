@@ -1,4 +1,4 @@
-import { appApiService } from "./apiService";
+import { apiService } from "./apiService";
 
 export interface EmptyRoute {
   id: string;
@@ -23,15 +23,14 @@ class EmptyRouteService {
    * Khai báo tuyến chạy rỗng mới
    */
   async createEmptyRoute(data: EmptyRouteRequest): Promise<EmptyRoute> {
-    return appApiService.post<EmptyRoute>('/api/v1/empty-routes', data);
+    return apiService.post<EmptyRoute>('/api/v1/empty-routes', data);
   }
 
   /**
    * Lấy danh sách các tuyến chạy rỗng của công ty
    */
-  async getEmptyRoutesByCompany(companyId: string): Promise<EmptyRoute[]> {
-    // API endpoint này phụ thuộc vào thiết kế Backend (ví dụ có query param ?companyId=...)
-    return appApiService.get<EmptyRoute[]>('/api/v1/empty-routes', { companyId });
+  async getEmptyRoutesByCompany(): Promise<EmptyRoute[]> {
+    return apiService.get<EmptyRoute[]>('/api/v1/empty-routes');
   }
 }
 

@@ -9,3 +9,5 @@ export { default as RoundedBox } from "./RoundedBox";
 export { default as AppCard } from "./AppCard";
 export { default as AsymmetricCornerBox } from "./AsymmetricCornerBox";
 export { default as ActionButton } from "./ActionButton";
+export { GlobalNotificationProvider, useGlobalNotification } from "./NotificationPopup";
+

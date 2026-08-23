@@ -115,7 +115,7 @@ function SealedBidPanel({ shipment, remainingBids, myBid, setMyBid, onSubmit, al
   const savingsPct = shipment.maxPrice > 0 ? ((savings / shipment.maxPrice) * 100).toFixed(1) : 0;
   const validation = validateBid({ value: myBid, maxPrice: shipment.maxPrice, remainingBids, isSealed: true });
 
-  if (alreadySubmitted) {
+  if (alreadySubmitted && remainingBids === 0) {
     return (
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center space-y-2">
         <CheckCircleIcon className="!text-3xl text-amber-600" />

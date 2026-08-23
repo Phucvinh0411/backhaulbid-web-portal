@@ -16,6 +16,10 @@ export async function submitRepresentativeVerification(payload) {
   );
 }
 
-export async function getRepresentativeVerificationStatus() {
-  return apiService.get(REPRESENTATIVE_VERIFICATION_STATUS_PATH);
+export async function getRepresentativeVerificationStatus(config) {
+  return apiService.get(
+    REPRESENTATIVE_VERIFICATION_STATUS_PATH,
+    undefined,
+    config
+  );
 }

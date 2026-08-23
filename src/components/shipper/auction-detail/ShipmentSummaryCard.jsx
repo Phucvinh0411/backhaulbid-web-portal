@@ -4,7 +4,6 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
-import LocationOnIcon from "@mui/icons-material/LocationOnOutlined";
 import NavigationIcon from "@mui/icons-material/NavigationOutlined";
 import GavelIcon from "@mui/icons-material/GavelOutlined";
 import InventoryIcon from "@mui/icons-material/Inventory2Outlined";

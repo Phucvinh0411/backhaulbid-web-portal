@@ -8,7 +8,6 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import IconButton from "@mui/material/IconButton";
 import Link from "next/link";
-import Chip from "@mui/material/Chip";
 
 import CloseIcon from "@mui/icons-material/Close";
 import StarIcon from "@mui/icons-material/Star";
@@ -18,10 +17,8 @@ import PhoneIcon from "@mui/icons-material/PhoneInTalkOutlined";
 import ShieldIcon from "@mui/icons-material/ShieldOutlined";
 import BusinessIcon from "@mui/icons-material/BusinessOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
-import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
 import AspectRatioIcon from "@mui/icons-material/AspectRatioOutlined";
 import BadgeIcon from "@mui/icons-material/BadgeOutlined";
-import GpsFixedIcon from "@mui/icons-material/GpsFixedOutlined";
 import PersonIcon from "@mui/icons-material/PersonOutlined";
 
 export default function CarrierProfileModal({

@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
+import Alert from "@mui/material/Alert";
+import CircularProgress from "@mui/material/CircularProgress";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
@@ -43,8 +45,11 @@ import DescriptionIcon from "@mui/icons-material/DescriptionOutlined";
 import ClearIcon from "@mui/icons-material/ClearOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
+import { auctionService } from "@/services/auctionService";
+import { mapBackendToShipment } from "@/services/shipperAuctionMapper";
 
-// Mock Data matching existing shipments
+/* Legacy fixture retained for reference only; runtime data comes from the auction API.
 const INITIAL_SHIPMENTS = [
   {
     id: "LH-2026-9041",
@@ -157,10 +162,14 @@ const INITIAL_SHIPMENTS = [
     dateCreated: "2026-07-02",
     status: "active_bids",
   }
-];
+]; */
 
 export default function BiddingHistoryListScreen() {
   const router = useRouter();
+  const { notify } = useGlobalNotification();
+  const [shipments, setShipments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState("");
@@ -173,6 +182,30 @@ export default function BiddingHistoryListScreen() {
   // Pagination State
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  useEffect(() => {
+    let active = true;
+    auctionService.getShipperAuctions()
+      .then((response) => {
+        if (!active) return;
+        const data = response?.data?.data || response?.data || [];
+        setShipments(data.map(mapBackendToShipment));
+      })
+      .catch(() => {
+        if (active) {
+          const message = "Không thể tải lịch sử đấu giá.";
+          setLoadError(message);
+          notify.error(message);
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [notify]);
 
   const [columnsList, setColumnsList] = useState([
     { id: "id", label: "Mã lô hàng", align: "left" },
@@ -222,21 +255,21 @@ export default function BiddingHistoryListScreen() {
 
   // Extract provinces lists dynamically
   const originProvinces = useMemo(() => {
-    return Array.from(new Set(INITIAL_SHIPMENTS.map((s) => s.from.province))).sort();
-  }, []);
+    return Array.from(new Set(shipments.map((s) => s.from.province))).sort();
+  }, [shipments]);
 
   const destProvinces = useMemo(() => {
-    return Array.from(new Set(INITIAL_SHIPMENTS.map((s) => s.to.province))).sort();
-  }, []);
+    return Array.from(new Set(shipments.map((s) => s.to.province))).sort();
+  }, [shipments]);
 
   // Compute live KPI analytics
   const kpis = useMemo(() => {
-    const total = INITIAL_SHIPMENTS.length;
-    const active = INITIAL_SHIPMENTS.filter((s) => s.status === "active_bids").length;
-    const completed = INITIAL_SHIPMENTS.filter((s) => s.status === "completed").length;
+    const total = shipments.length;
+    const active = shipments.filter((s) => s.status === "active_bids").length;
+    const completed = shipments.filter((s) => s.status === "completed").length;
     
     // Total savings computed
-    const totalSavings = INITIAL_SHIPMENTS.reduce((sum, s) => {
+    const totalSavings = shipments.reduce((sum, s) => {
       if (s.status === "cancelled") return sum;
       const finalPrice = s.finalPrice || s.currentLowestBid || 0;
       if (finalPrice > 0) {
@@ -246,7 +279,7 @@ export default function BiddingHistoryListScreen() {
     }, 0);
 
     return { total, active, completed, totalSavings };
-  }, []);
+  }, [shipments]);
 
   // Status options helper
   const getStatusDetails = (status) => {
@@ -270,7 +303,7 @@ export default function BiddingHistoryListScreen() {
 
   // Filter & Sort Logic
   const filteredAndSortedShipments = useMemo(() => {
-    let result = [...INITIAL_SHIPMENTS];
+    let result = [...shipments];
 
     // 1. Text Search Filter (Id, goods type, province name, detail)
     if (searchTerm.trim() !== "") {
@@ -321,7 +354,7 @@ export default function BiddingHistoryListScreen() {
     });
 
     return result;
-  }, [searchTerm, statusTab, originFilter, destFilter, order, orderBy]);
+  }, [shipments, searchTerm, statusTab, originFilter, destFilter, order, orderBy]);
 
   // Paginated Slicing
   const paginatedShipments = useMemo(() => {
@@ -351,6 +384,14 @@ export default function BiddingHistoryListScreen() {
           { label: "Lịch sử đấu giá" },
         ]}
       />
+
+      {loadError && <Alert severity="error" className="!mb-4">{loadError}</Alert>}
+      {loading && (
+        <div className="mb-6 flex items-center gap-3 rounded-2xl bg-white p-5 text-slate-600 shadow-sm" role="status">
+          <CircularProgress size={22} />
+          Đang tải lịch sử đấu giá...
+        </div>
+      )}
 
       {/* KPI Cards Overview */}
       <Grid container spacing={3} className="!mb-6">

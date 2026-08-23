@@ -2,10 +2,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { GATEWAY_URL } from "@/config/clientConfig";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [error, setError] = useState("");
+  const notify = useGlobalNotification();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     role: "shipper",
@@ -17,10 +19,9 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8080'}/api/v1/auth/register`, {
+      const res = await fetch(`${GATEWAY_URL}/api/v1/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -35,10 +36,10 @@ export default function RegisterPage() {
         // Đăng ký thành công → chuyển thẳng sang trang đăng nhập
         router.push("/login");
       } else {
-        setError(data.message || "Đăng ký thất bại. Vui lòng thử lại.");
+        notify.error(data.message || "Đăng ký thất bại. Vui lòng thử lại.");
       }
     } catch {
-      setError("Lỗi kết nối tới server.");
+      notify.error("Lỗi kết nối tới server.");
     } finally {
       setLoading(false);
     }
@@ -86,12 +87,6 @@ export default function RegisterPage() {
             <h2 className="text-3xl font-bold text-slate-800">Tạo tài khoản</h2>
             <p className="text-slate-500 mt-1 text-sm">Điền thông tin để bắt đầu hành trình cùng BackHaulBid.</p>
           </div>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Role selection */}

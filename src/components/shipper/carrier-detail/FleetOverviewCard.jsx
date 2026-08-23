@@ -9,8 +9,6 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import LocalShippingIcon from "@mui/icons-material/LocalShippingOutlined";
-import GpsFixedIcon from "@mui/icons-material/GpsFixedOutlined";
-import AspectRatioIcon from "@mui/icons-material/AspectRatioOutlined";
 import { RoundedBox } from "@/components/common";
 
 export default function FleetOverviewCard({ fleet = [] }) {
