@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
 import SecurityIcon from "@mui/icons-material/Security";
+import { ActionButton, AppCard } from "@/components/common";
+import { dispatchGlobalNotification } from "@/components/common/NotificationPopup";
 import EkycModal from "./EkycModal";
 import { getRepresentativeVerificationStatus } from "@/services/representativeVerificationApi";
 
@@ -16,12 +17,20 @@ export default function EkycGuard({ children, role }) {
   useEffect(() => {
     let active = true;
 
-    getRepresentativeVerificationStatus()
+    getRepresentativeVerificationStatus({ skipGlobalNotification: true })
       .then((data) => {
         if (active) setIsVerified(data?.status === "VERIFIED");
       })
       .catch(() => {
-        if (active) setIsVerified(false);
+        if (active) {
+          setIsVerified(false);
+          dispatchGlobalNotification({
+            type: "error",
+            title: "Chưa thể kiểm tra eKYC",
+            message:
+              "Không thể kiểm tra trạng thái eKYC lúc này. Vui lòng thử lại sau hoặc mở xác thực eKYC để tiếp tục.",
+          });
+        }
       })
       .finally(() => {
         if (active) setIsLoading(false);
@@ -47,33 +56,40 @@ export default function EkycGuard({ children, role }) {
 
         {/* Blocking Overlay */}
         {!isLoading && !isVerified && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-            <Box className="bg-white rounded-3xl p-8 max-w-md text-center shadow-2xl flex flex-col items-center">
-              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+          <Box
+            className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ekyc-guard-title"
+          >
+            <AppCard
+              className="w-full max-w-md p-6 text-center sm:p-8"
+              showAccent={false}
+            >
+              <Box className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-50 text-[#1B4965]">
                 <SecurityIcon fontSize="large" />
-              </div>
-              <Typography variant="h6" className="!font-bold text-slate-800 mb-2">
+              </Box>
+              <Typography
+                id="ekyc-guard-title"
+                variant="h6"
+                className="!font-bold text-slate-800"
+              >
                 Tài khoản chưa được xác thực
               </Typography>
-              <Typography variant="body2" className="text-slate-500 mb-6">
+              <Typography variant="body2" className="mt-2 text-slate-500">
                 Theo quy định của hệ thống BackHaulBid, bạn bắt buộc phải hoàn tất định danh người đại diện pháp luật (eKYC) để sử dụng các tính năng giao dịch.
               </Typography>
-              <Button
-                variant="contained"
+              <ActionButton
+                variant="primary"
+                size="lg"
                 fullWidth
                 onClick={() => setShowModal(true)}
-                className="!font-bold !py-3 !rounded-xl"
-                sx={{
-                  background: "linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)",
-                  "&:hover": {
-                    background: "linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)",
-                  },
-                }}
+                className="mt-6"
               >
-                Xác Thực eKYC Ngay
-              </Button>
-            </Box>
-          </div>
+                Xác thực eKYC ngay
+              </ActionButton>
+            </AppCard>
+          </Box>
         )}
       </div>
 

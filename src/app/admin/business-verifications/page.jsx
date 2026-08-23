@@ -136,7 +136,7 @@ export default function AdminBusinessVerificationsPage() {
       ? selected?.authorizationLetterUrl
       : selected?.businessLicenseUrl;
     if (!/^https:\/\//i.test(s3Url || "")) {
-      setErrorMessage("TÃ i liá»‡u S3 khÃ´ng cÃ³ URL há»£p lá»‡.");
+      setErrorMessage("Tài liệu S3 không có URL hợp lệ.");
       return;
     }
     window.open(s3Url, "_blank", "noopener,noreferrer");

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { BIDDING_SOCKET_PATH, GATEWAY_URL } from '@/config/clientConfig';
 
 interface UseSocketOptions {
   companyId?: string;
@@ -23,10 +24,9 @@ export const useSocket = (options: UseSocketOptions = {}) => {
   useEffect(() => {
     // Connect through the api-gateway so JWT cookies are exchanged for
     // authenticated headers before the request reaches bidding-service.
-    const socketUrl = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8080';
-    const instance = io(socketUrl, {
+    const instance = io(GATEWAY_URL, {
       transports: ['websocket'],
-      path: '/bidding-socket',
+      path: BIDDING_SOCKET_PATH,
       withCredentials: true,
       autoConnect: true,
       reconnection: true,

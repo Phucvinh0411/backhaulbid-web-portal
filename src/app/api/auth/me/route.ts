@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { getInternalGatewayUrl } from '@/config/serverConfig';
 
 export async function GET() {
   try {
@@ -10,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ success: false, message: 'Chưa đăng nhập' }, { status: 401 });
     }
 
-    const gatewayUrl = process.env.INTERNAL_GATEWAY_URL || process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8080';
+    const gatewayUrl = getInternalGatewayUrl();
 
     const res = await fetch(`${gatewayUrl}/api/v1/auth/me`, {
       headers: {

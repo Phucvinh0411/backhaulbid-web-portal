@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import TextField from "@mui/material/TextField";
@@ -23,6 +22,7 @@ import {
   AdminPrimaryButton,
   AdminSectionCard,
 } from "@/components/admin/AdminUI";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 function SettingRow({ label, helper, children }) {
   return (
@@ -51,12 +51,12 @@ function SettingRow({ label, helper, children }) {
 }
 
 export default function AdminSettingsPage() {
+  const notify = useGlobalNotification();
   const [maintenance, setMaintenance] = useState(false);
   const [settings, setSettings] = useState({});
   const [serverHealth, setServerHealth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -67,25 +67,24 @@ export default function AdminSettingsPage() {
         setSettings((current) => ({ ...current, ...values }));
         setMaintenance(Boolean(values.maintenanceMode));
       })
-      .catch(() => active && setFeedback({ severity: "error", message: "Không tải được cấu hình chung từ API." }))
+      .catch(() => active && notify.error("Không tải được cấu hình chung từ API."))
       .finally(() => active && setLoading(false));
     getGatewayHealth()
       .then((response) => active && setServerHealth(response?.status === "UP"))
       .catch(() => active && setServerHealth(false));
     return () => { active = false; };
-  }, []);
+  }, [notify]);
 
   const handleSave = async (event) => {
     event.preventDefault();
     setSaving(true);
-    setFeedback(null);
     try {
       const values = Object.fromEntries(new FormData(event.currentTarget).entries());
       values.maintenanceMode = maintenance;
       await saveAdminSettings("general", values);
-      setFeedback({ severity: "success", message: "Đã lưu cấu hình chung." });
+      notify.success("Đã lưu cấu hình chung.");
     } catch {
-      setFeedback({ severity: "error", message: "Không thể lưu cấu hình chung." });
+      notify.error("Không thể lưu cấu hình chung.");
     } finally {
       setSaving(false);
     }
@@ -109,7 +108,6 @@ export default function AdminSettingsPage() {
           }
         />
 
-        {feedback && <Alert severity={feedback.severity} sx={{ mt: 2 }}>{feedback.message}</Alert>}
         <Grid container spacing={3} sx={{ mt: 2 }}>
           {/* Cấu hình chung Form */}
           <Grid item xs={12} lg={8}>

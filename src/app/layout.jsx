@@ -1,6 +1,7 @@
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import "./globals.css";
 import { ThemeProvider } from "@/theme";
+import { GlobalNotificationProvider } from "@/components/common/NotificationPopup";
 
 export const metadata = {
   title: "BackHaulBid - Nền tảng Giao dịch Vận tải B2B",
@@ -20,7 +21,7 @@ export default function RootLayout({ children }) {
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <ThemeProvider>
-            {children}
+            <GlobalNotificationProvider>{children}</GlobalNotificationProvider>
           </ThemeProvider>
         </AppRouterCacheProvider>
       </body>

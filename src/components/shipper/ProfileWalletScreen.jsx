@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
@@ -10,68 +10,38 @@ import Tab from "@mui/material/Tab";
 import TextField from "@mui/material/TextField";
 import Grid from "@mui/material/Grid";
 import Chip from "@mui/material/Chip";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
-import MenuItem from "@mui/material/MenuItem";
 import IconButton from "@mui/material/IconButton";
+import CircularProgress from "@mui/material/CircularProgress";
 
 // Icons
-import WalletIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import PersonIcon from "@mui/icons-material/PersonOutlineOutlined";
 import BookIcon from "@mui/icons-material/ImportContactsOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import CloseIcon from "@mui/icons-material/Close";
-import InfoIcon from "@mui/icons-material/InfoOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
 import AppCard from "@/components/common/AppCard";
-import WalletScreen from "@/components/wallet/WalletScreen";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import EkycModal from "@/components/eKYC/EkycModal";
 import BusinessVerificationPanel from "@/components/businessVerification/BusinessVerificationPanel";
 import { getRepresentativeVerificationStatus } from "@/services/representativeVerificationApi";
-
-// Mock Address Book
-const INITIAL_ADDRESSES = [
-  {
-    id: "addr-1",
-    label: "Kho Tổng Quận 9 (TP.HCM)",
-    contactName: "Trần Thế Hải",
-    contactPhone: "0912.345.678",
-    province: "TP. Hồ Chí Minh",
-    detail: "Cổng số 3, Khu Công Nghệ Cao, Quận 9",
-  },
-  {
-    id: "addr-2",
-    label: "Kho Thành Phẩm Bắc Ninh",
-    contactName: "Nguyễn Thị Hương",
-    contactPhone: "0988.776.655",
-    province: "Bắc Ninh",
-    detail: "Lô B4, KCN Yên Phong, Xã Yên Trung",
-  },
-  {
-    id: "addr-3",
-    label: "Cảng Đình Vũ (Hải Phòng)",
-    contactName: "Phạm Hồng Minh",
-    contactPhone: "0904.445.555",
-    province: "Hải Phòng",
-    detail: "Cầu cảng số 2, Cảng Đình Vũ, Quận Hải An",
-  }
-];
+import { addressBookApi } from "@/services/addressBookApi";
+import { getApiErrorMessage } from "@/services/errorMessage";
 
 export default function ProfileWalletScreen({ initialTab = 0 }) {
+  const notify = useGlobalNotification();
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [addresses, setAddresses] = useState(INITIAL_ADDRESSES);
+  const [addresses, setAddresses] = useState([]);
+  const [addressLoading, setAddressLoading] = useState(true);
+  const [addressError, setAddressError] = useState("");
+  const [addressSaving, setAddressSaving] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   const [representativeStatus, setRepresentativeStatus] = useState("loading");
   const [openEkycModal, setOpenEkycModal] = useState(false);
@@ -98,6 +68,28 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
       active = false;
     };
   }, []);
+
+  const loadAddresses = useCallback(() => {
+    setAddressLoading(true);
+    setAddressError("");
+
+    addressBookApi
+      .list()
+      .then((data) => setAddresses(Array.isArray(data) ? data : []))
+      .catch((error) => {
+        const message = getApiErrorMessage(
+          error,
+          "Không thể tải sổ địa chỉ. Vui lòng thử lại.",
+        );
+        setAddressError(message);
+        notify.error(message);
+      })
+      .finally(() => setAddressLoading(false));
+  }, [notify]);
+
+  useEffect(() => {
+    loadAddresses();
+  }, [loadAddresses]);
 
   // States for Address Book Actions
   const [openAddressDialog, setOpenAddressDialog] = useState(false);
@@ -142,31 +134,55 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
   };
 
   const handleAddressDelete = (id) => {
-    if (confirm("Bạn có chắc chắn muốn xóa địa chỉ này khỏi Sổ địa chỉ?")) {
-      setAddresses(addresses.filter((item) => item.id !== id));
+    setPendingDeleteId(id);
+  };
+
+  const handleConfirmAddressDelete = async () => {
+    if (!pendingDeleteId) return;
+
+    try {
+      await addressBookApi.remove(pendingDeleteId);
+      setAddresses((current) => current.filter((item) => item.id !== pendingDeleteId));
+      notify.success("Đã xóa địa chỉ khỏi sổ địa chỉ.");
+    } catch (error) {
+      notify.error(getApiErrorMessage(error, "Không thể xóa địa chỉ. Vui lòng thử lại."));
+    } finally {
+      setPendingDeleteId(null);
     }
   };
 
-  const handleAddressSubmit = () => {
-    if (!addressForm.label || !addressForm.detail || !addressForm.contactName || !addressForm.contactPhone) {
-      alert("Vui lòng nhập đầy đủ các trường thông tin bắt buộc.");
+  const handleAddressSubmit = async () => {
+    if (!addressForm.label || !addressForm.detail || !addressForm.contactName || !addressForm.contactPhone || !addressForm.province) {
+      notify.warning("Vui lòng nhập đầy đủ tên kho, người liên hệ, số điện thoại, tỉnh/thành và địa chỉ chi tiết.");
       return;
     }
 
-    if (addressEditMode) {
-      setAddresses(
-        addresses.map((item) =>
-          item.id === selectedAddressId ? { ...item, ...addressForm } : item
-        )
+    setAddressSaving(true);
+    try {
+      const response = addressEditMode
+        ? await addressBookApi.update(selectedAddressId, addressForm)
+        : await addressBookApi.create(addressForm);
+      const savedAddress = response?.data?.id ? response.data : response;
+
+      setAddresses((current) =>
+        addressEditMode
+          ? current.map((item) => (item.id === selectedAddressId ? savedAddress : item))
+          : [savedAddress, ...current],
       );
-    } else {
-      const newAddr = {
-        id: `addr-${Date.now()}`,
-        ...addressForm,
-      };
-      setAddresses([...addresses, newAddr]);
+      setOpenAddressDialog(false);
+      notify.success(addressEditMode ? "Đã cập nhật địa chỉ." : "Đã thêm địa chỉ mới.");
+    } catch (error) {
+      notify.error(
+        getApiErrorMessage(
+          error,
+          addressEditMode
+            ? "Không thể cập nhật địa chỉ. Vui lòng thử lại."
+            : "Không thể thêm địa chỉ. Vui lòng thử lại.",
+        ),
+      );
+    } finally {
+      setAddressSaving(false);
     }
-    setOpenAddressDialog(false);
   };
 
   return (
@@ -297,7 +313,26 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
           </div>
 
           {/* Grid list of addresses */}
-          <Grid container spacing={3}>
+          {addressLoading ? (
+            <Box className="flex min-h-40 items-center justify-center rounded-3xl border border-slate-100 bg-white/70">
+              <CircularProgress size={28} sx={{ color: "#1B4965" }} />
+            </Box>
+          ) : addressError ? (
+            <Box className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-3xl border border-rose-100 bg-rose-50/60 p-6 text-center">
+              <Typography className="!font-semibold text-rose-700">{addressError}</Typography>
+              <Button variant="outlined" onClick={loadAddresses} className="!rounded-xl !font-bold !capitalize">
+                Thử tải lại
+              </Button>
+            </Box>
+          ) : addresses.length === 0 ? (
+            <Box className="flex min-h-40 flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white/70 p-6 text-center">
+              <Typography className="!font-bold text-slate-700">Chưa có địa chỉ nào được lưu</Typography>
+              <Typography variant="body2" className="text-slate-500">
+                Thêm địa chỉ kho hoặc điểm giao nhận để chọn nhanh khi tạo phiên đấu giá.
+              </Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={3}>
             {addresses.map((addr) => (
               <Grid item xs={12} md={6} lg={4} key={addr.id}>
                 <AppCard
@@ -351,7 +386,8 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
                 </AppCard>
               </Grid>
             ))}
-          </Grid>
+            </Grid>
+          )}
         </div>
       )}
 
@@ -423,12 +459,41 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
           <Button
             onClick={handleAddressSubmit}
             variant="contained"
+            disabled={addressSaving}
             className="!font-bold !capitalize !rounded-xl !px-5"
             sx={{
               background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)",
             }}
           >
-            {addressEditMode ? "Lưu lại" : "Thêm mới"}
+            {addressSaving ? "Đang lưu..." : addressEditMode ? "Lưu lại" : "Thêm mới"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(pendingDeleteId)}
+        onClose={() => setPendingDeleteId(null)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ className: "!rounded-3xl !p-2" }}
+      >
+        <DialogTitle className="!font-bold text-slate-800">Xóa địa chỉ đã lưu?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" className="text-slate-600">
+            Địa chỉ này sẽ bị xóa khỏi sổ địa chỉ dùng chung. Bạn có muốn tiếp tục không?
+          </Typography>
+        </DialogContent>
+        <DialogActions className="!px-6 !pb-4">
+          <Button onClick={() => setPendingDeleteId(null)} className="!rounded-xl !font-bold !capitalize">
+            Hủy
+          </Button>
+          <Button
+            onClick={handleConfirmAddressDelete}
+            variant="contained"
+            color="error"
+            className="!rounded-xl !font-bold !capitalize"
+          >
+            Xóa địa chỉ
           </Button>
         </DialogActions>
       </Dialog>

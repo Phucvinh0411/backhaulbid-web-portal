@@ -12,7 +12,12 @@ import carrierNavigation from "@/navigation/carrierNavigation";
 import defaultNavigation from "@/navigation/navigation";
 
 export default function DashboardLayout({ children, role, userInfo }) {
-  const navigation = role === "admin" ? adminNavigation : (role === "carrier" ? carrierNavigation : defaultNavigation);
+  const navigation =
+    role === "admin"
+      ? adminNavigation
+      : role === "carrier"
+        ? carrierNavigation
+        : defaultNavigation;
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -33,12 +38,19 @@ export default function DashboardLayout({ children, role, userInfo }) {
           const u = resData.data;
           const displayName = u.fullName || u.phone || "Người dùng";
           setCurrentUser({
+            accountId: u.accountId,
             name: displayName,
             email: u.email || (u.phone ? `${u.phone}@backhaulbid.local` : ""),
             avatar: displayName.charAt(0).toUpperCase(),
-            role: u.role === "SHIPPER" ? "Chủ hàng" : (u.role === "CARRIER" ? "Nhà xe" : "Quản trị viên"),
+            role:
+              u.role === "SHIPPER"
+                ? "Chủ hàng"
+                : u.role === "CARRIER"
+                  ? "Nhà xe"
+                  : "Quản trị viên",
             companyName: u.companyName,
-            settingsPath: role === "carrier" ? "/carrier/settings" : "/shipper/settings",
+            settingsPath:
+              role === "carrier" ? "/carrier/settings" : "/shipper/settings",
           });
         }
       })
@@ -46,42 +58,13 @@ export default function DashboardLayout({ children, role, userInfo }) {
         console.error("Could not fetch user profile from DB:", err);
       });
   }, [role]);
-  const [currentUser, setCurrentUser] = useState(userInfo || null);
-
-  useEffect(() => {
-    let active = true;
-    identityApi.getCurrentAccount()
-      .then((account) => {
-        if (!active) return;
-        const roleLabels = {
-          ADMIN: "Quản trị viên",
-          CARRIER: "Chủ xe",
-          SHIPPER: "Chủ hàng",
-          DRIVER: "Tài xế",
-        };
-        const name = account.fullName || account.email || account.phone || "Tài khoản";
-        setCurrentUser({
-          name,
-          email: account.email || account.phone || "",
-          avatar: name.charAt(0).toUpperCase(),
-          role: roleLabels[account.role] || account.role || "Tài khoản",
-          settingsPath: `/${role}/settings`,
-        });
-      })
-      .catch(() => {
-        if (active) setCurrentUser(userInfo || null);
-      });
-    return () => {
-      active = false;
-    };
-  }, [role, userInfo]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
   return (
-    <Box 
+    <Box
       className="flex min-h-screen relative"
       sx={{
         backgroundColor: "#F6F8FC",
@@ -104,28 +87,36 @@ export default function DashboardLayout({ children, role, userInfo }) {
           userInfo={currentUser}
         />
       ) : (
-        <Sidebar variant="permanent" navigation={navigation} userInfo={currentUser} />
+        <Sidebar
+          variant="permanent"
+          navigation={navigation}
+          userInfo={currentUser}
+        />
       )}
 
       {/* Header - Floating next to sidebar */}
-      <Header onMenuToggle={handleDrawerToggle} userInfo={currentUser} role={role} />
+      <Header
+        onMenuToggle={handleDrawerToggle}
+        userInfo={currentUser}
+        role={role}
+      />
 
       {/* Main content area */}
       <Box
         component="main"
         className="flex-1 flex flex-col min-h-screen"
         sx={{
-          width: { 
-            md: `calc(100% - ${SIDEBAR_WIDTH}px)` 
+          width: {
+            md: `calc(100% - ${SIDEBAR_WIDTH}px)`,
           },
           maxWidth: {
-            md: `calc(100% - ${SIDEBAR_WIDTH}px)`
+            md: `calc(100% - ${SIDEBAR_WIDTH}px)`,
           },
           ml: {
-            md: 0
+            md: 0,
           },
-          pl: { 
-            md: 0.5 // Subtle gap between sidebar and content
+          pl: {
+            md: 0.5, // Subtle gap between sidebar and content
           },
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
@@ -134,7 +125,7 @@ export default function DashboardLayout({ children, role, userInfo }) {
         <Box sx={{ height: { xs: "90px", md: "108px" } }} />
 
         {/* Content canvas */}
-        <Box 
+        <Box
           className="flex-1"
           sx={{
             px: { xs: 2, md: 2.5 },
@@ -145,10 +136,10 @@ export default function DashboardLayout({ children, role, userInfo }) {
         </Box>
 
         {/* Footer - aligned with right content grid */}
-        <Box 
-          sx={{ 
-            px: { xs: 2, md: 2.5 }, 
-            pb: 2.5 
+        <Box
+          sx={{
+            px: { xs: 2, md: 2.5 },
+            pb: 2.5,
           }}
         >
           <Footer />
@@ -157,4 +148,3 @@ export default function DashboardLayout({ children, role, userInfo }) {
     </Box>
   );
 }
-

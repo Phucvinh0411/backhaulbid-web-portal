@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useEffect } from "react";
-import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Switch from "@mui/material/Switch";
 import Typography from "@mui/material/Typography";
@@ -19,14 +18,15 @@ import {
   AdminSectionCard,
 } from "@/components/admin/AdminUI";
 import { getAdminSettings, saveAdminSettings } from "@/services/adminSettingsApi";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 export default function NotificationSettingsPage() {
+  const notify = useGlobalNotification();
   const [sms, setSms] = useState(null);
   const [email, setEmail] = useState(null);
   const [push, setPush] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -38,24 +38,23 @@ export default function NotificationSettingsPage() {
         if (typeof values.emailNotifications === "boolean") setEmail(values.emailNotifications);
         if (typeof values.pushNotifications === "boolean") setPush(values.pushNotifications);
       })
-      .catch(() => active && setFeedback({ severity: "error", message: "Không tải được cấu hình thông báo từ API." }))
+      .catch(() => active && notify.error("Không tải được cấu hình thông báo từ API."))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, []);
+  }, [notify]);
 
   const handleSave = async (event) => {
     event.preventDefault();
     setSaving(true);
-    setFeedback(null);
     try {
       await saveAdminSettings("notification", {
         smsNotifications: sms,
         emailNotifications: email,
         pushNotifications: push,
       });
-      setFeedback({ severity: "success", message: "Đã lưu cấu hình thông báo." });
+      notify.success("Đã lưu cấu hình thông báo.");
     } catch {
-      setFeedback({ severity: "error", message: "Không thể lưu cấu hình thông báo." });
+      notify.error("Không thể lưu cấu hình thông báo.");
     } finally {
       setSaving(false);
     }
@@ -79,7 +78,6 @@ export default function NotificationSettingsPage() {
           }
         />
 
-        {feedback && <Alert severity={feedback.severity} sx={{ mt: 2 }}>{feedback.message}</Alert>}
 
         <Grid container spacing={3} sx={{ mt: 2 }}>
           {/* Cấu hình kênh thông báo Form */}

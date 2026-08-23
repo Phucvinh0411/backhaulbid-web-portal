@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import Alert from "@mui/material/Alert";
+import { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
 import Checkbox from "@mui/material/Checkbox";
+import CircularProgress from "@mui/material/CircularProgress";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -35,6 +34,9 @@ import {
 } from "@/components/common";
 import ContractItem, { getContractStatusDesign } from "./ContractItem";
 import { contractApi } from "@/services/contractApi";
+import { getApiErrorMessage } from "@/services/errorMessage";
+import { mapContractResponses } from "@/services/contractMapper";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 export const CONTRACT_FILTERS = [
   { value: "ALL", label: "Tất cả" },
@@ -42,51 +44,6 @@ export const CONTRACT_FILTERS = [
   { value: "ACTIVE", label: "Đang hoạt động" },
   { value: "COMPLETED", label: "Đã hoàn thành" },
   { value: "CANCELLED", label: "Đã hủy" },
-];
-
-export const DEMO_CONTRACTS = [
-  {
-    id: "HD-2454",
-    auctionId: "BID-2454",
-    origin: "Hồ Chí Minh",
-    destination: "Cần Thơ",
-    cargoType: "Hàng tiêu dùng (8 tấn)",
-    value: "5.350.000 đ",
-    date: "11/08/2026",
-    status: "PENDING_SIGNATURE",
-    shipperName: "Công ty Cổ phần Thương mại ABC",
-    carrierName: "Công ty TNHH Vận tải & Logistics Miền Nam",
-    pickupAddress: "KCN Tân Bình, TP. Hồ Chí Minh",
-    deliveryAddress: "Kho Cái Răng, Cần Thơ",
-  },
-  {
-    id: "HD-2452",
-    auctionId: "BID-2452",
-    origin: "Thái Nguyên",
-    destination: "Hải Phòng",
-    cargoType: "Linh kiện điện tử (5.2 tấn)",
-    value: "11.200.000 đ",
-    date: "10/08/2026",
-    status: "ACTIVE",
-    shipperName: "Công ty Cổ phần Sữa Việt Nam",
-    carrierName: "Hợp tác xã Vận tải Hữu Nghị",
-    pickupAddress: "Kho Samsung Yên Bình, Phổ Yên, Thái Nguyên",
-    deliveryAddress: "Cảng Đình Vũ, Hải Phòng",
-  },
-  {
-    id: "HD-2410",
-    auctionId: "BID-2410",
-    origin: "Hà Nội",
-    destination: "Hải Phòng",
-    cargoType: "Vật liệu xây dựng (20 tấn)",
-    value: "4.000.000 đ",
-    date: "01/08/2026",
-    status: "COMPLETED",
-    shipperName: "Công ty TNHH MTV Xây dựng Phúc Đạt",
-    carrierName: "Công ty Vận tải Phước An",
-    pickupAddress: "KCN Bắc Thăng Long, Hà Nội",
-    deliveryAddress: "KCN Đình Vũ, Hải Phòng",
-  },
 ];
 
 function mapFilter(status) {
@@ -101,9 +58,12 @@ function getPartnerName(contract, role) {
 export default function ContractsManagementScreen({
   role = "carrier",
   initialFilter = "ALL",
-  contracts = DEMO_CONTRACTS,
+  contracts = null,
 }) {
-  const [items, setItems] = useState(contracts);
+  const notify = useGlobalNotification();
+  const [items, setItems] = useState(Array.isArray(contracts) ? contracts : []);
+  const [loading, setLoading] = useState(!Array.isArray(contracts));
+  const [loadError, setLoadError] = useState("");
   const [filter, setFilter] = useState(initialFilter);
   const [viewMode, setViewMode] = useState("CARD");
   const [selectedContract, setSelectedContract] = useState(null);
@@ -111,13 +71,54 @@ export default function ContractsManagementScreen({
   const [openSignDialog, setOpenSignDialog] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [signing, setSigning] = useState(false);
-  const [actionError, setActionError] = useState("");
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("id");
 
   const isShipper = role === "shipper";
   const basePath = isShipper ? "/shipper" : "/carrier";
   const partnerLabel = isShipper ? "Nhà xe trúng thầu" : "Chủ hàng";
+
+  useEffect(() => {
+    let active = true;
+
+    if (Array.isArray(contracts)) {
+      setItems(contracts);
+      setLoadError("");
+      setLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    setLoading(true);
+    contractApi
+      .listMine()
+      .then((response) => {
+        if (active) {
+          setItems(mapContractResponses(response, role));
+          setLoadError("");
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          const message = getApiErrorMessage(
+            error,
+            "Không thể tải danh sách hợp đồng. Vui lòng thử lại.",
+          );
+          setLoadError(message);
+          notify.error(message);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [contracts, notify, role]);
 
   const visibleContracts = useMemo(() => {
     const expectedStatus = mapFilter(filter);
@@ -150,29 +151,22 @@ export default function ContractsManagementScreen({
   const openSign = (contract) => {
     setSelectedContract(contract);
     setAgreeTerms(false);
-    setActionError("");
     setOpenSignDialog(true);
   };
 
   const handleSign = async () => {
     if (selectedContract) {
       setSigning(true);
-      setActionError("");
       try {
-        if (selectedContract.backendId) {
-          const response = await contractApi.sign(selectedContract.backendId);
-          const status = response?.status === "SIGNED" ? "ACTIVE" : "PENDING_SIGNATURE";
-          setItems((current) => current.map((contract) =>
-            contract.id === selectedContract.id ? { ...contract, status } : contract,
-          ));
-        } else {
-          setItems((current) => current.map((contract) =>
-            contract.id === selectedContract.id ? { ...contract, status: "ACTIVE" } : contract,
-          ));
-        }
+        const response = await contractApi.sign(selectedContract.backendId);
+        const mappedContract = mapContractResponses([response], role)[0];
+        setItems((current) => current.map((contract) =>
+          contract.id === selectedContract.id ? { ...contract, ...mappedContract } : contract,
+        ));
         setOpenSignDialog(false);
+        notify.success("Đã ký hợp đồng vận chuyển thành công.");
       } catch (error) {
-        setActionError(error?.response?.data?.message || "Không thể ký hợp đồng.");
+        notify.error(getApiErrorMessage(error, "Không thể ký hợp đồng."));
       } finally {
         setSigning(false);
       }
@@ -222,7 +216,18 @@ export default function ContractsManagementScreen({
         <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
       </Box>
 
-      {visibleContracts.length === 0 ? (
+      {loading ? (
+        <Box className="flex min-h-[320px] items-center justify-center">
+          <CircularProgress aria-label="Đang tải danh sách hợp đồng" />
+        </Box>
+      ) : loadError ? (
+        <Box className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+          <Typography variant="h6" className="text-red-700">
+            Không thể tải danh sách hợp đồng
+          </Typography>
+          <Typography className="mt-2 text-red-600">{loadError}</Typography>
+        </Box>
+      ) : visibleContracts.length === 0 ? (
         <Box className="rounded-2xl border border-slate-200 bg-white/70 p-10 text-center">
           <Typography variant="h6" className="text-slate-500">
             Không có hợp đồng phù hợp với bộ lọc hiện tại.
@@ -469,7 +474,6 @@ export default function ContractsManagementScreen({
         <DialogContent className="!pt-5">
           {selectedContract && (
             <Box className="space-y-4">
-              {actionError && <Alert severity="error">{actionError}</Alert>}
               <Typography variant="body2" className="text-slate-600">
                 Bạn đang thực hiện ký xác nhận hợp đồng{" "}
                 <strong>{selectedContract.id}</strong>. Chữ ký số này có giá trị

@@ -36,6 +36,7 @@ import {
   AdminSelectField,
   AdminToolbar,
 } from "@/components/admin/AdminUI";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 const formatCurrency = (amount) =>
   amount == null || Number.isNaN(Number(amount))
@@ -525,6 +526,7 @@ function EmptyState({ filtered, query }) {
 }
 
 export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAuction, live = false }) {
+  const notify = useGlobalNotification();
   const [selectedId, setSelectedId] = useState("");
   const [detailOpen, setDetailOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -533,7 +535,7 @@ export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAu
   const [flagDialogOpen, setFlagDialogOpen] = useState(false);
   const [flagReason, setFlagReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
-  const [actionError, setActionError] = useState("");
+  const setActionError = (message) => { if (message) notify.error(message); };
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -674,11 +676,6 @@ export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAu
       <Dialog open={stopDialogOpen} onClose={() => !actionLoading && setStopDialogOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Dừng phiên đấu giá?</DialogTitle>
         <DialogContent>
-          {actionError && (
-            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setActionError("")}>
-              {actionError}
-            </Alert>
-          )}
           <Typography variant="body2">
             Phiên {selectedSession?.id} sẽ chuyển sang trạng thái đã hủy và không nhận thêm đăng ký hoặc báo giá.
           </Typography>
@@ -700,11 +697,6 @@ export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAu
       <Dialog open={flagDialogOpen} onClose={() => !actionLoading && setFlagDialogOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Gắn cờ gian lận</DialogTitle>
         <DialogContent>
-          {actionError && (
-            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setActionError("")}>
-              {actionError}
-            </Alert>
-          )}
           <Typography variant="body2" sx={{ mb: 2 }}>
             Lưu lý do rà soát phiên {selectedSession?.id}.
           </Typography>

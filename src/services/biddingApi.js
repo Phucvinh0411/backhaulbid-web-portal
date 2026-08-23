@@ -4,8 +4,10 @@ const biddingPath = (path) => `/api/v1/bidding${path}`;
 
 const unwrapApiData = (response) => response?.data ?? response;
 
-export const createAuction = (payload) =>
-  apiService.post(biddingPath("/auctions"), payload);
+export const createAuction = (payload, config) =>
+  apiService
+    .post(biddingPath("/auctions"), payload, config)
+    .then(unwrapApiData);
 
 export const listAuctions = (params) =>
   apiService.get(biddingPath("/auctions"), params);
@@ -54,6 +56,11 @@ export const listBids = (auctionId, params) =>
 
 export const cancelAuction = (auctionId) =>
   apiService.post(biddingPath(`/auctions/${auctionId}/cancel`));
+
+export const selectWinner = (auctionId, bidId) =>
+  apiService
+    .post(biddingPath(`/auctions/${auctionId}/winner`), { bidId })
+    .then(unwrapApiData);
 
 export const flagAuction = (auctionId, payload) =>
   apiService.post(biddingPath(`/auctions/${auctionId}/fraud-flag`), payload);

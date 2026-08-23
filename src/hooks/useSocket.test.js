@@ -8,14 +8,14 @@ const HOOK_SOURCE_PATH = path.resolve("src/hooks/useSocket.ts");
 test("connects through the configured gateway instead of a hardcoded port", async () => {
   const source = await readFile(HOOK_SOURCE_PATH, "utf8");
 
-  assert.match(source, /process\.env\.NEXT_PUBLIC_GATEWAY_URL/);
+  assert.match(source, /GATEWAY_URL/);
   assert.doesNotMatch(source, /localhost:3001/);
 });
 
 test("targets the bidding websocket route exposed by the api gateway", async () => {
   const source = await readFile(HOOK_SOURCE_PATH, "utf8");
 
-  assert.match(source, /path:\s*['"]\/bidding-socket['"]/);
+  assert.match(source, /BIDDING_SOCKET_PATH/);
 });
 
 test("sends credentials so the gateway can forward authenticated headers", async () => {

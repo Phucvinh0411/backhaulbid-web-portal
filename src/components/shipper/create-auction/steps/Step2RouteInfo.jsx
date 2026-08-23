@@ -3,8 +3,6 @@
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import LocationOnIcon from "@mui/icons-material/LocationOnOutlined";
-import NavigationIcon from "@mui/icons-material/NavigationOutlined";
 import ImportContactsIcon from "@mui/icons-material/ImportContactsOutlined";
 import AccessTimeIcon from "@mui/icons-material/AccessTimeOutlined";
 
@@ -46,7 +44,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
           <TextField
             fullWidth
             label="Tên kho / nhà máy nhận"
-            value={form.fromLocationName}
+            name="fromLocationName" value={form.fromLocationName}
             onChange={(e) => updateForm("fromLocationName", e.target.value)}
             placeholder="VD: Kho Samsung Yên Bình"
             required
@@ -75,7 +73,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
         <TextField
           fullWidth
           label="Địa chỉ chi tiết (Đường, Phường/Xã, Quận/Huyện)"
-          value={form.fromAddress}
+          name="fromAddress" value={form.fromAddress}
           onChange={(e) => updateForm("fromAddress", e.target.value)}
           placeholder="VD: Cổng số 3, KCN Yên Bình, Phổ Yên"
           required
@@ -86,7 +84,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
           <TextField
             fullWidth
             label="Người liên hệ tại điểm nhận"
-            value={form.fromContactName}
+            name="fromContactName" value={form.fromContactName}
             onChange={(e) => updateForm("fromContactName", e.target.value)}
             placeholder="VD: Trần Thế Hải"
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
@@ -95,7 +93,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
           <TextField
             fullWidth
             label="Số điện thoại người giao"
-            value={form.fromContactPhone}
+            name="fromContactPhone" value={form.fromContactPhone}
             onChange={(e) => updateForm("fromContactPhone", e.target.value)}
             placeholder="VD: 0912.345.678"
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
@@ -133,7 +131,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
           <TextField
             fullWidth
             label="Tên kho / cảng giao"
-            value={form.toLocationName}
+            name="toLocationName" value={form.toLocationName}
             onChange={(e) => updateForm("toLocationName", e.target.value)}
             placeholder="VD: Kho Cảng Đình Vũ"
             required
@@ -162,7 +160,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
         <TextField
           fullWidth
           label="Địa chỉ chi tiết (Đường, Phường/Xã, Quận/Huyện)"
-          value={form.toAddress}
+          name="toAddress" value={form.toAddress}
           onChange={(e) => updateForm("toAddress", e.target.value)}
           placeholder="VD: Cầu cảng số 2, Cảng Đình Vũ, Đông Hải 2"
           required
@@ -173,7 +171,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
           <TextField
             fullWidth
             label="Người nhận tại điểm giao"
-            value={form.toContactName}
+            name="toContactName" value={form.toContactName}
             onChange={(e) => updateForm("toContactName", e.target.value)}
             placeholder="VD: Phạm Hồng Minh"
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
@@ -182,7 +180,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
           <TextField
             fullWidth
             label="Số điện thoại người nhận"
-            value={form.toContactPhone}
+            name="toContactPhone" value={form.toContactPhone}
             onChange={(e) => updateForm("toContactPhone", e.target.value)}
             placeholder="VD: 0904.445.555"
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
@@ -206,7 +204,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
             fullWidth
             type="datetime-local"
             label="Nhận hàng sớm nhất"
-            value={form.earliestPickup}
+            name="earliestPickup" value={form.earliestPickup}
             onChange={(e) => updateForm("earliestPickup", e.target.value)}
             InputLabelProps={{ shrink: true }}
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
@@ -216,7 +214,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
             fullWidth
             type="datetime-local"
             label="Nhận hàng trễ nhất"
-            value={form.latestPickup}
+            name="latestPickup" value={form.latestPickup}
             onChange={(e) => updateForm("latestPickup", e.target.value)}
             InputLabelProps={{ shrink: true }}
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
@@ -228,7 +226,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
             fullWidth
             type="datetime-local"
             label="Giao hàng sớm nhất"
-            value={form.earliestDelivery}
+            name="earliestDelivery" value={form.earliestDelivery}
             onChange={(e) => updateForm("earliestDelivery", e.target.value)}
             InputLabelProps={{ shrink: true }}
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
@@ -238,7 +236,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
             fullWidth
             type="datetime-local"
             label="Giao hàng trễ nhất"
-            value={form.latestDelivery}
+            name="latestDelivery" value={form.latestDelivery}
             onChange={(e) => updateForm("latestDelivery", e.target.value)}
             InputLabelProps={{ shrink: true }}
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}

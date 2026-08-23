@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import InputAdornment from "@mui/material/InputAdornment";
@@ -22,6 +21,7 @@ import {
 } from "@/components/admin/AdminUI";
 import { getAdminSettings, saveAdminSettings } from "@/services/adminSettingsApi";
 import { walletApi } from "@/services/walletApi";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 function SettingRow({ label, helper, children }) {
   return (
@@ -50,34 +50,33 @@ function SettingRow({ label, helper, children }) {
 }
 
 export default function PaymentSettingsPage() {
+  const notify = useGlobalNotification();
   const [settings, setSettings] = useState({});
   const [walletSummary, setWalletSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState(null);
 
   useEffect(() => {
     let active = true;
     getAdminSettings("payment")
       .then((response) => active && setSettings((current) => ({ ...current, ...(response.values || {}) })))
-      .catch(() => active && setFeedback({ severity: "error", message: "Không tải được cấu hình thanh toán từ API." }))
+      .catch(() => active && notify.error("Không tải được cấu hình thanh toán từ API."))
       .finally(() => active && setLoading(false));
     walletApi.getAdminSummary()
       .then((response) => active && setWalletSummary(response))
       .catch(() => active && setWalletSummary(null));
     return () => { active = false; };
-  }, []);
+  }, [notify]);
 
   const handleSave = async (event) => {
     event.preventDefault();
     setSaving(true);
-    setFeedback(null);
     try {
       const values = Object.fromEntries(new FormData(event.currentTarget).entries());
       await saveAdminSettings("payment", values);
-      setFeedback({ severity: "success", message: "Đã lưu cấu hình thanh toán." });
+      notify.success("Đã lưu cấu hình thanh toán.");
     } catch {
-      setFeedback({ severity: "error", message: "Không thể lưu cấu hình thanh toán." });
+      notify.error("Không thể lưu cấu hình thanh toán.");
     } finally {
       setSaving(false);
     }
@@ -101,7 +100,6 @@ export default function PaymentSettingsPage() {
           }
         />
 
-        {feedback && <Alert severity={feedback.severity} sx={{ mt: 2 }}>{feedback.message}</Alert>}
         <Grid container spacing={3} sx={{ mt: 2 }}>
           {/* Cấu hình tài chính Form */}
           <Grid item xs={12} lg={8}>

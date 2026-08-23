@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import toast from 'react-hot-toast';
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { emptyRouteService, EmptyRoute } from '@/services/emptyRouteService';
 import { identityApi } from '@/services/identityApi';
 import { getMyVehicles } from '@/services/fleetApi';
+import { getApiErrorMessage } from '@/services/errorMessage';
 import { useSocket } from '@/hooks/useSocket';
 
 export interface MatchingEvent {
@@ -15,6 +16,7 @@ export interface MatchingEvent {
 }
 
 export default function FleetManagerDashboard() {
+  const notify = useGlobalNotification();
   const [currentAccount, setCurrentAccount] = useState<{ accountId?: string } | null>(null);
   const [vehicles, setVehicles] = useState<Array<{ id?: string; plate?: string; licensePlate?: string }>>([]);
   const [loadError, setLoadError] = useState('');
@@ -47,33 +49,39 @@ export default function FleetManagerDashboard() {
       })
       .catch((error) => {
         if (!active) return;
-        setLoadError(error?.response?.data?.message || 'Không thể tải thông tin tài khoản và đội xe.');
+        const message = getApiErrorMessage(error, 'Không thể tải thông tin tài khoản và đội xe. Vui lòng thử lại.');
+        setLoadError(message);
+        notify.error(message);
       });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [notify]);
 
-  // Fetch dữ liệu khởi tạo
+  const loadRoutes = useCallback(async () => {
+    if (!currentCompanyId) return false;
+
+    setIsLoading(true);
+    setLoadError('');
+    try {
+      const data = await emptyRouteService.getEmptyRoutesByCompany();
+      setEmptyRoutes(data || []);
+      return true;
+    } catch (error) {
+      const message = getApiErrorMessage(error, 'Không thể tải danh sách xe rỗng. Vui lòng thử lại.');
+      setEmptyRoutes([]);
+      setLoadError(message);
+      notify.error(message);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentCompanyId, notify]);
+
   useEffect(() => {
-    if (!currentCompanyId) return undefined;
-    const fetchRoutes = async () => {
-      setIsLoading(true);
-      setLoadError('');
-      try {
-        const data = await emptyRouteService.getEmptyRoutesByCompany(currentCompanyId);
-        setEmptyRoutes(data || []);
-      } catch (error) {
-        console.error("Lỗi khi tải danh sách xe rỗng:", error);
-        setEmptyRoutes([]);
-        setLoadError('Không thể tải danh sách xe rỗng từ hệ thống.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchRoutes();
-  }, [currentCompanyId]);
+    loadRoutes();
+  }, [loadRoutes]);
 
   // Đăng ký nhận sự kiện Socket Real-time
   useEffect(() => {
@@ -91,8 +99,8 @@ export default function FleetManagerDashboard() {
       );
 
       // Hiển thị thông báo Toast đẹp mắt
-      toast.success(
-        `🎉 Chuyến xe ${eventData.truckId} đã tìm thấy đơn hàng phù hợp! Bấm để xem ngay.`,
+      notify.success(
+            `🎉 Chuyến xe ${eventData.truckId} đã tìm thấy đơn hàng phù hợp! Bấm để xem ngay.`,
         {
           duration: 5000,
           position: 'top-right',
@@ -103,20 +111,20 @@ export default function FleetManagerDashboard() {
     return () => {
       if (unlisten) unlisten();
     };
-  }, [listen]);
+  }, [listen, notify]);
 
   // Xử lý Submit Form khai báo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.truckId || !formData.expectedEmptyTime || !currentCompanyId) {
-      toast.error('Vui lòng điền đủ thông tin Biển số xe và Thời gian dự kiến');
+      notify.error('Vui lòng điền đủ thông tin Biển số xe và Thời gian dự kiến');
       return;
     }
 
     const latitude = Number(formData.latitude);
     const longitude = Number(formData.longitude);
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      toast.error('Vui lòng nhập tọa độ hợp lệ.');
+      notify.error('Vui lòng nhập tọa độ hợp lệ.');
       return;
     }
 
@@ -131,16 +139,13 @@ export default function FleetManagerDashboard() {
         longitude,
       };
 
-      const newRoute = await emptyRouteService.createEmptyRoute(payload);
+      await emptyRouteService.createEmptyRoute(payload);
+      await loadRoutes();
       
-      // Update local state ngay lập tức thay vì gọi API get
-      setEmptyRoutes(prev => [newRoute, ...prev]);
-      
-      toast.success('Đã khai báo xe rỗng thành công. Hệ thống đang rà soát đơn hàng!');
+      notify.success('Đã khai báo xe rỗng thành công. Hệ thống đang rà soát đơn hàng!');
       setFormData(prev => ({ ...prev, truckId: '', expectedEmptyTime: '' }));
     } catch (error) {
-      console.error("Lỗi khai báo:", error);
-      toast.error('Có lỗi xảy ra khi khai báo xe rỗng');
+      notify.error(getApiErrorMessage(error, 'Không thể khai báo xe rỗng. Vui lòng kiểm tra thông tin và thử lại.'));
     } finally {
       setIsSubmitting(false);
     }

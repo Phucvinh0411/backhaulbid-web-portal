@@ -29,6 +29,8 @@ import {
   registerForAuction,
   retryRegistrationPayment,
 } from "@/services/biddingApi";
+import { getApiErrorMessage } from "@/services/errorMessage";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 const toAmount = (value) => {
   if (typeof value === "number") return value;
@@ -40,7 +42,9 @@ const getParticipationFee = (auction) => {
 };
 
 const formatCurrency = (value) =>
-  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value || 0);
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
+    value || 0,
+  );
 
 const formatDate = (value) => {
   if (!value) return "Chưa cập nhật";
@@ -50,12 +54,6 @@ const formatDate = (value) => {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
-};
-
-const getErrorMessage = (error) => {
-  const message = error?.response?.data?.message;
-  if (Array.isArray(message)) return message.join(", ");
-  return message || "Không thể hoàn tất đăng ký và thanh toán. Vui lòng thử lại.";
 };
 
 const createIdempotencyKey = () => {
@@ -72,6 +70,7 @@ export default function AuctionRegistrationDialog({
   onClose,
   onCompleted,
 }) {
+  const { notify } = useGlobalNotification();
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -81,7 +80,8 @@ export default function AuctionRegistrationDialog({
 
   const paymentSummary = useMemo(() => {
     const fee = getParticipationFee(auction);
-    const depositRequired = auction?.isDepositRequired ?? toAmount(auction?.depositAmount) > 0;
+    const depositRequired =
+      auction?.isDepositRequired ?? toAmount(auction?.depositAmount) > 0;
     const deposit = depositRequired ? toAmount(auction?.depositAmount) : 0;
     return {
       fee,
@@ -91,7 +91,9 @@ export default function AuctionRegistrationDialog({
     };
   }, [auction]);
 
-  const selectedVehicle = vehicles.find((vehicle) => vehicle.id === selectedVehicleId);
+  const selectedVehicle = vehicles.find(
+    (vehicle) => vehicle.id === selectedVehicleId,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -121,11 +123,20 @@ export default function AuctionRegistrationDialog({
 
       await onCompleted?.(result);
       setSuccess(true);
+      notify.success("Đăng ký phiên và thanh toán thành công.");
     } catch (requestError) {
-      setError(getErrorMessage(requestError));
+      const nextError = getApiErrorMessage(
+        requestError,
+        "Không thể hoàn tất đăng ký và thanh toán. Vui lòng kiểm tra số dư rồi thử lại.",
+      );
+      setError(nextError);
+      notify.error(nextError);
       try {
         const access = await getAuctionAccess(auction.id);
-        if (access?.accessStatus === "PAYMENT_INCOMPLETE" && access.registrationId) {
+        if (
+          access?.accessStatus === "PAYMENT_INCOMPLETE" &&
+          access.registrationId
+        ) {
           setRetryRegistrationId(access.registrationId);
         }
       } catch {
@@ -139,14 +150,14 @@ export default function AuctionRegistrationDialog({
   const submitLabel = vehiclesLoading
     ? "Đang tải phương tiện..."
     : submitting
-    ? "Đang xử lý thanh toán..."
-    : !selectedVehicleId
-      ? "Chọn phương tiện để tiếp tục"
-      : !acknowledged
-        ? "Xác nhận cam kết để tiếp tục"
-        : retryRegistrationId
-          ? `Thử lại thanh toán ${formatCurrency(paymentSummary.total)}`
-          : `Xác nhận & thanh toán ${formatCurrency(paymentSummary.total)}`;
+      ? "Đang xử lý thanh toán..."
+      : !selectedVehicleId
+        ? "Chọn phương tiện để tiếp tục"
+        : !acknowledged
+          ? "Xác nhận cam kết để tiếp tục"
+          : retryRegistrationId
+            ? `Thử lại thanh toán ${formatCurrency(paymentSummary.total)}`
+            : `Xác nhận & thanh toán ${formatCurrency(paymentSummary.total)}`;
 
   if (!auction) return null;
 
@@ -169,14 +180,18 @@ export default function AuctionRegistrationDialog({
       <DialogTitle sx={{ p: 0 }}>
         <Box className="flex items-start justify-between gap-4 bg-[#1B4965] px-6 py-5 text-white sm:px-7">
           <Box>
-            <Typography variant="overline" className="!font-bold !tracking-[0.16em] !text-sky-100">
+            <Typography
+              variant="overline"
+              className="!font-bold !tracking-[0.16em] !text-sky-100"
+            >
               ĐĂNG KÝ THAM GIA PHIÊN
             </Typography>
             <Typography variant="h6" className="!mt-1 !font-extrabold">
               Xác nhận quyền tham gia đấu giá
             </Typography>
             <Typography variant="body2" className="!mt-1 !text-sky-100">
-              {auction.id} · Chọn phương tiện và hoàn tất khoản thanh toán trước hạn đăng ký.
+              {auction.id} · Chọn phương tiện và hoàn tất khoản thanh toán trước
+              hạn đăng ký.
             </Typography>
           </Box>
           <IconButton
@@ -196,24 +211,38 @@ export default function AuctionRegistrationDialog({
             <Box className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
               <CheckCircleOutlineIcon sx={{ fontSize: 38 }} />
             </Box>
-            <Typography variant="h5" className="!mt-5 !font-extrabold !text-slate-900">
+            <Typography
+              variant="h5"
+              className="!mt-5 !font-extrabold !text-slate-900"
+            >
               Đăng ký thành công
             </Typography>
             <Typography className="!mx-auto !mt-2 !max-w-lg !text-slate-500">
-              Phí tham gia đã được xử lý{paymentSummary.depositRequired ? " và tiền đặt cọc đã được khóa" : ""}.
-              Bạn chỉ được vào phòng khi đến giờ bắt đầu phiên.
+              Phí tham gia đã được xử lý
+              {paymentSummary.depositRequired
+                ? " và tiền đặt cọc đã được khóa"
+                : ""}
+              . Bạn chỉ được vào phòng khi đến giờ bắt đầu phiên.
             </Typography>
             <Box className="mx-auto mt-6 max-w-md rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 text-left">
               <Box className="flex items-center justify-between gap-4 text-sm">
                 <span className="text-slate-500">Phương tiện</span>
-                <span className="font-bold text-slate-800">{selectedVehicle?.plate || selectedVehicleId}</span>
+                <span className="font-bold text-slate-800">
+                  {selectedVehicle?.plate || selectedVehicleId}
+                </span>
               </Box>
               <Box className="mt-2 flex items-center justify-between gap-4 text-sm">
                 <span className="text-slate-500">Mở phòng</span>
-                <span className="font-bold text-slate-800">{formatDate(auction.startTime)}</span>
+                <span className="font-bold text-slate-800">
+                  {formatDate(auction.startTime)}
+                </span>
               </Box>
             </Box>
-            <Button onClick={onClose} variant="contained" className="!mt-7 !rounded-lg !bg-[#1B4965] !px-7 !py-2.5 !font-bold">
+            <Button
+              onClick={onClose}
+              variant="contained"
+              className="!mt-7 !rounded-lg !bg-[#1B4965] !px-7 !py-2.5 !font-bold"
+            >
               Đã hiểu
             </Button>
           </Box>
@@ -225,7 +254,10 @@ export default function AuctionRegistrationDialog({
                   <DirectionsCarOutlinedIcon />
                 </Box>
                 <Box>
-                  <Typography variant="subtitle1" className="!font-extrabold !text-slate-900">
+                  <Typography
+                    variant="subtitle1"
+                    className="!font-extrabold !text-slate-900"
+                  >
                     Thông tin đăng ký
                   </Typography>
                   <Typography variant="caption" className="!text-slate-500">
@@ -238,22 +270,37 @@ export default function AuctionRegistrationDialog({
                 <Box className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
                   <Box className="flex items-center gap-2 text-slate-500">
                     <RouteOutlinedIcon sx={{ fontSize: 18 }} />
-                    <Typography variant="caption" className="!font-bold">Tuyến vận chuyển</Typography>
+                    <Typography variant="caption" className="!font-bold">
+                      Tuyến vận chuyển
+                    </Typography>
                   </Box>
-                  <Typography variant="body2" className="!mt-2 !font-extrabold !text-slate-800">
+                  <Typography
+                    variant="body2"
+                    className="!mt-2 !font-extrabold !text-slate-800"
+                  >
                     {auction.origin || auction.from?.name || "Điểm lấy hàng"}
                   </Typography>
                   <Typography variant="caption" className="!text-slate-500">
-                    → {auction.destination || auction.to?.name || "Điểm giao hàng"}
+                    →{" "}
+                    {auction.destination ||
+                      auction.to?.name ||
+                      "Điểm giao hàng"}
                   </Typography>
                 </Box>
                 <Box className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
                   <Box className="flex items-center gap-2 text-slate-500">
                     <EventAvailableOutlinedIcon sx={{ fontSize: 18 }} />
-                    <Typography variant="caption" className="!font-bold">Hạn đăng ký</Typography>
+                    <Typography variant="caption" className="!font-bold">
+                      Hạn đăng ký
+                    </Typography>
                   </Box>
-                  <Typography variant="body2" className="!mt-2 !font-extrabold !text-slate-800">
-                    {formatDate(auction.registrationEndTime || auction.regEndTime)}
+                  <Typography
+                    variant="body2"
+                    className="!mt-2 !font-extrabold !text-slate-800"
+                  >
+                    {formatDate(
+                      auction.registrationEndTime || auction.regEndTime,
+                    )}
                   </Typography>
                   <Typography variant="caption" className="!text-slate-500">
                     Mở phòng: {formatDate(auction.startTime)}
@@ -261,80 +308,126 @@ export default function AuctionRegistrationDialog({
                 </Box>
               </Box>
 
-              <Typography variant="subtitle2" className="!mb-2 !font-extrabold !text-slate-800">
+              <Typography
+                variant="subtitle2"
+                className="!mb-2 !font-extrabold !text-slate-800"
+              >
                 Phương tiện thực hiện chuyến hàng
               </Typography>
-              {vehiclesError && <Alert severity="error" className="!mb-3 !rounded-xl">{vehiclesError}</Alert>}
+              {vehiclesError && (
+                <Alert severity="error" className="!mb-3 !rounded-xl">
+                  {vehiclesError}
+                </Alert>
+              )}
               {!vehiclesLoading && !vehiclesError && vehicles.length === 0 && (
                 <Alert severity="warning" className="!rounded-xl">
-                  Chưa có phương tiện đã được xác minh để tham gia. Hãy hoàn tất kiểm duyệt xe trong mục Phương tiện trước.
+                  Chưa có phương tiện đã được xác minh để tham gia. Hãy hoàn tất
+                  kiểm duyệt xe trong mục Phương tiện trước.
                 </Alert>
               )}
               {vehiclesLoading && (
                 <Box className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                  <CircularProgress size={18} /> Đang tải phương tiện đã xác minh...
+                  <CircularProgress size={18} /> Đang tải phương tiện đã xác
+                  minh...
                 </Box>
               )}
               <Box className="space-y-2">
-                {!vehiclesLoading && vehicles.map((vehicle) => {
-                  const selected = vehicle.id === selectedVehicleId;
-                  return (
-                    <ButtonBase
-                      key={vehicle.id}
-                      onClick={() => setSelectedVehicleId(vehicle.id)}
-                      className="!block !w-full !rounded-xl !text-left"
-                      sx={{
-                        border: "1px solid",
-                        borderColor: selected ? "#1B4965" : "#e2e8f0",
-                        backgroundColor: selected ? "rgba(27, 73, 101, 0.05)" : "#fff",
-                        transition: "all 160ms ease",
-                        "&:hover": { borderColor: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.035)" },
-                      }}
-                    >
-                      <Box className="flex items-center gap-3 px-3.5 py-3">
-                        <Box className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${selected ? "bg-[#1B4965] text-white" : "bg-slate-100 text-slate-500"}`}>
-                          <DirectionsCarOutlinedIcon sx={{ fontSize: 20 }} />
+                {!vehiclesLoading &&
+                  vehicles.map((vehicle) => {
+                    const selected = vehicle.id === selectedVehicleId;
+                    return (
+                      <ButtonBase
+                        key={vehicle.id}
+                        onClick={() => setSelectedVehicleId(vehicle.id)}
+                        className="!block !w-full !rounded-xl !text-left"
+                        sx={{
+                          border: "1px solid",
+                          borderColor: selected ? "#1B4965" : "#e2e8f0",
+                          backgroundColor: selected
+                            ? "rgba(27, 73, 101, 0.05)"
+                            : "#fff",
+                          transition: "all 160ms ease",
+                          "&:hover": {
+                            borderColor: "#1B4965",
+                            backgroundColor: "rgba(27, 73, 101, 0.035)",
+                          },
+                        }}
+                      >
+                        <Box className="flex items-center gap-3 px-3.5 py-3">
+                          <Box
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${selected ? "bg-[#1B4965] text-white" : "bg-slate-100 text-slate-500"}`}
+                          >
+                            <DirectionsCarOutlinedIcon sx={{ fontSize: 20 }} />
+                          </Box>
+                          <Box className="min-w-0 flex-1">
+                            <Typography
+                              variant="body2"
+                              className="!font-extrabold !text-slate-800"
+                            >
+                              {vehicle.plate}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              className="!text-slate-500"
+                            >
+                              {vehicle.capacity} · {vehicle.type}
+                            </Typography>
+                          </Box>
+                          {selected && (
+                            <Chip
+                              label="Đã chọn"
+                              size="small"
+                              className="!font-bold !text-[#1B4965]"
+                            />
+                          )}
                         </Box>
-                        <Box className="min-w-0 flex-1">
-                          <Typography variant="body2" className="!font-extrabold !text-slate-800">
-                            {vehicle.plate}
-                          </Typography>
-                          <Typography variant="caption" className="!text-slate-500">
-                            {vehicle.capacity} · {vehicle.type}
-                          </Typography>
-                        </Box>
-                        {selected && <Chip label="Đã chọn" size="small" className="!font-bold !text-[#1B4965]" />}
-                      </Box>
-                    </ButtonBase>
-                  );
-                })}
+                      </ButtonBase>
+                    );
+                  })}
               </Box>
-              {!vehiclesLoading && vehicles.length > 0 && !selectedVehicleId && (
-                <Typography variant="caption" className="!mt-2 !block !text-amber-700">
-                  Chọn một phương tiện để tiếp tục.
-                </Typography>
-              )}
+              {!vehiclesLoading &&
+                vehicles.length > 0 &&
+                !selectedVehicleId && (
+                  <Typography
+                    variant="caption"
+                    className="!mt-2 !block !text-amber-700"
+                  >
+                    Chọn một phương tiện để tiếp tục.
+                  </Typography>
+                )}
 
-              <Box className={`mt-5 rounded-xl border p-3 ${acknowledged ? "border-[#1B4965]/30 bg-sky-50/60" : "border-slate-200 bg-slate-50/70"}`}>
+              <Box
+                className={`mt-5 rounded-xl border p-3 ${acknowledged ? "border-[#1B4965]/30 bg-sky-50/60" : "border-slate-200 bg-slate-50/70"}`}
+              >
                 <FormControlLabel
-                  control={(
+                  control={
                     <Checkbox
                       id="auction-registration-confirm"
                       checked={acknowledged}
-                      onChange={(event) => setAcknowledged(event.target.checked)}
-                      inputProps={{ "aria-label": "Xác nhận điều kiện tham gia và thanh toán" }}
+                      onChange={(event) =>
+                        setAcknowledged(event.target.checked)
+                      }
+                      inputProps={{
+                        "aria-label":
+                          "Xác nhận điều kiện tham gia và thanh toán",
+                      }}
                       sx={{
                         p: 0.25,
                         color: "#94a3b8",
                         "&.Mui-checked": { color: "#1B4965" },
                       }}
                     />
-                  )}
-                  label={(
-                    <Typography variant="caption" className="!leading-5 !text-slate-600">
-                      Tôi xác nhận phương tiện đáp ứng yêu cầu của phiên và đồng ý để hệ thống trừ phí tham gia, đồng thời khóa tiền đặt cọc nếu phiên có yêu cầu.
+                  }
+                  label={
+                    <Typography
+                      variant="caption"
+                      className="!leading-5 !text-slate-600"
+                    >
+                      Tôi xác nhận phương tiện đáp ứng yêu cầu của phiên và đồng
+                      ý để hệ thống trừ phí tham gia, đồng thời khóa tiền đặt
+                      cọc nếu phiên có yêu cầu.
                     </Typography>
-                  )}
+                  }
                   sx={{
                     m: 0,
                     width: "100%",
@@ -347,10 +440,16 @@ export default function AuctionRegistrationDialog({
             </Box>
 
             <Box className="border-t border-slate-200 bg-slate-50/70 px-6 py-6 lg:border-l lg:border-t-0 sm:px-7">
-              <Typography variant="overline" className="!font-bold !tracking-[0.14em] !text-slate-400">
+              <Typography
+                variant="overline"
+                className="!font-bold !tracking-[0.14em] !text-slate-400"
+              >
                 TÓM TẮT THANH TOÁN
               </Typography>
-              <Typography variant="h6" className="!mt-1 !font-extrabold !text-slate-900">
+              <Typography
+                variant="h6"
+                className="!mt-1 !font-extrabold !text-slate-900"
+              >
                 Khoản cần xử lý
               </Typography>
 
@@ -359,51 +458,120 @@ export default function AuctionRegistrationDialog({
                   <Box className="flex gap-2.5">
                     <PaymentsOutlinedIcon className="!text-sky-700" />
                     <Box>
-                      <Typography variant="body2" className="!font-extrabold !text-slate-800">Phí tham gia</Typography>
-                      <Typography variant="caption" className="!text-slate-500">Bắt buộc · thu khi đăng ký</Typography>
+                      <Typography
+                        variant="body2"
+                        className="!font-extrabold !text-slate-800"
+                      >
+                        Phí tham gia
+                      </Typography>
+                      <Typography variant="caption" className="!text-slate-500">
+                        Bắt buộc · thu khi đăng ký
+                      </Typography>
                     </Box>
                   </Box>
-                  <Typography variant="body2" className="!font-extrabold !text-slate-900">{formatCurrency(paymentSummary.fee)}</Typography>
+                  <Typography
+                    variant="body2"
+                    className="!font-extrabold !text-slate-900"
+                  >
+                    {formatCurrency(paymentSummary.fee)}
+                  </Typography>
                 </Box>
                 <Divider className="!my-3" />
                 <Box className="flex items-start justify-between gap-4">
                   <Box className="flex gap-2.5">
-                    <LockOutlinedIcon className={paymentSummary.depositRequired ? "!text-amber-600" : "!text-slate-400"} />
+                    <LockOutlinedIcon
+                      className={
+                        paymentSummary.depositRequired
+                          ? "!text-amber-600"
+                          : "!text-slate-400"
+                      }
+                    />
                     <Box>
-                      <Typography variant="body2" className="!font-extrabold !text-slate-800">Tiền đặt cọc</Typography>
+                      <Typography
+                        variant="body2"
+                        className="!font-extrabold !text-slate-800"
+                      >
+                        Tiền đặt cọc
+                      </Typography>
                       <Typography variant="caption" className="!text-slate-500">
-                        {paymentSummary.depositRequired ? "Khóa tạm thời theo điều kiện phiên" : "Phiên này không yêu cầu"}
+                        {paymentSummary.depositRequired
+                          ? "Khóa tạm thời theo điều kiện phiên"
+                          : "Phiên này không yêu cầu"}
                       </Typography>
                     </Box>
                   </Box>
-                  <Typography variant="body2" className={`!font-extrabold ${paymentSummary.depositRequired ? "!text-amber-700" : "!text-slate-400"}`}>
-                    {paymentSummary.depositRequired ? formatCurrency(paymentSummary.deposit) : "—"}
+                  <Typography
+                    variant="body2"
+                    className={`!font-extrabold ${paymentSummary.depositRequired ? "!text-amber-700" : "!text-slate-400"}`}
+                  >
+                    {paymentSummary.depositRequired
+                      ? formatCurrency(paymentSummary.deposit)
+                      : "—"}
                   </Typography>
                 </Box>
                 <Divider className="!my-3" />
                 <Box className="flex items-end justify-between gap-4">
-                  <Typography variant="body2" className="!font-extrabold !text-slate-700">Tổng xử lý</Typography>
-                  <Typography variant="h6" className="!font-black !text-[#1B4965]">{formatCurrency(paymentSummary.total)}</Typography>
+                  <Typography
+                    variant="body2"
+                    className="!font-extrabold !text-slate-700"
+                  >
+                    Tổng xử lý
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    className="!font-black !text-[#1B4965]"
+                  >
+                    {formatCurrency(paymentSummary.total)}
+                  </Typography>
                 </Box>
               </Box>
 
               <Box className="mt-4 rounded-xl border border-sky-100 bg-sky-50/70 p-3.5">
                 <Box className="flex gap-2">
-                  <AccountBalanceWalletOutlinedIcon className="!text-sky-700" sx={{ fontSize: 20 }} />
-                  <Typography variant="caption" className="!leading-5 !text-sky-900">
-                    Khoản tiền được xử lý từ ví nhà xe. Nếu số dư không đủ, hệ thống sẽ báo lỗi và bạn có thể nạp thêm tiền tại Ví thanh toán.
+                  <AccountBalanceWalletOutlinedIcon
+                    className="!text-sky-700"
+                    sx={{ fontSize: 20 }}
+                  />
+                  <Typography
+                    variant="caption"
+                    className="!leading-5 !text-sky-900"
+                  >
+                    Khoản tiền được xử lý từ ví nhà xe. Nếu số dư không đủ, hệ
+                    thống sẽ báo lỗi và bạn có thể nạp thêm tiền tại Ví thanh
+                    toán.
                   </Typography>
                 </Box>
               </Box>
 
-              {error && <Alert severity="error" className="!mt-4 !rounded-xl" onClose={() => setError("")}>{error}</Alert>}
+              {error && (
+                <Alert
+                  severity="error"
+                  className="!mt-4 !rounded-xl"
+                  onClose={() => setError("")}
+                >
+                  {error}
+                </Alert>
+              )}
 
               <Button
                 fullWidth
                 variant="contained"
                 onClick={handleConfirm}
-                disabled={!selectedVehicleId || !acknowledged || submitting || vehiclesLoading || vehicles.length === 0 || Boolean(vehiclesError)}
-                startIcon={submitting ? <CircularProgress size={17} color="inherit" /> : <PaymentsOutlinedIcon />}
+                disabled={
+                  !selectedVehicleId ||
+                  !acknowledged ||
+                  submitting ||
+                  vehiclesLoading ||
+                  vehicles.length === 0 ||
+                  Boolean(vehiclesError)
+                }
+                startIcon={
+                  submitting ? (
+                    <CircularProgress size={17} color="inherit" />
+                  ) : (
+                    <PaymentsOutlinedIcon />
+                  )
+                }
                 className="!mt-5 !rounded-lg !py-3 !font-extrabold"
                 sx={{
                   backgroundColor: "#1B4965",
@@ -418,8 +586,12 @@ export default function AuctionRegistrationDialog({
               >
                 {submitLabel}
               </Button>
-              <Typography variant="caption" className="!mt-2 !block !text-center !leading-5 !text-slate-400">
-                Sau khi đăng ký thành công, bạn chờ đến giờ mở phòng mới có thể đặt giá.
+              <Typography
+                variant="caption"
+                className="!mt-2 !block !text-center !leading-5 !text-slate-400"
+              >
+                Sau khi đăng ký thành công, bạn chờ đến giờ mở phòng mới có thể
+                đặt giá.
               </Typography>
             </Box>
           </Box>

@@ -5,14 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
-import { toast } from "react-hot-toast";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { auctionService } from "@/services/auctionService";
 import AuctionSessionCard from "@/components/auctions/AuctionSessionCard";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -33,8 +31,6 @@ import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined
 import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
-import PlaceIcon from "@mui/icons-material/Place";
-import AdjustIcon from "@mui/icons-material/Adjust";
 import Divider from "@mui/material/Divider";
 
 
@@ -111,6 +107,7 @@ const mapBackendToShipment = (auction) => {
 };
 
 export default function BiddingSessionsScreen() {
+  const notify = useGlobalNotification();
   const router = useRouter();
   const [shipments, setShipments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -135,7 +132,7 @@ export default function BiddingSessionsScreen() {
       setShipments(mappedShipments);
     } catch (error) {
       console.error("Error fetching auctions:", error);
-      toast.error("Không thể tải danh sách phiên đấu giá");
+      notify.error("Không thể tải danh sách phiên đấu giá");
     } finally {
       setLoading(false);
     }
@@ -155,10 +152,6 @@ export default function BiddingSessionsScreen() {
     "completed",
     "cancelled",
   ];
-
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
 
   // Filter shipments based on search query, active tab, and auction type
   const filteredShipments = shipments.filter((item) => {
@@ -193,11 +186,11 @@ export default function BiddingSessionsScreen() {
     try {
       const reasonStr = cancelReasonNote ? `${cancelReasonType}: ${cancelReasonNote}` : cancelReasonType;
       await auctionService.cancelAuction(selectedShipmentId, reasonStr);
-      toast.success("Hủy phiên đấu giá thành công");
+      notify.success("Hủy phiên đấu giá thành công");
       fetchAuctions();
     } catch (error) {
       console.error("Error cancelling auction:", error);
-      toast.error("Hủy phiên đấu giá thất bại");
+      notify.error("Hủy phiên đấu giá thất bại");
     } finally {
       handleCloseCancelDialog();
     }
@@ -685,3 +678,4 @@ export default function BiddingSessionsScreen() {
     </Box>
   );
 }
+

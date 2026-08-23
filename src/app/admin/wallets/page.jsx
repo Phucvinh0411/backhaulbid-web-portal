@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
 import Table from "@mui/material/Table";
@@ -16,7 +17,6 @@ import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
-import Alert from "@mui/material/Alert";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
@@ -36,7 +36,10 @@ import {
   AdminToolbar,
 } from "@/components/admin/AdminUI";
 import { walletApi } from "@/services/walletApi";
+import { getApiErrorMessage } from "@/services/errorMessage";
 import { getPageItems, getPageMeta, toWithdrawalApiStatus } from "@/services/responseData";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
+import WalletDetailDialog, { WalletDetailRow } from "@/components/wallet/WalletDetailDialog";
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(amount) || 0);
@@ -45,11 +48,11 @@ const formatDate = (dateStr) =>
   dateStr ? new Date(dateStr).toLocaleString("vi-VN") : "---";
 
 export default function AdminWalletsPage() {
+  const notify = useGlobalNotification();
   const [withdrawals, setWithdrawals] = useState([]);
+  const [topUps, setTopUps] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
 
   const [filterStatus, setFilterStatus] = useState("PENDING");
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,18 +66,21 @@ export default function AdminWalletsPage() {
   const [openRejectDialog, setOpenRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [walletDetail, setWalletDetail] = useState(null);
+  const [topUpDetail, setTopUpDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    setError("");
     try {
-      const [summaryRes, withdrawalsRes] = await Promise.all([
+      const [summaryRes, withdrawalsRes, topUpsRes] = await Promise.all([
         walletApi.getAdminSummary().catch(() => null),
         walletApi.getAdminWithdrawals({
           status: toWithdrawalApiStatus(filterStatus),
           page: page + 1,
           pageSize,
         }),
+        walletApi.getAdminTopUps({ page: 1, pageSize: 10 }),
       ]);
 
       if (summaryRes) setSummary(summaryRes);
@@ -82,12 +88,13 @@ export default function AdminWalletsPage() {
         setWithdrawals(getPageItems(withdrawalsRes));
         setTotalItems(getPageMeta(withdrawalsRes).totalItems);
       }
+      if (topUpsRes) setTopUps(getPageItems(topUpsRes));
     } catch (err) {
-      setError(err?.response?.data?.message || "Không thể tải danh sách yêu cầu rút tiền.");
+      notify.error(getApiErrorMessage(err, "Không thể tải dữ liệu ví admin."));
     } finally {
       setLoading(false);
     }
-  }, [filterStatus, page, pageSize]);
+  }, [filterStatus, notify, page, pageSize]);
 
   useEffect(() => {
     loadData();
@@ -113,15 +120,14 @@ export default function AdminWalletsPage() {
   const handleConfirmApprove = async () => {
     if (!selectedItem) return;
     setActionLoading(true);
-    setError("");
     try {
       await walletApi.approveAdminWithdrawal(selectedItem.id);
-      setSuccessMsg(`Đã phê duyệt yêu cầu rút tiền ${formatCurrency(selectedItem.amount)} thành công!`);
+      notify.success(`Đã phê duyệt yêu cầu rút tiền ${formatCurrency(selectedItem.amount)} thành công!`);
       setOpenApproveDialog(false);
       setSelectedItem(null);
       await loadData();
     } catch (err) {
-      setError(err?.response?.data?.message || "Không thể duyệt yêu cầu rút tiền.");
+      notify.error(getApiErrorMessage(err, "Không thể duyệt yêu cầu rút tiền."));
     } finally {
       setActionLoading(false);
     }
@@ -133,22 +139,55 @@ export default function AdminWalletsPage() {
     setOpenRejectDialog(true);
   };
 
+  const handleOpenTopUpDetail = async (item) => {
+    setDetailLoading(true);
+    setTopUpDetail(null);
+    try {
+      setTopUpDetail(await walletApi.getAdminTopUp(item.invoiceNumber));
+    } catch (error) {
+      notify.error(getApiErrorMessage(error, "Không thể tải chi tiết đơn nạp. Vui lòng thử lại."));
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleOpenWalletDetail = async (accountId) => {
+    if (!accountId) {
+      notify.warning("Đơn nạp chưa có mã tài khoản để tra cứu ví.");
+      return;
+    }
+    setDetailLoading(true);
+    setWalletDetail(null);
+    try {
+      setWalletDetail(await walletApi.getAdminWallet(accountId));
+    } catch (error) {
+      notify.error(getApiErrorMessage(error, "Không thể tải chi tiết ví tài khoản. Vui lòng thử lại."));
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeWalletDetails = () => {
+    if (detailLoading) return;
+    setWalletDetail(null);
+    setTopUpDetail(null);
+  };
+
   const handleConfirmReject = async () => {
     if (!selectedItem) return;
     if (!rejectionReason.trim()) {
-      setError("Vui lòng nhập lý do từ chối yêu cầu rút tiền.");
+      notify.warning("Vui lòng nhập lý do từ chối yêu cầu rút tiền.");
       return;
     }
     setActionLoading(true);
-    setError("");
     try {
       await walletApi.rejectAdminWithdrawal(selectedItem.id, rejectionReason.trim());
-      setSuccessMsg(`Đã từ chối yêu cầu rút tiền. Số tiền đã được hoàn lại ví của người dùng.`);
+      notify.success("Đã từ chối yêu cầu rút tiền. Số tiền đã được hoàn lại ví của người dùng.");
       setOpenRejectDialog(false);
       setSelectedItem(null);
       await loadData();
     } catch (err) {
-      setError(err?.response?.data?.message || "Không thể từ chối yêu cầu rút tiền.");
+      notify.error(getApiErrorMessage(err, "Không thể từ chối yêu cầu rút tiền."));
     } finally {
       setActionLoading(false);
     }
@@ -205,18 +244,6 @@ export default function AdminWalletsPage() {
           />
         </Grid>
       </Grid>
-
-      {error && (
-        <Alert
-          severity="error"
-          sx={{ mb: 3 }}
-          onClose={() => setError("")}
-          action={<AdminSecondaryButton size="small" onClick={loadData}>Thử tải lại</AdminSecondaryButton>}
-        >
-          {error}
-        </Alert>
-      )}
-      {successMsg && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccessMsg("")}>{successMsg}</Alert>}
 
       <AdminSectionCard>
         <AdminToolbar title="Yêu cầu rút tiền" subtitle="Kiểm tra thông tin ngân hàng trước khi phê duyệt giao dịch.">
@@ -322,6 +349,50 @@ export default function AdminWalletsPage() {
         />
       </AdminSectionCard>
 
+      <AdminSectionCard sx={{ mt: 3 }}>
+        <AdminToolbar title="Nhật ký đơn nạp SePay" subtitle="Theo dõi trạng thái checkout và IPN của người dùng." />
+        <AdminTableContainer minWidth={850}>
+          <Table sx={{ minWidth: 850 }} aria-label="Nhật ký đơn nạp SePay">
+            <TableHead sx={{ bgcolor: "#F8FAFC" }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>Mã hóa đơn</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Tài khoản</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Số tiền</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Cập nhật</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700 }}>Chi tiết</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {topUps.length === 0 ? (
+                <TableRow>
+                      <TableCell colSpan={6} align="center" sx={{ py: 4, color: "#94A3B8" }}>
+                    Chưa có đơn nạp SePay.
+                  </TableCell>
+                </TableRow>
+              ) : topUps.map((item) => (
+                <TableRow key={item.invoiceNumber} hover>
+                  <TableCell sx={{ fontFamily: "monospace" }}>{item.invoiceNumber}</TableCell>
+                  <TableCell>
+                    {item.accountId ? (
+                      <Button size="small" onClick={() => handleOpenWalletDetail(item.accountId)} className="!font-bold !capitalize">
+                        Xem ví
+                      </Button>
+                    ) : "---"}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>{formatCurrency(item.amount)}</TableCell>
+                  <TableCell><AdminStatusChip label={item.status} tone={item.status === "PAID" ? "success" : item.status === "FAILED" ? "danger" : "warning"} /></TableCell>
+                  <TableCell>{formatDate(item.updatedAt || item.createdAt)}</TableCell>
+                  <TableCell align="right">
+                    <Button size="small" onClick={() => handleOpenTopUpDetail(item)} className="!font-bold !capitalize">Xem đơn</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </AdminTableContainer>
+      </AdminSectionCard>
+
       {/* Dialog Xác nhận Duyệt rút tiền */}
       <AdminDialog open={openApproveDialog} onClose={() => !actionLoading && setOpenApproveDialog(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, color: "#1B4965" }}>Xác nhận Chuyển tiền Rút</DialogTitle>
@@ -387,6 +458,35 @@ export default function AdminWalletsPage() {
           </AdminPrimaryButton>
         </DialogActions>
       </AdminDialog>
+
+      <WalletDetailDialog
+        open={Boolean(topUpDetail) || Boolean(walletDetail) || detailLoading}
+        onClose={closeWalletDetails}
+        title={topUpDetail ? "Chi tiết đơn nạp" : "Chi tiết ví tài khoản"}
+        loading={detailLoading}
+      >
+        {topUpDetail ? (
+          <Box>
+            <WalletDetailRow label="Mã hóa đơn" value={topUpDetail.invoiceNumber} />
+            <WalletDetailRow label="Mã tài khoản" value={topUpDetail.accountId} />
+            <WalletDetailRow label="Số tiền" value={formatCurrency(topUpDetail.amount)} />
+            <WalletDetailRow label="Nhà cung cấp" value={topUpDetail.provider} />
+            <WalletDetailRow label="Trạng thái" value={topUpDetail.status} />
+            <WalletDetailRow label="Mã giao dịch ngân hàng" value={topUpDetail.providerTransactionId} />
+            <WalletDetailRow label="Tạo lúc" value={formatDate(topUpDetail.createdAt)} />
+            <WalletDetailRow label="Thanh toán lúc" value={formatDate(topUpDetail.paidAt)} />
+            <WalletDetailRow label="Hết hạn lúc" value={formatDate(topUpDetail.expiresAt)} />
+          </Box>
+        ) : walletDetail ? (
+          <Box>
+            <WalletDetailRow label="Mã tài khoản" value={walletDetail.accountId} />
+            <WalletDetailRow label="Số dư" value={formatCurrency(walletDetail.balance)} />
+            <WalletDetailRow label="Đang tạm giữ" value={formatCurrency(walletDetail.frozenBalance)} />
+            <WalletDetailRow label="Số dư khả dụng" value={formatCurrency(walletDetail.availableBalance)} />
+            <WalletDetailRow label="Cập nhật lúc" value={formatDate(walletDetail.updatedAt)} />
+          </Box>
+        ) : null}
+      </WalletDetailDialog>
     </AdminPageShell>
   );
 }

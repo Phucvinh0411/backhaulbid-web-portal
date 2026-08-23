@@ -6,9 +6,11 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import Typography from "@mui/material/Typography";
+import { dispatchGlobalNotification } from "@/components/common/NotificationPopup";
 import {
   VNPT_DOCUMENT_FLOW_CONFIG,
   VNPT_EKYC_ASSETS,
+  getVnptEkycConfigMessage,
   normalizeVnptAccessToken,
   validateVnptEkycConfig,
 } from "@/configs/vnptEkycConfig";
@@ -22,24 +24,20 @@ const VNPT_CONFIG = {
   ),
 };
 
-function getConfigErrorMessage(validation) {
-  if (validation.code === "missing_config") {
-    return `Thiếu cấu hình VNPT eKYC: ${validation.missingKeys.join(", ")}.`;
-  }
-
-  if (validation.code === "expired_token") {
-    return "Phiên kết nối VNPT eKYC đã hết hạn. Hãy cập nhật access token và khởi động lại frontend.";
-  }
-
-  return "Access token VNPT eKYC sắp hết hạn. Hãy cấp token mới trước khi tiếp tục.";
-}
-
 export default function VNPTEkyc({ onResult, onDocumentResult }) {
   const onResultRef = useRef(onResult);
   const onDocumentResultRef = useRef(onDocumentResult);
   const [isConfigReady, setIsConfigReady] = useState(false);
   const [isFaceSdkReady, setIsFaceSdkReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const showError = useCallback((message) => {
+    setErrorMessage(message);
+    dispatchGlobalNotification({
+      type: "error",
+      title: "eKYC chưa thể tiếp tục",
+      message,
+    });
+  }, []);
 
   useEffect(() => {
     onResultRef.current = onResult;
@@ -50,16 +48,16 @@ export default function VNPTEkyc({ onResult, onDocumentResult }) {
     const validation = validateVnptEkycConfig(VNPT_CONFIG);
 
     if (!validation.ok) {
-      setErrorMessage(getConfigErrorMessage(validation));
+      showError(getVnptEkycConfigMessage(validation));
       return;
     }
 
     setIsConfigReady(true);
-  }, []);
+  }, [showError]);
 
   const launchSdk = useCallback(() => {
     if (!window.SDK?.launch) {
-      setErrorMessage("Không thể khởi tạo VNPT eKYC SDK. Vui lòng tải lại trang.");
+      showError("Không thể khởi tạo VNPT eKYC SDK. Vui lòng tải lại trang.");
       return;
     }
 
@@ -90,7 +88,7 @@ export default function VNPTEkyc({ onResult, onDocumentResult }) {
           VNPT_EKYC_ASSETS.VIETNAMESE_TUTORIAL,
         CALL_BACK_END_FLOW: (result) => {
           if (!result || typeof result !== "object") {
-            setErrorMessage("VNPT eKYC trả về kết quả không hợp lệ.");
+            showError("VNPT eKYC trả về kết quả không hợp lệ.");
             return;
           }
 
@@ -103,9 +101,9 @@ export default function VNPTEkyc({ onResult, onDocumentResult }) {
         },
       });
     } catch {
-      setErrorMessage("Không thể khởi tạo VNPT eKYC SDK. Vui lòng tải lại trang.");
+      showError("Không thể khởi tạo VNPT eKYC SDK. Vui lòng tải lại trang.");
     }
-  }, []);
+  }, [showError]);
 
   if (errorMessage) {
     return (
@@ -138,7 +136,7 @@ export default function VNPTEkyc({ onResult, onDocumentResult }) {
           strategy="afterInteractive"
           onReady={() => {
             if (!window.FaceVNPTBrowserSDK) {
-              setErrorMessage(
+              showError(
                 "Không thể khởi tạo mô-đun xác thực khuôn mặt VNPT."
               );
               return;
@@ -147,7 +145,7 @@ export default function VNPTEkyc({ onResult, onDocumentResult }) {
             setIsFaceSdkReady(true);
           }}
           onError={() =>
-            setErrorMessage(
+            showError(
               "Không thể tải mô-đun xác thực khuôn mặt VNPT. Vui lòng thử lại."
             )
           }
@@ -161,7 +159,7 @@ export default function VNPTEkyc({ onResult, onDocumentResult }) {
           strategy="afterInteractive"
           onReady={launchSdk}
           onError={() =>
-            setErrorMessage("Không thể tải VNPT eKYC SDK. Vui lòng thử lại.")
+            showError("Không thể tải VNPT eKYC SDK. Vui lòng thử lại.")
           }
         />
       )}

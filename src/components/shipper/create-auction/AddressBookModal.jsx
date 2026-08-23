@@ -1,19 +1,60 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import IconButton from "@mui/material/IconButton";
+import CircularProgress from "@mui/material/CircularProgress";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 import CloseIcon from "@mui/icons-material/Close";
 import LocationOnIcon from "@mui/icons-material/LocationOnOutlined";
 import PersonIcon from "@mui/icons-material/PersonOutlined";
 import PhoneIcon from "@mui/icons-material/PhoneInTalkOutlined";
 
-import { MOCK_ADDRESS_BOOK } from "./mockData";
+import { addressBookApi } from "@/services/addressBookApi";
+import { getApiErrorMessage } from "@/services/errorMessage";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 export default function AddressBookModal({ open, onClose, onSelectAddress, targetType }) {
+  const notify = useGlobalNotification();
+  const [addresses, setAddresses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    let active = true;
+    setLoading(true);
+    setLoadError("");
+
+    addressBookApi
+      .list()
+      .then((data) => {
+        if (active) setAddresses(Array.isArray(data) ? data : []);
+      })
+      .catch((error) => {
+        if (!active) return;
+        const message = getApiErrorMessage(
+          error,
+          "Không thể tải sổ địa chỉ. Vui lòng thử lại.",
+        );
+        setLoadError(message);
+        notify.error(message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [open, notify]);
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth paperProps={{ className: "!rounded-3xl !p-2" }}>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ className: "!rounded-3xl !p-2" }}>
       <DialogTitle className="!flex items-center justify-between !pb-2">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center">
@@ -32,7 +73,22 @@ export default function AddressBookModal({ open, onClose, onSelectAddress, targe
       </DialogTitle>
 
       <DialogContent className="!pt-2 space-y-2.5">
-        {MOCK_ADDRESS_BOOK.map((addr) => (
+        {loading ? (
+          <div className="flex min-h-36 items-center justify-center">
+            <CircularProgress size={28} sx={{ color: "#0369A1" }} />
+          </div>
+        ) : loadError ? (
+          <div className="flex min-h-36 flex-col items-center justify-center gap-3 text-center">
+            <Typography className="!font-semibold text-rose-700">{loadError}</Typography>
+            <Button onClick={onClose} variant="outlined" className="!rounded-xl !font-bold !capitalize">
+              Đóng
+            </Button>
+          </div>
+        ) : addresses.length === 0 ? (
+          <div className="flex min-h-36 items-center justify-center text-center">
+            <Typography className="text-slate-500">Bạn chưa lưu địa chỉ nào. Hãy thêm địa chỉ trong phần Sổ địa chỉ.</Typography>
+          </div>
+        ) : addresses.map((addr) => (
           <div
             key={addr.id}
             onClick={() => {

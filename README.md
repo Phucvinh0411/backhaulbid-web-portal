@@ -46,11 +46,14 @@
     ```
 
 3.  **Cấu hình biến môi trường:**
-    Tạo file `.env` ở thư mục gốc của dự án:
-    ```env
-    NEXT_PUBLIC_API_GATEWAY_URL=http://localhost:8000
-    NEXT_PUBLIC_BIDDING_WS_URL=ws://localhost:8000/ws
-    ```
+    Frontend dùng chung file `be/backhaulbid-infrastructure/.env`; không tạo một
+    file `.env` thứ hai trong frontend. Các lệnh `npm run dev` và `npm run build`
+    tự nạp các biến public từ file infrastructure. Docker Compose cũng truyền
+    đúng file này vào build args của web portal.
+
+    Tối thiểu, file infrastructure cần có `NEXT_PUBLIC_GATEWAY_URL`,
+    `NEXT_PUBLIC_BIDDING_SOCKET_PATH` và bốn biến
+    `NEXT_PUBLIC_VNPT_EKYC_*`. Token VNPT không được commit hoặc in vào log.
 
 4.  **Khởi chạy máy chủ phát triển (Development Server):**
     ```bash

@@ -1,14 +1,10 @@
 "use client";
 
 import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
-import Chip from "@mui/material/Chip";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonthOutlined";
 import BalanceIcon from "@mui/icons-material/ScaleOutlined";
-import { AuctionTypeBadge, AuctionStatusBadge, RoundedBox, AsymmetricCornerBox, ActionButton } from "@/components/common";
+import { AuctionTypeBadge, AuctionStatusBadge, RoundedBox, ActionButton } from "@/components/common";
 
 /**
  * Reusable BiddingItem card component representing a logistics shipment.

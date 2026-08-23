@@ -17,7 +17,13 @@ import Divider from "@mui/material/Divider";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import { Add as AddIcon, DirectionsCar as DirectionsCarIcon, Settings as SettingsIcon, FileUpload as FileUploadIcon, Edit as EditIcon } from "@mui/icons-material";
+import {
+  Add as AddIcon,
+  DirectionsCar as DirectionsCarIcon,
+  Settings as SettingsIcon,
+  FileUpload as FileUploadIcon,
+  Edit as EditIcon,
+} from "@mui/icons-material";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Table from "@mui/material/Table";
@@ -30,15 +36,25 @@ import Paper from "@mui/material/Paper";
 import TableSortLabel from "@mui/material/TableSortLabel";
 import { PageHeader, ViewModeToggle, DetailDrawer } from "@/components/common";
 import CarrierVehicleItem from "@/components/carrier/CarrierVehicleItem";
-import { createVehicle, deactivateVehicle, getMyVehicles, updateVehicle } from "@/services/fleetApi";
+import {
+  createVehicle,
+  deactivateVehicle,
+  getMyVehicles,
+  updateVehicle,
+} from "@/services/fleetApi";
 import { downloadCsvTemplate, parseSimpleCsv } from "@/services/csvImport";
 import { mediaApi } from "@/services/mediaApi";
+import { getApiErrorMessage } from "@/services/errorMessage";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 export default function VehiclesPage() {
+  const notify = useGlobalNotification();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
+  const setError = (message) => {
+    if (message) notify.error(message);
+  };
+  const setSuccessMsg = (message) => notify.success(message);
   const [filter, setFilter] = useState("ALL");
   const [viewMode, setViewMode] = useState("CARD");
   const [openModal, setOpenModal] = useState(false);
@@ -51,8 +67,14 @@ export default function VehiclesPage() {
   const [importFileName, setImportFileName] = useState("");
   const [documentFiles, setDocumentFiles] = useState([]);
   const [createStep, setCreateStep] = useState(1);
-  const [documents, setDocuments] = useState({ registration: null, inspection: null });
-  const [editDocuments, setEditDocuments] = useState({ registration: null, inspection: null });
+  const [documents, setDocuments] = useState({
+    registration: null,
+    inspection: null,
+  });
+  const [editDocuments, setEditDocuments] = useState({
+    registration: null,
+    inspection: null,
+  });
 
   const [form, setForm] = useState({
     licensePlate: "",
@@ -75,7 +97,12 @@ export default function VehiclesPage() {
     try {
       setVehicles(await getMyVehicles());
     } catch (loadError) {
-      setError(loadError?.response?.data?.message || "Không thể tải danh sách phương tiện.");
+      setError(
+        getApiErrorMessage(
+          loadError,
+          "Không thể tải danh sách phương tiện. Vui lòng thử lại.",
+        ),
+      );
     } finally {
       setLoading(false);
     }
@@ -86,12 +113,12 @@ export default function VehiclesPage() {
   }, []);
 
   const [columnsList, setColumnsList] = useState([
-    { id: 'plate', label: 'Biển số xe' },
-    { id: 'capacity', label: 'Tải trọng' },
-    { id: 'type', label: 'Loại xe' },
-    { id: 'verification', label: 'Kiểm duyệt' },
-    { id: 'active', label: 'Trạng thái xe' },
-    { id: 'actions', label: 'Thao tác', align: 'right', sortable: false }
+    { id: "plate", label: "Biển số xe" },
+    { id: "capacity", label: "Tải trọng" },
+    { id: "type", label: "Loại xe" },
+    { id: "verification", label: "Kiểm duyệt" },
+    { id: "active", label: "Trạng thái xe" },
+    { id: "actions", label: "Thao tác", align: "right", sortable: false },
   ]);
 
   const handleDragStart = (e, index) => {
@@ -121,7 +148,7 @@ export default function VehiclesPage() {
   };
 
   const filteredVehicles = React.useMemo(() => {
-    return vehicles.filter(v => {
+    return vehicles.filter((v) => {
       if (filter === "VERIFIED") return v.verification === "VERIFIED";
       if (filter === "PENDING") return v.verification === "PENDING";
       if (filter === "REJECTED") return v.verification === "REJECTED";
@@ -132,14 +159,21 @@ export default function VehiclesPage() {
   const sortedVehicles = React.useMemo(() => {
     let result = [...filteredVehicles];
     result.sort((a, b) => {
-      let comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
+      let comparison = String(a[orderBy] || "").localeCompare(
+        String(b[orderBy] || ""),
+      );
       return order === "desc" ? -comparison : comparison;
     });
     return result;
   }, [filteredVehicles, order, orderBy]);
 
   const handleOpen = () => {
-    setForm({ licensePlate: "", payloadCapacity: "", vehicleType: "TRUCK_MEDIUM", bodyType: "" });
+    setForm({
+      licensePlate: "",
+      payloadCapacity: "",
+      vehicleType: "TRUCK_MEDIUM",
+      bodyType: "",
+    });
     setDocuments({ registration: null, inspection: null });
     setCreateStep(1);
     setError("");
@@ -149,12 +183,20 @@ export default function VehiclesPage() {
 
   const handleCreate = async () => {
     if (createStep < 3) {
-      if (createStep === 1 && (!form.licensePlate || !form.payloadCapacity || Number(form.payloadCapacity) <= 0)) {
-        setError("Vui long nhap bien so va tai trong hop le.");
+      if (
+        createStep === 1 &&
+        (!form.licensePlate ||
+          !form.payloadCapacity ||
+          Number(form.payloadCapacity) <= 0)
+      ) {
+        setError("Vui lòng nhập biển số và tải trọng hợp lệ.");
         return;
       }
-      if (createStep === 2 && (!documents.registration || !documents.inspection)) {
-        setError("Vui long upload ca vet/dang ky va dang kiem.");
+      if (
+        createStep === 2 &&
+        (!documents.registration || !documents.inspection)
+      ) {
+        setError("Vui lòng tải lên cà vẹt/đăng ký và đăng kiểm.");
         return;
       }
       setError("");
@@ -166,18 +208,36 @@ export default function VehiclesPage() {
     try {
       let registrationUrl = form.registrationUrl || "";
       if (documents.registration) {
-        registrationUrl = await mediaApi.uploadFile(documents.registration, "vehicles/registration");
+        registrationUrl = await mediaApi.uploadFile(
+          documents.registration,
+          "vehicles/registration",
+        );
       }
       let inspectionUrl = form.inspectionUrl || "";
       if (documents.inspection) {
-        inspectionUrl = await mediaApi.uploadFile(documents.inspection, "vehicles/inspection");
+        inspectionUrl = await mediaApi.uploadFile(
+          documents.inspection,
+          "vehicles/inspection",
+        );
       }
-      await createVehicle({ ...form, payloadCapacity: Number(form.payloadCapacity), registrationUrl, inspectionUrl });
+      await createVehicle({
+        ...form,
+        payloadCapacity: Number(form.payloadCapacity),
+        registrationUrl,
+        inspectionUrl,
+      });
       await loadVehicles();
       setOpenModal(false);
-      setSuccessMsg("Thêm phương tiện mới thành công! Hồ sơ đang chờ Admin duyệt.");
+      setSuccessMsg(
+        "Thêm phương tiện mới thành công! Hồ sơ đang chờ Admin duyệt.",
+      );
     } catch (saveError) {
-      setError(saveError?.response?.data?.message || "Không thể gửi phương tiện để duyệt.");
+      setError(
+        getApiErrorMessage(
+          saveError,
+          "Không thể gửi phương tiện để duyệt. Vui lòng kiểm tra hồ sơ rồi thử lại.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -192,8 +252,11 @@ export default function VehiclesPage() {
     const file = event.target.files?.[0] || null;
     event.target.value = "";
     if (!file) return;
-    if (!/^image\/(jpeg|png)$|^application\/pdf$/.test(file.type) || file.size > 5 * 1024 * 1024) {
-      setError("Ho so chi nhan JPG, PNG hoac PDF, dung luong toi da 5MB.");
+    if (
+      !/^image\/(jpeg|png)$|^application\/pdf$/.test(file.type) ||
+      file.size > 5 * 1024 * 1024
+    ) {
+      setError("Hồ sơ chỉ nhận JPG, PNG hoặc PDF, dung lượng tối đa 5MB.");
       return;
     }
     setDocuments((current) => ({ ...current, [key]: file }));
@@ -229,10 +292,16 @@ export default function VehiclesPage() {
       let registrationUrl = editForm.registrationUrl;
       let inspectionUrl = editForm.inspectionUrl;
       if (editDocuments.registration) {
-        registrationUrl = await mediaApi.uploadFile(editDocuments.registration, "vehicles/registration");
+        registrationUrl = await mediaApi.uploadFile(
+          editDocuments.registration,
+          "vehicles/registration",
+        );
       }
       if (editDocuments.inspection) {
-        inspectionUrl = await mediaApi.uploadFile(editDocuments.inspection, "vehicles/inspection");
+        inspectionUrl = await mediaApi.uploadFile(
+          editDocuments.inspection,
+          "vehicles/inspection",
+        );
       }
       metadata.registrationUrl = registrationUrl;
       metadata.inspectionUrl = inspectionUrl;
@@ -253,7 +322,12 @@ export default function VehiclesPage() {
       }
       setSuccessMsg("Cập nhật thông tin phương tiện thành công!");
     } catch (updateError) {
-      setError(updateError?.response?.data?.message || "Không thể cập nhật phương tiện.");
+      setError(
+        getApiErrorMessage(
+          updateError,
+          "Không thể cập nhật phương tiện. Vui lòng kiểm tra lại thông tin.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -263,8 +337,11 @@ export default function VehiclesPage() {
     const file = event.target.files?.[0] || null;
     event.target.value = "";
     if (!file) return;
-    if (!/^image\/(jpeg|png)$|^application\/pdf$/.test(file.type) || file.size > 5 * 1024 * 1024) {
-      setError("Ho so chi nhan JPG, PNG hoac PDF, dung luong toi da 5MB.");
+    if (
+      !/^image\/(jpeg|png)$|^application\/pdf$/.test(file.type) ||
+      file.size > 5 * 1024 * 1024
+    ) {
+      setError("Hồ sơ chỉ nhận JPG, PNG hoặc PDF, dung lượng tối đa 5MB.");
       return;
     }
     setEditDocuments((current) => ({ ...current, [key]: file }));
@@ -272,14 +349,19 @@ export default function VehiclesPage() {
   };
 
   const handleDeactivate = async (vehicle) => {
-    if (!window.confirm("Ban co chac muon vo hieu hoa xe nay?")) return;
+    if (!window.confirm("Bạn có chắc muốn vô hiệu hóa xe này?")) return;
     try {
       await deactivateVehicle(vehicle.id);
       await loadVehicles();
       setSelectedVehicle(null);
       setSuccessMsg("Đã vô hiệu hóa phương tiện.");
     } catch (deactivateError) {
-      setError(deactivateError?.response?.data?.message || "Không thể vô hiệu hóa phương tiện.");
+      setError(
+        getApiErrorMessage(
+          deactivateError,
+          "Không thể vô hiệu hóa phương tiện. Vui lòng thử lại.",
+        ),
+      );
     }
   };
 
@@ -308,8 +390,17 @@ export default function VehiclesPage() {
         registrationFile: row.registrationFile || row.cavetImage || "",
         inspectionFile: row.inspectionFile || row.dangKiemImage || "",
       }));
-      if (rows.some((row) => !row.licensePlate || !Number.isFinite(row.payloadCapacity) || row.payloadCapacity <= 0)) {
-        throw new Error("Mỗi dòng phải có licensePlate và payloadCapacity lớn hơn 0");
+      if (
+        rows.some(
+          (row) =>
+            !row.licensePlate ||
+            !Number.isFinite(row.payloadCapacity) ||
+            row.payloadCapacity <= 0,
+        )
+      ) {
+        throw new Error(
+          "Mỗi dòng phải có licensePlate và payloadCapacity lớn hơn 0",
+        );
       }
       setImportRows(rows);
       setImportFileName(file.name);
@@ -317,7 +408,12 @@ export default function VehiclesPage() {
     } catch (importError) {
       setImportRows([]);
       setImportFileName("");
-      setError(importError.message || "Không thể đọc file CSV");
+      setError(
+        getApiErrorMessage(
+          importError,
+          "Không thể đọc file CSV. Vui lòng kiểm tra đúng định dạng file mẫu.",
+        ),
+      );
     }
   };
 
@@ -325,26 +421,43 @@ export default function VehiclesPage() {
     const files = Array.from(event.target.files || []);
     event.target.value = "";
     if (!files.length) return;
-    const invalidFile = files.find((file) => !/^image\/(jpeg|png)$|^application\/pdf$/.test(file.type) || file.size > 5 * 1024 * 1024);
+    const invalidFile = files.find(
+      (file) =>
+        !/^image\/(jpeg|png)$|^application\/pdf$/.test(file.type) ||
+        file.size > 5 * 1024 * 1024,
+    );
     if (invalidFile) {
-      setError(`Tệp ${invalidFile.name} không hợp lệ. Chỉ nhận JPG, PNG hoặc PDF, tối đa 5MB mỗi tệp.`);
+      setError(
+        `Tệp ${invalidFile.name} không hợp lệ. Chỉ nhận JPG, PNG hoặc PDF, tối đa 5MB mỗi tệp.`,
+      );
       return;
     }
     setDocumentFiles(files);
     setError("");
   };
 
-  const findImportDocument = (name) => documentFiles.find((file) => file.name.toLowerCase() === String(name || "").trim().toLowerCase());
+  const findImportDocument = (name) =>
+    documentFiles.find(
+      (file) =>
+        file.name.toLowerCase() ===
+        String(name || "")
+          .trim()
+          .toLowerCase(),
+    );
 
   const validateImportDocuments = () => {
     const missing = importRows.flatMap((row) => {
       const missingForRow = [];
-      if (!findImportDocument(row.registrationFile)) missingForRow.push(`cà vẹt của ${row.licensePlate}`);
-      if (!findImportDocument(row.inspectionFile)) missingForRow.push(`đăng kiểm của ${row.licensePlate}`);
+      if (!findImportDocument(row.registrationFile))
+        missingForRow.push(`cà vẹt của ${row.licensePlate}`);
+      if (!findImportDocument(row.inspectionFile))
+        missingForRow.push(`đăng kiểm của ${row.licensePlate}`);
       return missingForRow;
     });
     if (missing.length) {
-      setError(`Chưa tìm thấy ${missing.slice(0, 2).join(" và ")}${missing.length > 2 ? " và các tệp liên quan" : ""}. Kiểm tra lại tên file trong CSV.`);
+      setError(
+        `Chưa tìm thấy ${missing.slice(0, 2).join(" và ")}${missing.length > 2 ? " và các tệp liên quan" : ""}. Kiểm tra lại tên file trong CSV.`,
+      );
       return false;
     }
     return true;
@@ -367,11 +480,11 @@ export default function VehiclesPage() {
       for (const row of importRows) {
         const registrationUrl = await mediaApi.uploadFile(
           findImportDocument(row.registrationFile),
-          "vehicles/registration"
+          "vehicles/registration",
         );
         const inspectionUrl = await mediaApi.uploadFile(
           findImportDocument(row.inspectionFile),
-          "vehicles/inspection"
+          "vehicles/inspection",
         );
         await createVehicle({
           licensePlate: row.licensePlate,
@@ -382,7 +495,9 @@ export default function VehiclesPage() {
           inspectionUrl,
         });
       }
-      setSuccessMsg(`Đã gửi ${importRows.length} hồ sơ phương tiện để Admin xét duyệt.`);
+      setSuccessMsg(
+        `Đã gửi ${importRows.length} hồ sơ phương tiện để Admin xét duyệt.`,
+      );
       await loadVehicles();
       setOpenImportModal(false);
       setImportRows([]);
@@ -390,7 +505,12 @@ export default function VehiclesPage() {
       setDocumentFiles([]);
       setImportStep(1);
     } catch (importError) {
-      setError(importError?.response?.data?.message || "Không thể gửi danh sách phương tiện.");
+      setError(
+        getApiErrorMessage(
+          importError,
+          "Không thể gửi danh sách phương tiện. Vui lòng kiểm tra lại hồ sơ.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -405,13 +525,34 @@ export default function VehiclesPage() {
   const handleCloseDetails = () => setSelectedVehicle(null);
 
   const getVerificationChip = (status) => {
-    switch(status) {
-      case 'VERIFIED':
-        return <Chip label="Đã duyệt" size="small" color="success" className="font-semibold" />;
-      case 'PENDING':
-        return <Chip label="Chờ duyệt" size="small" color="warning" className="font-semibold text-amber-700 bg-amber-100" />;
-      case 'REJECTED':
-        return <Chip label="Bị từ chối" size="small" color="error" className="font-semibold" />;
+    switch (status) {
+      case "VERIFIED":
+        return (
+          <Chip
+            label="Đã duyệt"
+            size="small"
+            color="success"
+            className="font-semibold"
+          />
+        );
+      case "PENDING":
+        return (
+          <Chip
+            label="Chờ duyệt"
+            size="small"
+            color="warning"
+            className="font-semibold text-amber-700 bg-amber-100"
+          />
+        );
+      case "REJECTED":
+        return (
+          <Chip
+            label="Bị từ chối"
+            size="small"
+            color="error"
+            className="font-semibold"
+          />
+        );
       default:
         return null;
     }
@@ -419,29 +560,43 @@ export default function VehiclesPage() {
 
   return (
     <Box className="animate-fade-in-up">
-      <PageHeader 
-        title="Quản lý Phương tiện" 
+      <PageHeader
+        title="Quản lý Phương tiện"
         subtitle="Quản lý danh sách xe tải, thông số kỹ thuật và giấy tờ kiểm định"
         breadcrumbs={[
           { label: "Trang chủ", path: "/carrier/dashboard" },
           { label: "Vận hành", path: "#" },
-          { label: "Đội xe", path: "/carrier/vehicles" }
+          { label: "Đội xe", path: "/carrier/vehicles" },
         ]}
         action={
           <Box className="flex gap-2">
-            <Button 
-              variant="outlined" 
-              startIcon={<FileUploadIcon />} 
+            <Button
+              variant="outlined"
+              startIcon={<FileUploadIcon />}
               onClick={handleOpenImport}
-              sx={{ borderColor: "#1B4965", color: "#1B4965", "&:hover": { backgroundColor: "rgba(27,73,101,0.05)", borderColor: "#0d2b3e" }, borderRadius: "8px", px: 2 }}
+              sx={{
+                borderColor: "#1B4965",
+                color: "#1B4965",
+                "&:hover": {
+                  backgroundColor: "rgba(27,73,101,0.05)",
+                  borderColor: "#0d2b3e",
+                },
+                borderRadius: "8px",
+                px: 2,
+              }}
             >
               Import hàng loạt
             </Button>
-            <Button 
-              variant="contained" 
-              startIcon={<AddIcon />} 
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
               onClick={handleOpen}
-              sx={{ backgroundColor: "#1B4965", "&:hover": { backgroundColor: "#0d2b3e" }, borderRadius: "8px", px: 3 }}
+              sx={{
+                backgroundColor: "#1B4965",
+                "&:hover": { backgroundColor: "#0d2b3e" },
+                borderRadius: "8px",
+                px: 3,
+              }}
             >
               Thêm xe mới
             </Button>
@@ -449,14 +604,29 @@ export default function VehiclesPage() {
         }
       />
 
-      <Box sx={{ mb: 3, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-        <Tabs 
-          value={filter} 
+      <Box
+        sx={{
+          mb: 3,
+          borderBottom: 1,
+          borderColor: "divider",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 2,
+        }}
+      >
+        <Tabs
+          value={filter}
           onChange={(e, v) => setFilter(v)}
           textColor="primary"
           indicatorColor="primary"
           sx={{
-            "& .MuiTab-root": { textTransform: 'none', fontWeight: 600, fontSize: '0.95rem' }
+            "& .MuiTab-root": {
+              textTransform: "none",
+              fontWeight: 600,
+              fontSize: "0.95rem",
+            },
           }}
         >
           <Tab value="ALL" label="Tất cả" />
@@ -464,21 +634,28 @@ export default function VehiclesPage() {
           <Tab value="PENDING" label="Chờ duyệt" />
           <Tab value="REJECTED" label="Bị từ chối" />
         </Tabs>
-        
-        <ViewModeToggle 
+
+        <ViewModeToggle
           viewMode={viewMode}
           onChange={setViewMode}
           sx={{ mb: { xs: 2, sm: 0 } }}
         />
       </Box>
 
-      {error && <Box role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</Box>}
-      {successMsg && <Box role="status" className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{successMsg}</Box>}
-      {loading && <Box role="status" className="mb-4 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">Đang tải dữ liệu phương tiện...</Box>}
+      {loading && (
+        <Box
+          role="status"
+          className="mb-4 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500"
+        >
+          Đang tải dữ liệu phương tiện...
+        </Box>
+      )}
 
       {filteredVehicles.length === 0 && (
         <Box className="text-center p-10 bg-white/50 backdrop-blur-md rounded-2xl border border-slate-200 mb-4">
-          <Typography variant="h6" className="text-slate-400">Không có phương tiện nào</Typography>
+          <Typography variant="h6" className="text-slate-400">
+            Không có phương tiện nào
+          </Typography>
         </Box>
       )}
 
@@ -494,14 +671,17 @@ export default function VehiclesPage() {
           ))}
         </Grid>
       ) : (
-        <TableContainer component={Paper} className="rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+        <TableContainer
+          component={Paper}
+          className="rounded-2xl border border-slate-200 shadow-sm overflow-x-auto"
+        >
           <Table sx={{ minWidth: 650 }}>
             <TableHead className="bg-slate-50">
               <TableRow>
                 {columnsList.map((col, idx) => (
                   <TableCell
                     key={col.id}
-                    align={col.align || 'left'}
+                    align={col.align || "left"}
                     draggable
                     onDragStart={(e) => handleDragStart(e, idx)}
                     onDragOver={handleDragOver}
@@ -516,7 +696,9 @@ export default function VehiclesPage() {
                       >
                         {col.label}
                       </TableSortLabel>
-                    ) : col.label}
+                    ) : (
+                      col.label
+                    )}
                   </TableCell>
                 ))}
               </TableRow>
@@ -525,65 +707,85 @@ export default function VehiclesPage() {
               {sortedVehicles.map((v) => (
                 <TableRow key={v.id} hover className="transition-colors">
                   {columnsList.map((col) => {
-                    if (col.id === 'plate') {
+                    if (col.id === "plate") {
                       return (
                         <TableCell key={col.id}>
                           <Box className="flex items-center gap-2">
-                            <DirectionsCarIcon sx={{ color: "#1B4965", fontSize: 20 }} />
-                            <Typography variant="body2" className="font-mono font-bold text-[#1B4965]">{v.plate}</Typography>
+                            <DirectionsCarIcon
+                              sx={{ color: "#1B4965", fontSize: 20 }}
+                            />
+                            <Typography
+                              variant="body2"
+                              className="font-mono font-bold text-[#1B4965]"
+                            >
+                              {v.plate}
+                            </Typography>
                           </Box>
                         </TableCell>
                       );
                     }
-                    if (col.id === 'capacity') {
+                    if (col.id === "capacity") {
                       return (
                         <TableCell key={col.id}>
-                          <Typography variant="body2" className="text-slate-800">{v.capacity}</Typography>
+                          <Typography
+                            variant="body2"
+                            className="text-slate-800"
+                          >
+                            {v.capacity}
+                          </Typography>
                         </TableCell>
                       );
                     }
-                    if (col.id === 'type') {
+                    if (col.id === "type") {
                       return (
                         <TableCell key={col.id}>
-                          <Typography variant="body2" className="text-slate-800">{v.type}</Typography>
+                          <Typography
+                            variant="body2"
+                            className="text-slate-800"
+                          >
+                            {v.type}
+                          </Typography>
                         </TableCell>
                       );
                     }
-                    if (col.id === 'verification') {
+                    if (col.id === "verification") {
                       return (
                         <TableCell key={col.id}>
                           {getVerificationChip(v.verification)}
                         </TableCell>
                       );
                     }
-                    if (col.id === 'active') {
+                    if (col.id === "active") {
                       return (
                         <TableCell key={col.id}>
-                          <Typography variant="body2" className={`font-medium ${v.active ? 'text-emerald-600' : 'text-slate-500'}`}>
-                            {v.active ? 'Sẵn sàng' : 'Bảo trì'}
+                          <Typography
+                            variant="body2"
+                            className={`font-medium ${v.active ? "text-emerald-600" : "text-slate-500"}`}
+                          >
+                            {v.active ? "Sẵn sàng" : "Bảo trì"}
                           </Typography>
                         </TableCell>
                       );
                     }
-                    if (col.id === 'actions') {
+                    if (col.id === "actions") {
                       return (
                         <TableCell key={col.id} align="right">
                           <Box className="flex justify-end gap-1">
-                            <Button 
-                              size="small" 
-                              variant="text" 
-                              color="primary" 
-                              startIcon={<EditIcon />} 
+                            <Button
+                              size="small"
+                              variant="text"
+                              color="primary"
+                              startIcon={<EditIcon />}
                               onClick={() => handleOpenEdit(v)}
                               sx={{ borderRadius: "6px" }}
                             >
                               Sửa
                             </Button>
-                            <Button 
-                              size="small" 
-                              variant="outlined" 
-                              color="primary" 
-                              startIcon={<SettingsIcon />} 
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                              startIcon={<SettingsIcon />}
                               onClick={() => handleOpenDetails(v)}
                               sx={{ borderRadius: "6px" }}
                             >
@@ -603,49 +805,115 @@ export default function VehiclesPage() {
       )}
 
       {/* Modal Thêm xe mới */}
-      <Dialog open={openModal} onClose={handleClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: "12px" } }}>
+      <Dialog
+        open={openModal}
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: "12px" } }}
+      >
         <DialogTitle sx={{ borderBottom: "1px solid #f1f5f9", pb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#1B4965" }}>Khai báo phương tiện mới</Typography>
-          <Typography variant="body2" sx={{ mt: 0.5, color: "#64748b" }}>Hoàn thiện thông tin và hồ sơ trước khi gửi Admin xét duyệt.</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#1B4965" }}>
+            Khai báo phương tiện mới
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.5, color: "#64748b" }}>
+            Hoàn thiện thông tin và hồ sơ trước khi gửi Admin xét duyệt.
+          </Typography>
         </DialogTitle>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, px: 3, pt: 2 }} aria-label="Tiến trình khai báo phương tiện">
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 1,
+            px: 3,
+            pt: 2,
+          }}
+          aria-label="Tiến trình khai báo phương tiện"
+        >
           {["Thông tin", "Hồ sơ", "Xác nhận"].map((label, index) => (
-            <Box key={label} sx={{
-              borderRadius: "8px",
-              border: "1px solid",
-              px: 1.5, py: 1,
-              textAlign: "center",
-              fontSize: "0.8125rem",
-              fontWeight: 600,
-              borderColor: createStep === index + 1 ? "#1B4965" : createStep > index + 1 ? "#a7f3d0" : "#e2e8f0",
-              bgcolor: createStep === index + 1 ? "#1B4965" : createStep > index + 1 ? "#ecfdf5" : "#f8fafc",
-              color: createStep === index + 1 ? "#fff" : createStep > index + 1 ? "#065f46" : "#94a3b8",
-              transition: "all 0.2s ease",
-            }}>{index + 1}. {label}</Box>
+            <Box
+              key={label}
+              sx={{
+                borderRadius: "8px",
+                border: "1px solid",
+                px: 1.5,
+                py: 1,
+                textAlign: "center",
+                fontSize: "0.8125rem",
+                fontWeight: 600,
+                borderColor:
+                  createStep === index + 1
+                    ? "#1B4965"
+                    : createStep > index + 1
+                      ? "#a7f3d0"
+                      : "#e2e8f0",
+                bgcolor:
+                  createStep === index + 1
+                    ? "#1B4965"
+                    : createStep > index + 1
+                      ? "#ecfdf5"
+                      : "#f8fafc",
+                color:
+                  createStep === index + 1
+                    ? "#fff"
+                    : createStep > index + 1
+                      ? "#065f46"
+                      : "#94a3b8",
+                transition: "all 0.2s ease",
+              }}
+            >
+              {index + 1}. {label}
+            </Box>
           ))}
         </Box>
-        <DialogContent sx={{ pt: 2.5, display: "flex", flexDirection: "column", gap: 2 }}>
+        <DialogContent
+          sx={{ pt: 2.5, display: "flex", flexDirection: "column", gap: 2 }}
+        >
           {createStep === 1 && (
             <Stack spacing={2} useFlexGap>
               <TextField
-                fullWidth size="small" variant="outlined"
-                label="Biển số xe" placeholder="VD: 29H-123.45"
+                fullWidth
+                size="small"
+                variant="outlined"
+                label="Biển số xe"
+                placeholder="VD: 29H-123.45"
                 required
                 value={form.licensePlate}
-                onChange={(event) => setForm((current) => ({ ...current, licensePlate: event.target.value }))}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    licensePlate: event.target.value,
+                  }))
+                }
               />
               <TextField
-                fullWidth size="small" variant="outlined"
-                label="Tải trọng (Tấn)" type="number"
+                fullWidth
+                size="small"
+                variant="outlined"
+                label="Tải trọng (Tấn)"
+                type="number"
                 required
                 value={form.payloadCapacity}
-                onChange={(event) => setForm((current) => ({ ...current, payloadCapacity: event.target.value }))}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    payloadCapacity: event.target.value,
+                  }))
+                }
               />
               <TextField
-                select fullWidth size="small" variant="outlined"
+                select
+                fullWidth
+                size="small"
+                variant="outlined"
                 label="Loại xe"
                 value={form.vehicleType}
-                onChange={(event) => setForm((current) => ({ ...current, vehicleType: event.target.value }))}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    vehicleType: event.target.value,
+                  }))
+                }
                 required
               >
                 <MenuItem value="TRUCK_SMALL">Xe tải nhỏ</MenuItem>
@@ -656,34 +924,93 @@ export default function VehiclesPage() {
                 <MenuItem value="SPECIALIZED_TRUCK">Xe chuyên dụng</MenuItem>
               </TextField>
               <TextField
-                fullWidth size="small" variant="outlined"
-                label="Mô tả thân xe" placeholder="VD: Thùng kín 6.2m x 2.1m"
+                fullWidth
+                size="small"
+                variant="outlined"
+                label="Mô tả thân xe"
+                placeholder="VD: Thùng kín 6.2m x 2.1m"
                 value={form.bodyType}
-                onChange={(event) => setForm((current) => ({ ...current, bodyType: event.target.value }))}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    bodyType: event.target.value,
+                  }))
+                }
               />
             </Stack>
           )}
 
           {createStep === 2 && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#334155" }}>Tài liệu bắt buộc</Typography>
-              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5 }}>
-                {[{ key: "registration", label: "Cà vẹt / đăng ký xe" }, { key: "inspection", label: "Đăng kiểm" }].map((document) => (
-                  <Card key={document.key} component="label" variant="outlined" sx={{
-                    cursor: "pointer",
-                    borderStyle: "dashed",
-                    borderWidth: 2,
-                    bgcolor: "#f8fafc",
-                    transition: "border-color 0.2s",
-                    "&:hover": { borderColor: "#1B4965" }
-                  }}>
-                    <input hidden type="file" accept="image/jpeg,image/png,application/pdf" onChange={(event) => handleDocumentChange(document.key, event)} />
-                    <CardContent sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, py: "12px !important" }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 700, color: "#334155" }}
+              >
+                Tài liệu bắt buộc
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                  gap: 1.5,
+                }}
+              >
+                {[
+                  { key: "registration", label: "Cà vẹt / đăng ký xe" },
+                  { key: "inspection", label: "Đăng kiểm" },
+                ].map((document) => (
+                  <Card
+                    key={document.key}
+                    component="label"
+                    variant="outlined"
+                    sx={{
+                      cursor: "pointer",
+                      borderStyle: "dashed",
+                      borderWidth: 2,
+                      bgcolor: "#f8fafc",
+                      transition: "border-color 0.2s",
+                      "&:hover": { borderColor: "#1B4965" },
+                    }}
+                  >
+                    <input
+                      hidden
+                      type="file"
+                      accept="image/jpeg,image/png,application/pdf"
+                      onChange={(event) =>
+                        handleDocumentChange(document.key, event)
+                      }
+                    />
+                    <CardContent
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 1.5,
+                        py: "12px !important",
+                      }}
+                    >
                       <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#334155" }}>{document.label} *</Typography>
-                        <Typography variant="caption" sx={{ color: "#94a3b8" }}>JPG, PNG hoặc PDF, tối đa 5MB</Typography>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 700, color: "#334155" }}
+                        >
+                          {document.label} *
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                          JPG, PNG hoặc PDF, tối đa 5MB
+                        </Typography>
                       </Box>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: "#1B4965", whiteSpace: "nowrap", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 600,
+                          color: "#1B4965",
+                          whiteSpace: "nowrap",
+                          maxWidth: 100,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
                         {documents[document.key]?.name || "Chọn tệp"}
                       </Typography>
                     </CardContent>
@@ -694,53 +1021,160 @@ export default function VehiclesPage() {
           )}
 
           {createStep === 3 && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, borderRadius: "12px", border: "1px solid #e2e8f0", bgcolor: "#f8fafc", p: 2.5 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1e293b" }}>Kiểm tra trước khi gửi</Typography>
-              <Typography variant="body2">Biển số: <strong>{form.licensePlate}</strong></Typography>
-              <Typography variant="body2">Tải trọng: <strong>{form.payloadCapacity} tấn</strong></Typography>
-              <Typography variant="body2">Cà vẹt: <strong>{documents.registration?.name}</strong></Typography>
-              <Typography variant="body2">Đăng kiểm: <strong>{documents.inspection?.name}</strong></Typography>
-              <Typography variant="caption" sx={{ color: "#64748b", display: "block" }}>Sau khi gửi, xe sẽ ở trạng thái Chờ duyệt để Admin kiểm tra hồ sơ.</Typography>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
+                borderRadius: "12px",
+                border: "1px solid #e2e8f0",
+                bgcolor: "#f8fafc",
+                p: 2.5,
+              }}
+            >
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: 700, color: "#1e293b" }}
+              >
+                Kiểm tra trước khi gửi
+              </Typography>
+              <Typography variant="body2">
+                Biển số: <strong>{form.licensePlate}</strong>
+              </Typography>
+              <Typography variant="body2">
+                Tải trọng: <strong>{form.payloadCapacity} tấn</strong>
+              </Typography>
+              <Typography variant="body2">
+                Cà vẹt: <strong>{documents.registration?.name}</strong>
+              </Typography>
+              <Typography variant="body2">
+                Đăng kiểm: <strong>{documents.inspection?.name}</strong>
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: "#64748b", display: "block" }}
+              >
+                Sau khi gửi, xe sẽ ở trạng thái Chờ duyệt để Admin kiểm tra hồ
+                sơ.
+              </Typography>
             </Box>
           )}
 
-          <Box sx={{ p: 1.5, bgcolor: "#eff6ff", color: "#1e40af", borderRadius: "8px", fontSize: "0.8125rem", border: "1px solid #bfdbfe" }}>
-            <strong>Lưu ý:</strong> Phương tiện mới thêm sẽ ở trạng thái <strong>Chờ duyệt</strong> trước khi tham gia đấu giá.
+          <Box
+            sx={{
+              p: 1.5,
+              bgcolor: "#eff6ff",
+              color: "#1e40af",
+              borderRadius: "8px",
+              fontSize: "0.8125rem",
+              border: "1px solid #bfdbfe",
+            }}
+          >
+            <strong>Lưu ý:</strong> Phương tiện mới thêm sẽ ở trạng thái{" "}
+            <strong>Chờ duyệt</strong> trước khi tham gia đấu giá.
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1.5, borderTop: "1px solid #f1f5f9" }}>
-          {createStep > 1 && <Button onClick={handleCreateBack} color="inherit" sx={{ borderRadius: "8px", fontWeight: 600 }}>Quay lại</Button>}
-          <Button onClick={handleClose} color="inherit" sx={{ borderRadius: "8px", fontWeight: 600 }}>Hủy bỏ</Button>
-          <Button onClick={handleCreate} disabled={saving} variant="contained" sx={{ borderRadius: "8px", bgcolor: "#1B4965", fontWeight: 600, "&:hover": { bgcolor: "#0d2b3e" } }}>
-            {saving ? "Đang gửi..." : createStep === 3 ? "Gửi yêu cầu xét duyệt" : "Tiếp tục"}
+        <DialogActions
+          sx={{ px: 3, pb: 3, pt: 1.5, borderTop: "1px solid #f1f5f9" }}
+        >
+          {createStep > 1 && (
+            <Button
+              onClick={handleCreateBack}
+              color="inherit"
+              sx={{ borderRadius: "8px", fontWeight: 600 }}
+            >
+              Quay lại
+            </Button>
+          )}
+          <Button
+            onClick={handleClose}
+            color="inherit"
+            sx={{ borderRadius: "8px", fontWeight: 600 }}
+          >
+            Hủy bỏ
+          </Button>
+          <Button
+            onClick={handleCreate}
+            disabled={saving}
+            variant="contained"
+            sx={{
+              borderRadius: "8px",
+              bgcolor: "#1B4965",
+              fontWeight: 600,
+              "&:hover": { bgcolor: "#0d2b3e" },
+            }}
+          >
+            {saving
+              ? "Đang gửi..."
+              : createStep === 3
+                ? "Gửi yêu cầu xét duyệt"
+                : "Tiếp tục"}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Modal Chỉnh sửa thông số xe */}
-      <Dialog open={openEditModal} onClose={handleCloseEdit} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: "12px" } }}>
-        <DialogTitle sx={{ borderBottom: "1px solid #f1f5f9", pb: 2, display: "flex", alignItems: "center", gap: 1 }}>
+      <Dialog
+        open={openEditModal}
+        onClose={handleCloseEdit}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: "12px" } }}
+      >
+        <DialogTitle
+          sx={{
+            borderBottom: "1px solid #f1f5f9",
+            pb: 2,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
           <EditIcon sx={{ color: "#1B4965", fontSize: 22 }} />
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#1B4965" }}>Chỉnh sửa thông số Phương tiện</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#1B4965" }}>
+            Chỉnh sửa thông số Phương tiện
+          </Typography>
         </DialogTitle>
-        <DialogContent sx={{ pt: 2.5, display: "flex", flexDirection: "column", gap: 2 }}>
+        <DialogContent
+          sx={{ pt: 2.5, display: "flex", flexDirection: "column", gap: 2 }}
+        >
           <TextField
-            fullWidth size="small" variant="outlined"
-            label="Biển số xe" required
+            fullWidth
+            size="small"
+            variant="outlined"
+            label="Biển số xe"
+            required
             value={editForm.licensePlate}
-            onChange={(e) => setEditForm((prev) => ({ ...prev, licensePlate: e.target.value }))}
+            onChange={(e) =>
+              setEditForm((prev) => ({ ...prev, licensePlate: e.target.value }))
+            }
           />
           <TextField
-            fullWidth size="small" variant="outlined"
-            label="Tải trọng (Tấn)" type="number" required
+            fullWidth
+            size="small"
+            variant="outlined"
+            label="Tải trọng (Tấn)"
+            type="number"
+            required
             value={editForm.payloadCapacity}
-            onChange={(e) => setEditForm((prev) => ({ ...prev, payloadCapacity: e.target.value }))}
+            onChange={(e) =>
+              setEditForm((prev) => ({
+                ...prev,
+                payloadCapacity: e.target.value,
+              }))
+            }
           />
           <TextField
-            select fullWidth size="small" variant="outlined"
-            label="Loại xe" required
+            select
+            fullWidth
+            size="small"
+            variant="outlined"
+            label="Loại xe"
+            required
             value={editForm.vehicleType}
-            onChange={(e) => setEditForm((prev) => ({ ...prev, vehicleType: e.target.value }))}
+            onChange={(e) =>
+              setEditForm((prev) => ({ ...prev, vehicleType: e.target.value }))
+            }
           >
             <MenuItem value="TRUCK_SMALL">Xe tải nhỏ</MenuItem>
             <MenuItem value="TRUCK_MEDIUM">Xe tải trung</MenuItem>
@@ -750,28 +1184,73 @@ export default function VehiclesPage() {
             <MenuItem value="SPECIALIZED_TRUCK">Xe chuyên dụng</MenuItem>
           </TextField>
           <TextField
-            fullWidth size="small" variant="outlined"
+            fullWidth
+            size="small"
+            variant="outlined"
             label="Mô tả thân xe"
             value={editForm.bodyType}
-            onChange={(e) => setEditForm((prev) => ({ ...prev, bodyType: e.target.value }))}
+            onChange={(e) =>
+              setEditForm((prev) => ({ ...prev, bodyType: e.target.value }))
+            }
           />
           <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#334155", mb: 1.5 }}>Thay hồ sơ (không bắt buộc)</Typography>
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5 }}>
-              {[{ key: "registration", label: "Cà vẹt / đăng ký xe" }, { key: "inspection", label: "Đăng kiểm" }].map((document) => (
-                <Card key={document.key} component="label" variant="outlined" sx={{
-                  cursor: "pointer",
-                  borderStyle: "dashed",
-                  borderWidth: 2,
-                  bgcolor: "#f8fafc",
-                  transition: "border-color 0.2s",
-                  "&:hover": { borderColor: "#1B4965" }
-                }}>
-                  <input hidden type="file" accept="image/jpeg,image/png,application/pdf" onChange={(event) => handleEditDocumentChange(document.key, event)} />
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 700, color: "#334155", mb: 1.5 }}
+            >
+              Thay hồ sơ (không bắt buộc)
+            </Typography>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                gap: 1.5,
+              }}
+            >
+              {[
+                { key: "registration", label: "Cà vẹt / đăng ký xe" },
+                { key: "inspection", label: "Đăng kiểm" },
+              ].map((document) => (
+                <Card
+                  key={document.key}
+                  component="label"
+                  variant="outlined"
+                  sx={{
+                    cursor: "pointer",
+                    borderStyle: "dashed",
+                    borderWidth: 2,
+                    bgcolor: "#f8fafc",
+                    transition: "border-color 0.2s",
+                    "&:hover": { borderColor: "#1B4965" },
+                  }}
+                >
+                  <input
+                    hidden
+                    type="file"
+                    accept="image/jpeg,image/png,application/pdf"
+                    onChange={(event) =>
+                      handleEditDocumentChange(document.key, event)
+                    }
+                  />
                   <CardContent sx={{ p: "10px 12px !important" }}>
-                    <Typography variant="caption" sx={{ display: "block", color: "#64748b" }}>{document.label}</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: "#1B4965", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {editDocuments[document.key]?.name || "Giữ nguyên hồ sơ hiện tại"}
+                    <Typography
+                      variant="caption"
+                      sx={{ display: "block", color: "#64748b" }}
+                    >
+                      {document.label}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 600,
+                        color: "#1B4965",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {editDocuments[document.key]?.name ||
+                        "Giữ nguyên hồ sơ hiện tại"}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -779,24 +1258,60 @@ export default function VehiclesPage() {
             </Box>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1.5, borderTop: "1px solid #f1f5f9" }}>
-          <Button onClick={handleCloseEdit} color="inherit" sx={{ borderRadius: "8px", fontWeight: 600 }}>Hủy bỏ</Button>
-          <Button onClick={handleSaveEdit} disabled={saving || !editForm.licensePlate || !editForm.payloadCapacity} variant="contained" sx={{ borderRadius: "8px", bgcolor: "#1B4965", fontWeight: 600, "&:hover": { bgcolor: "#0d2b3e" } }}>
+        <DialogActions
+          sx={{ px: 3, pb: 3, pt: 1.5, borderTop: "1px solid #f1f5f9" }}
+        >
+          <Button
+            onClick={handleCloseEdit}
+            color="inherit"
+            sx={{ borderRadius: "8px", fontWeight: 600 }}
+          >
+            Hủy bỏ
+          </Button>
+          <Button
+            onClick={handleSaveEdit}
+            disabled={
+              saving || !editForm.licensePlate || !editForm.payloadCapacity
+            }
+            variant="contained"
+            sx={{
+              borderRadius: "8px",
+              bgcolor: "#1B4965",
+              fontWeight: 600,
+              "&:hover": { bgcolor: "#0d2b3e" },
+            }}
+          >
             {saving ? "Đang lưu..." : "Lưu thay đổi"}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Drawer Chi tiết Phương tiện */}
-      <Dialog open={openImportModal} onClose={handleCloseImport} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: "12px" } }}>
+      <Dialog
+        open={openImportModal}
+        onClose={handleCloseImport}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: "12px" } }}
+      >
         <DialogTitle className="border-b border-slate-100 pb-3">
-          <Typography variant="h6" className="font-bold text-[#1B4965]">Nhập hồ sơ phương tiện</Typography>
-          <Typography variant="body2" className="mt-1 text-slate-500">Gom thông tin và tài liệu theo từng bước để tránh nhầm file.</Typography>
+          <Typography variant="h6" className="font-bold text-[#1B4965]">
+            Nhập hồ sơ phương tiện
+          </Typography>
+          <Typography variant="body2" className="mt-1 text-slate-500">
+            Gom thông tin và tài liệu theo từng bước để tránh nhầm file.
+          </Typography>
         </DialogTitle>
         <DialogContent className="pt-5">
-          <Box className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="Tiến trình nhập hồ sơ">
+          <Box
+            className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-3"
+            aria-label="Tiến trình nhập hồ sơ"
+          >
             {["Thông tin", "Hồ sơ", "Xác nhận"].map((label, index) => (
-              <Box key={label} className={`rounded-lg border px-3 py-2 text-center text-sm font-semibold ${importStep === index + 1 ? "border-[#1B4965] bg-[#1B4965] text-white" : importStep > index + 1 ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500"}`}>
+              <Box
+                key={label}
+                className={`rounded-lg border px-3 py-2 text-center text-sm font-semibold ${importStep === index + 1 ? "border-[#1B4965] bg-[#1B4965] text-white" : importStep > index + 1 ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500"}`}
+              >
                 {index + 1}. {label}
               </Box>
             ))}
@@ -805,126 +1320,339 @@ export default function VehiclesPage() {
           {importStep === 1 && (
             <Box className="space-y-4">
               <Box className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
-                <Typography variant="subtitle2" className="font-bold text-[#1B4965]">Bắt đầu bằng file thông tin</Typography>
-                <Typography variant="body2" className="mt-1 text-slate-600">Mỗi dòng CSV là một phương tiện. Tên file tài liệu ở hai cột cuối sẽ được đối chiếu ở bước tiếp theo.</Typography>
+                <Typography
+                  variant="subtitle2"
+                  className="font-bold text-[#1B4965]"
+                >
+                  Bắt đầu bằng file thông tin
+                </Typography>
+                <Typography variant="body2" className="mt-1 text-slate-600">
+                  Mỗi dòng CSV là một phương tiện. Tên file tài liệu ở hai cột
+                  cuối sẽ được đối chiếu ở bước tiếp theo.
+                </Typography>
               </Box>
               <Box className="flex flex-wrap items-center justify-between gap-3">
-                <Typography variant="body2" className="text-slate-600">Định dạng: CSV, tối đa 500 dòng.</Typography>
-                <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />} onClick={() => downloadCsvTemplate("vehicles-template.csv", "licensePlate,payloadCapacity,vehicleType,bodyType,registrationFile,inspectionFile\n29H-123.45,10.5,TRUCK_MEDIUM,Thung bat,29H12345_cavet.jpg,29H12345_dangkiem.jpg\n")} sx={{ textTransform: "none", fontWeight: 600 }}>Tải file mẫu</Button>
+                <Typography variant="body2" className="text-slate-600">
+                  Định dạng: CSV, tối đa 500 dòng.
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<FileDownloadIcon />}
+                  onClick={() =>
+                    downloadCsvTemplate(
+                      "vehicles-template.csv",
+                      "licensePlate,payloadCapacity,vehicleType,bodyType,registrationFile,inspectionFile\n29H-123.45,10.5,TRUCK_MEDIUM,Thung bat,29H12345_cavet.jpg,29H12345_dangkiem.jpg\n",
+                    )
+                  }
+                  sx={{ textTransform: "none", fontWeight: 600 }}
+                >
+                  Tải file mẫu
+                </Button>
               </Box>
-              <Card component="label" htmlFor="vehicle-csv-input-v2" variant="outlined" className="cursor-pointer border-2 border-dashed bg-slate-50 transition-colors hover:border-[#1B4965]">
-                <input id="vehicle-csv-input-v2" hidden type="file" accept=".csv,text/csv" onChange={handleImportCsvFile} />
+              <Card
+                component="label"
+                htmlFor="vehicle-csv-input-v2"
+                variant="outlined"
+                className="cursor-pointer border-2 border-dashed bg-slate-50 transition-colors hover:border-[#1B4965]"
+              >
+                <input
+                  id="vehicle-csv-input-v2"
+                  hidden
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={handleImportCsvFile}
+                />
                 <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
                   <FileUploadIcon sx={{ fontSize: 42, color: "#1B4965" }} />
-                  <Typography variant="subtitle1" className="font-semibold text-slate-700">{importFileName || "Chọn file CSV thông tin"}</Typography>
-                  <Typography variant="caption" className="text-slate-500">Bắt buộc có biển số, tải trọng và tên file cà vẹt, đăng kiểm.</Typography>
+                  <Typography
+                    variant="subtitle1"
+                    className="font-semibold text-slate-700"
+                  >
+                    {importFileName || "Chọn file CSV thông tin"}
+                  </Typography>
+                  <Typography variant="caption" className="text-slate-500">
+                    Bắt buộc có biển số, tải trọng và tên file cà vẹt, đăng
+                    kiểm.
+                  </Typography>
                 </CardContent>
               </Card>
-              {importRows.length > 0 && <Box role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Đã đọc {importRows.length} dòng thông tin.</Box>}
+              {importRows.length > 0 && (
+                <Box
+                  role="status"
+                  className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+                >
+                  Đã đọc {importRows.length} dòng thông tin.
+                </Box>
+              )}
             </Box>
           )}
 
           {importStep === 2 && (
             <Box className="space-y-4">
               <Box className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
-                <Typography variant="subtitle2" className="font-bold text-[#1B4965]">Tải ảnh và tài liệu rời</Typography>
-                <Typography variant="body2" className="mt-1 text-slate-600">Không cần nén ZIP. Chọn các file JPG, PNG hoặc PDF có tên trùng với tên đã ghi trong CSV.</Typography>
+                <Typography
+                  variant="subtitle2"
+                  className="font-bold text-[#1B4965]"
+                >
+                  Tải ảnh và tài liệu rời
+                </Typography>
+                <Typography variant="body2" className="mt-1 text-slate-600">
+                  Không cần nén ZIP. Chọn các file JPG, PNG hoặc PDF có tên
+                  trùng với tên đã ghi trong CSV.
+                </Typography>
               </Box>
-              <Card component="label" htmlFor="vehicle-documents-input-v2" variant="outlined" className="cursor-pointer border-2 border-dashed bg-slate-50 transition-colors hover:border-[#1B4965]">
-                <input id="vehicle-documents-input-v2" hidden multiple type="file" accept="image/jpeg,image/png,application/pdf" onChange={handleImportDocumentFiles} />
+              <Card
+                component="label"
+                htmlFor="vehicle-documents-input-v2"
+                variant="outlined"
+                className="cursor-pointer border-2 border-dashed bg-slate-50 transition-colors hover:border-[#1B4965]"
+              >
+                <input
+                  id="vehicle-documents-input-v2"
+                  hidden
+                  multiple
+                  type="file"
+                  accept="image/jpeg,image/png,application/pdf"
+                  onChange={handleImportDocumentFiles}
+                />
                 <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
                   <FileUploadIcon sx={{ fontSize: 42, color: "#1B4965" }} />
-                  <Typography variant="subtitle1" className="font-semibold text-slate-700">{documentFiles.length ? `Đã chọn ${documentFiles.length} file tài liệu` : "Chọn ảnh và file hồ sơ"}</Typography>
-                  <Typography variant="caption" className="text-slate-500">Mỗi file tối đa 5MB. Hệ thống sẽ kiểm tra đủ cà vẹt và đăng kiểm cho từng xe.</Typography>
+                  <Typography
+                    variant="subtitle1"
+                    className="font-semibold text-slate-700"
+                  >
+                    {documentFiles.length
+                      ? `Đã chọn ${documentFiles.length} file tài liệu`
+                      : "Chọn ảnh và file hồ sơ"}
+                  </Typography>
+                  <Typography variant="caption" className="text-slate-500">
+                    Mỗi file tối đa 5MB. Hệ thống sẽ kiểm tra đủ cà vẹt và đăng
+                    kiểm cho từng xe.
+                  </Typography>
                 </CardContent>
               </Card>
-              {documentFiles.length > 0 && <Box className="grid max-h-40 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">{documentFiles.map((file) => <Box key={file.name} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"><span className="font-medium">{file.name}</span><span className="ml-2 text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(2)}MB</span></Box>)}</Box>}
+              {documentFiles.length > 0 && (
+                <Box className="grid max-h-40 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
+                  {documentFiles.map((file) => (
+                    <Box
+                      key={file.name}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                    >
+                      <span className="font-medium">{file.name}</span>
+                      <span className="ml-2 text-xs text-slate-400">
+                        {(file.size / 1024 / 1024).toFixed(2)}MB
+                      </span>
+                    </Box>
+                  ))}
+                </Box>
+              )}
             </Box>
           )}
 
           {importStep === 3 && (
             <Box className="space-y-4">
               <Box className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                <Typography variant="subtitle2" className="font-bold text-slate-800">Kiểm tra trước khi gửi</Typography>
-                <Typography variant="body2" className="mt-1 text-slate-600">{importRows.length} phương tiện sẽ được tạo ở trạng thái Chờ duyệt. Admin sẽ kiểm tra từng bộ hồ sơ.</Typography>
+                <Typography
+                  variant="subtitle2"
+                  className="font-bold text-slate-800"
+                >
+                  Kiểm tra trước khi gửi
+                </Typography>
+                <Typography variant="body2" className="mt-1 text-slate-600">
+                  {importRows.length} phương tiện sẽ được tạo ở trạng thái Chờ
+                  duyệt. Admin sẽ kiểm tra từng bộ hồ sơ.
+                </Typography>
               </Box>
-              <Box className="max-h-60 space-y-2 overflow-y-auto">{importRows.map((row) => <Box key={row.licensePlate} className="grid grid-cols-1 gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm sm:grid-cols-3"><Typography className="font-semibold text-[#1B4965]">{row.licensePlate}</Typography><Typography className="truncate text-slate-600">Cà vẹt: {row.registrationFile}</Typography><Typography className="truncate text-slate-600">Đăng kiểm: {row.inspectionFile}</Typography></Box>)}</Box>
-              <Typography variant="caption" className="block text-slate-500">Sau khi gửi, hồ sơ sẽ xuất hiện trong danh sách Chờ duyệt của bạn.</Typography>
+              <Box className="max-h-60 space-y-2 overflow-y-auto">
+                {importRows.map((row) => (
+                  <Box
+                    key={row.licensePlate}
+                    className="grid grid-cols-1 gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm sm:grid-cols-3"
+                  >
+                    <Typography className="font-semibold text-[#1B4965]">
+                      {row.licensePlate}
+                    </Typography>
+                    <Typography className="truncate text-slate-600">
+                      Cà vẹt: {row.registrationFile}
+                    </Typography>
+                    <Typography className="truncate text-slate-600">
+                      Đăng kiểm: {row.inspectionFile}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+              <Typography variant="caption" className="block text-slate-500">
+                Sau khi gửi, hồ sơ sẽ xuất hiện trong danh sách Chờ duyệt của
+                bạn.
+              </Typography>
             </Box>
           )}
         </DialogContent>
         <DialogActions className="border-t border-slate-100 px-6 pb-5 pt-3">
-          {importStep > 1 && <Button onClick={handleImportBack} color="inherit" sx={{ borderRadius: "8px", fontWeight: 600 }}>Quay lại</Button>}
-          <Button onClick={handleCloseImport} color="inherit" sx={{ borderRadius: "8px", fontWeight: 600 }}>Hủy bỏ</Button>
-          <Button onClick={handleBulkImport} disabled={saving || (importStep === 1 && !importRows.length)} variant="contained" sx={{ borderRadius: "8px", backgroundColor: "#1B4965", fontWeight: 600 }}>
-            {saving ? "Đang gửi..." : importStep === 3 ? "Gửi hồ sơ" : "Tiếp tục"}
+          {importStep > 1 && (
+            <Button
+              onClick={handleImportBack}
+              color="inherit"
+              sx={{ borderRadius: "8px", fontWeight: 600 }}
+            >
+              Quay lại
+            </Button>
+          )}
+          <Button
+            onClick={handleCloseImport}
+            color="inherit"
+            sx={{ borderRadius: "8px", fontWeight: 600 }}
+          >
+            Hủy bỏ
+          </Button>
+          <Button
+            onClick={handleBulkImport}
+            disabled={saving || (importStep === 1 && !importRows.length)}
+            variant="contained"
+            sx={{
+              borderRadius: "8px",
+              backgroundColor: "#1B4965",
+              fontWeight: 600,
+            }}
+          >
+            {saving
+              ? "Đang gửi..."
+              : importStep === 3
+                ? "Gửi hồ sơ"
+                : "Tiếp tục"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      <DetailDrawer 
-        open={!!selectedVehicle} 
-        onClose={handleCloseDetails} 
+      <DetailDrawer
+        open={!!selectedVehicle}
+        onClose={handleCloseDetails}
         title={
           <Box className="flex items-center justify-between w-full pr-4">
             <span>Chi tiết Phương tiện</span>
-            {selectedVehicle && getVerificationChip(selectedVehicle.verification)}
+            {selectedVehicle &&
+              getVerificationChip(selectedVehicle.verification)}
           </Box>
         }
       >
         {selectedVehicle && (
           <Box className="space-y-6">
             <Box>
-              <Typography variant="subtitle2" className="text-slate-500 mb-1">Biển số xe</Typography>
-              <Typography variant="h5" className="font-mono font-bold text-slate-800">{selectedVehicle.plate}</Typography>
+              <Typography variant="subtitle2" className="text-slate-500 mb-1">
+                Biển số xe
+              </Typography>
+              <Typography
+                variant="h5"
+                className="font-mono font-bold text-slate-800"
+              >
+                {selectedVehicle.plate}
+              </Typography>
             </Box>
-            
+
             <Grid container spacing={2}>
               <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500">Tải trọng</Typography>
-                <Typography variant="body1" className="font-medium">{selectedVehicle.capacity}</Typography>
+                <Typography variant="body2" className="text-slate-500">
+                  Tải trọng
+                </Typography>
+                <Typography variant="body1" className="font-medium">
+                  {selectedVehicle.capacity}
+                </Typography>
               </Grid>
               <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500">Loại xe</Typography>
-                <Typography variant="body1" className="font-medium">{selectedVehicle.type}</Typography>
+                <Typography variant="body2" className="text-slate-500">
+                  Loại xe
+                </Typography>
+                <Typography variant="body1" className="font-medium">
+                  {selectedVehicle.type}
+                </Typography>
               </Grid>
             </Grid>
 
             <Divider className="my-2" />
 
-            <Typography variant="subtitle2" className="font-bold text-slate-800">Giấy tờ kèm theo</Typography>
+            <Typography
+              variant="subtitle2"
+              className="font-bold text-slate-800"
+            >
+              Giấy tờ kèm theo
+            </Typography>
             <Grid container spacing={2}>
               <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500 mb-1">Cà vẹt xe</Typography>
+                <Typography variant="body2" className="text-slate-500 mb-1">
+                  Cà vẹt xe
+                </Typography>
                 <Box className="w-full h-32 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center relative overflow-hidden group p-1">
                   {selectedVehicle.registrationDocumentUrl ? (
-                    <Button component="a" href={selectedVehicle.registrationDocumentUrl} target="_blank" rel="noreferrer" size="small" variant="outlined">
+                    <Button
+                      component="a"
+                      href={selectedVehicle.registrationDocumentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      size="small"
+                      variant="outlined"
+                    >
                       Xem Cà vẹt
                     </Button>
                   ) : (
-                    <Typography variant="caption" className="px-2 text-center text-slate-500">Chưa có ảnh cà vẹt</Typography>
+                    <Typography
+                      variant="caption"
+                      className="px-2 text-center text-slate-500"
+                    >
+                      Chưa có ảnh cà vẹt
+                    </Typography>
                   )}
                 </Box>
               </Grid>
               <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500 mb-1">Sổ đăng kiểm</Typography>
+                <Typography variant="body2" className="text-slate-500 mb-1">
+                  Sổ đăng kiểm
+                </Typography>
                 <Box className="w-full h-32 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center relative overflow-hidden group p-1">
                   {selectedVehicle.inspectionDocumentUrl ? (
-                    <Button component="a" href={selectedVehicle.inspectionDocumentUrl} target="_blank" rel="noreferrer" size="small" variant="outlined">
+                    <Button
+                      component="a"
+                      href={selectedVehicle.inspectionDocumentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      size="small"
+                      variant="outlined"
+                    >
                       Xem Đăng kiểm
                     </Button>
                   ) : (
-                    <Typography variant="caption" className="px-2 text-center text-slate-500">Chưa có ảnh đăng kiểm</Typography>
+                    <Typography
+                      variant="caption"
+                      className="px-2 text-center text-slate-500"
+                    >
+                      Chưa có ảnh đăng kiểm
+                    </Typography>
                   )}
                 </Box>
               </Grid>
             </Grid>
-            
+
             <Box className="flex flex-col gap-3 mt-6">
-              <Button onClick={() => handleOpenEdit(selectedVehicle)} startIcon={<EditIcon />} variant="contained" fullWidth sx={{ borderRadius: "8px", backgroundColor: "#1B4965", fontWeight: 600 }}>
+              <Button
+                onClick={() => handleOpenEdit(selectedVehicle)}
+                startIcon={<EditIcon />}
+                variant="contained"
+                fullWidth
+                sx={{
+                  borderRadius: "8px",
+                  backgroundColor: "#1B4965",
+                  fontWeight: 600,
+                }}
+              >
                 Cập nhật thông tin xe
               </Button>
-              <Button color="error" variant="outlined" fullWidth sx={{ borderRadius: "8px" }} onClick={() => handleDeactivate(selectedVehicle)}>
+              <Button
+                color="error"
+                variant="outlined"
+                fullWidth
+                sx={{ borderRadius: "8px" }}
+                onClick={() => handleDeactivate(selectedVehicle)}
+              >
                 Vô hiệu hóa xe
               </Button>
             </Box>

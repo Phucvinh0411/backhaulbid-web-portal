@@ -18,6 +18,30 @@ function getOcrObject(result) {
   );
 }
 
+export function getRepresentativeVerificationSaveErrorMessage(error) {
+  const status = error?.response?.status;
+
+  if (status === 401) {
+    return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi thực hiện eKYC.";
+  }
+
+  if (status === 403) {
+    return "Tài khoản hiện tại không có quyền xác thực người đại diện. Vui lòng liên hệ quản trị viên.";
+  }
+
+  const responseMessage =
+    error?.response?.data?.error?.message || error?.response?.data?.message;
+  const message = typeof responseMessage === "string"
+    ? responseMessage.trim()
+    : "";
+
+  if (message && /[À-ỹ]/u.test(message)) {
+    return message;
+  }
+
+  return "Không thể lưu kết quả eKYC lúc này. Vui lòng kiểm tra lại thông tin và thử lại sau.";
+}
+
 export function getRepresentativeVerificationFailureMessage(result) {
   if (result?.ocrPassed === false) {
     return "Không nhận diện được CCCD hợp lệ. Hãy chụp đúng CCCD, đủ bốn góc và bảo đảm thông tin rõ nét.";
