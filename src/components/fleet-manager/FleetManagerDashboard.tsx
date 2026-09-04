@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import toast from 'react-hot-toast';
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { emptyRouteService, EmptyRoute } from '@/services/emptyRouteService';
+import { identityApi } from '@/services/identityApi';
+import { getMyVehicles } from '@/services/fleetApi';
+import { getApiErrorMessage } from '@/services/errorMessage';
 import { useSocket } from '@/hooks/useSocket';
 
 export interface MatchingEvent {
@@ -13,9 +16,13 @@ export interface MatchingEvent {
 }
 
 export default function FleetManagerDashboard() {
-  // Giả lập lấy thông tin từ Store/Context (ví dụ: Zustand)
-  const currentCompanyId = "COMPANY_123";
-  const currentUserId = "USER_456";
+  const notify = useGlobalNotification();
+  const [currentAccount, setCurrentAccount] = useState<{ accountId?: string } | null>(null);
+  const [vehicles, setVehicles] = useState<Array<{ id?: string; plate?: string; licensePlate?: string }>>([]);
+  const [loadError, setLoadError] = useState('');
+
+  const currentCompanyId = currentAccount?.accountId;
+  const currentUserId = currentAccount?.accountId;
 
   const { listen } = useSocket({ companyId: currentCompanyId, userId: currentUserId });
 
@@ -28,39 +35,53 @@ export default function FleetManagerDashboard() {
   const [formData, setFormData] = useState({
     truckId: '',
     expectedEmptyTime: '',
-    latitude: 10.762622, // Mặc định TP.HCM
-    longitude: 106.660172
+    latitude: '',
+    longitude: ''
   });
 
-  // Fetch dữ liệu khởi tạo
   useEffect(() => {
-    const fetchRoutes = async () => {
-      setIsLoading(true);
-      try {
-        const data = await emptyRouteService.getEmptyRoutesByCompany(currentCompanyId);
-        // Trong môi trường thật (nếu API chưa được Mock), hàm này có thể văng lỗi. 
-        // Hãy đảm bảo Backend đã hoạt động.
-        setEmptyRoutes(data || []);
-      } catch (error) {
-        console.error("Lỗi khi tải danh sách xe rỗng:", error);
-        // Nếu API lỗi, fallback về data mẫu để có giao diện
-        setEmptyRoutes([
-          {
-            id: 'RT-001',
-            truckId: '51C-123.45',
-            companyId: currentCompanyId,
-            expectedEmptyTime: new Date().toISOString(),
-            latitude: 10.8231,
-            longitude: 106.6297,
-            status: 'PENDING'
-          }
-        ]);
-      } finally {
-        setIsLoading(false);
-      }
+    let active = true;
+    Promise.all([identityApi.getCurrentAccount(), getMyVehicles()])
+      .then(([account, accountVehicles]) => {
+        if (!active) return;
+        setCurrentAccount(account);
+        setVehicles(accountVehicles);
+      })
+      .catch((error) => {
+        if (!active) return;
+        const message = getApiErrorMessage(error, 'Không thể tải thông tin tài khoản và đội xe. Vui lòng thử lại.');
+        setLoadError(message);
+        notify.error(message);
+      });
+
+    return () => {
+      active = false;
     };
-    fetchRoutes();
-  }, []);
+  }, [notify]);
+
+  const loadRoutes = useCallback(async () => {
+    if (!currentCompanyId) return false;
+
+    setIsLoading(true);
+    setLoadError('');
+    try {
+      const data = await emptyRouteService.getEmptyRoutesByCompany();
+      setEmptyRoutes(data || []);
+      return true;
+    } catch (error) {
+      const message = getApiErrorMessage(error, 'Không thể tải danh sách xe rỗng. Vui lòng thử lại.');
+      setEmptyRoutes([]);
+      setLoadError(message);
+      notify.error(message);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentCompanyId, notify]);
+
+  useEffect(() => {
+    loadRoutes();
+  }, [loadRoutes]);
 
   // Đăng ký nhận sự kiện Socket Real-time
   useEffect(() => {
@@ -78,8 +99,8 @@ export default function FleetManagerDashboard() {
       );
 
       // Hiển thị thông báo Toast đẹp mắt
-      toast.success(
-        `🎉 Chuyến xe ${eventData.truckId} đã tìm thấy đơn hàng phù hợp! Bấm để xem ngay.`,
+      notify.success(
+            `🎉 Chuyến xe ${eventData.truckId} đã tìm thấy đơn hàng phù hợp! Bấm để xem ngay.`,
         {
           duration: 5000,
           position: 'top-right',
@@ -90,13 +111,20 @@ export default function FleetManagerDashboard() {
     return () => {
       if (unlisten) unlisten();
     };
-  }, [listen]);
+  }, [listen, notify]);
 
   // Xử lý Submit Form khai báo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.truckId || !formData.expectedEmptyTime) {
-      toast.error('Vui lòng điền đủ thông tin Biển số xe và Thời gian dự kiến');
+    if (!formData.truckId || !formData.expectedEmptyTime || !currentCompanyId) {
+      notify.error('Vui lòng điền đủ thông tin Biển số xe và Thời gian dự kiến');
+      return;
+    }
+
+    const latitude = Number(formData.latitude);
+    const longitude = Number(formData.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      notify.error('Vui lòng nhập tọa độ hợp lệ.');
       return;
     }
 
@@ -107,20 +135,17 @@ export default function FleetManagerDashboard() {
         companyId: currentCompanyId,
         // Chuyển đối thời gian từ input datetime-local sang chuẩn ISO để đẩy xuống Backend
         expectedEmptyTime: new Date(formData.expectedEmptyTime).toISOString(),
-        latitude: formData.latitude,
-        longitude: formData.longitude,
+        latitude,
+        longitude,
       };
 
-      const newRoute = await emptyRouteService.createEmptyRoute(payload);
+      await emptyRouteService.createEmptyRoute(payload);
+      await loadRoutes();
       
-      // Update local state ngay lập tức thay vì gọi API get
-      setEmptyRoutes(prev => [newRoute, ...prev]);
-      
-      toast.success('Đã khai báo xe rỗng thành công. Hệ thống đang rà soát đơn hàng!');
+      notify.success('Đã khai báo xe rỗng thành công. Hệ thống đang rà soát đơn hàng!');
       setFormData(prev => ({ ...prev, truckId: '', expectedEmptyTime: '' }));
     } catch (error) {
-      console.error("Lỗi khai báo:", error);
-      toast.error('Có lỗi xảy ra khi khai báo xe rỗng');
+      notify.error(getApiErrorMessage(error, 'Không thể khai báo xe rỗng. Vui lòng kiểm tra thông tin và thử lại.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -152,9 +177,11 @@ export default function FleetManagerDashboard() {
                     className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5 border"
                   >
                     <option value="">-- Chọn xe --</option>
-                    <option value="51C-123.45">51C-123.45 (Xe tải 5 tấn)</option>
-                    <option value="29C-888.88">29C-888.88 (Container Lạnh)</option>
-                    <option value="43C-678.90">43C-678.90 (Xe thùng bạt)</option>
+                    {vehicles.map((vehicle) => {
+                      const plate = vehicle.plate || vehicle.licensePlate;
+                      if (!plate) return null;
+                      return <option key={vehicle.id || plate} value={plate}>{plate}</option>;
+                    })}
                   </select>
                 </div>
 
@@ -176,7 +203,7 @@ export default function FleetManagerDashboard() {
                       type="number" 
                       step="any"
                       value={formData.latitude}
-                      onChange={(e) => setFormData({...formData, latitude: parseFloat(e.target.value)})}
+                      onChange={(e) => setFormData({...formData, latitude: e.target.value})}
                       className="w-1/2 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5 border text-sm"
                       placeholder="Lat"
                     />
@@ -184,7 +211,7 @@ export default function FleetManagerDashboard() {
                       type="number" 
                       step="any"
                       value={formData.longitude}
-                      onChange={(e) => setFormData({...formData, longitude: parseFloat(e.target.value)})}
+                      onChange={(e) => setFormData({...formData, longitude: e.target.value})}
                       className="w-1/2 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5 border text-sm"
                       placeholder="Lng"
                     />
@@ -229,6 +256,7 @@ export default function FleetManagerDashboard() {
               </div>
               
               <div className="flex-1 overflow-auto">
+                {loadError && <div className="m-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{loadError}</div>}
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>

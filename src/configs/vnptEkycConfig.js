@@ -6,6 +6,11 @@ const REQUIRED_CONFIG_KEYS = [
 ];
 
 const MINIMUM_TOKEN_VALIDITY_MS = 5 * 60 * 1000;
+const PLACEHOLDER_CONFIG_VALUES = new Set([
+  "your_token_key_here",
+  "your_token_id_here",
+  "your_auth_token_here",
+]);
 
 export const VNPT_EKYC_ASSETS = Object.freeze({
   FACE_SDK_SCRIPT: "/lib/VNPTBrowserSDKAppV4.1.0.js",
@@ -24,6 +29,46 @@ export function normalizeVnptAccessToken(accessToken) {
   if (typeof accessToken !== "string") return "";
 
   return accessToken.trim().replace(/^(Bearer\s+)+/i, "").trim();
+}
+
+export function getVnptEkycConfigMessage(validation) {
+  if (
+    validation?.code === "missing_config" &&
+    validation.missingKeys?.includes("ACCESS_TOKEN")
+  ) {
+    return "Chưa có access token VNPT eKYC. Hãy thêm NEXT_PUBLIC_VNPT_EKYC_AUTH vào cấu hình rồi khởi động lại frontend.";
+  }
+
+  if (validation?.code === "missing_config") {
+    const configFields = {
+      BACKEND_URL: {
+        label: "địa chỉ kết nối VNPT",
+        env: "NEXT_PUBLIC_VNPT_EKYC_BACKEND_URL",
+      },
+      TOKEN_KEY: {
+        label: "token key VNPT",
+        env: "NEXT_PUBLIC_VNPT_EKYC_TOKEN_KEY",
+      },
+      TOKEN_ID: {
+        label: "token ID VNPT",
+        env: "NEXT_PUBLIC_VNPT_EKYC_TOKEN_ID",
+      },
+    };
+    const missingLabels = validation.missingKeys
+      .map((key) => {
+        const field = configFields[key];
+        return field ? `${field.label} (${field.env})` : key;
+      })
+      .join(", ");
+
+    return `Thiếu cấu hình VNPT eKYC (${missingLabels}). Hãy bổ sung cấu hình rồi khởi động lại frontend.`;
+  }
+
+  if (validation?.code === "expired_token") {
+    return "Access token VNPT eKYC đã hết hạn. Hãy cấp token mới và khởi động lại frontend.";
+  }
+
+  return "Access token VNPT eKYC sắp hết hạn. Hãy cấp token mới trước khi tiếp tục.";
 }
 
 function getJwtExpiryMs(accessToken) {
@@ -50,7 +95,7 @@ function getJwtExpiryMs(accessToken) {
   }
 }
 
-export function validateVnptEkycConfig(config, nowMs = Date.now()) {
+export function validateVnptEkycConfig(config = {}, nowMs = Date.now()) {
   const normalizedConfig = {
     ...config,
     ACCESS_TOKEN: normalizeVnptAccessToken(config.ACCESS_TOKEN),
@@ -58,7 +103,8 @@ export function validateVnptEkycConfig(config, nowMs = Date.now()) {
   const missingKeys = REQUIRED_CONFIG_KEYS.filter(
     (key) =>
       typeof normalizedConfig[key] !== "string" ||
-      normalizedConfig[key].trim() === ""
+      normalizedConfig[key].trim() === "" ||
+      PLACEHOLDER_CONFIG_VALUES.has(normalizedConfig[key].trim().toLowerCase())
   );
 
   if (missingKeys.length > 0) {

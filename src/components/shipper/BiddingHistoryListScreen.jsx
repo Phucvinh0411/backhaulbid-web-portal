@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
+import Alert from "@mui/material/Alert";
+import CircularProgress from "@mui/material/CircularProgress";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
@@ -43,92 +45,16 @@ import DescriptionIcon from "@mui/icons-material/DescriptionOutlined";
 import ClearIcon from "@mui/icons-material/ClearOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
-
-// Mock Data matching existing shipments
-
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { auctionService } from "@/services/auctionService";
-import CircularProgress from "@mui/material/CircularProgress";
-
-const mapStatusToFrontend = (backendStatus) => {
-  switch (backendStatus) {
-    case "PENDING":
-    case "UPCOMING":
-      return "pending_bids";
-    case "ACTIVE":
-    case "IN_PROGRESS":
-    case "OPEN":
-      return "active_bids";
-    case "COMPLETED":
-    case "ENDED":
-      return "awarded";
-    case "CANCELLED":
-      return "cancelled";
-    default:
-      return "pending_bids";
-  }
-};
-
-const parseDecimal = (val) => {
-  if (!val) return 0;
-  if (typeof val === 'object' && val.$numberDecimal) return parseFloat(val.$numberDecimal);
-  return parseFloat(val);
-};
-
-const mapBackendToShipment = (auction) => {
-  const goodsType = auction.goodsType || auction.title || "Không xác định";
-  const weight = auction.weight || 0;
-  const volume = auction.volume || 0;
-  
-  const fromProvince = auction.pickupLocation?.province || auction.origin || "Không rõ";
-  const fromDetail = auction.pickupLocation?.address || "Không rõ";
-  
-  const toProvince = auction.deliveryLocation?.province || auction.destination || "Không rõ";
-  const toDetail = auction.deliveryLocation?.address || "Không rõ";
-  
-  const maxPrice = parseDecimal(auction.maxPrice);
-
-  const currentLowestBid = parseDecimal(auction.currentLowestBid) || 0;
-  const finalPrice = parseDecimal(auction.finalPrice) || 0;
-
-  return {
-    id: auction.id || auction._id || "N/A",
-    goodsType,
-    weight: `${weight} tấn`,
-    volume: `${volume} m³`,
-    from: { province: fromProvince, detail: fromDetail },
-    to: { province: toProvince, detail: toDetail },
-    maxPrice,
-    currentLowestBid,
-    finalPrice,
-    bidCount: auction.totalBids || auction.bidCount || 0,
-    dateCreated: auction.createdAt || new Date().toISOString(),
-    status: mapStatusToFrontend(auction.status),
-    originalData: auction,
-    carrier: auction.winningBidId ? "Đơn vị vận chuyển (Đã chốt)" : null,
-  };
-};
+import { mapBackendToShipment } from "@/services/shipperAuctionMapper";
 
 export default function BiddingHistoryListScreen() {
-  const [shipmentsData, setShipmentsData] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchAuctions = async () => {
-      try {
-        setLoading(true);
-        const res = await auctionService.getShipperAuctions();
-        const auctionsData = Array.isArray(res) ? res : (res?.data?.data || res?.data?.content || res?.content || res?.data || []);
-        setShipmentsData(auctionsData.map(mapBackendToShipment));
-      } catch (error) {
-        console.error("Error fetching auctions:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAuctions();
-  }, []);
-
   const router = useRouter();
+  const { notify } = useGlobalNotification();
+  const [shipments, setShipments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState("");
@@ -141,6 +67,33 @@ export default function BiddingHistoryListScreen() {
   // Pagination State
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    auctionService.getShipperAuctions()
+      .then((response) => {
+        if (!active) return;
+        const auctionsData = Array.isArray(response)
+          ? response
+          : (response?.data?.data || response?.data?.content || response?.content || response?.data || []);
+        setShipments(auctionsData.map(mapBackendToShipment));
+      })
+      .catch(() => {
+        if (active) {
+          const message = "Không thể tải lịch sử đấu giá.";
+          setLoadError(message);
+          notify.error(message);
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [notify]);
 
   const [columnsList, setColumnsList] = useState([
     { id: "id", label: "Mã lô hàng", align: "left" },
@@ -190,21 +143,21 @@ export default function BiddingHistoryListScreen() {
 
   // Extract provinces lists dynamically
   const originProvinces = useMemo(() => {
-    return Array.from(new Set(shipmentsData.map((s) => s.from.province))).sort();
-  }, [shipmentsData]);
+    return Array.from(new Set(shipments.map((s) => s.from.province))).sort();
+  }, [shipments]);
 
   const destProvinces = useMemo(() => {
-    return Array.from(new Set(shipmentsData.map((s) => s.to.province))).sort();
-  }, [shipmentsData]);
+    return Array.from(new Set(shipments.map((s) => s.to.province))).sort();
+  }, [shipments]);
 
   // Compute live KPI analytics
   const kpis = useMemo(() => {
-    const total = shipmentsData.length;
-    const active = shipmentsData.filter((s) => s.status === "active_bids").length;
-    const completed = shipmentsData.filter((s) => s.status === "completed").length;
+    const total = shipments.length;
+    const active = shipments.filter((s) => s.status === "active_bids").length;
+    const completed = shipments.filter((s) => s.status === "completed").length;
     
     // Total savings computed
-    const totalSavings = shipmentsData.reduce((sum, s) => {
+    const totalSavings = shipments.reduce((sum, s) => {
       if (s.status === "cancelled") return sum;
       const finalPrice = s.finalPrice || s.currentLowestBid || 0;
       if (finalPrice > 0) {
@@ -214,7 +167,7 @@ export default function BiddingHistoryListScreen() {
     }, 0);
 
     return { total, active, completed, totalSavings };
-  }, [shipmentsData]);
+  }, [shipments]);
 
   // Status options helper
   const getStatusDetails = (status) => {
@@ -238,7 +191,7 @@ export default function BiddingHistoryListScreen() {
 
   // Filter & Sort Logic
   const filteredAndSortedShipments = useMemo(() => {
-    let result = [...shipmentsData];
+    let result = [...shipments];
 
     // 1. Text Search Filter (Id, goods type, province name, detail)
     if (searchTerm.trim() !== "") {
@@ -289,7 +242,7 @@ export default function BiddingHistoryListScreen() {
     });
 
     return result;
-  }, [searchTerm, statusTab, originFilter, destFilter, order, orderBy]);
+  }, [shipments, searchTerm, statusTab, originFilter, destFilter, order, orderBy]);
 
   // Paginated Slicing
   const paginatedShipments = useMemo(() => {
@@ -319,6 +272,14 @@ export default function BiddingHistoryListScreen() {
           { label: "Lịch sử đấu giá" },
         ]}
       />
+
+      {loadError && <Alert severity="error" className="!mb-4">{loadError}</Alert>}
+      {loading && (
+        <div className="mb-6 flex items-center gap-3 rounded-2xl bg-white p-5 text-slate-600 shadow-sm" role="status">
+          <CircularProgress size={22} />
+          Đang tải lịch sử đấu giá...
+        </div>
+      )}
 
       {/* KPI Cards Overview */}
       <Grid container spacing={3} className="!mb-6">

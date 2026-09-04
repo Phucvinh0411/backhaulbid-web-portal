@@ -45,3 +45,14 @@ next-env.d.ts
 Design.md
 product.md
 .impeccable
+
+# --- AI & Agent Artifacts ---
+.agents/
+.claude/
+.gitnexus/
+.impeccable/
+artifacts/
+AGENTS.md
+CLAUDE.md
+GEMINI*.md
+*REPORT*.md

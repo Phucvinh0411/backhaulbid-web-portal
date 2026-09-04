@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   Box,
   Button,
   CardContent,
@@ -34,6 +33,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import Link from "next/link";
 import { PageHeader, StatCard } from "@/components/common";
 import EmptyRouteDialog from "@/components/carrier/EmptyRouteDialog";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import AppCard from "@/components/common/AppCard";
 import { getMyVehicles } from "@/services/fleetApi";
 import { contractApi } from "@/services/contractApi";
@@ -159,11 +159,11 @@ const buildChartData = (trips, filter) => {
 };
 
 export default function CarrierDashboard() {
+  const notify = useGlobalNotification();
   const [timeFilter, setTimeFilter] = useState("month");
   const [auctionPage, setAuctionPage] = useState(1);
   const [dashboard, setDashboard] = useState({ vehicles: [], trips: [], auctions: [], registrations: [], wallet: null });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const itemsPerPage = 3;
 
   useEffect(() => {
@@ -196,7 +196,7 @@ export default function CarrierDashboard() {
         });
       })
       .catch((requestError) => {
-        if (active) setError("Không thể tải dữ liệu trung tâm điều hành.");
+        if (active) notify.error("Không thể tải dữ liệu trung tâm điều hành.");
         console.error(requestError);
       })
       .finally(() => {
@@ -205,7 +205,7 @@ export default function CarrierDashboard() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [notify]);
 
   const activeTrips = useMemo(
     () => dashboard.trips.filter((trip) => ACTIVE_TRIP_STATUSES.has(trip.status)).map(mapTrip),
@@ -254,8 +254,6 @@ export default function CarrierDashboard() {
         onClose={() => setEmptyRouteOpen(false)} 
         vehicles={dashboard.vehicles} 
       />
-      {error && <Alert severity="error" className="!rounded-xl">{error}</Alert>}
-
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard title="Xe đã xác minh" value={`${verifiedVehicles} / ${dashboard.vehicles.length}`} subtitle="Hồ sơ đạt duyệt" icon={LocalShippingIcon} color="#1B4965" />

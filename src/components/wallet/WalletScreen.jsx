@@ -35,7 +35,10 @@ import WalletIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 
 import AppCard from "@/components/common/AppCard";
 import PageHeader from "@/components/common/PageHeader";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
+import { getApiErrorMessage } from "@/services/errorMessage";
 import { walletApi } from "@/services/walletApi";
+import WalletDetailDialog, { WalletDetailRow } from "./WalletDetailDialog";
 
 const OUTFLOW_TYPES = new Set(["WITHDRAW", "FREEZE", "AUCTION_FEE", "PENALTY"]);
 const TRANSACTION_LABELS = {
@@ -78,15 +81,21 @@ function submitCheckoutForm(checkout) {
   form.remove();
 }
 
+function formatWalletInput(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  return digits ? new Intl.NumberFormat("vi-VN").format(Number(digits)) : "";
+}
+
 export default function WalletScreen({ role = "shipper", standalone = true }) {
   const isShipper = role === "shipper";
+  const { notify } = useGlobalNotification();
   const [balance, setBalance] = useState(0);
   const [frozenBalance, setFrozenBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
+  const [topUpOrders, setTopUpOrders] = useState([]);
+  const [topUpActionLoading, setTopUpActionLoading] = useState(null);
   const [walletLoading, setWalletLoading] = useState(true);
-  const [walletError, setWalletError] = useState("");
-  const [walletMessage, setWalletMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusTab, setStatusTab] = useState("all");
   const [page, setPage] = useState(0);
@@ -97,29 +106,33 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
   const [bankName, setBankName] = useState("");
   const [bankAccountNumber, setBankAccountNumber] = useState("");
   const [accountHolderName, setAccountHolderName] = useState("");
-  const [walletActionError, setWalletActionError] = useState("");
   const [walletActionLoading, setWalletActionLoading] = useState(false);
+  const [pendingTopUp, setPendingTopUp] = useState(null);
   const [order, setOrder] = useState("desc");
   const [orderBy, setOrderBy] = useState("time");
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [transactionDetail, setTransactionDetail] = useState(null);
+  const [transactionDetailLoading, setTransactionDetailLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
     const loadWallet = async () => {
       setWalletLoading(true);
-      setWalletError("");
       try {
-        const [wallet, transactionPage, withdrawalPage] = await Promise.all([
+        const [wallet, transactionPage, withdrawalPage, topUpPage] = await Promise.all([
           walletApi.getMyWallet(),
           walletApi.listTransactions({ page: 1, pageSize: 100 }),
           walletApi.listWithdrawals({ page: 1, pageSize: 20 }),
+          walletApi.listTopUps({ page: 1, pageSize: 10 }),
         ]);
         if (!active) return;
         setBalance(Number(wallet.availableBalance || 0));
         setFrozenBalance(Number(wallet.frozenBalance || 0));
         setTransactions((transactionPage.data || []).map(toTableTransaction));
         setWithdrawals(withdrawalPage.data || []);
+        setTopUpOrders(topUpPage.data || []);
       } catch (error) {
-        if (active) setWalletError(error?.response?.data?.message || "Không thể tải dữ liệu ví.");
+        if (active) notify.error(getApiErrorMessage(error, "Không thể tải dữ liệu ví."));
       } finally {
         if (active) setWalletLoading(false);
       }
@@ -128,7 +141,76 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
     return () => {
       active = false;
     };
-  }, [role]);
+  }, [notify, role]);
+
+  const refreshWallet = async () => {
+    const [wallet, transactionPage, withdrawalPage, topUpPage] = await Promise.all([
+      walletApi.getMyWallet(),
+      walletApi.listTransactions({ page: 1, pageSize: 100 }),
+      walletApi.listWithdrawals({ page: 1, pageSize: 20 }),
+      walletApi.listTopUps({ page: 1, pageSize: 10 }),
+    ]);
+    setBalance(Number(wallet.availableBalance || 0));
+    setFrozenBalance(Number(wallet.frozenBalance || 0));
+    setTransactions((transactionPage.data || []).map(toTableTransaction));
+    setWithdrawals(withdrawalPage.data || []);
+    setTopUpOrders(topUpPage.data || []);
+  };
+
+  const handleCancelTopUp = async (invoiceNumber) => {
+    setTopUpActionLoading(invoiceNumber);
+    try {
+      await walletApi.cancelTopUp(invoiceNumber);
+      await refreshWallet();
+      notify.success("Đã hủy đơn nạp tiền chưa thanh toán.");
+    } catch (error) {
+      notify.error(getApiErrorMessage(error, "Không thể hủy đơn nạp tiền."));
+    } finally {
+      setTopUpActionLoading(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!pendingTopUp) return undefined;
+
+    let active = true;
+    let checking = false;
+    const checkTopUp = async () => {
+      if (checking) return;
+      checking = true;
+      try {
+        const status = await walletApi.getSepayTopUpStatus(pendingTopUp);
+        if (!active) return;
+        if (status.status === "PAID") {
+          setPendingTopUp(null);
+          await refreshWallet();
+          notify.success("Nạp tiền thành công. Số dư đã được cập nhật.");
+        } else if (["EXPIRED", "FAILED", "CANCELLED"].includes(status.status)) {
+          setPendingTopUp(null);
+          notify.warning("Đơn nạp tiền không hoàn tất.");
+        }
+      } catch {
+        // SePay may deliver the IPN a few seconds after the checkout finishes.
+      } finally {
+        checking = false;
+      }
+    };
+
+    checkTopUp();
+    const intervalId = window.setInterval(checkTopUp, 4000);
+    const timeoutId = window.setTimeout(() => {
+      if (active) {
+        setPendingTopUp(null);
+        notify.info("Đơn nạp đang chờ IPN. Vui lòng tải lại sau khi thanh toán.");
+      }
+    }, 15 * 60 * 1000);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [notify, pendingTopUp]);
 
   const formatCurrency = (value) =>
     new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
@@ -139,24 +221,22 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
     setBankName("");
     setBankAccountNumber("");
     setAccountHolderName("");
-    setWalletActionError("");
     setOpenWalletDialog(true);
   };
 
   const handleWalletActionSubmit = async () => {
     const amount = Number(walletAmount);
     if (!Number.isInteger(amount) || amount < 10000) {
-      setWalletActionError(`${walletActionType === "deposit" ? "Số tiền nạp" : "Số tiền rút"} phải là số nguyên và từ 10.000 ₫.`);
+      notify.warning(`${walletActionType === "deposit" ? "Số tiền nạp" : "Số tiền rút"} phải là số nguyên và từ 10.000 ₫.`);
       return;
     }
 
     if (walletActionType === "withdraw" && (!bankName.trim() || !/^[0-9]{6,30}$/.test(bankAccountNumber.trim()) || !accountHolderName.trim())) {
-      setWalletActionError("Vui lòng nhập đầy đủ ngân hàng, số tài khoản 6-30 chữ số và tên chủ tài khoản.");
+      notify.warning("Vui lòng nhập đầy đủ ngân hàng, số tài khoản 6-30 chữ số và tên chủ tài khoản.");
       return;
     }
 
     setWalletActionLoading(true);
-    setWalletActionError("");
     try {
       if (walletActionType === "withdraw") {
         await walletApi.createWithdrawal({
@@ -175,15 +255,17 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
         setTransactions((transactionPage.data || []).map(toTableTransaction));
         setWithdrawals(withdrawalPage.data || []);
         setOpenWalletDialog(false);
-        setWalletMessage(`\u0110\u00e3 g\u1eedi y\u00eau c\u1ea7u r\u00fat ${formatCurrency(amount)}. S\u1ed1 ti\u1ec1n \u0111\u01b0\u1ee3c t\u1ea1m gi\u1eef \u0111\u1ebfn khi admin x\u1eed l\u00fd.`);
+        notify.success(`Đã gửi yêu cầu rút ${formatCurrency(amount)}. Số tiền được tạm giữ đến khi admin xử lý.`);
       } else {
-        const checkout = await walletApi.createSepayTopUp(amount);
+        const returnUrl = `${window.location.origin}${window.location.pathname}`;
+        const checkout = await walletApi.createSepayTopUp(amount, returnUrl);
         submitCheckoutForm(checkout);
+        setPendingTopUp(checkout.invoiceNumber);
         setOpenWalletDialog(false);
-        setWalletMessage(`Đã tạo đơn nạp ${formatCurrency(amount)}. Hoàn tất thanh toán ở tab mới để hệ thống nhận IPN.`);
+        notify.info(`Đã tạo đơn nạp ${formatCurrency(amount)}. Hoàn tất thanh toán ở tab mới để hệ thống nhận IPN.`);
       }
     } catch (error) {
-      setWalletActionError(error?.response?.data?.message || "Không thể tạo đơn thanh toán.");
+      notify.error(getApiErrorMessage(error, "Không thể tạo đơn thanh toán."));
     } finally {
       setWalletActionLoading(false);
     }
@@ -218,6 +300,27 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
     setOrderBy(property);
   };
 
+  const handleOpenTransactionDetail = async (transaction) => {
+    setSelectedTransaction(transaction);
+    setTransactionDetail(null);
+    setTransactionDetailLoading(true);
+    try {
+      const detail = await walletApi.getTransaction(transaction.id);
+      setTransactionDetail(detail);
+    } catch (error) {
+      notify.error(getApiErrorMessage(error, "Không thể tải chi tiết giao dịch. Vui lòng thử lại."));
+      setSelectedTransaction(null);
+    } finally {
+      setTransactionDetailLoading(false);
+    }
+  };
+
+  const closeTransactionDetail = () => {
+    if (transactionDetailLoading) return;
+    setSelectedTransaction(null);
+    setTransactionDetail(null);
+  };
+
   return (
     <Box className="w-full min-h-screen">
       {standalone && (
@@ -232,9 +335,6 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
       )}
 
       <div className="space-y-6 animate-fade-in mt-4">
-        {walletError && <Alert severity="error" onClose={() => setWalletError("")}>{walletError}</Alert>}
-        {walletMessage && <Alert severity="success" onClose={() => setWalletMessage("")}>{walletMessage}</Alert>}
-
         <Grid container spacing={3}>
           <Grid item xs={12} md={5}>
             <AppCard
@@ -292,9 +392,36 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
         <AppCard showAccent={false} className="!rounded-3xl border border-slate-100 !shadow-[0_8px_32px_0_rgba(27,73,101,0.02)] overflow-hidden">
           <Box className="p-6 border-b border-slate-100">
             <Typography variant="h6" className="!font-bold text-slate-700 mb-3">Yêu cầu rút tiền</Typography>
-            {withdrawals.length === 0 ? <Typography variant="body2" className="text-slate-400">Chưa có yêu cầu rút tiền.</Typography> : <Box className="grid gap-2 md:grid-cols-2">{withdrawals.slice(0, 6).map((item) => <Box key={item.id} className="flex items-center justify-between rounded-xl border border-slate-100 p-3"><Box><Typography variant="body2" className="font-bold">{formatCurrency(item.amount)}</Typography><Typography variant="caption" className="text-slate-500">{item.bankName} · {item.bankAccountNumber}</Typography></Box><Chip size="small" label={item.status === "PENDING" ? "Đang chờ admin" : item.status === "APPROVED" ? "Đã duyệt" : "Từ chối"} color={item.status === "APPROVED" ? "success" : item.status === "REJECTED" ? "error" : "warning"} /></Box>)}</Box>}
-          </Box>
-          <Box className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {withdrawals.length === 0 ? <Typography variant="body2" className="text-slate-400">Chưa có yêu cầu rút tiền.</Typography> : <Box className="grid gap-2 md:grid-cols-2">{withdrawals.slice(0, 6).map((item) => <Box key={item.id} className="flex items-center justify-between rounded-xl border border-slate-100 p-3"><Box><Typography variant="body2" className="font-bold">{formatCurrency(item.amount)}</Typography><Typography variant="caption" className="text-slate-500">{item.bankName} · {item.maskedBankAccountNumber}</Typography></Box><Chip size="small" label={item.status === "PENDING" ? "Đang chờ admin" : item.status === "APPROVED" ? "Đã duyệt" : "Từ chối"} color={item.status === "APPROVED" ? "success" : item.status === "REJECTED" ? "error" : "warning"} /></Box>)}</Box>}
+           </Box>
+           <Box className="p-6 border-b border-slate-100">
+             <Typography variant="h6" className="!font-bold text-slate-700">Đơn nạp SePay gần đây</Typography>
+             {topUpOrders.length === 0 ? (
+               <Typography variant="body2" className="text-slate-400 mt-2">Chưa có đơn nạp tiền.</Typography>
+             ) : (
+               <Box className="mt-3 grid gap-2 md:grid-cols-2">
+                 {topUpOrders.map((item) => (
+                   <Box key={item.invoiceNumber} className="flex items-center justify-between rounded-xl border border-slate-100 p-3 gap-3">
+                     <Box>
+                       <Typography variant="body2" className="font-bold">{formatCurrency(item.amount)}</Typography>
+                       <Typography variant="caption" className="text-slate-500">{item.invoiceNumber} · {item.status}</Typography>
+                     </Box>
+                     {item.status === "CREATED" && (
+                       <Button
+                         size="small"
+                         color="error"
+                         onClick={() => handleCancelTopUp(item.invoiceNumber)}
+                         disabled={topUpActionLoading === item.invoiceNumber}
+                       >
+                         {topUpActionLoading === item.invoiceNumber ? "Đang hủy..." : "Hủy"}
+                       </Button>
+                     )}
+                   </Box>
+                 ))}
+               </Box>
+             )}
+           </Box>
+           <Box className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <Typography variant="h6" className="!font-bold text-slate-700">Lịch sử giao dịch ví</Typography>
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
               <Tabs value={statusTab} onChange={(event, value) => { setStatusTab(value); setPage(0); }} sx={{ minHeight: "36px", "& .MuiTab-root": { minHeight: "36px", textTransform: "none", fontWeight: 600 } }}>
@@ -323,9 +450,10 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
                     ["amount", "Giá trị", "right"],
                     ["time", "Thời gian", "right"],
                     ["status", "Trạng thái", "center"],
+                    ["detail", "Chi tiết", "center"],
                   ].map(([id, label, align]) => (
                     <TableCell key={id} align={align} className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100">
-                      {id === "status" ? label : <TableSortLabel active={orderBy === id} direction={orderBy === id ? order : "asc"} onClick={() => requestSort(id)}>{label}</TableSortLabel>}
+                      {id === "status" || id === "detail" ? label : <TableSortLabel active={orderBy === id} direction={orderBy === id ? order : "asc"} onClick={() => requestSort(id)}>{label}</TableSortLabel>}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -334,7 +462,7 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
                 {walletLoading ? (
                   <TableRow><TableCell colSpan={5} align="center" className="!py-12"><CircularProgress size={26} /></TableCell></TableRow>
                 ) : paginatedTransactions.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} align="center" className="!py-12 text-slate-400">Chưa có giao dịch phù hợp.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} align="center" className="!py-12 text-slate-400">Chưa có giao dịch phù hợp.</TableCell></TableRow>
                 ) : paginatedTransactions.map((transaction) => (
                   <TableRow key={transaction.id} className="hover:bg-slate-50/40 transition-colors">
                     <TableCell className="!font-mono !font-bold text-slate-400 !border-slate-100">{transaction.id}</TableCell>
@@ -345,6 +473,9 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
                     <TableCell align="right" className="!text-slate-500 !text-xs !border-slate-100">{new Date(transaction.time).toLocaleString("vi-VN")}</TableCell>
                     <TableCell align="center" className="!border-slate-100">
                       <Chip label={transaction.status === "success" ? "Thành công" : transaction.status === "pending" ? "Đang xử lý" : "Thất bại"} size="small" color={transaction.status === "success" ? "success" : transaction.status === "pending" ? "warning" : "error"} className="!font-bold !text-[0.68rem]" />
+                    </TableCell>
+                    <TableCell align="center" className="!border-slate-100">
+                      <Button size="small" onClick={() => handleOpenTransactionDetail(transaction)} className="!font-bold !capitalize">Xem</Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -378,12 +509,15 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
           )}
           <TextField
             label={walletActionType === "deposit" ? "Số tiền nạp (VND)" : "Số tiền rút (VND)"}
-            type="number"
+            type="text"
+            inputMode="numeric"
             placeholder="Tối thiểu 10.000"
             fullWidth
-            value={walletAmount}
-            onChange={(event) => setWalletAmount(event.target.value)}
+            value={formatWalletInput(walletAmount)}
+            onChange={(event) => setWalletAmount(event.target.value.replace(/\D/g, ""))}
             disabled={walletActionLoading}
+            helperText="Tự động phân tách hàng nghìn để dễ kiểm tra"
+            inputProps={{ "aria-label": walletActionType === "deposit" ? "Số tiền nạp bằng VND" : "Số tiền rút bằng VND" }}
             InputProps={{ className: "!rounded-2xl", startAdornment: <InputAdornment position="start">₫</InputAdornment> }}
           />
           {walletActionType === "withdraw" && (
@@ -393,15 +527,34 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
               <TextField label="Tên chủ tài khoản" fullWidth value={accountHolderName} onChange={(event) => setAccountHolderName(event.target.value)} disabled={walletActionLoading} />
             </>
           )}
-          {walletActionError && <Alert severity="error">{walletActionError}</Alert>}
         </DialogContent>
         <DialogActions className="!px-6 !pb-4 flex justify-end gap-3">
           <Button onClick={() => setOpenWalletDialog(false)} variant="text" className="!text-slate-500 !font-bold !capitalize !rounded-xl">Hủy</Button>
-          <Button onClick={handleWalletActionSubmit} disabled={!walletAmount || walletActionLoading} variant="contained" className="!font-bold !capitalize !rounded-xl !px-5" sx={{ background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)" }}>
+          <Button onClick={handleWalletActionSubmit} disabled={!walletAmount || walletActionLoading} variant="contained" className="!font-bold !capitalize !rounded-xl !px-5 !text-white" sx={{ background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)", "&:hover": { background: "linear-gradient(135deg, #15415A 0%, #081E2B 100%)" }, "&.Mui-disabled": { background: "#94A3B8", color: "#F8FAFC" } }}>
             {walletActionLoading ? <CircularProgress size={20} className="!text-white" /> : walletActionType === "deposit" ? "Tạo đơn thanh toán" : "Gửi yêu cầu rút"}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <WalletDetailDialog
+        open={Boolean(selectedTransaction)}
+        onClose={closeTransactionDetail}
+        title="Chi tiết giao dịch"
+        loading={transactionDetailLoading}
+      >
+        {transactionDetail && (
+          <Box>
+            <WalletDetailRow label="Mã giao dịch" value={transactionDetail.id} />
+            <WalletDetailRow label="Loại giao dịch" value={transactionDetail.type} />
+            <WalletDetailRow label="Số tiền" value={formatCurrency(transactionDetail.amount)} />
+            <WalletDetailRow label="Trạng thái" value={transactionDetail.status} />
+            <WalletDetailRow label="Phương thức" value={transactionDetail.paymentMethod} />
+            <WalletDetailRow label="Mã tham chiếu" value={transactionDetail.referenceCode} />
+            <WalletDetailRow label="Nội dung" value={transactionDetail.description} />
+            <WalletDetailRow label="Thời gian" value={transactionDetail.createdAt ? new Date(transactionDetail.createdAt).toLocaleString("vi-VN") : undefined} />
+          </Box>
+        )}
+      </WalletDetailDialog>
     </Box>
   );
 }

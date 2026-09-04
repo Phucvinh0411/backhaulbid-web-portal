@@ -1,11 +1,7 @@
 "use client";
 
-import LockIcon from "@mui/icons-material/LockOutlined";
-import PublicIcon from "@mui/icons-material/PublicOutlined";
-
 export default function AuctionTypeBadge({
   type = "PUBLIC",
-  showIcon = true,
   size = "md", // "sm" | "md" | "lg"
   className = "",
 }) {
@@ -15,12 +11,6 @@ export default function AuctionTypeBadge({
     sm: "text-[0.62rem] px-2 py-0.5 gap-1",
     md: "text-[0.68rem] px-2.5 py-1 gap-1.5",
     lg: "text-xs px-3 py-1.5 gap-1.5 font-bold",
-  };
-
-  const iconSizes = {
-    sm: "!text-[0.7rem]",
-    md: "!text-[0.8rem]",
-    lg: "!text-[0.95rem]",
   };
 
   return (

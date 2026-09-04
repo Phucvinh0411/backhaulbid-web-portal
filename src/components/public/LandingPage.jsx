@@ -134,10 +134,11 @@ export default function LandingPage() {
               className="lg:col-span-6 relative w-full flex justify-center"
             >
               <div className="relative w-full max-w-[560px] aspect-[4/3] rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.6)] border border-white/20 group ring-4 ring-[#62B6CB]/20">
-                <img 
-                  src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=2070&auto=format&fit=crop" 
-                  alt="BackHaulBid logistics commercial truck in motion"
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 brightness-110 contrast-110"
+                <div
+                  role="img"
+                  aria-label="BackHaulBid logistics commercial truck in motion"
+                  className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105 brightness-110 contrast-110"
+                  style={{ backgroundImage: "url(https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=2070&auto=format&fit=crop)" }}
                 />
 
                 {/* Overlaid glass cards */}

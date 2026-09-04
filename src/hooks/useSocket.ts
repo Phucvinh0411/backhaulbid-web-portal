@@ -1,69 +1,90 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { BIDDING_SOCKET_PATH, GATEWAY_URL } from '@/config/clientConfig';
 
 interface UseSocketOptions {
   companyId?: string;
   userId?: string;
 }
 
+interface PendingListener {
+  eventName: string;
+  callback: (...args: any[]) => void;
+}
+
 export const useSocket = (options: UseSocketOptions = {}) => {
   const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const pendingListenersRef = useRef<PendingListener[]>([]);
+
+  const attachListener = useCallback((eventName: string, callback: PendingListener['callback']) => {
+    socketRef.current?.on(eventName, callback);
+  }, []);
 
   useEffect(() => {
-    // Khởi tạo kết nối tới Gateway WebSocket
-    // Thông thường trong thực tế sẽ dùng biến môi trường: process.env.NEXT_PUBLIC_SOCKET_URL
-    const socket = io('http://localhost:3001', {
+    // Connect through the api-gateway so JWT cookies are exchanged for
+    // authenticated headers before the request reaches bidding-service.
+    const instance = io(GATEWAY_URL, {
       transports: ['websocket'],
+      path: BIDDING_SOCKET_PATH,
+      withCredentials: true,
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
 
-    socketRef.current = socket;
+    socketRef.current = instance;
+    setSocket(instance);
 
-    socket.on('connect', () => {
-      console.log('Socket connected:', socket.id);
-      
-      // Ngay khi kết nối thành công, tự động emit event register_device 
-      // để Join vào Room riêng của Company/Nhà xe, giúp nhận thông báo ghép cặp.
+    for (const { eventName, callback } of pendingListenersRef.current) {
+      attachListener(eventName, callback);
+    }
+    pendingListenersRef.current = [];
+
+    instance.on('connect', () => {
+      console.log('Socket connected:', instance.id);
+
+      // Register the device so the gateway can join this client into the
+      // company room used by fleet matching notifications.
       if (options.companyId) {
-        socket.emit('register_device', { 
-          companyId: options.companyId, 
-          userId: options.userId 
+        instance.emit('register_device', {
+          companyId: options.companyId,
+          userId: options.userId,
         });
-        console.log(`Đã đăng ký thiết bị cho Company: ${options.companyId}`);
+        console.log(`Registered device for company: ${options.companyId}`);
       }
     });
 
-    socket.on('disconnect', (reason) => {
+    instance.on('disconnect', (reason) => {
       console.log('Socket disconnected:', reason);
     });
 
-    socket.on('connect_error', (err) => {
+    instance.on('connect_error', (err) => {
       console.error('Socket connection error:', err.message);
     });
 
-    // Cleanup function: Ngắt kết nối khi component bị unmount để tránh rò rỉ bộ nhớ
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
+      instance.disconnect();
+      socketRef.current = null;
+      setSocket(null);
     };
-  }, [options.companyId, options.userId]); // Re-connect nếu companyId thay đổi
+  }, [options.companyId, options.userId, attachListener]);
 
-  // Cung cấp hàm listen an toàn để các component khác đăng ký
-  const listen = useCallback((eventName: string, callback: (...args: any[]) => void) => {
-    if (!socketRef.current) return;
-    
-    socketRef.current.on(eventName, callback);
-    
-    // Trả về hàm huỷ đăng ký để dùng trong useEffect cleanup
+  const listen = useCallback((eventName: string, callback: PendingListener['callback']) => {
+    if (socketRef.current) {
+      attachListener(eventName, callback);
+    } else {
+      pendingListenersRef.current.push({ eventName, callback });
+    }
+
     return () => {
+      pendingListenersRef.current = pendingListenersRef.current.filter(
+        (listener) => listener.eventName !== eventName || listener.callback !== callback,
+      );
       socketRef.current?.off(eventName, callback);
     };
-  }, []);
+  }, [attachListener]);
 
-  return { listen, socket: socketRef.current };
+  return { listen, socket };
 };

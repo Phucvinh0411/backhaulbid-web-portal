@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { io } from "socket.io-client";
+import { GATEWAY_URL } from "@/config/clientConfig";
+import { apiService } from "@/services/apiService";
+import { getApiErrorMessage } from "@/services/errorMessage";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
@@ -12,10 +15,7 @@ import Avatar from "@mui/material/Avatar";
 import InputBase from "@mui/material/InputBase";
 import Tooltip from "@mui/material/Tooltip";
 import Badge from "@mui/material/Badge";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
 import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
@@ -28,12 +28,13 @@ import NotificationsTwoToneIcon from "@mui/icons-material/NotificationsTwoTone";
 import FullscreenRoundedIcon from "@mui/icons-material/FullscreenRounded";
 import HelpOutlineRoundedIcon from "@mui/icons-material/HelpOutlineRounded";
 import { SIDEBAR_WIDTH } from "./Sidebar";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 const defaultUser = {
-  name: "Quản trị viên",
-  email: "admin@backhaulbid.vn",
-  avatar: "A",
-  role: "Quản trị viên",
+  name: "Tài khoản",
+  email: "",
+  avatar: "T",
+  role: "Đang tải thông tin",
   settingsPath: "/settings",
 };
 
@@ -49,25 +50,27 @@ const fallbackProfiles = {
     avatarLetter: "N",
   },
   admin: {
-    name: "Quản trị viên",
+    name: "Tài khoản",
     roleName: "Quản trị viên",
     avatarLetter: "A",
   },
 };
 
-export default function Header({ onMenuToggle, userInfo = defaultUser, role = "admin" }) {
+export default function Header({
+  onMenuToggle,
+  userInfo = defaultUser,
+  role = "admin",
+}) {
   const router = useRouter();
+  const notify = useGlobalNotification();
   const [hasNewNotification, setHasNewNotification] = useState(false);
-  const [toastOpen, setToastOpen] = useState(false);
-  const [auctionId, setAuctionId] = useState("");
-  const [auctionName, setAuctionName] = useState("");
-  
+
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    if (role !== "carrier") return;
+    if (!userInfo?.accountId) return undefined;
 
     const effectiveId = userInfo?.companyId || userInfo?.id;
 
@@ -75,29 +78,37 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
     const fetchNotifications = async () => {
       if (!effectiveId) return;
       try {
-        const res = await fetch("/api/v1/notifications/mine", {
-          headers: { "X-User-Id": effectiveId }
+        const data = await apiService.get("/api/v1/notifications/mine", {
+          headers: effectiveId ? { "X-User-Id": effectiveId } : {},
         });
-        if (res.ok) {
-          const data = await res.json();
-          setNotifications(data.map(n => ({
-            id: n.referenceId,
-            notifId: n.id,
-            title: n.title,
-            time: new Date(n.createdAt),
-            read: n.isRead || n.read // Handle both isRead and read
-          })));
-        }
-      } catch (err) {
-        console.error("Failed to fetch notifications", err);
+        const values = Array.isArray(data) ? data : data?.data || [];
+        setNotifications(
+          values.map((notification) => ({
+            id: notification.referenceId || notification.id,
+            notifId: notification.id,
+            title: notification.title,
+            message: notification.message,
+            time: new Date(notification.createdAt),
+            read: Boolean(notification.isRead ?? notification.read),
+          })),
+        );
+      } catch (error) {
+        notify.error(
+          getApiErrorMessage(
+            error,
+            "Không thể tải thông báo. Vui lòng thử lại.",
+          ),
+          { title: "Không thể tải thông báo" },
+        );
       }
     };
     fetchNotifications();
 
     // Setup WebSocket connection for real-time notifications
-    const socket = io({
+    const socket = io(GATEWAY_URL, {
       path: "/notification-socket",
-      transports: ["websocket"]
+      transports: ["websocket"],
+      withCredentials: true,
     });
 
     socket.on("connect", () => {
@@ -108,48 +119,40 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
     });
 
     socket.on("new_notification", (notif) => {
-      console.log("Received real-time notification:", notif);
       setHasNewNotification(true);
-      setAuctionId(notif.referenceId);
-      setAuctionName(notif.title);
-      setToastOpen(true);
+      notify.info(
+        notif.message || notif.title || "Bạn có thông báo mới từ hệ thống.",
+        { title: "Thông báo mới" },
+      );
       // Re-fetch to ensure we have the latest list (or we could just prepend it)
       fetchNotifications();
     });
 
-    const handleStorage = (e) => {
-      if (e.key === "NEW_MATCHING_AUCTION" && e.newValue) {
-        try {
-          const data = JSON.parse(e.newValue);
-          if (data && data.id) {
-            setHasNewNotification(true);
-            setAuctionId(data.id);
-            setAuctionName(data.title || "");
-            setToastOpen(true);
-            // Re-fetch to get the newest notification saved by backend
-            fetchNotifications();
-            localStorage.removeItem("NEW_MATCHING_AUCTION");
-          }
-        } catch (err) {}
-      }
-    };
-    window.addEventListener("storage", handleStorage);
     return () => {
-      window.removeEventListener("storage", handleStorage);
       socket.disconnect();
     };
-  }, [role, userInfo?.id, userInfo?.companyId]);
+  }, [notify, role, userInfo?.id, userInfo?.companyId, userInfo?.accountId]);
 
   const markAllAsRead = async () => {
     const effectiveId = userInfo?.companyId || userInfo?.id;
     if (!effectiveId) return;
     try {
-      await fetch("/api/v1/notifications/mark-all-read", {
-        method: "POST",
-        headers: { "X-User-Id": effectiveId }
-      });
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    } catch(err) {}
+      await apiService.post(
+        "/api/v1/notifications/mark-all-read",
+        {},
+        {
+          headers: effectiveId ? { "X-User-Id": effectiveId } : {},
+        },
+      );
+      setNotifications((previous) =>
+        previous.map((notification) => ({ ...notification, read: true })),
+      );
+    } catch (error) {
+      notify.error(
+        getApiErrorMessage(error, "Không thể đánh dấu thông báo đã đọc."),
+        { title: "Không thể cập nhật thông báo" },
+      );
+    }
   };
 
   const handleNotificationClick = (event) => {
@@ -165,18 +168,25 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
 
   const handleNotificationItemClick = (id) => {
     handleClose();
-    router.push(`/carrier/bidding/${id}`);
+    if (!id) return;
+    const destination =
+      role === "carrier"
+        ? `/carrier/bidding/${id}`
+        : role === "shipper"
+          ? `/shipper/bidding/${id}`
+          : "/admin/operations";
+    router.push(destination);
   };
 
   const toggleFullscreen = () => {
     try {
       const doc = document.documentElement;
-      const isFullscreen = 
-        document.fullscreenElement || 
-        document.webkitFullscreenElement || 
-        document.mozFullScreenElement || 
+      const isFullscreen =
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
         document.msFullscreenElement;
-      
+
       if (!isFullscreen) {
         let promise;
         if (doc.requestFullscreen) {
@@ -189,7 +199,9 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
           promise = doc.msRequestFullscreen();
         }
         if (promise && promise.catch) {
-          promise.catch((err) => console.error("Error entering fullscreen:", err));
+          promise.catch((err) =>
+            console.error("Error entering fullscreen:", err),
+          );
         }
       } else {
         let promise;
@@ -203,7 +215,9 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
           promise = document.msExitFullscreen();
         }
         if (promise && promise.catch) {
-          promise.catch((err) => console.error("Error exiting fullscreen:", err));
+          promise.catch((err) =>
+            console.error("Error exiting fullscreen:", err),
+          );
         }
       }
     } catch (err) {
@@ -281,7 +295,10 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
                 color: "#64748B",
                 width: 36,
                 height: 36,
-                "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" },
+                "&:hover": {
+                  color: "#1B4965",
+                  backgroundColor: "rgba(27, 73, 101, 0.04)",
+                },
               }}
             >
               <HelpOutlineRoundedIcon fontSize="small" />
@@ -296,7 +313,10 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
                 color: "#64748B",
                 width: 36,
                 height: 36,
-                "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" },
+                "&:hover": {
+                  color: "#1B4965",
+                  backgroundColor: "rgba(27, 73, 101, 0.04)",
+                },
               }}
             >
               <FullscreenRoundedIcon fontSize="medium" />
@@ -311,10 +331,17 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
                 color: hasNewNotification ? "#1B4965" : "#64748B",
                 width: 36,
                 height: 36,
-                "&:hover": { color: "#1B4965", backgroundColor: "rgba(27, 73, 101, 0.04)" },
+                "&:hover": {
+                  color: "#1B4965",
+                  backgroundColor: "rgba(27, 73, 101, 0.04)",
+                },
               }}
             >
-              <Badge color="error" variant="dot" invisible={!hasNewNotification}>
+              <Badge
+                color="error"
+                variant="dot"
+                invisible={!hasNewNotification}
+              >
                 <NotificationsTwoToneIcon fontSize="small" />
               </Badge>
             </IconButton>
@@ -359,83 +386,131 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
         PaperProps={{
           elevation: 0,
           sx: {
-            overflow: 'visible',
-            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.12))',
+            overflow: "visible",
+            filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.12))",
             mt: 1.5,
             width: 360,
-            borderRadius: '16px',
-            '& .MuiAvatar-root': {
+            borderRadius: "16px",
+            "& .MuiAvatar-root": {
               width: 32,
               height: 32,
               ml: -0.5,
               mr: 1,
             },
-            '&:before': {
+            "&:before": {
               content: '""',
-              display: 'block',
-              position: 'absolute',
+              display: "block",
+              position: "absolute",
               top: 0,
               right: 14,
               width: 10,
               height: 10,
-              bgcolor: 'background.paper',
-              transform: 'translateY(-50%) rotate(45deg)',
+              bgcolor: "background.paper",
+              transform: "translateY(-50%) rotate(45deg)",
               zIndex: 0,
             },
           },
         }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
-        <Box sx={{ px: 2, py: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="subtitle1" fontWeight="bold">Thông báo</Typography>
-          <Typography variant="caption" color="primary" onClick={markAllAsRead} sx={{ cursor: 'pointer', fontWeight: 600 }}>
+        <Box
+          sx={{
+            px: 2,
+            py: 1.5,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="subtitle1" fontWeight="bold">
+            Thông báo
+          </Typography>
+          <Typography
+            variant="caption"
+            color="primary"
+            onClick={markAllAsRead}
+            sx={{ cursor: "pointer", fontWeight: 600 }}
+          >
             Đánh dấu đã đọc tất cả
           </Typography>
         </Box>
         <Divider />
-        <List sx={{ p: 0, maxHeight: 360, overflow: 'auto' }}>
+        <List sx={{ p: 0, maxHeight: 360, overflow: "auto" }}>
           {notifications.length === 0 ? (
-            <Box sx={{ p: 4, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">Chưa có thông báo nào.</Typography>
+            <Box sx={{ p: 4, textAlign: "center" }}>
+              <Typography variant="body2" color="text.secondary">
+                Chưa có thông báo nào.
+              </Typography>
             </Box>
           ) : (
             notifications.map((notif, index) => (
-              <div key={index}>
-                <ListItem 
-                  alignItems="flex-start" 
-                  button 
+              <div key={notif.notifId || notif.id || index}>
+                <ListItem
+                  alignItems="flex-start"
+                  button
                   onClick={() => handleNotificationItemClick(notif.id)}
-                  sx={{ 
-                    bgcolor: notif.read ? 'transparent' : 'rgba(25, 118, 210, 0.04)',
-                    transition: 'background-color 0.2s',
-                    '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' }
+                  sx={{
+                    bgcolor: notif.read
+                      ? "transparent"
+                      : "rgba(25, 118, 210, 0.04)",
+                    transition: "background-color 0.2s",
+                    "&:hover": { bgcolor: "rgba(0, 0, 0, 0.04)" },
                   }}
                 >
                   <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: notif.read ? 'grey.400' : 'primary.main' }}>
-                      <NotificationsTwoToneIcon fontSize="small" sx={{ color: '#fff' }} />
+                    <Avatar
+                      sx={{ bgcolor: notif.read ? "grey.400" : "primary.main" }}
+                    >
+                      <NotificationsTwoToneIcon
+                        fontSize="small"
+                        sx={{ color: "#fff" }}
+                      />
                     </Avatar>
                   </ListItemAvatar>
                   <ListItemText
                     primary={
-                      <Typography variant="body2" fontWeight={notif.read ? "normal" : "bold"} color="text.primary">
-                        Hệ thống vừa tìm thấy 1 lộ trình phù hợp với xe rỗng của bạn!
+                      <Typography
+                        variant="body2"
+                        fontWeight={notif.read ? "normal" : "bold"}
+                        color="text.primary"
+                      >
+                        {notif.message ||
+                          notif.title ||
+                          "Bạn có thông báo mới từ hệ thống."}
                       </Typography>
                     }
                     secondary={
                       <>
-                        <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
+                        <Typography
+                          variant="caption"
+                          display="block"
+                          color="text.secondary"
+                          sx={{ mt: 0.5 }}
+                        >
                           {notif.title}
                         </Typography>
-                        <Typography variant="caption" color="primary" sx={{ display: 'block', mt: 0.5, fontWeight: 500 }}>
-                          {notif.time.toLocaleTimeString()} - Nhấn để xem chi tiết
+                        <Typography
+                          variant="caption"
+                          color="primary"
+                          sx={{ display: "block", mt: 0.5, fontWeight: 500 }}
+                        >
+                          {notif.time.toLocaleTimeString()} - Nhấn để xem chi
+                          tiết
                         </Typography>
                       </>
                     }
                   />
                   {!notif.read && (
-                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main', mt: 2 }} />
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        bgcolor: "primary.main",
+                        mt: 2,
+                      }}
+                    />
                   )}
                 </ListItem>
                 {index < notifications.length - 1 && <Divider component="li" />}
@@ -444,30 +519,12 @@ export default function Header({ onMenuToggle, userInfo = defaultUser, role = "a
           )}
         </List>
         <Divider />
-        <Box sx={{ p: 1, textAlign: 'center' }}>
-          <Button fullWidth size="small">Xem tất cả thông báo</Button>
+        <Box sx={{ p: 1, textAlign: "center" }}>
+          <Button fullWidth size="small">
+            Xem tất cả thông báo
+          </Button>
         </Box>
       </Menu>
-
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={6000}
-        onClose={() => setToastOpen(false)}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        sx={{ mt: 7 }}
-      >
-        <Alert
-          onClose={() => setToastOpen(false)}
-          severity="info"
-          variant="filled"
-          sx={{ width: "100%", borderRadius: "12px", cursor: "pointer" }}
-          onClick={handleNotificationClick}
-        >
-          <strong>Hệ thống vừa tìm thấy 1 lộ trình phù hợp với xe rỗng của bạn!</strong><br/>
-          {auctionName}<br/>
-          <em>Nhấn vào đây để xem chi tiết.</em>
-        </Alert>
-      </Snackbar>
     </AppBar>
   );
 }

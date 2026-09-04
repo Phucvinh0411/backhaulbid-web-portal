@@ -1,26 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
-import Alert from "@mui/material/Alert";
-import Snackbar from "@mui/material/Snackbar";
 import ArrowBackIcon from "@mui/icons-material/ArrowBackOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForwardOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { createAuction } from "@/services/biddingApi";
-import { INITIAL_FORM_STATE, getParticipationFeeQuote } from "./mockData";
+import { getApiErrorMessage } from "@/services/errorMessage";
+import { INITIAL_FORM_STATE } from "./mockData";
+import {
+  mapFormToAuctionPayload,
+  validateCreateAuctionForm,
+} from "./createAuctionValidation";
 import StepNavigationHeader from "./StepNavigationHeader";
 import SummarySidebar from "./SummarySidebar";
 import AddressBookModal from "./AddressBookModal";
 import Step1GoodsInfo from "./steps/Step1GoodsInfo";
 import Step2RouteInfo from "./steps/Step2RouteInfo";
 import Step3AuctionConfig from "./steps/Step3AuctionConfig";
+import { uploadAuctionImages } from "./auctionImageUpload";
 
+/* Legacy inline mapping/validation retained temporarily while the tested pure
+ * implementation below is used by the submission flow.
 const mapFormToPayload = (form) => ({
   title: form.goodsName.trim(),
   goodsType: form.goodsCategory,
@@ -97,21 +104,18 @@ const validateForm = (form) => {
     return "Vui lòng chọn đầy đủ thời gian mở và đóng thầu.";
   }
   return null;
-};
+}; */
 
 export default function CreateAuctionScreen() {
   const router = useRouter();
+  const notify = useGlobalNotification();
+  const creationIdempotencyKeyRef = useRef(null);
   const [activeStep, setActiveStep] = useState(0);
   const [form, setForm] = useState(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-  const [toast, setToast] = useState({
-    open: false,
-    message: "",
-    severity: "info",
-  });
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [addressTarget, setAddressTarget] = useState("FROM");
+  const [imageUploading, setImageUploading] = useState(false);
 
   const updateForm = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -135,6 +139,35 @@ export default function CreateAuctionScreen() {
     setAddressModalOpen(false);
   };
 
+  const handleImagesSelected = async (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (!files.length) return;
+
+    setImageUploading(true);
+    try {
+      const uploadedUrls = await uploadAuctionImages(files);
+      updateForm("images", [...(form.images || []), ...uploadedUrls]);
+      showToast(`Đã tải lên ${uploadedUrls.length} ảnh hàng hóa.`, "success");
+    } catch (error) {
+      showToast(
+        getApiErrorMessage(
+          error,
+          "Không thể tải ảnh hàng hóa. Vui lòng thử lại.",
+        ),
+      );
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  const handleRemoveImage = (imageUrl) => {
+    updateForm(
+      "images",
+      (form.images || []).filter((image) => image !== imageUrl),
+    );
+  };
+
   const handleNext = () => {
     if (activeStep < 2) {
       setActiveStep((prev) => prev + 1);
@@ -150,43 +183,52 @@ export default function CreateAuctionScreen() {
   };
 
   const showToast = (message, severity = "error") => {
-    setToast({ open: true, message, severity });
-  };
-
-  const handleCloseToast = (event, reason) => {
-    if (reason === "clickaway") return;
-    setToast((prev) => ({ ...prev, open: false }));
+    const notifyMethod = notify[severity] || notify.error;
+    notifyMethod(message, {
+      title: severity === "success" ? "Thành công" : "Thông báo",
+    });
   };
 
   const handleSubmit = async () => {
-    const validationError = validateForm(form);
+    const validationError = validateCreateAuctionForm(form);
     if (validationError) {
       showToast(validationError, "warning");
       return;
     }
 
+    if (!creationIdempotencyKeyRef.current) {
+      creationIdempotencyKeyRef.current =
+        globalThis.crypto?.randomUUID?.() ||
+        `auction-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+
     setIsSubmitting(true);
-    setSubmitError("");
 
     try {
-      const res = await createAuction(mapFormToPayload(form));
-      
-      const newAuctionId = res?.data?._id || res?.data?.id || "DEMO_ID";
+      const res = await createAuction(mapFormToAuctionPayload(form), {
+        skipGlobalNotification: true,
+        headers: {
+          "X-Idempotency-Key": creationIdempotencyKeyRef.current,
+        },
+      });
 
-      // (Real notifications will be handled by the backend BiddingGateway communicating with Fleet and Notification services)
-
-      showToast("Tạo phiên đấu giá thành công! Đang chuyển hướng...", "success");
+      const newAuctionId =
+        res?.id || res?._id || res?.data?._id || res?.data?.id;
+      if (!newAuctionId) {
+        throw new Error("The auction service did not return an auction ID.");
+      }
+      showToast(
+        "Tạo phiên đấu giá thành công! Đang chuyển hướng...",
+        "success",
+      );
       window.setTimeout(() => {
         window.location.href = "/shipper/bidding/sessions";
       }, 1500);
     } catch (error) {
-      const responseMessage = error?.response?.data?.message;
-      const message = Array.isArray(responseMessage)
-        ? responseMessage.join(", ")
-        : responseMessage ||
-          error?.message ||
-          "Không thể tạo phiên đấu giá. Vui lòng kiểm tra lại dữ liệu.";
-      setSubmitError(message);
+      const message = getApiErrorMessage(
+        error,
+        "Không thể tạo phiên đấu giá. Vui lòng kiểm tra lại dữ liệu.",
+      );
       showToast(message);
     } finally {
       setIsSubmitting(false);
@@ -213,7 +255,13 @@ export default function CreateAuctionScreen() {
       <Grid container spacing={3} alignItems="flex-start">
         <Grid item xs={12} md={7} lg={8}>
           {activeStep === 0 && (
-            <Step1GoodsInfo form={form} updateForm={updateForm} />
+            <Step1GoodsInfo
+              form={form}
+              updateForm={updateForm}
+              imageUploading={imageUploading}
+              onImagesSelected={handleImagesSelected}
+              onRemoveImage={handleRemoveImage}
+            />
           )}
           {activeStep === 1 && (
             <Step2RouteInfo
@@ -224,12 +272,6 @@ export default function CreateAuctionScreen() {
           )}
           {activeStep === 2 && (
             <Step3AuctionConfig form={form} updateForm={updateForm} />
-          )}
-
-          {submitError && (
-            <Alert severity="error" className="!mt-5 !rounded-2xl">
-              {submitError}
-            </Alert>
           )}
 
           <div className="flex items-center justify-between pt-6 mt-6 border-t border-slate-200/80">
@@ -260,9 +302,11 @@ export default function CreateAuctionScreen() {
                 startIcon={<CheckCircleIcon />}
                 className="!rounded-2xl !py-3 !px-7 !font-bold !capitalize !text-white"
                 sx={{
-                  background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                  background:
+                    "linear-gradient(135deg, #10B981 0%, #059669 100%)",
                   "&:hover": {
-                    background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                    background:
+                      "linear-gradient(135deg, #059669 0%, #047857 100%)",
                   },
                 }}
               >
@@ -283,22 +327,6 @@ export default function CreateAuctionScreen() {
         onSelectAddress={handleSelectAddress}
         targetType={addressTarget}
       />
-
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={4000}
-        onClose={handleCloseToast}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={handleCloseToast}
-          severity={toast.severity}
-          variant="filled"
-          sx={{ width: "100%", borderRadius: "12px", boxShadow: 3 }}
-        >
-          {toast.message}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 }

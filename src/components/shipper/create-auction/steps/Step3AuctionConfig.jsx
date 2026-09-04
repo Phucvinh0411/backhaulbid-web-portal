@@ -234,7 +234,7 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             fullWidth
             label="Số lượt ra giá tối đa"
             type="number"
-            value={form.maxBids}
+            name="maxBids" value={form.maxBids}
             onChange={(e) => updateForm("maxBids", Number(e.target.value))}
             helperText="Lần / nhà xe"
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
@@ -262,8 +262,9 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             fullWidth
             type="datetime-local"
             label="Mở đăng ký tham gia"
-            value={form.regStartTime}
+            name="regStartTime" value={form.regStartTime}
             onChange={(e) => updateForm("regStartTime", e.target.value)}
+            max={form.regEndTime || undefined}
             InputLabelProps={{ shrink: true }}
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
@@ -272,8 +273,9 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             fullWidth
             type="datetime-local"
             label="Đóng đăng ký tham gia"
-            value={form.regEndTime}
+            name="regEndTime" value={form.regEndTime}
             onChange={(e) => updateForm("regEndTime", e.target.value)}
+            min={form.regStartTime || undefined}
             InputLabelProps={{ shrink: true }}
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
@@ -284,7 +286,7 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             fullWidth
             type="datetime-local"
             label="Bắt đầu đấu giá trực tiếp"
-            value={form.startTime}
+            name="startTime" value={form.startTime}
             onChange={(e) => updateForm("startTime", e.target.value)}
             InputLabelProps={{ shrink: true }}
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
@@ -294,7 +296,7 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             fullWidth
             type="datetime-local"
             label="Kết thúc đấu giá (Đóng thầu)"
-            value={form.endTime}
+            name="endTime" value={form.endTime}
             onChange={(e) => updateForm("endTime", e.target.value)}
             InputLabelProps={{ shrink: true }}
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}

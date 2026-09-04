@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import { auctionService } from "@/services/auctionService";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
-import Grid from "@mui/material/Grid";
+import Alert from "@mui/material/Alert";
+import CircularProgress from "@mui/material/CircularProgress";
 import PageHeader from "@/components/common/PageHeader";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
+import { getApiErrorMessage } from "@/services/errorMessage";
 
-import {
-  AUCTION_SHIPMENTS_MAP,
-  enrichShipmentDetails,
-  getCarrierDetails,
-} from "./mockData";
+import { getAuction, listBids, selectWinner } from "@/services/biddingApi";
+import { mapBackendToBid, mapBackendToShipment } from "@/services/shipperAuctionMapper";
 import ShipmentSummaryCard from "./ShipmentSummaryCard";
 import LiveCountdownCard from "./LiveCountdownCard";
 import LowestBidCard from "./LowestBidCard";
@@ -23,110 +23,12 @@ import CarrierProfileModal from "./CarrierProfileModal";
 
 export default function AuctionDetailScreen({ id }) {
   const router = useRouter();
-
+  const { notify } = useGlobalNotification();
   const [shipment, setShipment] = useState(null);
   const [bids, setBids] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!id) return;
-      try {
-        setLoading(true);
-        let auctionRes;
-        try {
-          auctionRes = await auctionService.getAuctionById(id);
-        } catch (err) {
-          console.error("Error fetching auction:", err);
-          setLoading(false);
-          return;
-        }
-
-        let bidsRes = [];
-        try {
-          bidsRes = await auctionService.listBids(id, { page: 1, limit: 100 });
-        } catch (err) {
-          console.warn("Error fetching bids, defaulting to empty:", err);
-        }
-        
-        // Next.js API routes configured with appApiService return the data directly
-        // However, if it's wrapped in { data: ... }, we handle it, else use auctionRes itself
-        const data = auctionRes?.data || auctionRes || {};
-        
-        // Map backend data to frontend expected format
-        const mappedShipment = {
-          id: data.id || data._id || id,
-          status: data.status,
-          auctionType: data.auctionType || "PUBLIC",
-          goodsType: data.goodsType || data.title || "Hàng hóa",
-          weight: data.weight ? `${data.weight} tấn` : "N/A",
-          volume: data.volume ? `${data.volume} m³` : "N/A",
-          maxPrice: data.maxPrice?.$numberDecimal || data.maxPrice || 0,
-          endTime: data.endTime,
-          startTime: data.startTime,
-          regStartTime: data.registrationStartTime,
-          regEndTime: data.registrationEndTime,
-          from: {
-            name: data.pickupLocation?.locationName || "Không rõ",
-            address: data.pickupLocation?.address || "Không rõ",
-          },
-          to: {
-            name: data.deliveryLocation?.locationName || "Không rõ",
-            address: data.deliveryLocation?.address || "Không rõ",
-          },
-          description: data.notes || "Không có ghi chú",
-          auctionCreator: "Chủ hàng",
-          priceStep: data.priceStep?.$numberDecimal || data.priceStep || 100000,
-          maxBids: data.maxBids || 5,
-          participationFee: data.participationFeeAmount?.$numberDecimal || 0,
-          depositAmount: data.depositAmount?.$numberDecimal || 0,
-          requiredVehicleType: data.vehicleTypeRequired || "N/A",
-          requiredVehicleDims: data.vehicleSpecs || {},
-          earliestPickup: data.pickupLocation?.earliestTime,
-          latestPickup: data.pickupLocation?.latestTime,
-          earliestDelivery: data.deliveryLocation?.earliestTime,
-          latestDelivery: data.deliveryLocation?.latestTime,
-          goodsCategory: data.goodsType,
-          requiredTemp: data.requiredTemp,
-          goodsValue: data.goodsValue?.$numberDecimal || 0,
-          goodsNotes: data.notes,
-        };
-        
-        setShipment(mappedShipment);
-        
-        const bidsData = Array.isArray(bidsRes) ? bidsRes : (bidsRes?.data?.data || bidsRes?.data?.content || bidsRes?.content || bidsRes?.data || []);
-        setBids(bidsData.map(b => ({
-          id: b.id || b._id,
-          carrierName: b.carrierName || "Nhà xe",
-          carrierCode: b.carrierId,
-          bidAmount: b.bidAmount?.$numberDecimal || b.bidAmount,
-          time: new Date(b.createdAt).toLocaleString(),
-          isLowest: false, // We'll compute this if needed
-          originalBid: b
-        })));
-        
-      } catch (error) {
-        console.error("Error fetching auction details:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [id]);
-
-  if (loading) {
-    return (
-      <Box className="w-full min-h-screen flex justify-center items-center">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (!shipment) {
-    return <Box className="w-full p-8 text-center">Không tìm thấy thông tin phiên đấu giá.</Box>;
-  }
-
-  
   // Dynamically calculate countdown based on shipment.endTime
   const getInitialCountdown = () => {
     if (!shipment?.endTime) return 0;
@@ -147,7 +49,50 @@ export default function AuctionDetailScreen({ id }) {
   const [openFullBidsModal, setOpenFullBidsModal] = useState(false);
   const [selectedBidForPanel, setSelectedBidForPanel] = useState(null);
 
+  useEffect(() => {
+    let active = true;
+    const fetchData = async () => {
+      if (!id) return;
+      setLoading(true);
+      setLoadError("");
+      try {
+        let auctionResponse;
+        try {
+          auctionResponse = await getAuction(id);
+        } catch (err) {
+          if (!active) return;
+          const message = getApiErrorMessage(err, "Không thể tải chi tiết phiên đấu giá. Vui lòng thử lại.");
+          setLoadError(message);
+          notify.error(message);
+          setLoading(false);
+          return;
+        }
 
+        let bidsResponse = [];
+        try {
+          bidsResponse = await listBids(id, { page: 1, pageSize: 100, limit: 100 });
+        } catch (err) {
+          console.warn("Error fetching bids, defaulting to empty array:", err);
+        }
+
+        if (!active) return;
+        const auction = auctionResponse?.data || auctionResponse;
+        setShipment(mapBackendToShipment(auction));
+
+        const rawBids = bidsResponse?.data?.data || bidsResponse?.data?.items || bidsResponse?.data || bidsResponse?.items || (Array.isArray(bidsResponse) ? bidsResponse : []);
+        setBids(rawBids.map((bid, index) => mapBackendToBid(bid, index, rawBids)));
+      } catch (error) {
+        if (!active) return;
+        console.error("Error in fetchData:", error);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    fetchData();
+    return () => {
+      active = false;
+    };
+  }, [id, notify]);
 
   // Live Timer Countdown Effect
   useEffect(() => {
@@ -159,14 +104,14 @@ export default function AuctionDetailScreen({ id }) {
   }, [shipment?.endTime, shipment?.status]);
 
   // Determine which bid to show on the right panel
-  const isSealed = shipment.auctionType === "SEALED";
+  const isSealed = shipment?.auctionType === "SEALED";
   const defaultBidRaw = bids.find((b) => b.isLowest) || (bids.length > 0 ? bids[0] : null);
   
   // For SEALED: use selected bid if any, otherwise default to lowest.
   // For PUBLIC: always keep default (lowest) or selected if we want to allow it. User said "còn đấu giá công khai vẫn giữ như cũ" so we ignore selection for PUBLIC.
   const displayedBidRaw = (isSealed && selectedBidForPanel) ? selectedBidForPanel : defaultBidRaw;
   
-  const displayedBidDetails = displayedBidRaw ? getCarrierDetails(displayedBidRaw) : null;
+  const displayedBidDetails = displayedBidRaw;
   const displayedBidAmount = displayedBidRaw?.bidAmount || 0;
   const isDisplayedBidLowest = displayedBidRaw?.id === defaultBidRaw?.id;
 
@@ -182,17 +127,16 @@ export default function AuctionDetailScreen({ id }) {
     setSelectedWinnerBid(null);
   };
 
-  const handleOtpSubmit = () => {
+  const handleOtpSubmit = async () => {
     const otpCode = otpValues.join("");
-    if (otpCode.length === 6) {
+    if (otpCode.length === 6 && selectedWinnerBid) {
       setIsOtpSuccess(true);
-      setTimeout(() => {
+      try {
+        await selectWinner(id, selectedWinnerBid.id);
         setOpenOtpDialog(false);
         const winner = selectedWinnerBid || bids.find((b) => b.isLowest) || bids[0];
         if (winner) {
-          shipment.status = "awarded";
-          shipment.carrier = winner.carrierName;
-          shipment.finalPrice = winner.bidAmount;
+          setShipment((current) => ({ ...current, status: "awarded", carrier: winner.carrierName, finalPrice: winner.bidAmount }));
           setBids((prev) =>
             prev.map((b) => ({
               ...b,
@@ -200,15 +144,19 @@ export default function AuctionDetailScreen({ id }) {
             }))
           );
         }
-        alert(`Chốt thầu và Ký Hợp đồng điện tử thành công với nhà xe: ${winner ? winner.carrierName : ""}!`);
-      }, 1800);
+      } catch (error) {
+        setIsOtpSuccess(false);
+        const message = getApiErrorMessage(error, "Không thể chọn nhà xe thắng đấu giá. Vui lòng thử lại.");
+        setLoadError(message);
+        notify.error(message);
+      }
     }
   };
 
   const handleOpenCarrierModal = (bid) => {
     if (!bid) return;
-    const details = getCarrierDetails(bid);
-    const carrierId = details?.code || bid?.carrierCode || bid?.carrierName || "CARRIER-PA-8839";
+    const carrierId = bid?.carrierId || bid?.carrierCode || bid?.carrierName;
+    if (!carrierId) return;
     router.push(`/shipper/carriers/${encodeURIComponent(carrierId)}`);
   };
 
@@ -216,6 +164,14 @@ export default function AuctionDetailScreen({ id }) {
     setOpenCarrierModal(false);
     setSelectedCarrier(null);
   };
+
+  if (loading) {
+    return <Box className="flex items-center justify-center min-h-screen"><CircularProgress /></Box>;
+  }
+
+  if (!shipment) {
+    return <Box className="p-6"><Alert severity="error">{loadError || "Không tìm thấy phiên đấu giá."}</Alert></Box>;
+  }
 
   return (
     <Box className="w-full min-h-screen">

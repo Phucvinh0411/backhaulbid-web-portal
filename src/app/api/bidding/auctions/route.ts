@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { getInternalGatewayUrl } from '@/config/serverConfig';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,7 +8,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
-    const gatewayUrl = process.env.INTERNAL_GATEWAY_URL || process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8080';
+    const gatewayUrl = getInternalGatewayUrl();
     
     const cookieStore = await cookies();
     const accessToken = cookieStore.get('accessToken')?.value;
@@ -42,7 +43,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
     
-    const gatewayUrl = process.env.INTERNAL_GATEWAY_URL || process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8080';
+    const gatewayUrl = getInternalGatewayUrl();
     
     const cookieStore = await cookies();
     const accessToken = cookieStore.get('accessToken')?.value;

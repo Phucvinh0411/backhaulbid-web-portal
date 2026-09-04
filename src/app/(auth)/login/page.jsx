@@ -4,16 +4,17 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Box, Grid, Typography, TextField, Button,
-  Checkbox, FormControlLabel, useTheme, Alert, CircularProgress
+  Checkbox, FormControlLabel, useTheme, CircularProgress
 } from "@mui/material";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 export default function LoginPage() {
   const router = useRouter();
+  const notify = useGlobalNotification();
   const theme = useTheme();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Map role -> dashboard path
@@ -28,7 +29,6 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
@@ -43,10 +43,10 @@ export default function LoginPage() {
         router.push(getDashboardByRole(role));
         router.refresh();
       } else {
-        setError(data.message || "Sai số điện thoại hoặc mật khẩu.");
+        notify.error(data.message || "Sai số điện thoại hoặc mật khẩu.");
       }
     } catch {
-      setError("Lỗi kết nối tới server. Vui lòng thử lại.");
+      notify.error("Lỗi kết nối tới server. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
@@ -116,8 +116,6 @@ export default function LoginPage() {
                 </Link>
               </Typography>
             </Box>
-
-            {error && <Alert severity="error" sx={{ mb: 2, borderRadius: "10px" }}>{error}</Alert>}
 
             <form onSubmit={handleLogin}>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
