@@ -138,7 +138,7 @@ export default function BiddingSessionsScreen() {
     try {
       setLoading(true);
       const res = await auctionService.getShipperAuctions();
-      const auctionsData = res.data?.data || res.data || [];
+      const auctionsData = Array.isArray(res) ? res : (res?.data?.data || res?.data?.content || res?.content || res?.data || []);
       const mappedShipments = auctionsData.map(mapBackendToShipment);
       setShipments(mappedShipments);
     } catch (error) {
@@ -666,25 +666,27 @@ export default function BiddingSessionsScreen() {
             )}
 
             <Box className="flex flex-col gap-3 pt-2">
-              <ActionButton
-                variant="outlined"
-                fullWidth
-                size="lg"
-                onClick={() => router.push(`/shipper/bidding/history?id=${selectedShipment.id}`)}
-                className="!rounded-2xl"
-              >
-                Xem lịch sử thầu
-              </ActionButton>
-              {selectedShipment.status === "shipping" && (
+              <Link href={`/shipper/bidding/history?id=${selectedShipment.id}`} passHref className="w-full block">
                 <ActionButton
-                  variant="primary"
+                  variant="outlined"
                   fullWidth
                   size="lg"
-                  onClick={() => router.push(`/shipper/tracking?id=${selectedShipment.id}`)}
-                  className="!rounded-2xl shadow-md"
+                  className="!rounded-2xl"
                 >
-                  Theo dõi vận chuyển
+                  Xem lịch sử thầu
                 </ActionButton>
+              </Link>
+              {selectedShipment.status === "shipping" && (
+                <Link href={`/shipper/tracking?id=${selectedShipment.id}`} passHref className="w-full block">
+                  <ActionButton
+                    variant="primary"
+                    fullWidth
+                    size="lg"
+                    className="!rounded-2xl shadow-md"
+                  >
+                    Theo dõi vận chuyển
+                  </ActionButton>
+                </Link>
               )}
             </Box>
           </Box>

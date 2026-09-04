@@ -33,10 +33,21 @@ export default function AuctionDetailScreen({ id }) {
       if (!id) return;
       try {
         setLoading(true);
-        const [auctionRes, bidsRes] = await Promise.all([
-          auctionService.getAuctionById(id),
-          auctionService.listBids(id, { page: 1, limit: 100 })
-        ]);
+        let auctionRes;
+        try {
+          auctionRes = await auctionService.getAuctionById(id);
+        } catch (err) {
+          console.error("Error fetching auction:", err);
+          setLoading(false);
+          return;
+        }
+
+        let bidsRes = [];
+        try {
+          bidsRes = await auctionService.listBids(id, { page: 1, limit: 100 });
+        } catch (err) {
+          console.warn("Error fetching bids, defaulting to empty:", err);
+        }
         
         // Next.js API routes configured with appApiService return the data directly
         // However, if it's wrapped in { data: ... }, we handle it, else use auctionRes itself
@@ -83,7 +94,7 @@ export default function AuctionDetailScreen({ id }) {
         
         setShipment(mappedShipment);
         
-        const bidsData = bidsRes.data?.data || bidsRes.data || [];
+        const bidsData = Array.isArray(bidsRes) ? bidsRes : (bidsRes?.data?.data || bidsRes?.data?.content || bidsRes?.content || bidsRes?.data || []);
         setBids(bidsData.map(b => ({
           id: b.id || b._id,
           carrierName: b.carrierName || "Nhà xe",

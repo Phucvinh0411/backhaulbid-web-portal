@@ -4,6 +4,8 @@ export function unwrapListData(response) {
   if (Array.isArray(response?.data?.data)) return response.data.data;
   if (Array.isArray(response?.items)) return response.items;
   if (Array.isArray(response?.data?.items)) return response.data.items;
+  if (Array.isArray(response?.content)) return response.content;
+  if (Array.isArray(response?.data?.content)) return response.data.content;
   return [];
 }
 

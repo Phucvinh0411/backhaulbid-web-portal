@@ -117,7 +117,7 @@ export default function BiddingHistoryListScreen() {
       try {
         setLoading(true);
         const res = await auctionService.getShipperAuctions();
-        const auctionsData = res.data?.data || res.data || [];
+        const auctionsData = Array.isArray(res) ? res : (res?.data?.data || res?.data?.content || res?.content || res?.data || []);
         setShipmentsData(auctionsData.map(mapBackendToShipment));
       } catch (error) {
         console.error("Error fetching auctions:", error);
@@ -714,25 +714,27 @@ export default function BiddingHistoryListScreen() {
 
                                 {shipment.status === "shipping" && (
                                   <Tooltip title="Định vị hành trình">
-                                    <IconButton
-                                      size="small"
-                                      className="text-cyan-600 hover:bg-cyan-50 bg-slate-50"
-                                      onClick={() => router.push(`/shipper/tracking?id=${shipment.id}`)}
-                                    >
-                                      <LocalShippingIcon fontSize="small" />
-                                    </IconButton>
+                                    <Link href={`/shipper/tracking?id=${shipment.id}`} passHref>
+                                      <IconButton
+                                        size="small"
+                                        className="text-cyan-600 hover:bg-cyan-50 bg-slate-50"
+                                      >
+                                        <LocalShippingIcon fontSize="small" />
+                                      </IconButton>
+                                    </Link>
                                   </Tooltip>
                                 )}
 
                                 {(shipment.status === "awarded" || shipment.status === "shipping" || shipment.status === "completed") && (
                                   <Tooltip title="Xem hợp đồng">
-                                    <IconButton
-                                      size="small"
-                                      className="text-blue-600 hover:bg-blue-50 bg-slate-50"
-                                      onClick={() => router.push(`/shipper/contracts?id=${shipment.id}`)}
-                                    >
-                                      <DescriptionIcon fontSize="small" />
-                                    </IconButton>
+                                    <Link href={`/shipper/contracts?id=${shipment.id}`} passHref>
+                                      <IconButton
+                                        size="small"
+                                        className="text-blue-600 hover:bg-blue-50 bg-slate-50"
+                                      >
+                                        <DescriptionIcon fontSize="small" />
+                                      </IconButton>
+                                    </Link>
                                   </Tooltip>
                                 )}
                               </div>
