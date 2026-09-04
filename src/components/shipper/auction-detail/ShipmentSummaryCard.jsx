@@ -41,8 +41,13 @@ export default function ShipmentSummaryCard({ shipment }) {
               />
             </div>
             <Typography variant="h5" className="!font-black text-slate-800 !mt-1 tracking-tight">
-              {shipment.goodsType}
+              {shipment.title || shipment.goodsName || shipment.goodsType}
             </Typography>
+            {(shipment.title || shipment.goodsName) && (
+              <Typography variant="caption" className="!font-bold text-sky-600 block mt-0.5">
+                Phân loại: {shipment.goodsType}
+              </Typography>
+            )}
           </div>
           <div className="text-right">
             <StatusBadge status={shipment.status} />
@@ -136,6 +141,10 @@ export default function ShipmentSummaryCard({ shipment }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[0.8rem]">
             <div className="space-y-2.5 bg-slate-50/70 p-4 rounded-2xl border border-slate-100">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Tên lô hàng:</span>
+                <span className="font-bold text-[#1B4965]">{shipment.title || shipment.goodsName || shipment.goodsCategory || "Chưa cung cấp"}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Phân loại hàng hóa:</span>
                 <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">{shipment.goodsCategory || "Hàng bách hóa"}</span>

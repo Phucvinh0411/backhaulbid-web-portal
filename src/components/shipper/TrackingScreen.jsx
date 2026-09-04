@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -21,10 +22,13 @@ const STATUS_LABELS = {
 };
 
 export default function TrackingScreen({ tripId: initialTripId = null }) {
+  const searchParams = useSearchParams();
+  const idFromUrl = searchParams?.get("id");
+
   const [trips, setTrips] = useState([]);
   const [tripsLoading, setTripsLoading] = useState(true);
   const [tripsError, setTripsError] = useState("");
-  const [selectedTripId, setSelectedTripId] = useState(initialTripId || "");
+  const [selectedTripId, setSelectedTripId] = useState(initialTripId || idFromUrl || "");
 
   useEffect(() => {
     let active = true;
@@ -36,7 +40,7 @@ export default function TrackingScreen({ tripId: initialTripId = null }) {
         if (!active) return;
         const items = Array.isArray(response) ? response : response?.data || [];
         setTrips(items);
-        setSelectedTripId((previous) => previous || (items.length > 0 ? items[0].id : ""));
+        setSelectedTripId((previous) => previous || idFromUrl || (items.length > 0 ? items[0].id : ""));
       })
       .catch((error) => {
         if (active) setTripsError(error?.response?.data?.message || "Không thể tải danh sách chuyến.");
@@ -47,7 +51,7 @@ export default function TrackingScreen({ tripId: initialTripId = null }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [idFromUrl]);
 
   return (
     <Box className="w-full min-h-screen">

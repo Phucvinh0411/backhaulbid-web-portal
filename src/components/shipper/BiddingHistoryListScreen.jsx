@@ -49,121 +49,6 @@ import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { auctionService } from "@/services/auctionService";
 import { mapBackendToShipment } from "@/services/shipperAuctionMapper";
 
-/* Legacy fixture retained for reference only; runtime data comes from the auction API.
-const INITIAL_SHIPMENTS = [
-  {
-    id: "LH-2026-9041",
-    goodsType: "Linh kiện điện tử (Màn hình điện thoại)",
-    weight: "5.2 tấn",
-    volume: "28 m³",
-    from: { province: "Thái Nguyên", detail: "Kho Samsung Yên Bình, Phổ Yên" },
-    to: { province: "Hải Phòng", detail: "Cảng Đình Vũ, Quận Hải An" },
-    maxPrice: 12500000,
-    currentLowestBid: 11200000,
-    bidCount: 4,
-    dateCreated: "2026-07-02",
-    status: "active_bids", // đang đấu giá
-  },
-  {
-    id: "LH-2026-9042",
-    goodsType: "Thực phẩm đông lạnh (Thủy sản)",
-    weight: "8.0 tấn",
-    volume: "45 m³",
-    from: { province: "Cà Mau", detail: "Cụm CN Sông Đốc, Huyện Trần Văn Thời" },
-    to: { province: "TP. Hồ Chí Minh", detail: "Kho lạnh Transimex, Khu Công Nghệ Cao Quận 9" },
-    maxPrice: 28000000,
-    currentLowestBid: 26500000,
-    bidCount: 3,
-    dateCreated: "2026-07-02",
-    status: "active_bids",
-  },
-  {
-    id: "LH-2026-9043",
-    goodsType: "Nông sản khô (Hạt điều)",
-    weight: "15.0 tấn",
-    volume: "60 m³",
-    from: { province: "Bình Phước", detail: "Kho xuất khẩu Đồng Phú" },
-    to: { province: "Bà Rịa - Vũng Tàu", detail: "Cảng Cái Mép - Thị Vải, Phú Mỹ" },
-    maxPrice: 18500000,
-    currentLowestBid: 0,
-    bidCount: 0,
-    dateCreated: "2026-07-03",
-    status: "pending_bids", // chờ đấu giá
-  },
-  {
-    id: "LH-2026-9044",
-    goodsType: "Vật liệu xây dựng (Sắt thép)",
-    weight: "22.5 tấn",
-    volume: "18 m³",
-    from: { province: "Quảng Ngãi", detail: "KCN Dung Quất, Bình Sơn" },
-    to: { province: "Đà Nẵng", detail: "Tổng kho Hòa Khánh, Liên Chiểu" },
-    maxPrice: 16000000,
-    currentLowestBid: 14800000,
-    bidCount: 6,
-    dateCreated: "2026-07-01",
-    status: "awarded", // đã chốt thầu
-    carrier: "Công ty Vận tải Phước An",
-    finalPrice: 14800000,
-  },
-  {
-    id: "LH-2026-9045",
-    goodsType: "Hàng tiêu dùng nhanh (FMCG)",
-    weight: "3.5 tấn",
-    volume: "22 m³",
-    from: { province: "Bình Dương", detail: "KCN VSIP I, Thuận An" },
-    to: { province: "Cần Thơ", detail: "Trung tâm phân phối Mega Market, Cái Răng" },
-    maxPrice: 9500000,
-    currentLowestBid: 8900000,
-    bidCount: 5,
-    dateCreated: "2026-06-30",
-    status: "shipping", // đang vận chuyển
-    carrier: "Hợp tác xã Vận tải Hữu Nghị",
-    finalPrice: 8900000,
-  },
-  {
-    id: "LH-2026-9046",
-    goodsType: "Trái cây xuất khẩu (Thanh long)",
-    weight: "10.0 tấn",
-    volume: "40 m³",
-    from: { province: "Bình Thuận", detail: "Vựa thu mua Hàm Thuận Nam" },
-    to: { province: "Lạng Sơn", detail: "Bãi kiểm hóa Cửa khẩu Tân Thanh" },
-    maxPrice: 42000000,
-    currentLowestBid: 39500000,
-    bidCount: 9,
-    dateCreated: "2026-06-24",
-    status: "completed", // hoàn thành
-    carrier: "Logistics Bắc Nam T&T",
-    finalPrice: 39500000,
-  },
-  {
-    id: "LH-2026-9047",
-    goodsType: "Hóa chất (Sơn công nghiệp)",
-    weight: "6.0 tấn",
-    volume: "24 m³",
-    from: { province: "Đồng Nai", detail: "KCN Amata, Biên Hòa" },
-    to: { province: "Khánh Hòa", detail: "Kho Sơn Đông Á, KCN Suối Dầu" },
-    maxPrice: 15500000,
-    currentLowestBid: 14700000,
-    bidCount: 2,
-    dateCreated: "2026-06-27",
-    status: "cancelled", // đã hủy
-    cancelReason: "Thay đổi lịch sản xuất tại nhà máy",
-  },
-  {
-    id: "LH-2026-9048",
-    goodsType: "Bao bì carton",
-    weight: "2.0 tấn",
-    volume: "35 m³",
-    from: { province: "Hưng Yên", detail: "KCN Phố Nối A" },
-    to: { province: "Bắc Giang", detail: "Nhà máy Foxconn Quang Châu" },
-    maxPrice: 6500000,
-    currentLowestBid: 5800000,
-    bidCount: 4,
-    dateCreated: "2026-07-02",
-    status: "active_bids",
-  }
-]; */
-
 export default function BiddingHistoryListScreen() {
   const router = useRouter();
   const { notify } = useGlobalNotification();
@@ -185,11 +70,14 @@ export default function BiddingHistoryListScreen() {
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
     auctionService.getShipperAuctions()
       .then((response) => {
         if (!active) return;
-        const data = response?.data?.data || response?.data || [];
-        setShipments(data.map(mapBackendToShipment));
+        const auctionsData = Array.isArray(response)
+          ? response
+          : (response?.data?.data || response?.data?.content || response?.content || response?.data || []);
+        setShipments(auctionsData.map(mapBackendToShipment));
       })
       .catch(() => {
         if (active) {
@@ -661,7 +549,14 @@ export default function BiddingHistoryListScreen() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedShipments.length === 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={columnsList.length} align="center" className="!py-16 !border-slate-100">
+                    <CircularProgress size={40} sx={{ color: "#1B4965" }} />
+                  </TableCell>
+                </TableRow>
+              ) : 
+              paginatedShipments.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={columnsList.length} align="center" className="!py-16 !border-slate-100">
                     <Typography variant="body2" className="text-slate-400 font-medium">
@@ -690,7 +585,14 @@ export default function BiddingHistoryListScreen() {
                           return (
                             <TableCell key={col.id} className="!border-slate-100">
                               <div className="flex flex-col">
-                                <span className="font-bold text-slate-700 text-xs sm:text-sm">{shipment.goodsType}</span>
+                                <span className="font-bold text-slate-800 text-xs sm:text-sm">
+                                  {shipment.title || shipment.goodsName || shipment.goodsType}
+                                </span>
+                                {(shipment.title || shipment.goodsName) && (
+                                  <span className="text-[0.68rem] text-sky-600 font-semibold mt-0.5">
+                                    Loại: {shipment.goodsType}
+                                  </span>
+                                )}
                                 <span className="text-[0.7rem] text-slate-400 font-bold mt-0.5">
                                   {shipment.weight} • {shipment.volume}
                                 </span>
@@ -780,25 +682,27 @@ export default function BiddingHistoryListScreen() {
 
                                 {shipment.status === "shipping" && (
                                   <Tooltip title="Định vị hành trình">
-                                    <IconButton
-                                      size="small"
-                                      className="text-cyan-600 hover:bg-cyan-50 bg-slate-50"
-                                      onClick={() => router.push(`/shipper/tracking?id=${shipment.id}`)}
-                                    >
-                                      <LocalShippingIcon fontSize="small" />
-                                    </IconButton>
+                                    <Link href={`/shipper/tracking?id=${shipment.id}`} passHref>
+                                      <IconButton
+                                        size="small"
+                                        className="text-cyan-600 hover:bg-cyan-50 bg-slate-50"
+                                      >
+                                        <LocalShippingIcon fontSize="small" />
+                                      </IconButton>
+                                    </Link>
                                   </Tooltip>
                                 )}
 
                                 {(shipment.status === "awarded" || shipment.status === "shipping" || shipment.status === "completed") && (
                                   <Tooltip title="Xem hợp đồng">
-                                    <IconButton
-                                      size="small"
-                                      className="text-blue-600 hover:bg-blue-50 bg-slate-50"
-                                      onClick={() => router.push(`/shipper/contracts?id=${shipment.id}`)}
-                                    >
-                                      <DescriptionIcon fontSize="small" />
-                                    </IconButton>
+                                    <Link href={`/shipper/contracts?id=${shipment.id}`} passHref>
+                                      <IconButton
+                                        size="small"
+                                        className="text-blue-600 hover:bg-blue-50 bg-slate-50"
+                                      >
+                                        <DescriptionIcon fontSize="small" />
+                                      </IconButton>
+                                    </Link>
                                   </Tooltip>
                                 )}
                               </div>

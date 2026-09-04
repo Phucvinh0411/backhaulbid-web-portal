@@ -69,13 +69,20 @@ export default function Header({
   const open = Boolean(anchorEl);
   const [notifications, setNotifications] = useState([]);
 
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
   useEffect(() => {
     if (!userInfo?.accountId) return undefined;
 
+    const effectiveId = userInfo?.companyId || userInfo?.id;
+
     // Fetch initial history from real backend API
     const fetchNotifications = async () => {
+      if (!effectiveId) return;
       try {
-        const data = await apiService.get("/api/v1/notifications/mine");
+        const data = await apiService.get("/api/v1/notifications/mine", {
+          headers: effectiveId ? { "X-User-Id": effectiveId } : {},
+        });
         const values = Array.isArray(data) ? data : data?.data || [];
         setNotifications(
           values.map((notification) => ({
@@ -108,6 +115,9 @@ export default function Header({
 
     socket.on("connect", () => {
       console.log("Connected to notification socket");
+      if (effectiveId) {
+        socket.emit("identify", { userId: effectiveId });
+      }
     });
 
     socket.on("new_notification", (notif) => {
@@ -116,18 +126,26 @@ export default function Header({
         notif.message || notif.title || "Bạn có thông báo mới từ hệ thống.",
         { title: "Thông báo mới" },
       );
-      // Re-fetch to ensure we have the latest list (or we could just prepend it)
+      // Re-fetch to ensure we have the latest list
       fetchNotifications();
     });
 
     return () => {
       socket.disconnect();
     };
-  }, [notify, userInfo?.accountId]);
+  }, [notify, role, userInfo?.id, userInfo?.companyId, userInfo?.accountId]);
 
   const markAllAsRead = async () => {
+    const effectiveId = userInfo?.companyId || userInfo?.id;
+    if (!effectiveId) return;
     try {
-      await apiService.post("/api/v1/notifications/mark-all-read");
+      await apiService.post(
+        "/api/v1/notifications/mark-all-read",
+        {},
+        {
+          headers: effectiveId ? { "X-User-Id": effectiveId } : {},
+        },
+      );
       setNotifications((previous) =>
         previous.map((notification) => ({ ...notification, read: true })),
       );
@@ -150,14 +168,26 @@ export default function Header({
     setAnchorEl(null);
   };
 
-  const handleNotificationItemClick = (id) => {
+  const handleNotificationItemClick = (notif) => {
     handleClose();
+    if (!notif) return;
+
+    // Mark single notification as read locally
+    setNotifications((prev) =>
+      prev.map((n) =>
+        (n.notifId && n.notifId === notif.notifId) || n.id === notif.id
+          ? { ...n, read: true }
+          : n,
+      ),
+    );
+
+    const id = notif.id || notif.notifId;
     if (!id) return;
     const destination =
       role === "carrier"
-        ? `/carrier/bidding/${id}`
+        ? `/carrier/auctions/${id}`
         : role === "shipper"
-          ? `/shipper/bidding/${id}`
+          ? `/shipper/bidding/sessions`
           : "/admin/operations";
     router.push(destination);
   };
@@ -312,7 +342,7 @@ export default function Header({
               size="small"
               onClick={handleNotificationClick}
               sx={{
-                color: hasNewNotification ? "#1B4965" : "#64748B",
+                color: unreadCount > 0 ? "#1B4965" : "#64748B",
                 width: 36,
                 height: 36,
                 "&:hover": {
@@ -323,8 +353,9 @@ export default function Header({
             >
               <Badge
                 color="error"
-                variant="dot"
-                invisible={!hasNewNotification}
+                badgeContent={unreadCount}
+                max={99}
+                invisible={unreadCount === 0}
               >
                 <NotificationsTwoToneIcon fontSize="small" />
               </Badge>
@@ -408,7 +439,12 @@ export default function Header({
           }}
         >
           <Typography variant="subtitle1" fontWeight="bold">
-            Thông báo
+            Thông báo{" "}
+            {unreadCount > 0 && (
+              <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-bold">
+                ({unreadCount} chưa đọc)
+              </span>
+            )}
           </Typography>
           <Typography
             variant="caption"
@@ -433,11 +469,11 @@ export default function Header({
                 <ListItem
                   alignItems="flex-start"
                   button
-                  onClick={() => handleNotificationItemClick(notif.id)}
+                  onClick={() => handleNotificationItemClick(notif)}
                   sx={{
                     bgcolor: notif.read
                       ? "transparent"
-                      : "rgba(25, 118, 210, 0.04)",
+                      : "rgba(25, 118, 210, 0.06)",
                     transition: "background-color 0.2s",
                     "&:hover": { bgcolor: "rgba(0, 0, 0, 0.04)" },
                   }}

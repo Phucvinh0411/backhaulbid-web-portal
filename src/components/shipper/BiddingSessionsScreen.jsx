@@ -68,8 +68,8 @@ const parseDecimal = (val) => {
 };
 
 const mapBackendToShipment = (auction) => {
-  // If the auction has goodsInfo (from our old seed), use it, otherwise use direct properties
-  const goodsType = auction.goodsType || auction.goodsInfo?.goodsName || auction.title || "Không xác định";
+  const title = auction.title || auction.goodsName || auction.goodsInfo?.goodsName;
+  const goodsType = auction.goodsType || auction.goodsInfo?.goodsName || auction.cargoType || "Không xác định";
   const weight = auction.weight || auction.goodsInfo?.weight || 0;
   const volume = auction.volume || auction.goodsInfo?.volume || 0;
   
@@ -82,9 +82,13 @@ const mapBackendToShipment = (auction) => {
   const closeTime = auction.endTime || auction.auctionConfig?.endTime || null;
   const maxPrice = parseDecimal(auction.maxPrice || auction.auctionConfig?.maxPrice);
   const auctionType = auction.auctionType || auction.auctionConfig?.auctionType || "PUBLIC";
+  
+  const currentLowestBid = parseDecimal(auction.currentLowestBid) || 0;
+  const finalPrice = parseDecimal(auction.finalPrice) || 0;
 
   return {
     id: auction.id || auction._id || auction.auctionCode || "N/A",
+    title,
     goodsType,
     weight: `${weight} tấn`,
     volume: `${volume} m³`,
@@ -97,11 +101,16 @@ const mapBackendToShipment = (auction) => {
       detail: toDetail,
     },
     maxPrice,
-    currentLowestBid: 0, // Placeholder
-    bidCount: 0, // Placeholder
+    currentLowestBid,
+    finalPrice,
+    bidCount: auction.totalBids || auction.bidCount || 0,
     closeTime,
     status: mapStatusToFrontend(auction.status),
     auctionType,
+    carrier: auction.winningBidId ? "Đơn vị vận chuyển (Đã chốt)" : null,
+    driverName: null,
+    driverPlate: null,
+    cancelReason: auction.cancelReason,
     originalData: auction
   };
 };
@@ -127,7 +136,7 @@ export default function BiddingSessionsScreen() {
     try {
       setLoading(true);
       const res = await auctionService.getShipperAuctions();
-      const auctionsData = res.data?.data || res.data || [];
+      const auctionsData = Array.isArray(res) ? res : (res?.data?.data || res?.data?.content || res?.content || res?.data || []);
       const mappedShipments = auctionsData.map(mapBackendToShipment);
       setShipments(mappedShipments);
     } catch (error) {
@@ -651,25 +660,27 @@ export default function BiddingSessionsScreen() {
             )}
 
             <Box className="flex flex-col gap-3 pt-2">
-              <ActionButton
-                variant="outlined"
-                fullWidth
-                size="lg"
-                onClick={() => router.push(`/shipper/bidding/history?id=${selectedShipment.id}`)}
-                className="!rounded-2xl"
-              >
-                Xem lịch sử thầu
-              </ActionButton>
-              {selectedShipment.status === "shipping" && (
+              <Link href={`/shipper/bidding/history?id=${selectedShipment.id}`} passHref className="w-full block">
                 <ActionButton
-                  variant="primary"
+                  variant="outlined"
                   fullWidth
                   size="lg"
-                  onClick={() => router.push(`/shipper/tracking?id=${selectedShipment.id}`)}
-                  className="!rounded-2xl shadow-md"
+                  className="!rounded-2xl"
                 >
-                  Theo dõi vận chuyển
+                  Xem lịch sử thầu
                 </ActionButton>
+              </Link>
+              {selectedShipment.status === "shipping" && (
+                <Link href={`/shipper/tracking?id=${selectedShipment.id}`} passHref className="w-full block">
+                  <ActionButton
+                    variant="primary"
+                    fullWidth
+                    size="lg"
+                    className="!rounded-2xl shadow-md"
+                  >
+                    Theo dõi vận chuyển
+                  </ActionButton>
+                </Link>
               )}
             </Box>
           </Box>

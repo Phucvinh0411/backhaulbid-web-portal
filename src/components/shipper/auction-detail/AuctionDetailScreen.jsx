@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { auctionService } from "@/services/auctionService";
+import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import Alert from "@mui/material/Alert";
-import CircularProgress from "@mui/material/CircularProgress";
 import PageHeader from "@/components/common/PageHeader";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { getApiErrorMessage } from "@/services/errorMessage";
@@ -26,7 +27,7 @@ export default function AuctionDetailScreen({ id }) {
   const [bids, setBids] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  
+
   // Dynamically calculate countdown based on shipment.endTime
   const getInitialCountdown = () => {
     if (!shipment?.endTime) return 0;
@@ -49,24 +50,47 @@ export default function AuctionDetailScreen({ id }) {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setLoadError("");
-    Promise.all([getAuction(id), listBids(id, { page: 1, pageSize: 100 })])
-      .then(([auctionResponse, bidsResponse]) => {
+    const fetchData = async () => {
+      if (!id) return;
+      setLoading(true);
+      setLoadError("");
+      try {
+        let auctionResponse;
+        try {
+          auctionResponse = await getAuction(id);
+        } catch (err) {
+          if (!active) return;
+          const message = getApiErrorMessage(err, "Không thể tải chi tiết phiên đấu giá. Vui lòng thử lại.");
+          setLoadError(message);
+          notify.error(message);
+          setLoading(false);
+          return;
+        }
+
+        let bidsResponse = [];
+        try {
+          bidsResponse = await listBids(id, { page: 1, pageSize: 100, limit: 100 });
+        } catch (err) {
+          console.warn("Error fetching bids, defaulting to empty array:", err);
+        }
+
         if (!active) return;
         const auction = auctionResponse?.data || auctionResponse;
-        const rawBids = bidsResponse?.data || bidsResponse?.items || bidsResponse || [];
         setShipment(mapBackendToShipment(auction));
+
+        const rawBids = bidsResponse?.data?.data || bidsResponse?.data?.items || bidsResponse?.data || bidsResponse?.items || (Array.isArray(bidsResponse) ? bidsResponse : []);
         setBids(rawBids.map((bid, index) => mapBackendToBid(bid, index, rawBids)));
-      })
-      .catch((error) => {
+      } catch (error) {
         if (!active) return;
-        const message = getApiErrorMessage(error, "Không thể tải chi tiết phiên đấu giá. Vui lòng thử lại.");
-        setLoadError(message);
-        notify.error(message);
-      })
-      .finally(() => active && setLoading(false));
-    return () => { active = false; };
+        console.error("Error in fetchData:", error);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    fetchData();
+    return () => {
+      active = false;
+    };
   }, [id, notify]);
 
   // Live Timer Countdown Effect

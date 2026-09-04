@@ -2,6 +2,8 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getInternalGatewayUrl } from '@/config/serverConfig';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -55,7 +57,8 @@ export async function GET(request: Request) {
       headers: { 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`
-      }
+      },
+      cache: 'no-store'
     });
 
     const data = await res.json().catch(() => null);

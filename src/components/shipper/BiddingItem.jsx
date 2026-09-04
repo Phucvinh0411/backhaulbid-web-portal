@@ -95,9 +95,14 @@ export default function BiddingItem({
 
           {/* Main Title & Goods Info */}
           <div>
-            <Typography variant="h6" className="!font-bold text-slate-800 leading-snug truncate">
-              {shipment.goodsType}
+            <Typography variant="h6" className="!font-bold text-slate-800 leading-snug truncate" title={shipment.title || shipment.goodsName || shipment.goodsType}>
+              {shipment.title || shipment.goodsName || shipment.goodsType || "Lô hàng mới"}
             </Typography>
+            {(shipment.title || shipment.goodsName) && (
+              <Typography variant="caption" className="!font-semibold text-sky-600 block mt-0.5">
+                Phân loại: {shipment.goodsType}
+              </Typography>
+            )}
             <div className="flex items-center gap-4 mt-1.5 text-slate-500 text-xs font-semibold">
               <span className="flex items-center gap-1">
                 <BalanceIcon className="!text-[1rem] text-slate-400" />

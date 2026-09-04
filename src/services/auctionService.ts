@@ -21,6 +21,13 @@ class AuctionService {
   }
 
   /**
+   * Fetch bids for an auction
+   */
+  async listBids(id, params = {}) {
+    return appApiService.get(`/api/bidding/auctions/${id}/bids`, { params });
+  }
+
+  /**
    * Create a new auction (shipper only).
    * @param payload Auction creation payload
    */

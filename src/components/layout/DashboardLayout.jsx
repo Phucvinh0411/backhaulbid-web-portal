@@ -38,7 +38,8 @@ export default function DashboardLayout({ children, role, userInfo }) {
           const u = resData.data;
           const displayName = u.fullName || u.phone || "Người dùng";
           setCurrentUser({
-            accountId: u.accountId,
+            id: u.id || u.accountId,
+            accountId: u.accountId || u.id,
             name: displayName,
             email: u.email || (u.phone ? `${u.phone}@backhaulbid.local` : ""),
             avatar: displayName.charAt(0).toUpperCase(),
@@ -49,6 +50,7 @@ export default function DashboardLayout({ children, role, userInfo }) {
                   ? "Nhà xe"
                   : "Quản trị viên",
             companyName: u.companyName,
+            companyId: u.companyId,
             settingsPath:
               role === "carrier" ? "/carrier/settings" : "/shipper/settings",
           });
