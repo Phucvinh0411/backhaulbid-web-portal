@@ -68,8 +68,8 @@ const parseDecimal = (val) => {
 };
 
 const mapBackendToShipment = (auction) => {
-  // If the auction has goodsInfo (from our old seed), use it, otherwise use direct properties
-  const goodsType = auction.goodsType || auction.goodsInfo?.goodsName || auction.title || "Không xác định";
+  const title = auction.title || auction.goodsName || auction.goodsInfo?.goodsName;
+  const goodsType = auction.goodsType || auction.goodsInfo?.goodsName || auction.cargoType || "Không xác định";
   const weight = auction.weight || auction.goodsInfo?.weight || 0;
   const volume = auction.volume || auction.goodsInfo?.volume || 0;
   
@@ -88,6 +88,7 @@ const mapBackendToShipment = (auction) => {
 
   return {
     id: auction.id || auction._id || auction.auctionCode || "N/A",
+    title,
     goodsType,
     weight: `${weight} tấn`,
     volume: `${volume} m³`,

@@ -69,9 +69,8 @@ export const normalizeAuctionDetail = (auction = {}) => {
     isDepositRequired: Boolean(auction.isDepositRequired || depositAmount > 0),
     depositAmount,
     registeredVehicle: auction.registeredVehicle,
-    registeredAt: auction.registeredAt,
-    registrationPaymentStatus: auction.registrationPaymentStatus,
-    goodsCategory: auction.goodsCategory || auction.goodsType || auction.cargoType || auction.title,
+    title: auction.title || auction.goodsName,
+    goodsCategory: auction.goodsCategory || auction.goodsType || auction.cargoType,
     volume: auction.volume,
     requiredTemp: auction.requiredTemp,
     goodsValue: auction.goodsValue,
@@ -162,6 +161,7 @@ export default function AuctionDetailContent({ auction, footer = null }) {
           2. Thông tin chi tiết hàng hóa & tuyến đường vận chuyển
         </Typography>
         <Box className="grid grid-cols-1 gap-x-5 sm:grid-cols-2">
+          <DetailRow label="Tên lô hàng" value={detail.title || detail.goodsCategory || FALLBACK} valueColor="text-[#1B4965]" />
           <DetailRow label="Phân loại hàng hóa" value={detail.goodsCategory || FALLBACK} valueColor="text-emerald-600" />
           <DetailRow label="Thể tích hàng hóa" value={volume} />
           <DetailRow label="Nhiệt độ bảo quản" value={detail.requiredTemp !== null && detail.requiredTemp !== undefined ? `${detail.requiredTemp} °C` : "Không yêu cầu"} />

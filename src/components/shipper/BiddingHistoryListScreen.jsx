@@ -585,7 +585,14 @@ export default function BiddingHistoryListScreen() {
                           return (
                             <TableCell key={col.id} className="!border-slate-100">
                               <div className="flex flex-col">
-                                <span className="font-bold text-slate-700 text-xs sm:text-sm">{shipment.goodsType}</span>
+                                <span className="font-bold text-slate-800 text-xs sm:text-sm">
+                                  {shipment.title || shipment.goodsName || shipment.goodsType}
+                                </span>
+                                {(shipment.title || shipment.goodsName) && (
+                                  <span className="text-[0.68rem] text-sky-600 font-semibold mt-0.5">
+                                    Loại: {shipment.goodsType}
+                                  </span>
+                                )}
                                 <span className="text-[0.7rem] text-slate-400 font-bold mt-0.5">
                                   {shipment.weight} • {shipment.volume}
                                 </span>

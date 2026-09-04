@@ -21,6 +21,7 @@ function numberValue(value) {
 export function normalizeCarrierAuction(auction) {
   return {
     ...auction,
+    title: auction.title || auction.goodsName || auction.goodsInfo?.goodsName,
     status: STATUS_MAP[auction.status] || auction.status,
     goodsType: auction.cargoType || auction.goodsType || "Hàng hóa",
     volume: auction.volume || "Theo yêu cầu",
