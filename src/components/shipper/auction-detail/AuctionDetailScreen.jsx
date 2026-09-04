@@ -6,7 +6,6 @@ import { auctionService } from "@/services/auctionService";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import Alert from "@mui/material/Alert";
-import CircularProgress from "@mui/material/CircularProgress";
 import PageHeader from "@/components/common/PageHeader";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { getApiErrorMessage } from "@/services/errorMessage";
