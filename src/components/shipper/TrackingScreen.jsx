@@ -24,11 +24,12 @@ const STATUS_LABELS = {
 export default function TrackingScreen({ tripId: initialTripId = null }) {
   const searchParams = useSearchParams();
   const idFromUrl = searchParams?.get("id");
+  const preferredTripId = initialTripId || idFromUrl || "";
 
   const [trips, setTrips] = useState([]);
   const [tripsLoading, setTripsLoading] = useState(true);
   const [tripsError, setTripsError] = useState("");
-  const [selectedTripId, setSelectedTripId] = useState(initialTripId || idFromUrl || "");
+  const [selectedTripId, setSelectedTripId] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -40,7 +41,12 @@ export default function TrackingScreen({ tripId: initialTripId = null }) {
         if (!active) return;
         const items = Array.isArray(response) ? response : response?.data || [];
         setTrips(items);
-        setSelectedTripId((previous) => previous || idFromUrl || (items.length > 0 ? items[0].id : ""));
+        setSelectedTripId((previous) => {
+          const current = previous || preferredTripId;
+          const hasCurrent = items.some((trip) => String(trip.id) === String(current));
+          if (hasCurrent) return current;
+          return items.length > 0 ? String(items[0].id) : "";
+        });
       })
       .catch((error) => {
         if (active) setTripsError(error?.response?.data?.message || "Không thể tải danh sách chuyến.");
@@ -51,7 +57,7 @@ export default function TrackingScreen({ tripId: initialTripId = null }) {
     return () => {
       active = false;
     };
-  }, [idFromUrl]);
+  }, [preferredTripId]);
 
   return (
     <Box className="w-full min-h-screen">

@@ -10,22 +10,7 @@ const VEHICLE_TYPE_LABELS = {
 };
 
 export const getMyVehicles = async () => {
-  const res = await apiService.get("/api/v1/vehicles/mine").catch(() => [
-    {
-      id: "V-12345",
-      licensePlate: "51C-123.45",
-      vehicleType: "TRUCK_MEDIUM",
-      payloadCapacity: 5.5,
-      status: "VERIFIED",
-    },
-    {
-      id: "V-67890",
-      licensePlate: "29H-678.90",
-      vehicleType: "CONTAINER_TRACTOR",
-      payloadCapacity: 20,
-      status: "VERIFIED",
-    }
-  ]);
+  const res = await apiService.get("/api/v1/vehicles/mine");
   const vehicles = res?.data || res;
   return (Array.isArray(vehicles) ? vehicles : []).map((vehicle) => ({
     ...vehicle,

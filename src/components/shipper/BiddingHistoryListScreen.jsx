@@ -49,6 +49,11 @@ import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { auctionService } from "@/services/auctionService";
 import { mapBackendToShipment } from "@/services/shipperAuctionMapper";
 
+const getTrackingHref = (shipment) =>
+  shipment?.tripId
+    ? `/shipper/tracking?id=${encodeURIComponent(shipment.tripId)}`
+    : "/shipper/tracking";
+
 export default function BiddingHistoryListScreen() {
   const router = useRouter();
   const { notify } = useGlobalNotification();
@@ -682,7 +687,7 @@ export default function BiddingHistoryListScreen() {
 
                                 {shipment.status === "shipping" && (
                                   <Tooltip title="Định vị hành trình">
-                                    <Link href={`/shipper/tracking?id=${shipment.id}`} passHref>
+                                    <Link href={getTrackingHref(shipment)} passHref>
                                       <IconButton
                                         size="small"
                                         className="text-cyan-600 hover:bg-cyan-50 bg-slate-50"

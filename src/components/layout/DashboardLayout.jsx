@@ -27,14 +27,22 @@ export default function DashboardLayout({ children, role, userInfo }) {
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => {
-        if (res.status === 401) {
-          window.location.href = "/login";
-          throw new Error("Unauthorized");
+        if (res.status === 401 || res.status === 403 || res.status === 404) {
+          if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
+          throw new Error("Unauthorized or user profile not found");
         }
         return res.json();
       })
       .then((resData) => {
-        if (resData.success && resData.data) {
+        if (!resData || !resData.success) {
+          if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
+          return;
+        }
+        if (resData.data) {
           const u = resData.data;
           const displayName = u.fullName || u.phone || "Người dùng";
           setCurrentUser({

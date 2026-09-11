@@ -5,4 +5,3 @@ export { default as LegalRepresentativeCard } from "./LegalRepresentativeCard";
 export { default as FleetOverviewCard } from "./FleetOverviewCard";
 export { default as DriversRosterCard } from "./DriversRosterCard";
 export { default as CarrierReviewsCard } from "./CarrierReviewsCard";
-export * from "./mockData";

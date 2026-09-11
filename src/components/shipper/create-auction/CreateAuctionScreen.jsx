@@ -237,22 +237,6 @@ export default function CreateAuctionScreen() {
           });
         }
 
-        // 2. Thông báo cho Nhà xe (Carrier 1234567899)
-        const carrierCompanyId = "55555555-5555-5555-5555-555555550000";
-        const carrierAccountId = "55555555-5555-5555-5555-555555555555";
-        
-        const carrierNotifPayload = {
-          title: "Lô hàng mới chờ đấu giá!",
-          message: `Lô hàng "${form.goodsName || "Mới"}" từ Shipper (SĐT: 1234567890) vừa được mở đấu giá. Hãy tham gia đặt thầu ngay!`,
-          referenceId: String(newAuctionId),
-          type: "NEW_AUCTION",
-        };
-
-        // Gửi thông báo đến cả Company ID và Account ID của Nhà xe 1234567899
-        await Promise.allSettled([
-          notificationApi.createNotification({ ...carrierNotifPayload, userId: carrierCompanyId }),
-          notificationApi.createNotification({ ...carrierNotifPayload, userId: carrierAccountId }),
-        ]);
       } catch (notifErr) {
         console.warn("Không thể gửi thông báo tới Notification Service:", notifErr);
       }

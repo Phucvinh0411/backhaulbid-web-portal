@@ -23,16 +23,20 @@ import LockIcon from "@mui/icons-material/LockOutlined";
 import PublicIcon from "@mui/icons-material/PublicOutlined";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
-import { formatCurrency } from "./mockData";
+import {
+  formatAuctionCurrency,
+  formatAuctionDateTime,
+} from "@/services/shipperAuctionMapper";
 
 function VehicleInfoRow({ icon, label, value, valueClass = "" }) {
+  if (!value) return null;
   return (
-    <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-slate-100 last:border-0">
       <span className="text-slate-500 font-medium flex items-center gap-2 text-[0.76rem]">
         <span className="text-[#1B4965] flex items-center">{icon}</span>
         {label}
       </span>
-      <strong className={`text-[0.78rem] font-bold ${valueClass || "text-slate-800"}`}>{value}</strong>
+      <strong className={`text-[0.78rem] font-bold text-right ${valueClass || "text-slate-800"}`}>{value}</strong>
     </div>
   );
 }
@@ -46,8 +50,26 @@ export default function LowestBidCard({
   onOpenCarrierModal,
 }) {
   const isSealed = shipment.auctionType === "SEALED";
-  const savings = shipment.maxPrice - lowestBidAmount;
+  const savings = Math.max(0, Number(shipment.maxPrice || 0) - Number(lowestBidAmount || 0));
   const savingsPct = shipment.maxPrice > 0 ? ((savings / shipment.maxPrice) * 100).toFixed(1) : 0;
+  const vehicleCapacity = [lowestBidDetails?.vehicleVolume, lowestBidDetails?.vehiclePayload]
+    .filter(Boolean)
+    .join(" · ");
+  const driverLabel = [
+    lowestBidDetails?.driverName,
+    lowestBidDetails?.driverBirthYear ? `NS: ${lowestBidDetails.driverBirthYear}` : null,
+    lowestBidDetails?.driverLicense,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const hasOperationalDetails = Boolean(
+    lowestBidDetails?.vehiclePlate ||
+      lowestBidDetails?.vehicleType ||
+      lowestBidDetails?.vehicleDims ||
+      vehicleCapacity ||
+      lowestBidDetails?.insuranceAmount ||
+      driverLabel,
+  );
 
   return (
     <Card
@@ -55,11 +77,10 @@ export default function LowestBidCard({
       sx={{
         borderColor: isSealed ? "#FDE68A" : "#A7F3D0",
         background: isSealed
-          ? "linear-gradient(175deg, #FFFBEB 0%, #FFFFF 100%)"
+          ? "linear-gradient(175deg, #FFFBEB 0%, #FFFFFF 100%)"
           : "linear-gradient(175deg, #FFFFFF 0%, #F0FDF4 100%)",
       }}
     >
-      {/* Ambient glow */}
       <div
         className={`absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl pointer-events-none opacity-40 ${
           isSealed ? "bg-amber-300" : "bg-emerald-300"
@@ -67,12 +88,13 @@ export default function LowestBidCard({
       />
 
       <CardContent className="!p-5 flex flex-col gap-4 relative z-10">
-        {/* Badge header */}
         <div className="flex items-center justify-between">
           <div
             className={`inline-flex items-center gap-1.5 text-[0.68rem] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full border ${
               isDisplayedBidLowest
-                ? (isSealed ? "bg-amber-100 text-amber-800 border-amber-200" : "bg-emerald-100 text-emerald-800 border-emerald-200")
+                ? isSealed
+                  ? "bg-amber-100 text-amber-800 border-amber-200"
+                  : "bg-emerald-100 text-emerald-800 border-emerald-200"
                 : "bg-blue-100 text-blue-800 border-blue-200"
             }`}
           >
@@ -82,27 +104,27 @@ export default function LowestBidCard({
               <PersonIcon className="!text-[0.85rem]" />
             )}
             {isDisplayedBidLowest
-              ? (isSealed ? "Báo giá thấp nhất (Ẩn danh)" : "Báo giá thấp nhất hiện tại")
-              : "Báo giá nhà xe được chọn"
-            }
+              ? isSealed
+                ? "Báo giá thấp nhất"
+                : "Báo giá thấp nhất hiện tại"
+              : "Báo giá nhà xe được chọn"}
           </div>
-          {lowestBidDetails && (
+          {lowestBidDetails?.time && (
             <span className="text-[0.68rem] text-slate-400 flex items-center gap-1 font-medium">
               <AccessTimeIcon className="!text-[0.8rem]" />
-              {lowestBidDetails.time}
+              {formatAuctionDateTime(lowestBidDetails.time)}
             </span>
           )}
         </div>
 
-        {/* Price hero row */}
-        <div className="flex items-end justify-between">
+        <div className="flex items-end justify-between gap-3">
           <Typography
             variant="h3"
             className={`!font-black tracking-tight !text-3xl md:!text-4xl ${
               isSealed ? "text-amber-600" : "text-emerald-600"
             }`}
           >
-            {lowestBidAmount > 0 ? formatCurrency(lowestBidAmount) : "Chờ báo giá..."}
+            {lowestBidAmount > 0 ? formatAuctionCurrency(lowestBidAmount) : "Chờ báo giá..."}
           </Typography>
 
           {lowestBidAmount > 0 && (
@@ -115,16 +137,14 @@ export default function LowestBidCard({
                     : "bg-emerald-100 text-emerald-700 border-emerald-200"
                 }`}
               >
-                -{formatCurrency(savings)} ({savingsPct}%)
+                -{formatAuctionCurrency(savings)} ({savingsPct}%)
               </span>
             </div>
           )}
         </div>
 
-        {/* Carrier detail card */}
         {lowestBidDetails ? (
           <div className="bg-white/95 rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:border-slate-300 transition-all">
-            {/* Carrier header */}
             <div className="flex items-center gap-3 p-3.5 border-b border-slate-100">
               <div
                 onClick={() => onOpenCarrierModal(lowestBidDetails)}
@@ -154,11 +174,19 @@ export default function LowestBidCard({
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5 text-[0.68rem] text-slate-500">
                   <StarIcon className="!text-[0.75rem] text-amber-400" />
-                  <span className="font-bold text-amber-600">{lowestBidDetails.rating}</span>
-                  <span className="text-slate-300">·</span>
-                  <span>{lowestBidDetails.completedTrips} chuyến</span>
-                  <span className="text-slate-300">·</span>
-                  <span className="text-emerald-600 font-bold">{lowestBidDetails.onTimeRate} đúng giờ</span>
+                  <span className="font-bold text-amber-600">{lowestBidDetails.rating || "Chưa cập nhật"}</span>
+                  {lowestBidDetails.completedTrips && (
+                    <>
+                      <span className="text-slate-300">·</span>
+                      <span>{lowestBidDetails.completedTrips} chuyến</span>
+                    </>
+                  )}
+                  {lowestBidDetails.onTimeRate && (
+                    <>
+                      <span className="text-slate-300">·</span>
+                      <span className="text-emerald-600 font-bold">{lowestBidDetails.onTimeRate} đúng giờ</span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -172,61 +200,46 @@ export default function LowestBidCard({
               </IconButton>
             </div>
 
-            {/* Vehicle specs */}
-            <div className="px-4 py-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[0.67rem] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                  <LocalShippingIcon className="!text-[0.8rem] text-[#1B4965]" /> Phương tiện điều động
-                </span>
-                <span className="bg-amber-100 text-amber-900 font-mono font-bold text-[0.67rem] px-2 py-0.5 rounded border border-amber-200">
-                  {lowestBidDetails.vehiclePlate}
-                </span>
+            {hasOperationalDetails ? (
+              <div className="px-4 py-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[0.67rem] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                    <LocalShippingIcon className="!text-[0.8rem] text-[#1B4965]" /> Phương tiện điều động
+                  </span>
+                  {lowestBidDetails.vehiclePlate && (
+                    <span className="bg-amber-100 text-amber-900 font-mono font-bold text-[0.67rem] px-2 py-0.5 rounded border border-amber-200">
+                      {lowestBidDetails.vehiclePlate}
+                    </span>
+                  )}
+                </div>
+                <VehicleInfoRow icon={<LocalShippingIcon className="!text-[0.85rem]" />} label="Loại xe:" value={lowestBidDetails.vehicleType} />
+                <VehicleInfoRow icon={<AspectRatioIcon className="!text-[0.85rem]" />} label="Kích thước thùng:" value={lowestBidDetails.vehicleDims} valueClass="text-[#1B4965] font-mono" />
+                <VehicleInfoRow icon={<InboxIcon className="!text-[0.85rem]" />} label="Thể tích & tải trọng:" value={vehicleCapacity} />
+                <VehicleInfoRow icon={<ShieldIcon className="!text-[0.85rem] !text-blue-600" />} label="Bảo hiểm hàng hóa:" value={lowestBidDetails.insuranceAmount} valueClass="text-blue-600" />
+                <VehicleInfoRow icon={<PersonIcon className="!text-[0.85rem]" />} label="Tài xế:" value={driverLabel} />
               </div>
+            ) : (
+              <div className="px-4 py-3 text-[0.72rem] font-medium text-slate-500">
+                Thông tin xe, tài xế và bảo hiểm sẽ hiển thị khi nhà xe cập nhật hồ sơ năng lực.
+              </div>
+            )}
 
-              <VehicleInfoRow
-                icon={<LocalShippingIcon className="!text-[0.85rem]" />}
-                label="Loại xe:"
-                value={lowestBidDetails.vehicleType}
-              />
-              <VehicleInfoRow
-                icon={<AspectRatioIcon className="!text-[0.85rem]" />}
-                label="Kích thước thùng:"
-                value={lowestBidDetails.vehicleDims}
-                valueClass="text-[#1B4965] font-mono"
-              />
-              <VehicleInfoRow
-                icon={<InboxIcon className="!text-[0.85rem]" />}
-                label="Thể tích & Tải trọng:"
-                value={`${lowestBidDetails.vehicleVolume} (${lowestBidDetails.vehiclePayload})`}
-              />
-              <VehicleInfoRow
-                icon={<ShieldIcon className="!text-[0.85rem] !text-blue-600" />}
-                label="Bảo hiểm hàng hóa:"
-                value={lowestBidDetails.insuranceAmount}
-                valueClass="text-blue-600"
-              />
-              <VehicleInfoRow
-                icon={<PersonIcon className="!text-[0.85rem]" />}
-                label="Tài xế:"
-                value={`${lowestBidDetails.driverName} (NS: ${lowestBidDetails.driverBirthYear} · ${lowestBidDetails.driverLicense})`}
-              />
-            </div>
-
-            {/* Quick phone contact */}
-            <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50/80 border-t border-slate-100">
-              <span className="text-[0.68rem] text-slate-500">Hotline tài xế:</span>
-              <a
-                href={`tel:${lowestBidDetails.driverPhone}`}
-                className={`flex items-center gap-1 font-bold text-[0.72rem] px-2.5 py-1 rounded-lg border font-mono transition-all ${
-                  isSealed
-                    ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-                    : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                }`}
-              >
-                <PhoneIcon className="!text-[0.8rem]" />
-                {lowestBidDetails.driverPhone}
-              </a>
-            </div>
+            {lowestBidDetails.driverPhone && (
+              <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50/80 border-t border-slate-100">
+                <span className="text-[0.68rem] text-slate-500">Hotline tài xế:</span>
+                <a
+                  href={`tel:${lowestBidDetails.driverPhone}`}
+                  className={`flex items-center gap-1 font-bold text-[0.72rem] px-2.5 py-1 rounded-lg border font-mono transition-all ${
+                    isSealed
+                      ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                      : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                  }`}
+                >
+                  <PhoneIcon className="!text-[0.8rem]" />
+                  {lowestBidDetails.driverPhone}
+                </a>
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-white/80 rounded-2xl border border-slate-100 p-6 text-center text-slate-400 text-sm">
@@ -235,10 +248,8 @@ export default function LowestBidCard({
           </div>
         )}
 
-        {/* Action buttons */}
         <div className="space-y-2">
           {isSealed ? (
-            // SEALED: shipper manually selects winner
             <Button
               fullWidth
               variant="contained"
@@ -252,23 +263,20 @@ export default function LowestBidCard({
               className="!rounded-2xl !py-3 !font-bold !capitalize !text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
               sx={{
                 background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
-                "&:hover": {
-                  background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)",
-                },
+                "&:hover": { background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)" },
               }}
             >
               {shipment.status === "completed"
                 ? "Đã hoàn thành vận chuyển"
                 : shipment.status === "shipping"
-                ? "Đang vận chuyển..."
-                : shipment.status === "cancelled"
-                ? "✗ Đã hủy lô hàng"
-                : lowestBidAmount > 0
-                ? "Chốt Thầu & Ký Hợp Đồng"
-                : "Đang chờ báo giá từ nhà xe..."}
+                  ? "Đang vận chuyển..."
+                  : shipment.status === "cancelled"
+                    ? "Đã hủy lô hàng"
+                    : lowestBidAmount > 0
+                      ? "Chốt thầu & ký hợp đồng"
+                      : "Đang chờ báo giá từ nhà xe..."}
             </Button>
           ) : (
-            // PUBLIC: auto-select lowest bidder, no manual button
             <div
               className={`w-full rounded-2xl py-3 px-4 text-center text-[0.78rem] font-bold border ${
                 lowestBidAmount > 0
@@ -277,15 +285,14 @@ export default function LowestBidCard({
               }`}
             >
               {shipment.status === "completed"
-                ? "✓ Đã hoàn thành — Nhà xe thấp nhất đã trúng thầu"
+                ? "Đã hoàn thành, nhà xe thấp nhất đã trúng thầu"
                 : shipment.status === "shipping"
-                ? "Đang vận chuyển..."
-                : shipment.status === "cancelled"
-                ? "Đã hủy"
-                : lowestBidAmount > 0
-                ? "Hệ thống sẽ tự động chọn nhà xe này khi đóng thầu"
-                : "Đang chờ báo giá..."
-              }
+                  ? "Đang vận chuyển..."
+                  : shipment.status === "cancelled"
+                    ? "Đã hủy"
+                    : lowestBidAmount > 0
+                      ? "Hệ thống sẽ tự động chọn nhà xe này khi đóng thầu"
+                      : "Đang chờ báo giá..."}
             </div>
           )}
 
@@ -303,27 +310,24 @@ export default function LowestBidCard({
           )}
         </div>
 
-        {/* Auction type explanation note */}
         <div
           className={`text-[0.7rem] leading-relaxed font-medium p-3 rounded-xl border ${
-            isSealed
-              ? "bg-amber-50/80 border-amber-100 text-amber-800"
-              : "bg-sky-50/80 border-sky-100 text-sky-800"
+            isSealed ? "bg-amber-50/80 border-amber-100 text-amber-800" : "bg-sky-50/80 border-sky-100 text-sky-800"
           }`}
         >
           {isSealed ? (
             <>
               <span className="flex items-center gap-1 font-extrabold mb-0.5">
-                <LockIcon className="!text-[0.8rem]" /> Đấu giá kín: Bid ẩn danh
+                <LockIcon className="!text-[0.8rem]" /> Đấu giá kín
               </span>
-              Nhà xe <strong>không thấy giá của nhau</strong>. Sau khi đóng thầu, chủ hàng xem danh sách xếp hạng theo giá và uy tín để chọn người thắng.
+              Nhà xe không thấy giá của nhau. Sau khi đóng thầu, chủ hàng xem danh sách xếp hạng theo giá và uy tín để chọn người thắng.
             </>
           ) : (
             <>
               <span className="flex items-center gap-1 font-extrabold mb-0.5">
-                <PublicIcon className="!text-[0.8rem]" /> Đấu giá công khai: Cạnh tranh thời gian thực
+                <PublicIcon className="!text-[0.8rem]" /> Đấu giá công khai
               </span>
-              Nhà xe <strong>thấy giá của nhau</strong> và liên tục điều chỉnh giảm giá để dành thầu.
+              Nhà xe thấy giá của nhau và liên tục điều chỉnh giảm giá để dành thầu.
             </>
           )}
         </div>

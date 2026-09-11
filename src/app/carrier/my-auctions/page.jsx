@@ -115,7 +115,10 @@ export default function MyAuctionsPage() {
     try {
       const [registrationsResponse, vehiclesResponse] = await Promise.all([
         listMyRegistrations({ page: 1, pageSize: 100 }),
-        getMyVehicles().catch(() => []),
+        getMyVehicles().catch((err) => {
+          console.error("Failed to load vehicles for auction mapping:", err);
+          return [];
+        }),
       ]);
       const registrations = unwrapListData(registrationsResponse);
       setAuctions(registrations.map((item) => mapRegistrationToAuction(item, vehiclesResponse)));

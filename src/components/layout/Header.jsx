@@ -74,15 +74,18 @@ export default function Header({
   useEffect(() => {
     if (!userInfo?.accountId) return undefined;
 
-    const effectiveId = userInfo?.companyId || userInfo?.id;
+    // Server identifies the user via trusted X-User-Id header injected by
+    // API Gateway from the JWT cookie – no client-supplied id needed.
+    const accountId = userInfo?.accountId;
 
     // Fetch initial history from real backend API
     const fetchNotifications = async () => {
-      if (!effectiveId) return;
+      if (!accountId) return;
       try {
-        const data = await apiService.get("/api/v1/notifications/mine", {
-          headers: effectiveId ? { "X-User-Id": effectiveId } : {},
-        });
+        // X-User-Id is injected by API Gateway from the JWT cookie.
+        const data = await apiService.get(
+          "/api/v1/notifications/mine",
+        );
         const values = Array.isArray(data) ? data : data?.data || [];
         setNotifications(
           values.map((notification) => ({
@@ -115,9 +118,9 @@ export default function Header({
 
     socket.on("connect", () => {
       console.log("Connected to notification socket");
-      if (effectiveId) {
-        socket.emit("identify", { userId: effectiveId });
-      }
+      // Server uses trusted X-User-Id header from JWT, not client payload.
+      // The identify event triggers server-side room join using the gateway-verified identity.
+      socket.emit("identify", {});
     });
 
     socket.on("new_notification", (notif) => {
@@ -133,18 +136,15 @@ export default function Header({
     return () => {
       socket.disconnect();
     };
-  }, [notify, role, userInfo?.id, userInfo?.companyId, userInfo?.accountId]);
+  }, [notify, role, userInfo?.accountId]);
 
   const markAllAsRead = async () => {
-    const effectiveId = userInfo?.companyId || userInfo?.id;
-    if (!effectiveId) return;
+    if (!userInfo?.accountId) return;
     try {
+      // X-User-Id is injected by API Gateway from the JWT cookie.
       await apiService.post(
         "/api/v1/notifications/mark-all-read",
         {},
-        {
-          headers: effectiveId ? { "X-User-Id": effectiveId } : {},
-        },
       );
       setNotifications((previous) =>
         previous.map((notification) => ({ ...notification, read: true })),
