@@ -13,7 +13,7 @@ import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
-import { formatCurrency } from "./mockData";
+import { formatAuctionCurrency as formatCurrency } from "@/services/shipperAuctionMapper";
 
 function AvatarBubble({ name, isWinner }) {
   const initials = name
@@ -77,14 +77,14 @@ function SealedBidRow({ bid, rank, onOpenCarrierModal, onOpenOtpDialog, shipment
         </div>
         <div className="flex items-center gap-1 mt-0.5">
           <Rating
-            value={bid.rating}
+            value={Number(bid.rating) || 0}
             precision={0.1}
             readOnly
             size="small"
             emptyIcon={<StarIcon className="text-slate-200" fontSize="inherit" />}
             className="!text-[0.7rem]"
           />
-          <span className="text-[0.68rem] text-slate-500 font-semibold">{bid.rating}</span>
+          <span className="text-[0.68rem] text-slate-500 font-semibold">{bid.rating || "Chưa cập nhật"}</span>
           <span className="text-slate-200">·</span>
           <VerifiedIcon className="!text-[0.65rem] text-sky-500" />
           <span className="text-[0.65rem] text-slate-400 font-medium">B2B</span>
@@ -160,14 +160,14 @@ function PublicBidRow({ bid, rank, prevBidAmount, onOpenCarrierModal, shipmentSt
         </div>
         <div className="flex items-center gap-1 mt-0.5">
           <Rating
-            value={bid.rating}
+            value={Number(bid.rating) || 0}
             precision={0.1}
             readOnly
             size="small"
             emptyIcon={<StarIcon className="text-slate-200" fontSize="inherit" />}
             className="!text-[0.7rem]"
           />
-          <span className="text-[0.68rem] text-slate-500 font-semibold">{bid.rating}</span>
+          <span className="text-[0.68rem] text-slate-500 font-semibold">{bid.rating || "Chưa cập nhật"}</span>
           <span className="text-slate-200">·</span>
           <span className="text-[0.65rem] text-slate-400">{bid.time}</span>
         </div>

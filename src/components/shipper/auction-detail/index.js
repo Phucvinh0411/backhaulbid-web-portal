@@ -8,4 +8,3 @@ export { default as BidsTable } from "./BidsTable";
 export { default as FullBidsDetailModal } from "./FullBidsDetailModal";
 export { default as ContractOtpModal } from "./ContractOtpModal";
 export { default as CarrierProfileModal } from "./CarrierProfileModal";
-export * from "./mockData";

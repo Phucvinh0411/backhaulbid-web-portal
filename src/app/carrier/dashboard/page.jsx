@@ -174,21 +174,29 @@ export default function CarrierDashboard() {
       return fallback;
     });
 
-    Promise.all([
-      safeFetch(getMyVehicles()),
-      safeFetch(contractApi.listTrips()),
-      safeFetch(listAuctions({ status: "OPEN", page: 1, pageSize: 100 })),
-      safeFetch(listAuctions({ status: "PENDING", page: 1, pageSize: 100 })),
-      safeFetch(listMyRegistrations({ page: 1, pageSize: 100 })),
-    ])
-      .then(([vehicles, trips, openAuctions, pendingAuctions, registrations]) => {
+    let vehicleData = [];
+    getMyVehicles()
+      .then((v) => { vehicleData = v; })
+      .catch((err) => {
+        console.error("Failed to load carrier vehicles:", err);
+        if (active) notify.warning("Không thể tải danh sách xe. Vui lòng thử lại.");
+      })
+      .then(() =>
+        Promise.all([
+          safeFetch(contractApi.listTrips()),
+          safeFetch(listAuctions({ status: "OPEN", page: 1, pageSize: 100 })),
+          safeFetch(listAuctions({ status: "PENDING", page: 1, pageSize: 100 })),
+          safeFetch(listMyRegistrations({ page: 1, pageSize: 100 })),
+        ])
+      )
+      .then(([trips, openAuctions, pendingAuctions, registrations]) => {
         if (!active) return;
         const auctionItems = [
           ...unwrapListData(openAuctions),
           ...unwrapListData(pendingAuctions),
         ].filter((auction, index, items) => items.findIndex((candidate) => candidate.id === auction.id) === index);
         setDashboard({
-          vehicles: vehicles || [],
+          vehicles: vehicleData || [],
           trips: unwrapListData(trips),
           auctions: auctionItems.map(mapAuction),
           registrations: unwrapListData(registrations),

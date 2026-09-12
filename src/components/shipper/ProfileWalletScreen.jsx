@@ -16,6 +16,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import IconButton from "@mui/material/IconButton";
 import CircularProgress from "@mui/material/CircularProgress";
+import Autocomplete from "@mui/material/Autocomplete";
 
 // Icons
 import PersonIcon from "@mui/icons-material/PersonOutlineOutlined";
@@ -33,6 +34,9 @@ import BusinessVerificationPanel from "@/components/businessVerification/Busines
 import { getRepresentativeVerificationStatus } from "@/services/representativeVerificationApi";
 import { addressBookApi } from "@/services/addressBookApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
+import { VIETNAM_PROVINCES } from "@/utils/provinces";
+
+const PROVINCE_NAMES = VIETNAM_PROVINCES.map((p) => p.name);
 
 export default function ProfileWalletScreen({ initialTab = 0 }) {
   const notify = useGlobalNotification();
@@ -396,59 +400,94 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
       <Dialog
         open={openAddressDialog}
         onClose={() => setOpenAddressDialog(false)}
-        maxWidth="xs"
+        maxWidth="sm"
         fullWidth
         className="backdrop-blur-sm"
         PaperProps={{
-          className: "!rounded-3xl !p-2",
+          className: "!rounded-3xl !p-2 shadow-2xl",
         }}
       >
-        <DialogTitle className="flex justify-between items-center !font-bold text-slate-800">
-          {addressEditMode ? "Cập nhật địa chỉ kho bãi" : "Thêm địa chỉ kho bãi mới"}
-          <IconButton size="small" onClick={() => setOpenAddressDialog(false)} className="text-slate-400">
-            <CloseIcon />
+        <DialogTitle className="flex justify-between items-center !font-bold text-slate-800 !px-4 !py-3 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold">
+              <BookIcon className="!text-[1.2rem]" />
+            </div>
+            <div>
+              <span className="block text-base font-extrabold text-slate-800">
+                {addressEditMode ? "Cập nhật địa chỉ kho bãi" : "Thêm địa chỉ kho bãi mới"}
+              </span>
+              <span className="block text-xs text-slate-400 font-normal">
+                Điền thông tin kho bãi để chọn nhanh khi tạo phiên đấu giá
+              </span>
+            </div>
+          </div>
+          <IconButton size="small" onClick={() => setOpenAddressDialog(false)} className="!bg-slate-100 hover:!bg-slate-200">
+            <CloseIcon className="!text-[1rem] text-slate-600" />
           </IconButton>
         </DialogTitle>
-        <DialogContent className="space-y-4 !pt-2">
+        <DialogContent className="!pt-6 !pb-4 flex flex-col gap-6">
           <TextField
             label="Tên gợi nhớ kho (Ví dụ: Kho Tổng Đông Anh)"
             fullWidth
+            required
             value={addressForm.label}
             onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
-            InputProps={{ className: "!rounded-2xl" }}
+            placeholder="VD: Kho hàng Tân Bình / Nhà máy 2"
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
-          <TextField
-            label="Họ tên người liên hệ"
-            fullWidth
-            value={addressForm.contactName}
-            onChange={(e) => setAddressForm({ ...addressForm, contactName: e.target.value })}
-            InputProps={{ className: "!rounded-2xl" }}
+
+          <Autocomplete
+            freeSolo
+            options={PROVINCE_NAMES}
+            value={addressForm.province || ""}
+            onChange={(event, newValue) => setAddressForm({ ...addressForm, province: newValue || "" })}
+            onInputChange={(event, newInputValue) => setAddressForm({ ...addressForm, province: newInputValue })}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                fullWidth
+                required
+                label="Tỉnh / Thành phố"
+                placeholder="VD: TP. Hồ Chí Minh / Hà Nội"
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
+              />
+            )}
           />
-          <TextField
-            label="Số điện thoại liên hệ"
-            fullWidth
-            value={addressForm.contactPhone}
-            onChange={(e) => setAddressForm({ ...addressForm, contactPhone: e.target.value })}
-            InputProps={{ className: "!rounded-2xl" }}
-          />
-          <TextField
-            label="Tỉnh / Thành phố"
-            fullWidth
-            value={addressForm.province}
-            onChange={(e) => setAddressForm({ ...addressForm, province: e.target.value })}
-            InputProps={{ className: "!rounded-2xl" }}
-          />
+
           <TextField
             label="Địa chỉ chi tiết (Số nhà, ngõ, đường, cụm kho)"
             multiline
             rows={2}
             fullWidth
+            required
             value={addressForm.detail}
             onChange={(e) => setAddressForm({ ...addressForm, detail: e.target.value })}
-            InputProps={{ className: "!rounded-2xl" }}
+            placeholder="VD: Số 123 Đường Nguyễn Thị Minh Khai, Phường 6, Quận 3"
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <TextField
+              label="Họ tên người liên hệ"
+              fullWidth
+              required
+              value={addressForm.contactName}
+              onChange={(e) => setAddressForm({ ...addressForm, contactName: e.target.value })}
+              placeholder="VD: Nguyễn Văn A"
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
+            />
+            <TextField
+              label="Số điện thoại liên hệ"
+              fullWidth
+              required
+              value={addressForm.contactPhone}
+              onChange={(e) => setAddressForm({ ...addressForm, contactPhone: e.target.value })}
+              placeholder="VD: 0912345678"
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
+            />
+          </div>
         </DialogContent>
-        <DialogActions className="!px-6 !pb-4 flex justify-end gap-3">
+        <DialogActions className="!px-6 !py-4 flex justify-end gap-3 border-t border-slate-100">
           <Button
             onClick={() => setOpenAddressDialog(false)}
             variant="text"
@@ -460,7 +499,7 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
             onClick={handleAddressSubmit}
             variant="contained"
             disabled={addressSaving}
-            className="!font-bold !capitalize !rounded-xl !px-5"
+            className="!font-bold !capitalize !rounded-xl !px-6 !py-2.5 shadow-md"
             sx={{
               background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)",
             }}

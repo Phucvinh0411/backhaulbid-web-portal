@@ -5,7 +5,14 @@ import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import AccessTimeIcon from "@mui/icons-material/AccessTimeOutlined";
 import DynamicFeedIcon from "@mui/icons-material/DynamicFeedOutlined";
-import { formatTime } from "./mockData";
+
+const formatTime = (seconds) => {
+  const safeSeconds = Math.max(0, Number(seconds) || 0);
+  const h = Math.floor(safeSeconds / 3600);
+  const m = Math.floor((safeSeconds % 3600) / 60);
+  const s = safeSeconds % 60;
+  return [h, m, s].map((part) => String(part).padStart(2, "0")).join(":");
+};
 
 export default function LiveCountdownCard({ countdown }) {
   const isExpired = countdown <= 0;

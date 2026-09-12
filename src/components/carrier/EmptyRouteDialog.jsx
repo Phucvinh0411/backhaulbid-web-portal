@@ -28,8 +28,8 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
   const [destination, setDestination] = useState("");
 
   // Toạ độ thực tế thay đổi theo điểm xuất phát
-  const [latitude, setLatitude] = useState(10.8231);
-  const [longitude, setLongitude] = useState(106.6297);
+  const [latitude, setLatitude] = useState(null);
+  const [longitude, setLongitude] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,12 +38,16 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
       return;
     }
 
+    if (latitude === null || longitude === null) {
+      notify.warning("Vui lòng chọn tỉnh/thành phố điểm bắt đầu để xác định tọa độ.");
+      return;
+    }
+
     setLoading(true);
 
     try {
       await declareEmptyRoute({
         truckId,
-        companyId: "MY_COMPANY", // Phía backend có thể sẽ bỏ qua hoặc cần thay thế nếu thực sự yêu cầu
         expectedEmptyTime: expectedTime + ":00", // Thêm giây
         latitude,
         longitude,
@@ -99,17 +103,24 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
           >
             {vehicles.length === 0 && (
               <MenuItem value="" disabled>
-                Chưa có xe nào được xác minh
+                Chưa có xe nào trong hệ thống
               </MenuItem>
             )}
-            {vehicles.map((v) => (
-              <MenuItem
-                key={v.id || v.licensePlate}
-                value={v.id || v.licensePlate}
-              >
-                {v.licensePlate} - {v.type} ({v.capacity})
-              </MenuItem>
-            ))}
+            {vehicles.map((v) => {
+              const isVerified = (v.verification || v.status) === "VERIFIED";
+              return (
+                <MenuItem
+                  key={v.id || v.licensePlate}
+                  value={v.licensePlate || v.plate || ""}
+                  disabled={!isVerified}
+                >
+                  {v.licensePlate} - {v.type} ({v.capacity}){" "}
+                  {!isVerified
+                    ? `[${v.verification || v.status || "Chờ duyệt"}]`
+                    : "✓ Đã duyệt"}
+                </MenuItem>
+              );
+            })}
           </TextField>
 
           <Autocomplete

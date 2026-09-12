@@ -40,80 +40,12 @@ import {
   DetailRow,
   PageHeader,
 } from "@/components/common";
+import { mapBackendToShipment } from "@/services/shipperAuctionMapper";
 
-// Backend status to Frontend status mapping
-const mapStatusToFrontend = (backendStatus) => {
-  switch (backendStatus) {
-    case "PENDING":
-    case "UPCOMING":
-      return "pending_bids";
-    case "ACTIVE":
-    case "IN_PROGRESS":
-      return "active_bids";
-    case "COMPLETED":
-    case "ENDED":
-      return "awarded";
-    case "CANCELLED":
-      return "cancelled";
-    default:
-      return "pending_bids";
-  }
-};
-
-// Helper to safely parse Decimal128 from MongoDB if it comes as object
-const parseDecimal = (val) => {
-  if (!val) return 0;
-  if (typeof val === 'object' && val.$numberDecimal) return parseFloat(val.$numberDecimal);
-  return parseFloat(val);
-};
-
-const mapBackendToShipment = (auction) => {
-  const title = auction.title || auction.goodsName || auction.goodsInfo?.goodsName;
-  const goodsType = auction.goodsType || auction.goodsInfo?.goodsName || auction.cargoType || "Không xác định";
-  const weight = auction.weight || auction.goodsInfo?.weight || 0;
-  const volume = auction.volume || auction.goodsInfo?.volume || 0;
-  
-  const fromProvince = auction.pickupLocation?.province || auction.route?.from?.province || auction.origin || "Không rõ";
-  const fromDetail = auction.pickupLocation?.address || auction.route?.from?.detailAddress || "Không rõ";
-  
-  const toProvince = auction.deliveryLocation?.province || auction.route?.to?.province || auction.destination || "Không rõ";
-  const toDetail = auction.deliveryLocation?.address || auction.route?.to?.detailAddress || "Không rõ";
-  
-  const closeTime = auction.endTime || auction.auctionConfig?.endTime || null;
-  const maxPrice = parseDecimal(auction.maxPrice || auction.auctionConfig?.maxPrice);
-  const auctionType = auction.auctionType || auction.auctionConfig?.auctionType || "PUBLIC";
-  
-  const currentLowestBid = parseDecimal(auction.currentLowestBid) || 0;
-  const finalPrice = parseDecimal(auction.finalPrice) || 0;
-
-  return {
-    id: auction.id || auction._id || auction.auctionCode || "N/A",
-    title,
-    goodsType,
-    weight: `${weight} tấn`,
-    volume: `${volume} m³`,
-    from: {
-      province: fromProvince,
-      detail: fromDetail,
-    },
-    to: {
-      province: toProvince,
-      detail: toDetail,
-    },
-    maxPrice,
-    currentLowestBid,
-    finalPrice,
-    bidCount: auction.totalBids || auction.bidCount || 0,
-    closeTime,
-    status: mapStatusToFrontend(auction.status),
-    auctionType,
-    carrier: auction.winningBidId ? "Đơn vị vận chuyển (Đã chốt)" : null,
-    driverName: null,
-    driverPlate: null,
-    cancelReason: auction.cancelReason,
-    originalData: auction
-  };
-};
+const getTrackingHref = (shipment) =>
+  shipment?.tripId
+    ? `/shipper/tracking?id=${encodeURIComponent(shipment.tripId)}`
+    : "/shipper/tracking";
 
 export default function BiddingSessionsScreen() {
   const notify = useGlobalNotification();
@@ -671,7 +603,7 @@ export default function BiddingSessionsScreen() {
                 </ActionButton>
               </Link>
               {selectedShipment.status === "shipping" && (
-                <Link href={`/shipper/tracking?id=${selectedShipment.id}`} passHref className="w-full block">
+                <Link href={getTrackingHref(selectedShipment)} passHref className="w-full block">
                   <ActionButton
                     variant="primary"
                     fullWidth

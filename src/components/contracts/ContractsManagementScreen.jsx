@@ -55,6 +55,13 @@ function getPartnerName(contract, role) {
   return role === "shipper" ? contract.carrierName : contract.shipperName;
 }
 
+function getTrackingHref(contract, isShipper) {
+  if (!isShipper) return `/carrier/transports/${contract.id}`;
+  return contract.tripId
+    ? `/shipper/tracking?id=${encodeURIComponent(contract.tripId)}`
+    : "/shipper/tracking";
+}
+
 export default function ContractsManagementScreen({
   role = "carrier",
   initialFilter = "ALL",
@@ -357,9 +364,7 @@ export default function ContractsManagementScreen({
                             size="sm"
                             startIcon={<LocalShippingIcon />}
                             href={
-                              isShipper
-                                ? `/shipper/tracking?id=${contract.id}`
-                                : `/carrier/transports/${contract.id}`
+                              getTrackingHref(contract, isShipper)
                             }
                           >
                             Theo dõi
@@ -448,9 +453,7 @@ export default function ContractsManagementScreen({
                 variant="outlined"
                 startIcon={<LocalShippingIcon />}
                 href={
-                  isShipper
-                    ? `/shipper/tracking?id=${selectedContract.id}`
-                    : `/carrier/transports/${selectedContract.id}`
+                  getTrackingHref(selectedContract, isShipper)
                 }
               >
                 Theo dõi vận chuyển

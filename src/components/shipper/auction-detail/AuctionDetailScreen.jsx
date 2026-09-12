@@ -69,7 +69,7 @@ export default function AuctionDetailScreen({ id }) {
 
         let bidsResponse = [];
         try {
-          bidsResponse = await listBids(id, { page: 1, pageSize: 100, limit: 100 });
+          bidsResponse = await listBids(id, { page: 1, pageSize: 100 });
         } catch (err) {
           console.warn("Error fetching bids, defaulting to empty array:", err);
         }
