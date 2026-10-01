@@ -5,9 +5,6 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import AccessTimeIcon from "@mui/icons-material/AccessTimeOutlined";
-import HowToRegIcon from "@mui/icons-material/HowToRegOutlined";
-import GavelIcon from "@mui/icons-material/GavelOutlined";
-import LockIcon from "@mui/icons-material/LockOutlined";
 import EventIcon from "@mui/icons-material/EventOutlined";
 
 /**
