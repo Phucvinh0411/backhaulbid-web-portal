@@ -32,7 +32,6 @@ import CheckCircleIcon   from "@mui/icons-material/CheckCircle";
 import CloseIcon         from "@mui/icons-material/Close";
 import SwapVertIcon      from "@mui/icons-material/SwapVert";
 import ClearIcon         from "@mui/icons-material/Clear";
-import NavigationIcon    from "@mui/icons-material/Navigation";
 
 import { declareEmptyRoute }        from "@/services/fleetApi";
 import { getApiErrorMessage }       from "@/services/errorMessage";
@@ -328,7 +327,7 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
       TransitionProps={{
         onEntered: () => {
           if (typeof window !== "undefined") {
-            window.dispatchEvent(new Event("resize"));
+            window.dispatchEvent(new window.Event("resize"));
           }
         },
       }}
@@ -799,7 +798,6 @@ function GrabSearchBox({
   onFocus,
   isActive,
   isPinned,
-  badgeText,
   badgeColor,
   rightAction,
   onClear,
@@ -961,10 +959,6 @@ function GrabSearchBox({
 }
 
 // ─── Utilities ─────────────────────────────────────────────────────────────────
-
-function buildAddress(detail, province) {
-  return detail?.trim() || province || "";
-}
 
 function toISO(datetimeLocal) {
   if (!datetimeLocal) return datetimeLocal;

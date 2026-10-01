@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
@@ -110,7 +109,6 @@ const validateForm = (form) => {
 }; */
 
 export default function CreateAuctionScreen() {
-  const router = useRouter();
   const notify = useGlobalNotification();
   const creationIdempotencyKeyRef = useRef(null);
   const [activeStep, setActiveStep] = useState(0);

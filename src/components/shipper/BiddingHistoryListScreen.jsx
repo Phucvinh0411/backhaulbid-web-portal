@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
 import Alert from "@mui/material/Alert";
@@ -55,7 +54,6 @@ const getTrackingHref = (shipment) =>
     : "/shipper/tracking";
 
 export default function BiddingHistoryListScreen() {
-  const router = useRouter();
   const { notify } = useGlobalNotification();
   const [shipments, setShipments] = useState([]);
   const [loading, setLoading] = useState(true);
