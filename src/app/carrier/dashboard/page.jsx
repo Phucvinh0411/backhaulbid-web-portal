@@ -66,14 +66,14 @@ const formatShortCurrency = (value) => {
 
 const formatRemaining = (value) => {
   const end = new Date(value).getTime();
-  if (!Number.isFinite(end)) return "Chưa xác định";
+  if (!Number.isFinite(end)) return { text: "Chưa xác định", isEnded: false };
   const diff = end - Date.now();
-  if (diff <= 0) return "Đã hết hạn";
+  if (diff <= 0) return { text: "Đã hết hạn", isEnded: true };
   const hours = Math.floor(diff / (60 * 60 * 1000));
   const days = Math.floor(hours / 24);
-  if (days > 0) return `${days} ngày`;
-  if (hours > 0) return `${hours} giờ`;
-  return `${Math.max(1, Math.floor(diff / (60 * 1000)))} phút`;
+  if (days > 0) return { text: `Còn ${days} ngày`, isEnded: false };
+  if (hours > 0) return { text: `Còn ${hours} giờ`, isEnded: false };
+  return { text: `Còn ${Math.max(1, Math.floor(diff / (60 * 1000)))} phút`, isEnded: false };
 };
 
 const mapTrip = (trip) => ({
@@ -364,10 +364,26 @@ export default function CarrierDashboard() {
                 ) : currentAuctions.map((auction) => (
                   <Box key={auction.id} className="p-4 rounded-xl border border-slate-200 bg-white/80 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
                     <Box className="absolute -right-6 -top-6 w-16 h-16 bg-gradient-to-br from-transparent via-[#62b6cb]/10 to-[#62b6cb]/30 rounded-full group-hover:scale-[2] transition-transform duration-500" />
-                    <Box className="flex justify-between items-start mb-2 relative z-10">
-                      <Typography variant="subtitle2" className="font-bold text-[#1B4965]">{String(auction.id).slice(0, 12)}</Typography>
-                      <Typography variant="caption" className="text-orange-600 bg-orange-50 px-2 py-0.5 rounded font-semibold border border-orange-100">Còn {formatRemaining(auction.endTime)}</Typography>
-                    </Box>
+                    {(() => {
+                      const timeInfo = formatRemaining(auction.endTime);
+                      return (
+                        <Box className="flex justify-between items-start gap-2 mb-2 relative z-10">
+                          <Typography variant="subtitle2" className="font-bold text-[#1B4965] truncate max-w-[150px]">
+                            {String(auction.id).slice(0, 12)}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            className={`shrink-0 px-2 py-0.5 rounded font-semibold border ${
+                              timeInfo.isEnded
+                                ? "text-slate-500 bg-slate-100 border-slate-200"
+                                : "text-orange-600 bg-orange-50 border-orange-100"
+                            }`}
+                          >
+                            {timeInfo.text}
+                          </Typography>
+                        </Box>
+                      );
+                    })()}
                     <Typography variant="body2" className="text-slate-600 mb-3 relative z-10 font-medium">{auction.route}</Typography>
                     <Divider className="my-3 opacity-60" />
                     <Box className="flex justify-between items-center relative z-10">

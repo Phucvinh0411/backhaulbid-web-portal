@@ -56,6 +56,23 @@ const formatShortCurrency = (value) => {
   return formatCurrency(value);
 };
 
+const formatDisplayId = (id) => {
+  if (!id) return "";
+  const str = String(id);
+  if (str.startsWith("seed-auc-")) {
+    const parts = str.split("-");
+    return `#AUC-${parts[2] || str.slice(9, 15)}`;
+  }
+  if (str.startsWith("seed-auc2-")) {
+    const parts = str.split("-");
+    return `#AUC2-${parts[2] || str.slice(10, 16)}`;
+  }
+  if (str.length > 14 && str.includes("-")) {
+    return `#${str.slice(0, 6)}...${str.slice(-4)}`;
+  }
+  return str;
+};
+
 export default function DashboardScreen() {
   const router = useRouter();
   const [timeFilter, setTimeFilter] = useState("month");
@@ -361,15 +378,23 @@ export default function DashboardScreen() {
                       >
                         <Box className="absolute -right-6 -top-6 w-16 h-16 bg-gradient-to-br from-transparent via-[#62b6cb]/10 to-[#62b6cb]/30 rounded-full group-hover:scale-[2] transition-transform duration-500"></Box>
 
-                        <Box className="flex justify-between items-start mb-1 relative z-10">
-                          <Typography variant="subtitle2" className="font-bold text-[#1B4965]">
-                            {auction.id}
+                        <Box className="flex justify-between items-start gap-2 mb-1 relative z-10">
+                          <Typography
+                            variant="subtitle2"
+                            className="font-mono font-black text-[#1B4965] tracking-tight truncate max-w-[150px]"
+                            title={`Mã phiên: ${auction.id}`}
+                          >
+                            {formatDisplayId(auction.id)}
                           </Typography>
                           <Typography
                             variant="caption"
-                            className="text-orange-600 bg-orange-50 px-2 py-0.5 rounded font-semibold border border-orange-100"
+                            className={`shrink-0 px-2 py-0.5 rounded font-semibold border ${
+                              auction.isEnded
+                                ? "text-slate-500 bg-slate-100 border-slate-200"
+                                : "text-orange-600 bg-orange-50 border-orange-100"
+                            }`}
                           >
-                            Còn {auction.timeLeft}
+                            {auction.timeLeft}
                           </Typography>
                         </Box>
 

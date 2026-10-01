@@ -16,3 +16,9 @@ test("Given carrier empty-route form, When initializing coordinates, Then no har
   assert.doesNotMatch(source, /useState\(10\.8231\)/);
   assert.doesNotMatch(source, /useState\(106\.6297\)/);
 });
+
+test("Given carrier empty-route form, When submitting payload, Then it includes dest coordinates and arrival time", () => {
+  assert.match(source, /destLatitude:\s*Number\(destLatitude\)/);
+  assert.match(source, /destLongitude:\s*Number\(destLongitude\)/);
+  assert.match(source, /expectedArrivalTime:/);
+});

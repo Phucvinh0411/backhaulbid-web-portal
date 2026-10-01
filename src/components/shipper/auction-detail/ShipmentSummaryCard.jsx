@@ -42,10 +42,13 @@ export default function ShipmentSummaryCard({ shipment }) {
       sx={{ background: "rgba(255, 255, 255, 0.95)", backdropFilter: "blur(20px)" }}
     >
       <CardContent className="!p-6 space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[0.7rem] font-mono font-bold text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200/60">
+        <div className="flex items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className="text-[0.7rem] font-mono font-bold text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200/60 max-w-[280px] sm:max-w-none truncate"
+                title={`MÃ LÔ HÀNG: ${shipment.id}`}
+              >
                 MÃ LÔ HÀNG: {shipment.id}
               </span>
               <Chip
@@ -67,7 +70,7 @@ export default function ShipmentSummaryCard({ shipment }) {
               </Typography>
             )}
           </div>
-          <div className="text-right">
+          <div className="text-right shrink-0">
             <StatusBadge status={shipment.status} />
           </div>
         </div>

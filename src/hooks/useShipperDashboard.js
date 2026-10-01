@@ -48,16 +48,16 @@ const getChartBucket = (value, timeFilter) => {
 
 const getTimeLeftLabel = (endTime) => {
   const end = getDate(endTime);
-  if (!end) return "Chưa cập nhật";
+  if (!end) return { text: "Chưa cập nhật", isEnded: false };
   const diffMs = end.getTime() - Date.now();
-  if (diffMs <= 0) return "Đã kết thúc";
+  if (diffMs <= 0) return { text: "Đã kết thúc", isEnded: true };
   const totalMinutes = Math.ceil(diffMs / 60000);
   const days = Math.floor(totalMinutes / 1440);
   const hours = Math.floor((totalMinutes % 1440) / 60);
   const minutes = totalMinutes % 60;
-  if (days > 0) return `${days} ngày ${hours} giờ`;
-  if (hours > 0) return `${hours} giờ ${minutes} phút`;
-  return `${minutes} phút`;
+  if (days > 0) return { text: `Còn ${days} ngày ${hours} giờ`, isEnded: false };
+  if (hours > 0) return { text: `Còn ${hours} giờ ${minutes} phút`, isEnded: false };
+  return { text: `Còn ${minutes} phút`, isEnded: false };
 };
 
 const getContractAmount = (contract) =>
@@ -99,6 +99,7 @@ export const useShipperDashboard = (timeFilter) => {
 
         if (!active) return;
 
+        const now = Date.now();
         const auctions = unwrapListData(auctionResponse).map(mapBackendToShipment);
         const contracts = unwrapListData(contractResponse);
         const auctionsById = new Map(auctions.map((auction) => [String(auction.id), auction]));
@@ -107,22 +108,29 @@ export const useShipperDashboard = (timeFilter) => {
         );
 
         const endingAuctions = openAuctions
-          .slice()
+          .filter((auction) => {
+            const end = getDate(auction.endTime);
+            return end ? end.getTime() > now : true;
+          })
           .sort((left, right) => {
             const leftEnd = getDate(left.endTime)?.getTime() ?? Number.MAX_SAFE_INTEGER;
             const rightEnd = getDate(right.endTime)?.getTime() ?? Number.MAX_SAFE_INTEGER;
             return leftEnd - rightEnd;
           })
           .slice(0, 3)
-          .map((auction) => ({
-            id: auction.id,
-            goodsType: auction.title || auction.goodsType,
-            route: `${auction.from.province} → ${auction.to.province}`,
-            maxPrice: auction.maxPrice,
-            currentLowest: auction.currentLowestBid || auction.maxPrice,
-            bidCount: auction.bidCount,
-            timeLeft: getTimeLeftLabel(auction.endTime),
-          }));
+          .map((auction) => {
+            const timeInfo = getTimeLeftLabel(auction.endTime);
+            return {
+              id: auction.id,
+              goodsType: auction.title || auction.goodsType,
+              route: `${auction.from.province} → ${auction.to.province}`,
+              maxPrice: auction.maxPrice,
+              currentLowest: auction.currentLowestBid || auction.maxPrice,
+              bidCount: auction.bidCount,
+              timeLeft: timeInfo.text,
+              isEnded: timeInfo.isEnded,
+            };
+          });
 
         const inTransitContracts = contracts.filter((contract) =>
           ["SIGNED", "ACTIVE"].includes(contract.status) ||
