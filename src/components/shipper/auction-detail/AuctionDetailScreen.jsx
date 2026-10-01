@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { auctionService } from "@/services/auctionService";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import Alert from "@mui/material/Alert";
@@ -12,6 +10,8 @@ import { getApiErrorMessage } from "@/services/errorMessage";
 
 import { getAuction, listBids, selectWinner } from "@/services/biddingApi";
 import { mapBackendToBid, mapBackendToShipment } from "@/services/shipperAuctionMapper";
+import { carrierProfileApi } from "@/services/carrierProfileApi";
+import { mapCarrierProfile } from "@/services/carrierProfileMapper";
 import ShipmentSummaryCard from "./ShipmentSummaryCard";
 import LiveCountdownCard from "./LiveCountdownCard";
 import LowestBidCard from "./LowestBidCard";
@@ -21,22 +21,12 @@ import ContractOtpModal from "./ContractOtpModal";
 import CarrierProfileModal from "./CarrierProfileModal";
 
 export default function AuctionDetailScreen({ id }) {
-  const router = useRouter();
   const { notify } = useGlobalNotification();
   const [shipment, setShipment] = useState(null);
   const [bids, setBids] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  // Dynamically calculate countdown based on shipment.endTime
-  const getInitialCountdown = () => {
-    if (!shipment?.endTime) return 0;
-    const end = new Date(shipment.endTime).getTime();
-    let diff = Math.floor((end - Date.now()) / 1000);
-    return diff > 0 ? diff : 0;
-  };
-
-  const [countdown, setCountdown] = useState(getInitialCountdown());
   const [openOtpDialog, setOpenOtpDialog] = useState(false);
   const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
   const [isOtpSuccess, setIsOtpSuccess] = useState(false);
@@ -44,6 +34,7 @@ export default function AuctionDetailScreen({ id }) {
 
   const [openCarrierModal, setOpenCarrierModal] = useState(false);
   const [selectedCarrier, setSelectedCarrier] = useState(null);
+  const [carrierModalLoading, setCarrierModalLoading] = useState(false);
 
   const [openFullBidsModal, setOpenFullBidsModal] = useState(false);
   const [selectedBidForPanel, setSelectedBidForPanel] = useState(null);
@@ -92,15 +83,6 @@ export default function AuctionDetailScreen({ id }) {
       active = false;
     };
   }, [id, notify]);
-
-  // Live Timer Countdown Effect
-  useEffect(() => {
-    setCountdown(getInitialCountdown());
-    const timer = setInterval(() => {
-      setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [shipment?.endTime, shipment?.status]);
 
   // Determine which bid to show on the right panel
   const isSealed = shipment?.auctionType === "SEALED";
@@ -152,16 +134,71 @@ export default function AuctionDetailScreen({ id }) {
     }
   };
 
-  const handleOpenCarrierModal = (bid) => {
+  const handleOpenCarrierModal = async (bid) => {
     if (!bid) return;
-    const carrierId = bid?.carrierId || bid?.carrierCode || bid?.carrierName;
+    const carrierId = bid?.carrierId || bid?.carrierCode;
+
+    // Open modal immediately with basic info from the bid
+    const baseFallback = mapCarrierProfile({
+      company: {
+        accountId: carrierId || bid?.carrierName,
+        companyName: bid?.carrierName,
+        verificationStatus: "VERIFIED",
+      },
+      vehicles: [],
+      drivers: [],
+    });
+    setSelectedCarrier(baseFallback);
+    setOpenCarrierModal(true);
+
     if (!carrierId) return;
-    router.push(`/shipper/carriers/${encodeURIComponent(carrierId)}`);
+
+    // Fetch full profile in background
+    setCarrierModalLoading(true);
+    try {
+      const [companyRes, vehiclesRes, driversRes] = await Promise.allSettled([
+        carrierProfileApi.getCompany(carrierId),
+        carrierProfileApi.getVehicles(carrierId),
+        carrierProfileApi.getDrivers(carrierId),
+      ]);
+
+      const company = companyRes.status === "fulfilled"
+        ? (companyRes.value?.data || companyRes.value)
+        : { companyName: bid?.carrierName, accountId: carrierId, verificationStatus: "VERIFIED" };
+
+      const vehiclesRaw = vehiclesRes.status === "fulfilled"
+        ? (vehiclesRes.value?.data || vehiclesRes.value || [])
+        : [];
+      const vehicles = Array.isArray(vehiclesRaw) ? vehiclesRaw : [];
+
+      const driversRaw = driversRes.status === "fulfilled"
+        ? (driversRes.value?.data || driversRes.value || [])
+        : [];
+      const drivers = Array.isArray(driversRaw) ? driversRaw : [];
+
+      const mapped = mapCarrierProfile({ company, vehicles, drivers });
+      // Preserve bid-level fields not in company profile
+      setSelectedCarrier({
+        ...mapped,
+        rating: bid.rating ?? mapped.rating,
+        vehicleType: bid.vehicleType || (vehicles[0]?.vehicleType) || mapped.vehicleType,
+        vehiclePlate: bid.vehiclePlate || (vehicles[0]?.licensePlate) || mapped.vehiclePlate,
+        vehiclePayload: bid.vehiclePayload || (vehicles[0] ? `${vehicles[0].payloadCapacity} tấn` : undefined),
+        driverName: bid.driverName || (drivers[0]?.fullName) || mapped.driverName,
+        driverPhone: bid.driverPhone || (drivers[0]?.phone) || mapped.driverPhone,
+      });
+    } catch (err) {
+      // Keep using the fallback data already set
+      console.warn("Could not fully load carrier profile:", err);
+    } finally {
+      setCarrierModalLoading(false);
+    }
   };
 
   const handleCloseCarrierModal = () => {
     setOpenCarrierModal(false);
     setSelectedCarrier(null);
+    setCarrierModalLoading(false);
   };
 
   if (loading) {
@@ -206,7 +243,7 @@ export default function AuctionDetailScreen({ id }) {
 
         {/* Right Column: Countdown & Lowest Price Card stacked */}
         <div className="flex flex-col gap-4">
-          <LiveCountdownCard countdown={countdown} />
+          <LiveCountdownCard shipment={shipment} />
           <LowestBidCard
             shipment={shipment}
             lowestBidDetails={displayedBidDetails}
@@ -249,6 +286,7 @@ export default function AuctionDetailScreen({ id }) {
         open={openCarrierModal}
         onClose={handleCloseCarrierModal}
         carrier={selectedCarrier}
+        loading={carrierModalLoading}
         shipmentStatus={shipment.status}
         onSelectCarrierAsWinner={handleOpenOtpDialog}
       />

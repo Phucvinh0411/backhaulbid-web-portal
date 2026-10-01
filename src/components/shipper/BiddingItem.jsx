@@ -63,6 +63,24 @@ export default function BiddingItem({
     }
   };
 
+  // Helper to format concise display ID without breaking card header layout
+  const formatDisplayId = (id) => {
+    if (!id) return "";
+    const str = String(id);
+    if (str.startsWith("seed-auc-")) {
+      const parts = str.split("-");
+      return `#AUC-${parts[2] || str.slice(9, 15)}`;
+    }
+    if (str.startsWith("seed-auc2-")) {
+      const parts = str.split("-");
+      return `#AUC2-${parts[2] || str.slice(10, 16)}`;
+    }
+    if (str.length > 14 && str.includes("-")) {
+      return `#${str.slice(0, 6)}...${str.slice(-4)}`;
+    }
+    return str;
+  };
+
   const design = getStatusDesign(shipment.status);
 
   return (
@@ -79,18 +97,25 @@ export default function BiddingItem({
         <div className="space-y-4">
           {/* Card Header: Code, Auction Type Badge & Status */}
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="font-mono font-black text-slate-700 text-xs tracking-tight shrink-0 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200/80 whitespace-nowrap">
-                {shipment.id}
+            <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+              <span
+                className="font-mono font-black text-slate-700 text-xs tracking-tight bg-slate-100 px-2 py-1 rounded-lg border border-slate-200/80 truncate shrink-0 max-w-[130px]"
+                title={`Mã phiên: ${shipment.id}`}
+              >
+                {formatDisplayId(shipment.id)}
               </span>
-              <AuctionTypeBadge type={shipment.auctionType} size="md" />
+              <div className="shrink-0">
+                <AuctionTypeBadge type={shipment.auctionType} size="sm" />
+              </div>
             </div>
 
-            <AuctionStatusBadge
-              status={shipment.status}
-              labelOverride={statusLabelOverride || design.label}
-              size="md"
-            />
+            <div className="shrink-0 ml-auto">
+              <AuctionStatusBadge
+                status={shipment.status}
+                labelOverride={statusLabelOverride || design.label}
+                size="md"
+              />
+            </div>
           </div>
 
           {/* Main Title & Goods Info */}

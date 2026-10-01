@@ -919,7 +919,7 @@ export default function VehiclesPage() {
                 <MenuItem value="TRUCK_SMALL">Xe tải nhỏ</MenuItem>
                 <MenuItem value="TRUCK_MEDIUM">Xe tải trung</MenuItem>
                 <MenuItem value="TRUCK_HEAVY">Xe tải nặng</MenuItem>
-                <MenuItem value="CONTAINER_TRACTOR">Đầu kéo container</MenuItem>
+                <MenuItem value="CONTAINER_TRACTOR">Xe đầu kéo container</MenuItem>
                 <MenuItem value="REFRIGERATED_TRUCK">Xe tải đông lạnh</MenuItem>
                 <MenuItem value="SPECIALIZED_TRUCK">Xe chuyên dụng</MenuItem>
               </TextField>
@@ -1179,7 +1179,7 @@ export default function VehiclesPage() {
             <MenuItem value="TRUCK_SMALL">Xe tải nhỏ</MenuItem>
             <MenuItem value="TRUCK_MEDIUM">Xe tải trung</MenuItem>
             <MenuItem value="TRUCK_HEAVY">Xe tải nặng</MenuItem>
-            <MenuItem value="CONTAINER_TRACTOR">Đầu kéo container</MenuItem>
+            <MenuItem value="CONTAINER_TRACTOR">Xe đầu kéo container</MenuItem>
             <MenuItem value="REFRIGERATED_TRUCK">Xe tải đông lạnh</MenuItem>
             <MenuItem value="SPECIALIZED_TRUCK">Xe chuyên dụng</MenuItem>
           </TextField>

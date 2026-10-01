@@ -35,8 +35,13 @@ export default function FleetManagerDashboard() {
   const [formData, setFormData] = useState({
     truckId: '',
     expectedEmptyTime: '',
+    expectedArrivalTime: '',
     latitude: '',
-    longitude: ''
+    longitude: '',
+    origin: '',
+    destination: '',
+    destLatitude: '',
+    destLongitude: '',
   });
 
   useEffect(() => {
@@ -128,22 +133,36 @@ export default function FleetManagerDashboard() {
       return;
     }
 
+    // Điểm đến: nếu không nhập thì dùng cùng toạ độ điểm xuất phát (fallback)
+    const destLat = formData.destLatitude ? Number(formData.destLatitude) : latitude;
+    const destLng = formData.destLongitude ? Number(formData.destLongitude) : longitude;
+
+    // Thời gian đến: nếu không nhập thì mặc định +12 giờ sau giờ xuất phát
+    const departureDate = new Date(formData.expectedEmptyTime);
+    const arrivalISO = formData.expectedArrivalTime
+      ? new Date(formData.expectedArrivalTime).toISOString()
+      : new Date(departureDate.getTime() + 12 * 60 * 60 * 1000).toISOString();
+
     setIsSubmitting(true);
     try {
       const payload = {
-        truckId: formData.truckId,
-        companyId: currentCompanyId,
-        // Chuyển đối thời gian từ input datetime-local sang chuẩn ISO để đẩy xuống Backend
-        expectedEmptyTime: new Date(formData.expectedEmptyTime).toISOString(),
+        truckId:             formData.truckId,
+        companyId:           currentCompanyId,
+        expectedEmptyTime:   departureDate.toISOString(),
+        expectedArrivalTime: arrivalISO,
         latitude,
         longitude,
+        destLatitude:        destLat,
+        destLongitude:       destLng,
+        origin:              formData.origin  || `${latitude}, ${longitude}`,
+        destination:         formData.destination || `${destLat}, ${destLng}`,
       };
 
       await emptyRouteService.createEmptyRoute(payload);
       await loadRoutes();
-      
+
       notify.success('Đã khai báo xe rỗng thành công. Hệ thống đang rà soát đơn hàng!');
-      setFormData(prev => ({ ...prev, truckId: '', expectedEmptyTime: '' }));
+      setFormData(prev => ({ ...prev, truckId: '', expectedEmptyTime: '', expectedArrivalTime: '', origin: '', destination: '', destLatitude: '', destLongitude: '' }));
     } catch (error) {
       notify.error(getApiErrorMessage(error, 'Không thể khai báo xe rỗng. Vui lòng kiểm tra thông tin và thử lại.'));
     } finally {

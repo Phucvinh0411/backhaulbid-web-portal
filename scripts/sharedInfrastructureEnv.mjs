@@ -5,12 +5,12 @@ import { fileURLToPath } from "node:url";
 const scriptsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(scriptsDirectory, "..", "..", "..");
 
-export const SHARED_ENV_FILE = path.join(
-  repositoryRoot,
-  "be",
-  "backhaulbid-infrastructure",
-  ".env",
-);
+const defaultCandidates = [
+  path.join(scriptsDirectory, "..", "..", "backhaulbid-infrastructure", ".env"),
+  path.join(repositoryRoot, "be", "backhaulbid-infrastructure", ".env"),
+  path.join(scriptsDirectory, "..", ".env"),
+];
+export const SHARED_ENV_FILE = defaultCandidates.find((candidate) => fs.existsSync(candidate)) || defaultCandidates[0];
 
 export const FRONTEND_ENV_KEYS = Object.freeze([
   "NEXT_PUBLIC_GATEWAY_URL",
