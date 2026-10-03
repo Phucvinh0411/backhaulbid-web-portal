@@ -163,9 +163,14 @@ export default function CarrierRegistrationGate({
 
   if (canEnter) {
     return (
-      <Alert severity="success" className="mb-6 !rounded-3xl">
-        Bạn đã đủ điều kiện. Phòng đấu giá đang mở, có thể đặt giá.
-      </Alert>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-emerald-200 bg-emerald-50 p-4">
+        <Alert severity="success" className="!rounded-2xl !border-0 !bg-transparent !p-0">
+          Bạn đã đủ điều kiện. Phòng đấu giá đang mở, có thể đặt giá.
+        </Alert>
+        <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-sm font-bold text-emerald-800">
+          Điểm uy tín: {access?.reputationScore ?? "—"} / 100 · Tối thiểu {access?.minimumReputationScore ?? 70}
+        </span>
+      </div>
     );
   }
 
@@ -189,6 +194,13 @@ export default function CarrierRegistrationGate({
               </h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 sm:col-span-2">
+                <SecurityIcon className="text-indigo-700" />
+                <p className="mt-2 text-xs font-bold text-slate-500">Điểm uy tín tham gia đấu giá</p>
+                <p className="font-mono text-lg font-black text-indigo-800">
+                  {access?.reputationScore ?? "—"} / 100 · cần tối thiểu {access?.minimumReputationScore ?? 70}
+                </p>
+              </div>
               <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
                 <PaymentsIcon className="text-sky-700" />
                 <p className="mt-2 text-xs font-bold text-slate-500">
@@ -247,6 +259,12 @@ export default function CarrierRegistrationGate({
               {submitting ? "Đang xử lý..." : "Thử lại thanh toán"}
             </Button>
           </div>
+        )}
+
+        {status === "REPUTATION_TOO_LOW" && (
+          <Alert severity="warning" className="!rounded-2xl">
+            <strong>Chưa đủ điểm để tham gia phiên này.</strong> Điểm uy tín hiện tại của bạn là {access?.reputationScore ?? "—"}/100; cần tối thiểu {access?.minimumReputationScore ?? 70} điểm. Điểm uy tín giảm khi vi phạm chính sách giao hàng trễ.
+          </Alert>
         )}
 
         {status === "WAITING_FOR_START" && (

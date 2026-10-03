@@ -36,12 +36,39 @@ function InfoRow({ label, value, valueClass = "font-bold text-slate-700" }) {
 export default function ShipmentSummaryCard({ shipment }) {
   if (!shipment) return null;
 
+  const awardStatusText = {
+    CREATING_CONTRACT: "Đang tạo hợp đồng cho nhà xe được xét.",
+    AWAITING_CARRIER_SIGNATURE: "Đang chờ nhà xe được xét ký hợp đồng.",
+    AWAITING_SHIPPER_SIGNATURE: "Nhà xe đã ký; đang chờ chủ hàng ký hợp đồng.",
+    SIGNED: "Hợp đồng đã có đủ chữ ký.",
+    NO_CARRIER_SIGNED: "Đã xét hết người thắng và 3 nhà xe dự phòng nhưng chưa ký được hợp đồng.",
+    SHIPPER_SIGNATURE_EXPIRED: "Chủ hàng quá hạn ký; hệ thống đã dừng xét nhà xe dự phòng.",
+    CREATION_FAILED: "Hệ thống đang cần xử lý lỗi khi tạo hợp đồng.",
+  }[shipment.awardStatus];
+
   return (
     <Card
       className="!rounded-3xl border border-slate-200/80 overflow-hidden transition-all shadow-sm hover:shadow-md"
       sx={{ background: "rgba(255, 255, 255, 0.95)", backdropFilter: "blur(20px)" }}
     >
       <CardContent className="!p-6 space-y-6">
+        {awardStatusText && (
+          <div role="status" aria-live="polite" className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-950">
+            <div className="font-bold">Tiến trình xét nhà xe</div>
+            <p className="mt-1">{awardStatusText}</p>
+            {shipment.awardProgress?.currentAttempt > 0 && (
+              <p className="mt-1 text-xs text-sky-800">
+                Lượt {shipment.awardProgress.currentAttempt}/{shipment.awardProgress.maximumAttempts}
+                {shipment.awardProgress.signingDeadlineAt && (
+                  <> · Hạn ký: {formatAuctionDateTime(shipment.awardProgress.signingDeadlineAt)}</>
+                )}
+              </p>
+            )}
+            {shipment.awardStatus === "NO_CARRIER_SIGNED" && shipment.creationFeeStatus === "REFUNDED" && (
+              <p className="mt-1 font-semibold text-emerald-700">Phí tạo phiên đã được hoàn vào ví.</p>
+            )}
+          </div>
+        )}
         <div className="flex items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">

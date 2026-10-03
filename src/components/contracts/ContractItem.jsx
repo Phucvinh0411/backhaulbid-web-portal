@@ -38,6 +38,12 @@ const STATUS_DESIGN = {
     textColor: "#E11D48",
     borderColor: "#FECDD3",
   },
+  EXPIRED: {
+    label: "Hợp đồng hết hạn",
+    bgColor: "#F1F5F9",
+    textColor: "#64748B",
+    borderColor: "#CBD5E1",
+  },
 };
 
 export function getContractStatusDesign(status) {
@@ -173,14 +179,15 @@ export default function ContractItem({
               Chi tiết
             </Button>
             <Button
-              variant="contained"
+              variant={contract.canSign ? "contained" : "outlined"}
               size="small"
-              startIcon={<VerifiedUserIcon />}
+              startIcon={contract.canSign ? <VerifiedUserIcon /> : undefined}
+              disabled={!contract.canSign}
               onClick={() => onSign?.(contract)}
-              className="!rounded-xl !bg-[#1B4965] !text-[0.8rem] !font-bold !normal-case hover:!bg-[#133850]"
+              className="!rounded-xl !text-[0.8rem] !font-bold !normal-case"
               sx={{ flex: 1.5, boxShadow: "none" }}
             >
-              Ký điện tử
+              {contract.canSign ? "Ký điện tử" : contract.pendingMessage}
             </Button>
           </>
         ) : (

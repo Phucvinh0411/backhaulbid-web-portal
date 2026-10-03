@@ -44,6 +44,7 @@ export const CONTRACT_FILTERS = [
   { value: "ACTIVE", label: "Đang hoạt động" },
   { value: "COMPLETED", label: "Đã hoàn thành" },
   { value: "CANCELLED", label: "Đã hủy" },
+  { value: "EXPIRED", label: "Hợp đồng hết hạn" },
 ];
 
 function mapFilter(status) {
@@ -349,7 +350,7 @@ export default function ContractsManagementScreen({
                         >
                           Chi tiết
                         </ActionButton>
-                        {contract.status === "PENDING_SIGNATURE" ? (
+                        {contract.status === "PENDING_SIGNATURE" && contract.canSign ? (
                           <ActionButton
                             variant="success"
                             size="sm"
@@ -358,7 +359,11 @@ export default function ContractsManagementScreen({
                           >
                             Ký
                           </ActionButton>
-                        ) : (
+                        ) : contract.status === "PENDING_SIGNATURE" ? (
+                          <ActionButton variant="outlined" size="sm" disabled>
+                            {contract.pendingMessage}
+                          </ActionButton>
+                        ) : ["ACTIVE", "COMPLETED"].includes(contract.status) ? (
                           <ActionButton
                             variant="outlined"
                             size="sm"
@@ -369,7 +374,7 @@ export default function ContractsManagementScreen({
                           >
                             Theo dõi
                           </ActionButton>
-                        )}
+                        ) : null}
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -405,6 +410,18 @@ export default function ContractsManagementScreen({
                 label="Trạng thái"
                 value={getContractStatusDesign(selectedContract.status).label}
               />
+              {selectedContract.status === "PENDING_SIGNATURE" && (
+                <DetailRow
+                  label="Hạn ký"
+                  value={selectedContract.signingDeadlineAt
+                    ? new Intl.DateTimeFormat("vi-VN", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                        timeZone: "Asia/Ho_Chi_Minh",
+                      }).format(new Date(selectedContract.signingDeadlineAt))
+                    : "Chưa cập nhật"}
+                />
+              )}
               <DetailRow
                 label="Giá trị"
                 value={selectedContract.value}
@@ -435,7 +452,7 @@ export default function ContractsManagementScreen({
               <DetailRow label="Ngày bốc hàng" value={selectedContract.date} />
             </Box>
 
-            {selectedContract.status === "PENDING_SIGNATURE" ? (
+            {selectedContract.status === "PENDING_SIGNATURE" && selectedContract.canSign ? (
               <ActionButton
                 fullWidth
                 variant="primary"
@@ -447,7 +464,11 @@ export default function ContractsManagementScreen({
               >
                 Ký điện tử ngay
               </ActionButton>
-            ) : (
+            ) : selectedContract.status === "PENDING_SIGNATURE" ? (
+              <Typography role="status" className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
+                {selectedContract.pendingMessage}
+              </Typography>
+            ) : ["ACTIVE", "COMPLETED"].includes(selectedContract.status) ? (
               <ActionButton
                 fullWidth
                 variant="outlined"
@@ -458,7 +479,7 @@ export default function ContractsManagementScreen({
               >
                 Theo dõi vận chuyển
               </ActionButton>
-            )}
+            ) : null}
           </Box>
         )}
       </DetailDrawer>

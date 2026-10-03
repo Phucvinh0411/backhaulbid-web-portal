@@ -8,6 +8,7 @@ import {
   ReportProblemOutlined as ReportProblemIcon,
   AccountBalanceWalletOutlined as WalletIcon,
   SettingsOutlined as SettingsIcon,
+  AccessTimeOutlined as AccessTimeIcon,
 } from "@mui/icons-material";
 
 const adminNavigation = [
@@ -43,6 +44,11 @@ const adminNavigation = [
         title: "Giám sát đấu giá",
         path: "/admin/operations",
         icon: GavelIcon,
+      },
+      {
+        title: "Xử lý chuyến giao trễ",
+        path: "/admin/late-delivery",
+        icon: AccessTimeIcon,
       },
       {
         title: "Duyệt rút tiền ví",

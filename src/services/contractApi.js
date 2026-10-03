@@ -6,6 +6,12 @@ export const contractApi = {
   sign: (contractId) => apiService.patch(`/api/v1/contracts/${contractId}/sign`),
   listTrips: (params) => apiService.get("/api/v1/trips/mine", params).catch(() => []),
   getTrip: (tripId) => apiService.get(`/api/v1/trips/${tripId}`),
+  cancelLateTrip: (tripId, payload = {}) =>
+    apiService.post(`/api/v1/trips/${tripId}/cancel-late`, payload),
+  listTripDelaySettlements: (tripId) =>
+    apiService.get(`/api/v1/trips/${tripId}/delay-settlements`),
+  listDelaySettlementsForAdmin: () =>
+    apiService.get("/api/v1/trips/admin/late-settlements"),
   updateTripStatus: (tripId, payload) =>
     apiService.patch(`/api/v1/trips/${tripId}/status`, payload),
   assignDriver: (tripId, payload) =>
