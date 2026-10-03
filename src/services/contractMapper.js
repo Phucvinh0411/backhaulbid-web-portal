@@ -31,6 +31,10 @@ function getPartnerLabel(id, roleLabel) {
 }
 
 function mapStatus(status, tripStatus) {
+  if (status === "EXPIRED") {
+    return "EXPIRED";
+  }
+
   if (status === "CANCELLED" || tripStatus === "CANCELLED") {
     return "CANCELLED";
   }
@@ -45,12 +49,20 @@ function mapStatus(status, tripStatus) {
 export function mapContractResponse(response = {}, role = "carrier") {
   const trip = response.trip || {};
   const isShipper = role === "shipper";
+  const signatures = Array.isArray(response.signatures) ? response.signatures : [];
+  const carrierSigned = signatures.some(
+    (signature) => signature.role === "CARRIER" && signature.signedAt,
+  );
+  const actorRole = isShipper ? "SHIPPER" : "CARRIER";
+  const actorSigned = signatures.some(
+    (signature) => signature.role === actorRole && signature.signedAt,
+  );
 
   return {
     backendId: response.id,
     id: response.contractCode || response.id || "Chưa có mã hợp đồng",
     tripId: response.tripId || trip.id || null,
-    auctionId: response.tripId || "Chưa có mã chuyến",
+    auctionId: trip.auctionId || "Chưa có mã phiên",
     origin: trip.pickupLocation || "Chưa cập nhật điểm nhận",
     destination: trip.deliveryLocation || "Chưa cập nhật điểm giao",
     pickupAddress: trip.pickupLocation || "",
@@ -59,11 +71,20 @@ export function mapContractResponse(response = {}, role = "carrier") {
     value: formatCurrency(trip.agreedPrice),
     date: formatDate(response.createdAt || trip.createdAt),
     status: mapStatus(response.status, trip.status),
+    signingDeadlineAt: response.signingDeadlineAt || null,
+    canSign:
+      !actorSigned && (!isShipper || carrierSigned) &&
+      response.status !== "EXPIRED" && response.status !== "CANCELLED",
+    pendingMessage: isShipper && !carrierSigned
+      ? "Chưa ký được: cần chờ nhà xe ký trước."
+      : actorSigned
+        ? "Bạn đã ký. Đang chờ đối tác ký."
+        : "Bạn được mời ký hợp đồng.",
     shipperName: getPartnerLabel(response.shipperId, "chủ hàng"),
     carrierName: getPartnerLabel(response.carrierId, "nhà xe"),
     partnerId: isShipper ? response.carrierId : response.shipperId,
     pdfUrl: response.pdfUrl || "",
-    signatures: Array.isArray(response.signatures) ? response.signatures : [],
+    signatures,
   };
 }
 

@@ -7,4 +7,6 @@ export const carrierProfileApi = {
     apiService.get(`/api/v1/vehicles/carrier/${encodeURIComponent(carrierId)}`),
   getDrivers: (carrierId) =>
     apiService.get(`/api/v1/drivers/carrier/${encodeURIComponent(carrierId)}`),
+  getReputation: (carrierId) =>
+    apiService.get(`/api/v1/fleet/reputation/carrier/${encodeURIComponent(carrierId)}/history`),
 };

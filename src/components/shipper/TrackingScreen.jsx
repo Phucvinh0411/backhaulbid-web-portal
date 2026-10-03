@@ -97,7 +97,7 @@ export default function TrackingScreen({ tripId: initialTripId = null }) {
       ) : trips.length === 0 ? (
         <Alert severity="info">Bạn chưa có chuyến vận chuyển nào để theo dõi.</Alert>
       ) : (
-        <TripTrackingView tripId={selectedTripId || null} />
+        <TripTrackingView tripId={selectedTripId || null} allowLateCancellation />
       )}
     </Box>
   );

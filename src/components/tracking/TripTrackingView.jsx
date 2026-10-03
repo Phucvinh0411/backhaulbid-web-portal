@@ -8,6 +8,7 @@ import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 import CheckIcon from "@mui/icons-material/Check";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
@@ -91,21 +92,24 @@ const formatMoney = (value) =>
 
 const asList = (response) => (Array.isArray(response) ? response : response?.data || []);
 
-export default function TripTrackingView({ tripId }) {
+export default function TripTrackingView({ tripId, allowLateCancellation = false }) {
   const [trip, setTrip] = useState(null);
   const [locations, setLocations] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [delaySettlements, setDelaySettlements] = useState([]);
+  const [cancellingLateTrip, setCancellingLateTrip] = useState(false);
 
   const loadTracking = useCallback(async () => {
     if (!tripId) return;
     try {
-      const [tripResponse, locationResponse, eventResponse] = await Promise.all([
+      const [tripResponse, locationResponse, eventResponse, settlementResponse] = await Promise.all([
         contractApi.getTrip(tripId),
         contractApi.listLocations(tripId),
         contractApi.listJourneyEvents(tripId),
+        contractApi.listTripDelaySettlements(tripId),
       ]);
       setTrip(tripResponse);
       const locationList = asList(locationResponse)
@@ -117,6 +121,7 @@ export default function TripTrackingView({ tripId }) {
           .slice()
           .sort((left, right) => new Date(right.recordedAt) - new Date(left.recordedAt)),
       );
+      setDelaySettlements(asList(settlementResponse));
       setLastUpdated(new Date());
       setError("");
     } catch (loadError) {
@@ -125,6 +130,22 @@ export default function TripTrackingView({ tripId }) {
       setLoading(false);
     }
   }, [tripId]);
+
+  const handleCancelLateTrip = async () => {
+    if (!window.confirm("Bạn muốn hủy chuyến này vì xe đã trễ hơn 1 giờ? Khoản bồi thường sẽ được xử lý theo mức trễ hiện tại.")) return;
+    setCancellingLateTrip(true);
+    try {
+      const response = await contractApi.cancelLateTrip(tripId, {
+        reason: "Chủ hàng hủy do giao trễ hơn 1 giờ",
+      });
+      setTrip(response?.data ?? response);
+      await loadTracking();
+    } catch (cancelError) {
+      setError(cancelError?.response?.data?.message || "Không thể hủy chuyến do giao trễ.");
+    } finally {
+      setCancellingLateTrip(false);
+    }
+  };
 
   useEffect(() => {
     setTrip(null);
@@ -177,6 +198,55 @@ export default function TripTrackingView({ tripId }) {
   return (
     <Box className="flex flex-col gap-6">
       {error && <Alert severity="warning">{error}</Alert>}
+
+      {trip.expectedDeliveryAt && (
+        <Alert severity={trip.lateMinutes > 0 ? "warning" : "info"} className="!rounded-2xl">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <strong>Hạn giao dự kiến: {formatTime(trip.expectedDeliveryAt)}</strong>
+              {trip.lateMinutes > 0 && <span> · Đang trễ {trip.lateMinutes} phút</span>}
+              <div className="mt-1 text-sm">
+                {trip.latePolicyEnabled
+                  ? "Mức bồi thường được trừ từ tiền đặt trước; điểm uy tín chủ xe giảm theo từng bậc."
+                  : "Chuyến này chưa có tiền đặt trước được giữ nên không áp dụng bồi thường tự động."}
+              </div>
+            </div>
+            {allowLateCancellation && trip.canCancelForLateDelivery && (
+              <Button
+                color="error"
+                variant="contained"
+                disabled={cancellingLateTrip}
+                onClick={handleCancelLateTrip}
+                className="!rounded-xl !font-bold"
+              >
+                {cancellingLateTrip ? "Đang hủy chuyến..." : "Hủy chuyến và nhận bồi thường"}
+              </Button>
+            )}
+          </div>
+        </Alert>
+      )}
+
+      {delaySettlements.length > 0 && (
+        <Card variant="outlined" className="!rounded-2xl border-amber-200 shadow-sm">
+          <CardContent className="!p-5">
+            <Typography className="!mb-3 !font-bold text-slate-800">Các mức xử lý giao trễ</Typography>
+            <div className="grid gap-3 md:grid-cols-3">
+              {delaySettlements.map((settlement) => (
+                <div key={settlement.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <strong className="text-slate-800">Bậc {settlement.tier} · {settlement.cumulativePenaltyPercent}% cọc</strong>
+                    <Chip label={settlement.overallStatus === "COMPLETED" ? "Đã xử lý" : "Đang thử lại"} color={settlement.overallStatus === "COMPLETED" ? "success" : "warning"} size="small" />
+                  </div>
+                  <Typography variant="body2" className="!mt-2 text-slate-600">
+                    Bồi thường: {formatMoney(settlement.totalCompensationAmount)} · Trừ {settlement.pointsDeducted} điểm uy tín
+                  </Typography>
+                  {settlement.lastError && <Typography variant="caption" className="!mt-2 block text-rose-700">{settlement.lastError}</Typography>}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card variant="outlined" className="!rounded-2xl border-slate-200 shadow-sm">
         <CardContent className="!p-5">

@@ -123,6 +123,9 @@ export const mapBackendToShipment = (auction = {}) => {
     driverPlate: asText(auction.trip?.vehiclePlate, auction.vehiclePlate),
     tripStatus: auction.trip?.status || null,
     tripId: auction.trip?.id || auction.tripId || null,
+    awardStatus: auction.awardStatus || null,
+    awardProgress: auction.awardProgress || null,
+    creationFeeStatus: auction.creationFeeStatus || null,
     cancelReason: asText(auction.cancelReason, auction.cancellationReason),
     from: {
       name: asText(pickupLocation.name, pickupLocation.locationName, auction.originLocationName, fromProvince),

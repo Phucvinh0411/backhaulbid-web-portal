@@ -9,11 +9,18 @@ import { RoundedBox } from "@/components/common";
 export default function CarrierStatsGrid({ carrier }) {
   const stats = [
     {
-      label: "Điểm tín nhiệm",
+      label: "Đánh giá sao",
       value: `${carrier.rating} / 5.0`,
       icon: <StarIcon className="text-amber-500 !text-xl" />,
-      subtext: "Đánh giá bởi Shipper",
+      subtext: "Đánh giá sao từ chủ hàng",
       badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
+    },
+    {
+      label: "Điểm uy tín đấu giá",
+      value: carrier.reputationScore == null ? "Chưa có dữ liệu" : `${carrier.reputationScore} / 100`,
+      icon: <ShieldIcon className="text-indigo-600 !text-xl" />,
+      subtext: "Điểm dùng để xét quyền tham gia đấu giá",
+      badgeColor: "bg-indigo-50 text-indigo-800 border-indigo-200",
     },
     {
       label: "Chuyến hoàn thành",
@@ -39,7 +46,7 @@ export default function CarrierStatsGrid({ carrier }) {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       {stats.map((item, index) => (
         <RoundedBox key={index} padding="sm" className="hover:-translate-y-1 transition-all">
           <div className="flex items-center justify-between mb-2">

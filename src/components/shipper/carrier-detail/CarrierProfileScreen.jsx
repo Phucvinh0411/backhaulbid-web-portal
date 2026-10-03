@@ -17,6 +17,7 @@ import LegalRepresentativeCard from "./LegalRepresentativeCard";
 import FleetOverviewCard from "./FleetOverviewCard";
 import DriversRosterCard from "./DriversRosterCard";
 import CarrierReviewsCard from "./CarrierReviewsCard";
+import CarrierReputationHistory from "./CarrierReputationHistory";
 
 export default function CarrierProfileScreen({ carrierId }) {
   const router = useRouter();
@@ -40,9 +41,14 @@ export default function CarrierProfileScreen({ carrierId }) {
       carrierProfileApi.getCompany(carrierId),
       carrierProfileApi.getVehicles(carrierId),
       carrierProfileApi.getDrivers(carrierId),
+      carrierProfileApi.getReputation(carrierId).catch(() => null),
     ])
-      .then(([company, vehicles, drivers]) => {
-        if (active) setCarrier(mapCarrierProfile({ company, vehicles, drivers }));
+      .then(([company, vehicles, drivers, reputation]) => {
+        if (active) setCarrier({
+          ...mapCarrierProfile({ company, vehicles, drivers }),
+          reputationScore: reputation?.score ?? null,
+          reputationHistory: reputation?.history ?? [],
+        });
       })
       .catch((error) => {
         if (!active) return;
@@ -107,6 +113,8 @@ export default function CarrierProfileScreen({ carrierId }) {
 
       {/* Stats Grid */}
       <CarrierStatsGrid carrier={carrier} />
+
+      <CarrierReputationHistory reputation={carrier.reputationScore == null ? null : { score: carrier.reputationScore, history: carrier.reputationHistory }} />
 
       {/* Section 1: Legal & Enterprise Details */}
       <LegalRepresentativeCard carrier={carrier} />
