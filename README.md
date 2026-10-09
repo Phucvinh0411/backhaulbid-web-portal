@@ -51,9 +51,9 @@
     tự nạp các biến public từ file infrastructure. Docker Compose cũng truyền
     đúng file này vào build args của web portal.
 
-    Tối thiểu, file infrastructure cần có `NEXT_PUBLIC_GATEWAY_URL`,
-    `NEXT_PUBLIC_BIDDING_SOCKET_PATH` và bốn biến
-    `NEXT_PUBLIC_VNPT_EKYC_*`. Token VNPT không được commit hoặc in vào log.
+    Tối thiểu, file infrastructure cần có `NEXT_PUBLIC_GATEWAY_URL` và
+    `NEXT_PUBLIC_BIDDING_SOCKET_PATH`. Xác thực người đại diện dùng phiên NFC
+    do identity service quản lý, không cần token nhà cung cấp eKYC ở frontend.
 
 4.  **Khởi chạy máy chủ phát triển (Development Server):**
     ```bash
@@ -111,3 +111,9 @@ Dự án đã sẵn sàng để build và phân phối qua Docker:
     ```bash
     docker run -d -p 3000:3000 --name web-portal-container backhaulbid-web-portal:latest
     ```
+
+## NFC eKYC qua app chung
+
+Khi identity-service bật `NFC_EKYC_ENABLED`, màn xác thực người đại diện dùng QR được tạo ngay trên web. Chủ hàng/Chủ xe đăng nhập cùng tài khoản trên app BackHaulBid, quét mã rồi nhập mã điện thoại trên web để cho phép thu thập. Web chỉ hiển thị kết quả từ server; đóng modal không làm tài khoản trở thành VERIFIED.
+
+Bản phát triển hiện trả PENDING và công bố rõ dữ liệu ảnh/chip bị hủy sau kiểm tra; cần xác thực lại khi dịch vụ tin cậy sẵn sàng. Xem [hướng dẫn tích hợp](../../NFC/cccd-bac-android/docs/SDK_INTEGRATION.md) và [tiến độ](../../NFC/cccd-bac-android/docs/SDK_IMPLEMENTATION_PROGRESS.md).
