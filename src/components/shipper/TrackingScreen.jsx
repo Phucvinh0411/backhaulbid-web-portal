@@ -1,104 +1,95 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
-import MenuItem from "@mui/material/MenuItem";
-import TextField from "@mui/material/TextField";
-
+import Chip from "@mui/material/Chip";
 import PageHeader from "@/components/common/PageHeader";
+import { EmptyState, ErrorState, ListSkeleton } from "@/components/ui";
 import TripTrackingView from "@/components/tracking/TripTrackingView";
+import TripList, { TRIP_GROUPS, getTripNextStep } from "@/components/tracking/TripList";
 import { contractApi } from "@/services/contractApi";
+import { getApiErrorMessage } from "@/services/errorMessage";
+import { shortId } from "@/lib/format";
 
-const STATUS_LABELS = {
-  WAITING_PICKUP: "Chờ lấy hàng",
-  PICKED_UP: "Đã lấy hàng",
-  IN_TRANSIT: "Đang vận chuyển",
-  DELIVERED: "Đã giao",
-  COMPLETED: "Hoàn thành",
-  CANCELLED: "Đã hủy",
-};
-
+/**
+ * Shipper trips: list by default, detail when `?id=` is present (deep links from
+ * notifications, contracts and auctions keep working).
+ */
 export default function TrackingScreen({ tripId: initialTripId = null }) {
   const searchParams = useSearchParams();
-  const idFromUrl = searchParams?.get("id");
-  const preferredTripId = initialTripId || idFromUrl || "";
-
+  const tripId = initialTripId || searchParams?.get("id") || null;
   const [trips, setTrips] = useState([]);
-  const [tripsLoading, setTripsLoading] = useState(true);
-  const [tripsError, setTripsError] = useState("");
-  const [selectedTripId, setSelectedTripId] = useState("");
+  const [state, setState] = useState("loading");
+  const [error, setError] = useState("");
+  const [group, setGroup] = useState("ACTIVE");
+
+  const load = useCallback(async () => {
+    setState("loading");
+    setError("");
+    try {
+      const response = await contractApi.listTrips(undefined, { skipGlobalNotification: true });
+      setTrips(Array.isArray(response) ? response : response?.data || []);
+      setState("ready");
+    } catch (loadError) {
+      setError(getApiErrorMessage(loadError, "Không thể tải danh sách chuyến."));
+      setState("error");
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true;
-    setTripsLoading(true);
-    setTripsError("");
-    contractApi
-      .listTrips()
-      .then((response) => {
-        if (!active) return;
-        const items = Array.isArray(response) ? response : response?.data || [];
-        setTrips(items);
-        setSelectedTripId((previous) => {
-          const current = previous || preferredTripId;
-          const hasCurrent = items.some((trip) => String(trip.id) === String(current));
-          if (hasCurrent) return current;
-          return items.length > 0 ? String(items[0].id) : "";
-        });
-      })
-      .catch((error) => {
-        if (active) setTripsError(error?.response?.data?.message || "Không thể tải danh sách chuyến.");
-      })
-      .finally(() => {
-        if (active) setTripsLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [preferredTripId]);
+    if (!tripId) void load();
+  }, [load, tripId]);
+
+  const visible = useMemo(() => {
+    const selected = TRIP_GROUPS.find((item) => item.value === group);
+    const urgency = (trip) => (getTripNextStep(trip, "shipper") ? 0 : 1);
+    return trips.filter(selected.match).sort((a, b) => urgency(a) - urgency(b) || new Date(b.createdAt) - new Date(a.createdAt));
+  }, [group, trips]);
+
+  if (tripId) {
+    return (
+      <Box>
+        <PageHeader
+          title={`Chuyến #${shortId(tripId)}`}
+          breadcrumbs={[
+            { label: "Trang chủ", path: "/shipper/dashboard" },
+            { label: "Chuyến vận chuyển", path: "/shipper/tracking" },
+            { label: `#${shortId(tripId)}` },
+          ]}
+        />
+        <TripTrackingView tripId={tripId} role="shipper" allowLateCancellation />
+      </Box>
+    );
+  }
 
   return (
-    <Box className="w-full min-h-screen">
+    <Box>
       <PageHeader
-        title="Giám Sát Hành Trình"
-        subtitle="Theo dõi vị trí và tiến trình giao nhận của chuyến vận chuyển, dữ liệu cập nhật tự động mỗi 15 giây."
-        breadcrumbs={[
-          { label: "Trang chủ", path: "/shipper/dashboard" },
-          { label: "Hợp đồng vận chuyển", path: "/shipper/contracts" },
-          { label: "Giám sát đơn hàng" },
-        ]}
+        title="Chuyến vận chuyển"
+        subtitle="Theo dõi tiến độ, xem bằng chứng giao hàng và xác nhận khi đã nhận đủ hàng."
+        breadcrumbs={[{ label: "Trang chủ", path: "/shipper/dashboard" }, { label: "Chuyến vận chuyển" }]}
       />
-
-      <Box className="mb-6" sx={{ maxWidth: 460 }}>
-        <TextField
-          select
-          fullWidth
-          size="small"
-          label="Chọn chuyến vận chuyển"
-          value={selectedTripId}
-          onChange={(event) => setSelectedTripId(event.target.value)}
-          disabled={tripsLoading || trips.length === 0}
-        >
-          {trips.map((trip) => (
-            <MenuItem key={trip.id} value={trip.id}>
-              {String(trip.id).slice(0, 8)} · {trip.pickupLocation || "Chưa xác định"} → {trip.deliveryLocation || "Chưa xác định"} · {STATUS_LABELS[trip.status] || trip.status}
-            </MenuItem>
-          ))}
-        </TextField>
+      <Box role="tablist" aria-label="Nhóm chuyến" sx={{ display: "flex", gap: 1, mb: 2, overflowX: "auto", pb: 0.5 }}>
+        {TRIP_GROUPS.map((item) => (
+          <Chip
+            key={item.value}
+            role="tab"
+            aria-selected={group === item.value}
+            label={`${item.label} (${trips.filter(item.match).length})`}
+            onClick={() => setGroup(item.value)}
+            color={group === item.value ? "primary" : "default"}
+            variant={group === item.value ? "filled" : "outlined"}
+            sx={{ minHeight: 40, fontSize: "0.875rem" }}
+          />
+        ))}
       </Box>
-
-      {tripsError && <Alert severity="error" className="!mb-4">{tripsError}</Alert>}
-      {tripsLoading ? (
-        <Box className="flex min-h-[40vh] items-center justify-center">
-          <CircularProgress />
-        </Box>
-      ) : trips.length === 0 ? (
-        <Alert severity="info">Bạn chưa có chuyến vận chuyển nào để theo dõi.</Alert>
-      ) : (
-        <TripTrackingView tripId={selectedTripId || null} allowLateCancellation />
+      {state === "loading" && <ListSkeleton rows={4} label="Đang tải chuyến" />}
+      {state === "error" && <ErrorState description={error} onRetry={load} />}
+      {state === "ready" && visible.length === 0 && (
+        <EmptyState title="Không có chuyến trong nhóm này" description="Chuyến được tạo khi phiên đấu giá trao thầu và hợp đồng có đủ chữ ký." />
       )}
+      {state === "ready" && visible.length > 0 && <TripList trips={visible} role="shipper" hrefFor={(trip) => `/shipper/tracking?id=${encodeURIComponent(trip.id)}`} />}
     </Box>
   );
 }

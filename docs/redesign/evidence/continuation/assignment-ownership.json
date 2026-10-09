@@ -1,0 +1,22 @@
+{
+  "result": "PASS",
+  "cases": [
+    "foreign VERIFIED profile 403",
+    "unknown profile 403",
+    "owned PENDING profile 409",
+    "foreign trip access 403",
+    "rejected requests leave trip unchanged",
+    "owned VERIFIED profile 200 with PIN",
+    "rejected reassignment preserves issued PIN",
+    "PIN claim 200 after rejection",
+    "rejected reassignment preserves claimed driver access"
+  ],
+  "noTokensOrPinsStored": true,
+  "originalSeedsTouched": false,
+  "cleanup": {
+    "accounts": 4,
+    "profiles": 3,
+    "trips": 1,
+    "completed": true
+  }
+}

@@ -19,8 +19,8 @@ export default function AuctionTypeBadge({
         sizeClasses[size] || sizeClasses.md
       } ${
         isSealed
-          ? "bg-amber-50 text-amber-800 border-amber-200/90"
-          : "bg-sky-50 text-sky-800 border-sky-200/90"
+          ? "bg-warning-soft text-warning border-warning-soft/90"
+          : "bg-info-soft text-info border-info-soft/90"
       } ${className}`}
     >
       

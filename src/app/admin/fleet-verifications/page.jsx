@@ -149,7 +149,7 @@ export default function FleetVerificationsPage() {
           sx={{
             px: 2.5,
             pt: 1,
-            borderBottom: "1px solid #E2E8F0",
+            borderBottom: "1px solid var(--color-line)",
             bgcolor: "rgba(248,250,252,0.72)",
           }}
         >
@@ -270,7 +270,7 @@ export default function FleetVerificationsPage() {
                                 setReason("");
                                 setReviewing({ row, decision: "REJECT" });
                               }}
-                              sx={{ color: "#BE123C", borderColor: "#FECDD3" }}
+                              sx={{ color: "var(--color-danger)", borderColor: "var(--color-danger-soft)" }}
                             >
                               Từ chối
                             </AdminSecondaryButton>
@@ -293,7 +293,7 @@ export default function FleetVerificationsPage() {
         maxWidth="sm"
       >
         <DialogTitle
-          sx={{ borderBottom: "1px solid #E2E8F0", fontWeight: 800 }}
+          sx={{ borderBottom: "1px solid var(--color-line)", fontWeight: 800 }}
         >
           Hồ sơ {tab === "vehicles" ? "phương tiện" : "tài xế"}
         </DialogTitle>
@@ -303,8 +303,8 @@ export default function FleetVerificationsPage() {
               <Box
                 sx={{
                   p: 2,
-                  bgcolor: "#F8FAFC",
-                  border: "1px solid #E2E8F0",
+                  bgcolor: "var(--color-surface-sunken)",
+                  border: "1px solid var(--color-line)",
                   borderRadius: 2,
                 }}
               >
@@ -349,7 +349,7 @@ export default function FleetVerificationsPage() {
                       key={document.label}
                       sx={{
                         p: 1.5,
-                        border: "1px solid #E2E8F0",
+                        border: "1px solid var(--color-line)",
                         borderRadius: 2,
                       }}
                     >
@@ -372,7 +372,7 @@ export default function FleetVerificationsPage() {
                       ) : (
                         <Typography
                           variant="body2"
-                          sx={{ color: "#BE123C", mt: 0.5 }}
+                          sx={{ color: "var(--color-danger)", mt: 0.5 }}
                         >
                           Thiếu tài liệu
                         </Typography>
@@ -382,7 +382,7 @@ export default function FleetVerificationsPage() {
                 </Box>
               ) : (
                 <Box
-                  sx={{ p: 1.5, border: "1px solid #E2E8F0", borderRadius: 2 }}
+                  sx={{ p: 1.5, border: "1px solid var(--color-line)", borderRadius: 2 }}
                 >
                   <Typography
                     variant="caption"
@@ -403,7 +403,7 @@ export default function FleetVerificationsPage() {
                   ) : (
                     <Typography
                       variant="body2"
-                      sx={{ color: "#BE123C", mt: 0.5 }}
+                      sx={{ color: "var(--color-danger)", mt: 0.5 }}
                     >
                       Thiếu tài liệu
                     </Typography>
@@ -413,7 +413,7 @@ export default function FleetVerificationsPage() {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 2, borderTop: "1px solid #E2E8F0" }}>
+        <DialogActions sx={{ p: 2, borderTop: "1px solid var(--color-line)" }}>
           <AdminSecondaryButton onClick={() => setDetailRow(null)}>
             Đóng
           </AdminSecondaryButton>
@@ -459,7 +459,7 @@ export default function FleetVerificationsPage() {
             disabled={saving}
             sx={
               reviewing?.decision === "REJECT"
-                ? { bgcolor: "#BE123C", "&:hover": { bgcolor: "#9F1239" } }
+                ? { bgcolor: "var(--color-danger)", "&:hover": { bgcolor: "var(--color-danger)" } }
                 : undefined
             }
           >

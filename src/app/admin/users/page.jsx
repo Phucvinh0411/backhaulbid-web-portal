@@ -267,7 +267,7 @@ export default function AdminUsersPage() {
                         </Typography>
                         <Typography
                           variant="caption"
-                          sx={{ color: "text.disabled", fontWeight: 600 }}
+                          sx={{ color: "text.secondary", fontWeight: 600 }}
                         >
                           {row.id}
                         </Typography>
@@ -307,7 +307,7 @@ export default function AdminUsersPage() {
                     </IconButton>
                     <IconButton
                       size="small"
-                      sx={{ color: "text.disabled", ml: 0.5 }}
+                      sx={{ color: "text.secondary", ml: 0.5 }}
                       aria-label="Tùy chọn"
                     >
                       <MoreVertIcon fontSize="small" />

@@ -2,30 +2,22 @@
 
 import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
 import Sidebar, { SIDEBAR_WIDTH } from "./Sidebar";
 import Header from "./Header";
 import Footer from "./Footer";
-import adminNavigation from "@/navigation/adminNavigation";
-import carrierNavigation from "@/navigation/carrierNavigation";
-import defaultNavigation from "@/navigation/navigation";
+import MobileBottomNav from "./MobileBottomNav";
+import { navigationByRole, mobileNavigationByRole } from "@/navigation/navigation";
+
+const ROLE_LABELS = { SHIPPER: "Chủ hàng", CARRIER: "Chủ xe", ADMIN: "Quản trị viên", DRIVER: "Tài xế" };
 
 export default function DashboardLayout({ children, role, userInfo }) {
-  const navigation =
-    role === "admin"
-      ? adminNavigation
-      : role === "carrier"
-        ? carrierNavigation
-        : defaultNavigation;
-
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const navigation = navigationByRole[role] || navigationByRole.shipper;
+  const mobileNavigation = mobileNavigationByRole[role] || [];
   const [mobileOpen, setMobileOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(userInfo);
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    const refreshUser = () => fetch("/api/auth/me", { cache: "no-store" })
       .then((res) => {
         if (res.status === 401 || res.status === 403 || res.status === 404) {
           if (typeof window !== "undefined" && window.location.pathname !== "/login") {
@@ -44,117 +36,62 @@ export default function DashboardLayout({ children, role, userInfo }) {
         }
         if (resData.data) {
           const u = resData.data;
-          const displayName = u.fullName || u.phone || "Người dùng";
+          const displayName = u.fullName || u.companyName || u.phone || "Người dùng";
           setCurrentUser({
             id: u.id || u.accountId,
             accountId: u.accountId || u.id,
             name: displayName,
-            email: u.email || (u.phone ? `${u.phone}@backhaulbid.local` : ""),
+            email: u.email || "",
+            phone: u.phone || "",
             avatar: displayName.charAt(0).toUpperCase(),
-            role:
-              u.role === "SHIPPER"
-                ? "Chủ hàng"
-                : u.role === "CARRIER"
-                  ? "Nhà xe"
-                  : "Quản trị viên",
+            avatarUrl: u.avatarUrl || "",
+            role: ROLE_LABELS[u.role] || "Người dùng",
             companyName: u.companyName,
             companyId: u.companyId,
-            settingsPath:
-              role === "carrier" ? "/carrier/settings" : "/shipper/settings",
           });
         }
       })
       .catch((err) => {
-        console.error("Could not fetch user profile from DB:", err);
+        console.error("Could not fetch user profile:", err);
       });
+
+    refreshUser();
+    window.addEventListener("account-profile-updated", refreshUser);
+    return () => window.removeEventListener("account-profile-updated", refreshUser);
   }, [role]);
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
   return (
-    <Box
-      className="flex min-h-screen relative"
-      sx={{
-        backgroundColor: "#F6F8FC",
-        backgroundImage: `
-          radial-gradient(circle at 5% 15%, rgba(98, 182, 203, 0.16) 0%, transparent 35%),
-          radial-gradient(circle at 95% 80%, rgba(27, 73, 101, 0.12) 0%, transparent 40%),
-          radial-gradient(circle at 10% 80%, rgba(99, 102, 241, 0.08) 0%, transparent 35%),
-          radial-gradient(circle at 50% 50%, rgba(248, 250, 252, 0.6) 0%, transparent 100%)
-        `,
-        backgroundAttachment: "fixed",
-      }}
-    >
-      {/* Sidebar - permanent on desktop (floating), temporary on mobile */}
-      {isMobile ? (
-        <Sidebar
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          navigation={navigation}
-          userInfo={currentUser}
-        />
-      ) : (
-        <Sidebar
-          variant="permanent"
-          navigation={navigation}
-          userInfo={currentUser}
-        />
-      )}
+    <Box sx={{ display: "flex", minHeight: "100dvh", bgcolor: "background.default" }}>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[2000] focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:font-semibold focus:text-brand">
+        Bỏ qua điều hướng
+      </a>
 
-      {/* Header - Floating next to sidebar */}
-      <Header
-        onMenuToggle={handleDrawerToggle}
-        userInfo={currentUser}
+      <Sidebar
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        navigation={navigation}
         role={role}
       />
 
-      {/* Main content area */}
-      <Box
-        component="main"
-        className="flex-1 flex flex-col min-h-screen"
-        sx={{
-          width: {
-            md: `calc(100% - ${SIDEBAR_WIDTH}px)`,
-          },
-          maxWidth: {
-            md: `calc(100% - ${SIDEBAR_WIDTH}px)`,
-          },
-          ml: {
-            md: 0,
-          },
-          pl: {
-            md: 0.5, // Subtle gap between sidebar and content
-          },
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
-      >
-        {/* Spacer for floating AppBar (AppBar height is ~80px + top margin 20px + breathing space) */}
-        <Box sx={{ height: { xs: "90px", md: "108px" } }} />
+      <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", ml: { md: `${SIDEBAR_WIDTH}px` } }}>
+        <Header userInfo={currentUser} role={role} />
 
-        {/* Content canvas */}
         <Box
-          className="flex-1"
-          sx={{
-            px: { xs: 2, md: 2.5 },
-            pb: 2.5,
-          }}
+          component="main"
+          id="main-content"
+          tabIndex={-1}
+          className="with-bottom-nav"
+          sx={{ flex: 1, width: "100%", maxWidth: 1440, mx: "auto", px: { xs: 2, md: 3 }, pt: { xs: 2, md: 3 }, outline: "none" }}
         >
           {children}
         </Box>
 
-        {/* Footer - aligned with right content grid */}
-        <Box
-          sx={{
-            px: { xs: 2, md: 2.5 },
-            pb: 2.5,
-          }}
-        >
+        <Box sx={{ display: { xs: "none", md: "block" }, px: 3, pb: 2, maxWidth: 1440, width: "100%", mx: "auto" }}>
           <Footer />
         </Box>
       </Box>
+
+      <MobileBottomNav items={mobileNavigation} onOpenMore={() => setMobileOpen(true)} />
     </Box>
   );
 }

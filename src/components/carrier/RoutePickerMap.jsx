@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import { tokens } from "@/theme/theme";
 import {
   MapContainer,
   TileLayer,
@@ -33,7 +34,7 @@ const createMarkerIcon = (colorHex, letter) => {
           background-color: ${colorHex};
           border-radius: 50% 50% 50% 0;
           transform: rotate(-45deg);
-          border: 3px solid #ffffff;
+          border: 3px solid var(--color-surface);
           box-shadow: 0 4px 12px rgba(0,0,0,0.35);
           display: flex;
           align-items: center;
@@ -41,7 +42,7 @@ const createMarkerIcon = (colorHex, letter) => {
         ">
           <span style="
             transform: rotate(45deg);
-            color: #ffffff;
+            color: var(--color-surface);
             font-weight: 900;
             font-size: 13px;
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
@@ -148,8 +149,8 @@ export default function RoutePickerMap({
   const hasDest =
     dest && Number.isFinite(Number(dest.lat)) && Number.isFinite(Number(dest.lng));
 
-  const originIcon = useMemo(() => createMarkerIcon("#10B981", "A"), []);
-  const destIcon = useMemo(() => createMarkerIcon("#F59E0B", "B"), []);
+  const originIcon = useMemo(() => createMarkerIcon("var(--color-success)", "A"), []);
+  const destIcon = useMemo(() => createMarkerIcon("var(--color-warning)", "B"), []);
 
   const center = useMemo(() => {
     if (activeTarget === "DESTINATION" && hasDest) return [Number(dest.lat), Number(dest.lng)];
@@ -187,7 +188,7 @@ export default function RoutePickerMap({
         minHeight: "320px",
         borderRadius: "16px",
         overflow: "hidden",
-        border: "1px solid #E2E8F0",
+        border: "1px solid var(--color-line)",
         boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
         zIndex: 1,
       }}
@@ -229,13 +230,13 @@ export default function RoutePickerMap({
           >
             <Popup>
               <div style={{ padding: "4px", minWidth: "160px" }}>
-                <div style={{ fontWeight: 800, color: "#10B981", fontSize: "13px" }}>
+                <div style={{ fontWeight: 800, color: "var(--color-success)", fontSize: "13px" }}>
                   📍 Điểm xuất phát (A)
                 </div>
-                <div style={{ color: "#334155", fontSize: "12px", marginTop: "4px" }}>
+                <div style={{ color: "var(--color-ink-muted)", fontSize: "12px", marginTop: "4px" }}>
                   {origin.label || "Vị trí đã ghim"}
                 </div>
-                <div style={{ color: "#94A3B8", fontSize: "11px", marginTop: "4px" }}>
+                <div style={{ color: "var(--color-ink-subtle)", fontSize: "11px", marginTop: "4px" }}>
                   Kéo ghim để tinh chỉnh vị trí
                 </div>
               </div>
@@ -264,13 +265,13 @@ export default function RoutePickerMap({
           >
             <Popup>
               <div style={{ padding: "4px", minWidth: "160px" }}>
-                <div style={{ fontWeight: 800, color: "#D97706", fontSize: "13px" }}>
+                <div style={{ fontWeight: 800, color: "var(--color-warning)", fontSize: "13px" }}>
                   🏁 Điểm đến mong muốn (B)
                 </div>
-                <div style={{ color: "#334155", fontSize: "12px", marginTop: "4px" }}>
+                <div style={{ color: "var(--color-ink-muted)", fontSize: "12px", marginTop: "4px" }}>
                   {dest.label || "Vị trí đã ghim"}
                 </div>
-                <div style={{ color: "#94A3B8", fontSize: "11px", marginTop: "4px" }}>
+                <div style={{ color: "var(--color-ink-subtle)", fontSize: "11px", marginTop: "4px" }}>
                   Kéo ghim để tinh chỉnh vị trí
                 </div>
               </div>
@@ -286,7 +287,7 @@ export default function RoutePickerMap({
               [Number(dest.lat), Number(dest.lng)],
             ]}
             pathOptions={{
-              color: "#1B4965",
+              color: tokens.brand,
               weight: 4,
               dashArray: "6, 8",
               opacity: 0.85,
@@ -322,8 +323,8 @@ export default function RoutePickerMap({
             gap: "5px",
             transition: "all 0.15s ease",
             boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-            backgroundColor: activeTarget === "ORIGIN" ? "#10B981" : "#FFFFFF",
-            color: activeTarget === "ORIGIN" ? "#FFFFFF" : "#065F46",
+            backgroundColor: activeTarget === "ORIGIN" ? "var(--color-success)" : "var(--color-surface)",
+            color: activeTarget === "ORIGIN" ? "var(--color-surface)" : "var(--color-success)",
           }}
         >
           <span>📍</span>
@@ -345,8 +346,8 @@ export default function RoutePickerMap({
             gap: "5px",
             transition: "all 0.15s ease",
             boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-            backgroundColor: activeTarget === "DESTINATION" ? "#F59E0B" : "#FFFFFF",
-            color: activeTarget === "DESTINATION" ? "#FFFFFF" : "#92400E",
+            backgroundColor: activeTarget === "DESTINATION" ? "var(--color-warning)" : "var(--color-surface)",
+            color: activeTarget === "DESTINATION" ? "var(--color-surface)" : "var(--color-warning)",
           }}
         >
           <span>🏁</span>
@@ -372,7 +373,7 @@ export default function RoutePickerMap({
           <div
             style={{
               backgroundColor: "rgba(15, 23, 42, 0.88)",
-              color: "#FFFFFF",
+              color: "var(--color-surface)",
               fontSize: "12px",
               fontWeight: 800,
               padding: "5px 12px",
@@ -384,7 +385,7 @@ export default function RoutePickerMap({
             }}
           >
             <span>Khoảng cách:</span>
-            <span style={{ color: "#34D399", fontFamily: "monospace", fontSize: "13px" }}>
+            <span style={{ color: "var(--color-success-soft)", fontFamily: "monospace", fontSize: "13px" }}>
               {distanceKm} km
             </span>
           </div>
@@ -393,13 +394,13 @@ export default function RoutePickerMap({
         <div
           style={{
             backgroundColor: "rgba(255, 255, 255, 0.95)",
-            color: "#334155",
+            color: "var(--color-ink-muted)",
             fontSize: "11px",
             fontWeight: 600,
             padding: "4px 10px",
             borderRadius: "8px",
             boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-            border: "1px solid #E2E8F0",
+            border: "1px solid var(--color-line)",
           }}
         >
           👉 Nhấp bản đồ hoặc kéo ghim để chọn vị trí {activeTarget === "ORIGIN" ? "Điểm đi (A)" : "Điểm đến (B)"}

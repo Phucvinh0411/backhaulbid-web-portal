@@ -35,7 +35,7 @@ import ClearIcon         from "@mui/icons-material/Clear";
 
 import { declareEmptyRoute }        from "@/services/fleetApi";
 import { getApiErrorMessage }       from "@/services/errorMessage";
-import { reverseGeocode }           from "@/utils/geocoding";
+import { ADDRESS_UNAVAILABLE_MESSAGE, reverseGeocode }           from "@/utils/geocoding";
 import { searchPlacesLikeGrab }     from "@/utils/vietnamPlaces";
 import { useGlobalNotification }    from "@/components/common/NotificationPopup";
 
@@ -51,12 +51,12 @@ const RoutePickerMap = dynamic(() => import("./RoutePickerMap"), {
         alignItems: "center",
         justifyContent: "center",
         borderRadius: "16px",
-        border: "1px solid #E2E8F0",
-        bgcolor: "#F8FAFC",
+        border: "1px solid var(--color-line)",
+        bgcolor: "var(--color-surface-sunken)",
       }}
     >
-      <CircularProgress size={26} sx={{ color: "#1B4965", mr: 1.5 }} />
-      <Typography variant="body2" sx={{ color: "#64748B", fontWeight: 600 }}>
+      <CircularProgress size={26} sx={{ color: "var(--color-brand)", mr: 1.5 }} />
+      <Typography variant="body2" sx={{ color: "var(--color-ink-muted)", fontWeight: 600 }}>
         Đang tải bản đồ tương tác...
       </Typography>
     </Box>
@@ -143,9 +143,8 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
 
         try {
           const resolved = await reverseGeocode(lat, lng);
-          if (resolved) {
-            setOriginAddress(resolved);
-          }
+          setOriginAddress(resolved);
+          if (!resolved) notify.warning(ADDRESS_UNAVAILABLE_MESSAGE);
         } catch {
           // ignore
         }
@@ -186,9 +185,8 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
       setGeocodingDest(true);
       try {
         const resolved = await reverseGeocode(coords.lat, coords.lng);
-        if (resolved) {
-          setDestAddress(resolved);
-        }
+        setDestAddress(resolved);
+        if (!resolved) notify.warning(ADDRESS_UNAVAILABLE_MESSAGE);
       } finally {
         setGeocodingDest(false);
       }
@@ -199,9 +197,8 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
       setGeocodingOrigin(true);
       try {
         const resolved = await reverseGeocode(coords.lat, coords.lng);
-        if (resolved) {
-          setOriginAddress(resolved);
-        }
+        setOriginAddress(resolved);
+        if (!resolved) notify.warning(ADDRESS_UNAVAILABLE_MESSAGE);
       } finally {
         setGeocodingOrigin(false);
       }
@@ -347,8 +344,8 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
       {/* ─── HEADER ─── */}
       <DialogTitle
         sx={{
-          bgcolor: "#1B4965",
-          color: "#FFFFFF",
+          bgcolor: "var(--color-brand)",
+          color: "var(--color-surface)",
           px: 3,
           py: 2.2,
           flexShrink: 0,
@@ -379,7 +376,7 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
             onClick={() => setShowMap((prev) => !prev)}
             startIcon={<MapIcon />}
             sx={{
-              color: "#FFFFFF",
+              color: "var(--color-surface)",
               bgcolor: "rgba(255,255,255,0.12)",
               borderRadius: "10px",
               textTransform: "none",
@@ -396,7 +393,7 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
             onClick={handleClose}
             disabled={loading}
             size="small"
-            sx={{ color: "rgba(255,255,255,0.8)", "&:hover": { color: "#FFFFFF" } }}
+            sx={{ color: "rgba(255,255,255,0.8)", "&:hover": { color: "var(--color-surface)" } }}
           >
             <CloseIcon fontSize="small" />
           </IconButton>
@@ -409,7 +406,7 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
           flex: "1 1 auto",
           overflowY: "auto !important",
           p: { xs: 2, sm: 3 },
-          bgcolor: "#F8FAFC",
+          bgcolor: "var(--color-surface-sunken)",
           display: "flex",
           flexDirection: "column",
           gap: 2.5,
@@ -418,19 +415,19 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
             width: "8px",
           },
           "&::-webkit-scrollbar-track": {
-            bgcolor: "#F1F5F9",
+            bgcolor: "var(--color-surface-sunken)",
           },
           "&::-webkit-scrollbar-thumb": {
-            bgcolor: "#CBD5E1",
+            bgcolor: "var(--color-line-strong)",
             borderRadius: "4px",
-            "&:hover": { bgcolor: "#94A3B8" },
+            "&:hover": { bgcolor: "var(--color-ink-subtle)" },
           },
         }}
       >
         {/* ══════════ KHỐI 1: PHƯƠNG TIỆN & TẢI TRỌNG ══════════ */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-            <LocalShippingIcon className="!text-base text-sky-600" />
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-line/80 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-ink-muted">
+            <LocalShippingIcon className="!text-base text-info" />
             <span>1. Phương tiện thực hiện & Tải trọng nhận hàng</span>
           </div>
 
@@ -457,7 +454,7 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "14px",
-                  bgcolor: "#FFFFFF",
+                  bgcolor: "var(--color-surface)",
                 },
               }}
             >
@@ -469,15 +466,15 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
                 const plate = v.licensePlate || v.plate || "";
                 return (
                   <MenuItem key={v.id || plate} value={v.licensePlate || v.plate || ""} disabled={!isVerified}>
-                    <span className="font-bold font-mono text-slate-800 mr-2">{plate}</span>
-                    <span className="text-slate-600 text-sm mr-2">
+                    <span className="font-bold font-mono text-ink mr-2">{plate}</span>
+                    <span className="text-ink-muted text-sm mr-2">
                       – {v.type || v.vehicleType}
                       {(v.capacity || v.payloadCapacity) && ` · ${v.capacity || v.payloadCapacity}`}
                     </span>
                     {!isVerified ? (
-                      <span className="text-amber-600 text-xs font-semibold">[Chờ duyệt]</span>
+                      <span className="text-warning text-xs font-semibold">[Chờ duyệt]</span>
                     ) : (
-                      <span className="text-emerald-600 text-xs font-bold">✓ Đã duyệt</span>
+                      <span className="text-success text-xs font-bold">✓ Đã duyệt</span>
                     )}
                   </MenuItem>
                 );
@@ -498,19 +495,19 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <ScaleIcon fontSize="small" className="text-slate-400" />
+                    <ScaleIcon fontSize="small" className="text-ink-subtle" />
                   </InputAdornment>
                 ),
                 endAdornment: (
                   <InputAdornment position="end">
-                    <span className="text-slate-500 text-sm font-bold">tấn</span>
+                    <span className="text-ink-muted text-sm font-bold">tấn</span>
                   </InputAdornment>
                 ),
               }}
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "14px",
-                  bgcolor: "#FFFFFF",
+                  bgcolor: "var(--color-surface)",
                 },
               }}
             />
@@ -518,27 +515,27 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
         </div>
 
         {/* ══════════ KHỐI 2: LỘ TRÌNH ĐỊA CHỈ & BẢN ĐỒ KIỂU GRAB ══════════ */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-line/80 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-              <PlaceIcon className="!text-base text-emerald-600" />
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-ink-muted">
+              <PlaceIcon className="!text-base text-success" />
               <span>2. Lộ trình di chuyển (Tìm kiếm địa chỉ kiểu Grab)</span>
             </div>
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-ink-subtle">
               💡 Gõ tên kho bãi, KCN, cảng biển hoặc nhấp trực tiếp trên bản đồ
             </span>
           </div>
 
           {/* HỘP NHẬP LIỆU LỘ TRÌNH KIỂU GRAB */}
-          <div className="relative bg-slate-50/70 p-4 rounded-2xl border border-slate-200/90">
+          <div className="relative bg-surface-sunken/70 p-4 rounded-xl border border-line/90">
             <div className="flex items-stretch gap-3">
               {/* Cột icon lộ trình Grab (Chấm xanh A - Dây nối - Vuông cam B) */}
               <div className="flex flex-col items-center justify-between py-3">
-                <div className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                <div className="w-5 h-5 rounded-full bg-success text-white text-[10px] font-black flex items-center justify-center shadow-xs">
                   A
                 </div>
-                <div className="w-0.5 flex-1 my-1 border-l-2 border-dashed border-slate-300"></div>
-                <div className="w-5 h-5 rounded-md bg-amber-500 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                <div className="w-0.5 flex-1 my-1 border-l-2 border-dashed border-line-strong"></div>
+                <div className="w-5 h-5 rounded-md bg-warning text-white text-[10px] font-black flex items-center justify-center shadow-xs">
                   B
                 </div>
               </div>
@@ -565,7 +562,7 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
                           handleGetCurrentLocation();
                         }}
                         disabled={gettingGps || loading}
-                        sx={{ color: "#10B981" }}
+                        sx={{ color: "var(--color-success)" }}
                       >
                         {gettingGps ? <CircularProgress size={16} /> : <MyLocationIcon fontSize="small" />}
                       </IconButton>
@@ -606,13 +603,13 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
                     onClick={handleSwapRoute}
                     size="small"
                     sx={{
-                      bgcolor: "#FFFFFF",
-                      border: "1px solid #CBD5E1",
+                      bgcolor: "var(--color-surface)",
+                      border: "1px solid var(--color-line-strong)",
                       boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
-                      "&:hover": { bgcolor: "#F1F5F9" },
+                      "&:hover": { bgcolor: "var(--color-surface-sunken)" },
                     }}
                   >
-                    <SwapVertIcon fontSize="small" className="text-slate-600" />
+                    <SwapVertIcon fontSize="small" className="text-ink-muted" />
                   </IconButton>
                 </Tooltip>
               </div>
@@ -642,9 +639,9 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
         </div>
 
         {/* ══════════ KHỐI 3: THỜI GIAN ĐI & ĐẾN ══════════ */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-            <ScheduleIcon className="!text-base text-sky-600" />
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-line/80 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-ink-muted">
+            <ScheduleIcon className="!text-base text-info" />
             <span>3. Thời gian đi và đến chính xác (Ngày & Giờ)</span>
           </div>
 
@@ -663,7 +660,7 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "14px",
-                  bgcolor: "#FFFFFF",
+                  bgcolor: "var(--color-surface)",
                 },
               }}
             />
@@ -681,33 +678,33 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "14px",
-                  bgcolor: "#FFFFFF",
+                  bgcolor: "var(--color-surface)",
                 },
               }}
             />
           </div>
 
           {tripDurationText && (
-            <div className="bg-sky-50 border border-sky-100 rounded-xl px-4 py-2.5 flex items-center gap-2 text-xs font-bold text-sky-800">
-              <ScheduleIcon className="!text-sm text-sky-600" />
+            <div className="bg-info-soft border border-info-soft rounded-xl px-4 py-2.5 flex items-center gap-2 text-xs font-bold text-info">
+              <ScheduleIcon className="!text-sm text-info" />
               <span>{tripDurationText}</span>
             </div>
           )}
         </div>
 
         {/* ══════════ KHỐI 4: BÁN KÍNH TÌM KIẾM GIS ══════════ */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-            <RadarIcon className="!text-base text-violet-600" />
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-line/80 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-ink-muted">
+            <RadarIcon className="!text-base text-brand" />
             <span>4. Bán kính quét tìm lô hàng phù hợp (GIS)</span>
           </div>
 
-          <div className="bg-violet-50/60 border border-violet-100 rounded-2xl px-5 pt-4 pb-4 space-y-3">
+          <div className="bg-brand-soft/60 border border-brand-soft rounded-xl px-5 pt-4 pb-4 space-y-3">
             <div className="flex items-center justify-between">
-              <Typography variant="body2" className="text-violet-900 font-semibold text-sm">
+              <Typography variant="body2" className="text-brand font-semibold text-sm">
                 Quét lô hàng trong phạm vi bán kính quanh điểm xuất phát:
               </Typography>
-              <span className="text-2xl font-black text-violet-700">{searchRadius} km</span>
+              <span className="text-2xl font-black text-brand">{searchRadius} km</span>
             </div>
 
             <Slider
@@ -721,19 +718,19 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
               valueLabelFormat={(v) => `${v} km`}
               disabled={loading}
               sx={{
-                color: "#7c3aed",
-                "& .MuiSlider-thumb": { bgcolor: "#7c3aed" },
-                "& .MuiSlider-markLabel": { fontSize: "0.72rem", color: "#6d28d9", fontWeight: 600 },
+                color: "var(--color-brand)",
+                "& .MuiSlider-thumb": { bgcolor: "var(--color-brand)" },
+                "& .MuiSlider-markLabel": { fontSize: "0.72rem", color: "var(--color-ink-muted)", fontWeight: 600 },
               }}
             />
 
-            <Typography variant="caption" className="text-violet-600 block">
+            <Typography variant="caption" className="text-brand block">
               Bán kính đi vòng cho phép hệ thống tự động ghép các chuyến hàng tiện đường trên tuyến hành trình của bạn.
             </Typography>
           </div>
         </div>
 
-        <Alert severity="info" sx={{ borderRadius: "14px", fontSize: "0.8rem", bgcolor: "#EFF6FF" }}>
+        <Alert severity="info" sx={{ borderRadius: "14px", fontSize: "0.8rem", bgcolor: "var(--color-info-soft)" }}>
           Hệ thống <strong>BackHaulBid</strong> sử dụng công thức định vị GIS <strong>Haversine</strong> để tự động ghép xe với các đơn hàng đấu giá có lộ trình tương thích, giúp xe không bị chạy rỗng chiều về.
         </Alert>
       </DialogContent>
@@ -742,8 +739,8 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
         sx={{
           px: 3,
           py: 2,
-          bgcolor: "#FFFFFF",
-          borderTop: "1px solid #E2E8F0",
+          bgcolor: "var(--color-surface)",
+          borderTop: "1px solid var(--color-line)",
           flexShrink: 0,
           display: "flex",
           alignItems: "center",
@@ -759,7 +756,7 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
             borderRadius: "12px",
             textTransform: "none",
             fontWeight: 700,
-            color: "#64748B",
+            color: "var(--color-ink-muted)",
           }}
         >
           Hủy bỏ
@@ -771,8 +768,8 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
           disabled={loading}
           startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <ArrowForwardIcon />}
           sx={{
-            bgcolor: "#1B4965",
-            "&:hover": { bgcolor: "#0D2B3E" },
+            bgcolor: "var(--color-brand)",
+            "&:hover": { bgcolor: "var(--color-brand-hover)" },
             borderRadius: "14px",
             px: 3.5,
             py: 1,
@@ -854,17 +851,17 @@ function GrabSearchBox({
 
   const activeBorder =
     badgeColor === "emerald"
-      ? "border-emerald-500 ring-2 ring-emerald-500/20 bg-white"
-      : "border-amber-500 ring-2 ring-amber-500/20 bg-white";
+      ? "border-success ring-2 ring-success/20 bg-white"
+      : "border-warning ring-2 ring-warning/20 bg-white";
 
   return (
     <div ref={containerRef} className="relative w-full">
       <div
         className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all bg-white shadow-2xs ${
-          isActive ? activeBorder : "border-slate-200 hover:border-slate-300"
+          isActive ? activeBorder : "border-line hover:border-line-strong"
         }`}
       >
-        <SearchIcon fontSize="small" className="text-slate-400 shrink-0" />
+        <SearchIcon fontSize="small" className="text-ink-subtle shrink-0" />
 
         <input
           type="text"
@@ -875,17 +872,17 @@ function GrabSearchBox({
             if (suggestions.length > 0) setOpenDropdown(true);
           }}
           placeholder={placeholder}
-          className="w-full bg-transparent text-sm text-slate-800 placeholder-slate-400 font-medium focus:outline-hidden"
+          className="w-full bg-transparent text-sm text-ink placeholder-ink-subtle font-medium focus:outline-hidden"
         />
 
         {/* Loading spinner hoặc trạng thái ghim */}
         <div className="flex items-center gap-1 shrink-0">
           {(searching || loading) && (
-            <CircularProgress size={16} className="text-sky-600" />
+            <CircularProgress size={16} className="text-info" />
           )}
 
           {isPinned && !(searching || loading) && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-success bg-success-soft px-2 py-0.5 rounded-md border border-success-soft">
               <CheckCircleIcon sx={{ fontSize: 13 }} /> Đã ghim
             </span>
           )}
@@ -894,7 +891,7 @@ function GrabSearchBox({
             <IconButton
               size="small"
               onClick={onClear}
-              sx={{ p: 0.5, color: "#94A3B8", "&:hover": { color: "#475569" } }}
+              sx={{ p: 0.5, color: "var(--color-ink-subtle)", "&:hover": { color: "var(--color-ink-muted)" } }}
             >
               <ClearIcon sx={{ fontSize: 16 }} />
             </IconButton>
@@ -913,40 +910,40 @@ function GrabSearchBox({
             left: 0,
             right: 0,
             zIndex: 9999,
-            backgroundColor: "#FFFFFF",
+            backgroundColor: "var(--color-surface)",
             borderRadius: "14px",
-            border: "1px solid #E2E8F0",
+            border: "1px solid var(--color-line)",
             boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
             maxHeight: "260px",
             overflowY: "auto",
           }}
         >
-          <div className="p-2 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+          <div className="p-2 border-b border-line text-[11px] font-bold text-ink-subtle uppercase tracking-wider flex items-center justify-between">
             <span>Địa điểm gợi ý ({suggestions.length})</span>
-            <span className="text-[10px] text-slate-400 font-normal">Nhấp để chọn & ghim map</span>
+            <span className="text-[10px] text-ink-subtle font-normal">Nhấp để chọn & ghim map</span>
           </div>
 
           {suggestions.map((item, idx) => (
             <div
               key={`${item.title}-${idx}`}
               onClick={() => handleSelect(item)}
-              className="px-3 py-2.5 hover:bg-slate-50 cursor-pointer flex items-start gap-2.5 transition-colors border-b border-slate-50 last:border-b-0"
+              className="px-3 py-2.5 hover:bg-surface-sunken cursor-pointer flex items-start gap-2.5 transition-colors border-b border-line last:border-b-0"
             >
-              <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-700 flex items-center justify-center shrink-0 mt-0.5 border border-sky-100">
+              <div className="w-7 h-7 rounded-lg bg-info-soft text-info flex items-center justify-center shrink-0 mt-0.5 border border-info-soft">
                 <PlaceIcon sx={{ fontSize: 16 }} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-xs text-slate-800 truncate block">
+                  <span className="font-bold text-xs text-ink truncate block">
                     {item.title}
                   </span>
                   {item.category && (
-                    <span className="text-[9px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded-md shrink-0">
+                    <span className="text-[9px] font-semibold bg-surface-sunken text-ink-muted px-1.5 py-0.2 rounded-md shrink-0">
                       {item.category}
                     </span>
                   )}
                 </div>
-                <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                <div className="text-[11px] text-ink-muted truncate mt-0.5">
                   {item.subtitle}
                 </div>
               </div>

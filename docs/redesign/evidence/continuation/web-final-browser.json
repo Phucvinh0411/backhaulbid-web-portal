@@ -1,0 +1,97 @@
+{
+  "results": [
+    {
+      "role": "carrier",
+      "route": "/carrier/wallet",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/drivers",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/wallet",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/drivers",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/wallet",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/drivers",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/wallet",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/drivers",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/wallet",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/drivers",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/bidding/create",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/bidding/create",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/bidding/create",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/bidding/create",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/bidding/create",
+      "width": 1440,
+      "overflow": false
+    }
+  ],
+  "errors": [],
+  "walletErrorRetry": "PASS (simulated 503)",
+  "driverErrorRetry": "PASS (simulated 503)"
+}

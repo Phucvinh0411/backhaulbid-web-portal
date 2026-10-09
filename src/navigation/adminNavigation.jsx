@@ -2,6 +2,7 @@
 
 import {
   DashboardOutlined as DashboardIcon,
+  BarChartOutlined as StatisticsIcon,
   PeopleOutlined as PeopleIcon,
   FactCheckOutlined as FactCheckIcon,
   GavelOutlined as GavelIcon,
@@ -13,17 +14,19 @@ import {
 
 const adminNavigation = [
   {
-    title: "TỔNG QUAN",
+    title: "Tổng quan",
     items: [
       {
         title: "Bảng điều khiển",
         path: "/admin",
         icon: DashboardIcon,
+        exact: true,
       },
+      { title: "Thống kê", path: "/admin/statistics", icon: StatisticsIcon, exact: true },
     ],
   },
   {
-    title: "VẬN HÀNH",
+    title: "Vận hành",
     items: [
       {
         title: "Quản lý người dùng",
@@ -31,8 +34,18 @@ const adminNavigation = [
         icon: PeopleIcon,
       },
       {
+        title: "Hồ sơ người đại diện",
+        path: "/admin/representative-verifications",
+        icon: FactCheckIcon,
+      },
+      {
         title: "Duyệt doanh nghiệp",
         path: "/admin/business-verifications",
+        icon: FactCheckIcon,
+      },
+      {
+        title: "Duyệt bảo hiểm hàng hóa",
+        path: "/admin/cargo-liability",
         icon: FactCheckIcon,
       },
       {
@@ -56,14 +69,14 @@ const adminNavigation = [
         icon: WalletIcon,
       },
       {
-        title: "Báo cáo khiếu nại",
+        title: "Khiếu nại",
         path: "/admin/complaints",
         icon: ReportProblemIcon,
       },
     ],
   },
   {
-    title: "HỆ THỐNG",
+    title: "Hệ thống",
     items: [
       {
         title: "Cài đặt",
@@ -78,6 +91,14 @@ const adminNavigation = [
       },
     ],
   },
+];
+
+/** Bottom navigation on phones for the operations tasks admins check on the go. */
+export const adminMobileNavigation = [
+  { title: "Tổng quan", path: "/admin", exact: true, icon: DashboardIcon },
+  { title: "Đấu giá", path: "/admin/operations", icon: GavelIcon },
+  { title: "Khiếu nại", path: "/admin/complaints", icon: ReportProblemIcon },
+  { title: "Người dùng", path: "/admin/users", icon: PeopleIcon },
 ];
 
 export default adminNavigation;

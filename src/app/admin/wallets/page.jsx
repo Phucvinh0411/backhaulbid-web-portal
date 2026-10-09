@@ -272,21 +272,21 @@ export default function AdminWalletsPage() {
 
         <AdminTableContainer minWidth={900}>
           <Table sx={{ minWidth: 900 }} aria-label="Danh sách yêu cầu rút tiền" aria-busy={loading}>
-            <TableHead sx={{ bgcolor: "#F8FAFC" }}>
+            <TableHead sx={{ bgcolor: "var(--color-surface-sunken)" }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Thời gian</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Chủ tài khoản</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Ngân hàng thụ hưởng</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Số tài khoản</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Số tiền rút</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Trạng thái</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: "#475569" }}>Thao tác</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: "var(--color-ink-muted)" }}>Thời gian</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: "var(--color-ink-muted)" }}>Chủ tài khoản</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: "var(--color-ink-muted)" }}>Ngân hàng thụ hưởng</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: "var(--color-ink-muted)" }}>Số tài khoản</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: "var(--color-ink-muted)" }}>Số tiền rút</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: "var(--color-ink-muted)" }}>Trạng thái</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: "var(--color-ink-muted)" }}>Thao tác</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 6, color: "#94A3B8" }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 6, color: "var(--color-ink-subtle)" }}>
                     {loading ? "Đang tải dữ liệu yêu cầu rút tiền..." : searchQuery ? "Không tìm thấy yêu cầu phù hợp." : "Không có yêu cầu rút tiền nào trong danh sách."}
                   </TableCell>
                 </TableRow>
@@ -294,12 +294,12 @@ export default function AdminWalletsPage() {
                 filteredItems.map((item) => (
                   <TableRow key={item.id} hover>
                     <TableCell>{formatDate(item.createdAt)}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: "#1E293B" }}>{item.accountHolderName || "---"}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "var(--color-ink)" }}>{item.accountHolderName || "---"}</TableCell>
                     <TableCell>{item.bankName || "---"}</TableCell>
-                    <TableCell sx={{ fontFamily: "monospace", fontWeight: 700, color: "#1B4965" }}>
+                    <TableCell sx={{ fontFamily: "monospace", fontWeight: 700, color: "var(--color-brand)" }}>
                       {item.maskedBankAccountNumber || "---"}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>{formatCurrency(item.amount)}</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "var(--color-ink)" }}>{formatCurrency(item.amount)}</TableCell>
                     <TableCell>{renderStatus(item.status)}</TableCell>
                     <TableCell align="right">
                       {item.status === "PENDING" ? (
@@ -321,7 +321,7 @@ export default function AdminWalletsPage() {
                           </AdminSecondaryButton>
                         </Box>
                       ) : (
-                        <Typography variant="caption" sx={{ color: "#64748B" }}>
+                        <Typography variant="caption" sx={{ color: "var(--color-ink-muted)" }}>
                           {item.rejectionReason ? `Lý do: ${item.rejectionReason}` : "Đã xử lý"}
                         </Typography>
                       )}
@@ -353,7 +353,7 @@ export default function AdminWalletsPage() {
         <AdminToolbar title="Nhật ký đơn nạp SePay" subtitle="Theo dõi trạng thái checkout và IPN của người dùng." />
         <AdminTableContainer minWidth={850}>
           <Table sx={{ minWidth: 850 }} aria-label="Nhật ký đơn nạp SePay">
-            <TableHead sx={{ bgcolor: "#F8FAFC" }}>
+            <TableHead sx={{ bgcolor: "var(--color-surface-sunken)" }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Mã hóa đơn</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Tài khoản</TableCell>
@@ -366,7 +366,7 @@ export default function AdminWalletsPage() {
             <TableBody>
               {topUps.length === 0 ? (
                 <TableRow>
-                      <TableCell colSpan={6} align="center" sx={{ py: 4, color: "#94A3B8" }}>
+                      <TableCell colSpan={6} align="center" sx={{ py: 4, color: "var(--color-ink-subtle)" }}>
                     Chưa có đơn nạp SePay.
                   </TableCell>
                 </TableRow>
@@ -395,18 +395,18 @@ export default function AdminWalletsPage() {
 
       {/* Dialog Xác nhận Duyệt rút tiền */}
       <AdminDialog open={openApproveDialog} onClose={() => !actionLoading && setOpenApproveDialog(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, color: "#1B4965" }}>Xác nhận Chuyển tiền Rút</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, color: "var(--color-brand)" }}>Xác nhận Chuyển tiền Rút</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           {selectedItem && (
             <Box className="space-y-3">
-              <Typography variant="body2" sx={{ color: "#475569" }}>
+              <Typography variant="body2" sx={{ color: "var(--color-ink-muted)" }}>
                 Vui lòng kiểm tra đã chuyển khoản thành công trước khi bấm xác nhận hoàn tất:
               </Typography>
-              <Box className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm space-y-1">
+              <Box className="bg-surface-sunken p-3 rounded-lg border border-line text-sm space-y-1">
                 <div><strong>Ngân hàng:</strong> {selectedItem.bankName}</div>
                 <div><strong>Số tài khoản:</strong> {selectedItem.maskedBankAccountNumber || "---"}</div>
                 <div><strong>Chủ tài khoản:</strong> {selectedItem.accountHolderName}</div>
-                <div><strong>Số tiền chuyển:</strong> <span className="text-emerald-600 font-bold">{formatCurrency(selectedItem.amount)}</span></div>
+                <div><strong>Số tiền chuyển:</strong> <span className="text-success font-bold">{formatCurrency(selectedItem.amount)}</span></div>
               </Box>
             </Box>
           )}
@@ -423,11 +423,11 @@ export default function AdminWalletsPage() {
 
       {/* Dialog Từ chối Rút tiền */}
       <AdminDialog open={openRejectDialog} onClose={() => !actionLoading && setOpenRejectDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, color: "#DC2626" }}>Từ chối Yêu cầu Rút tiền</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, color: "var(--color-danger)" }}>Từ chối Yêu cầu Rút tiền</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           {selectedItem && (
             <Box className="space-y-3">
-              <Typography variant="body2" sx={{ color: "#475569" }}>
+              <Typography variant="body2" sx={{ color: "var(--color-ink-muted)" }}>
                 Khi từ chối, số tiền <strong>{formatCurrency(selectedItem.amount)}</strong> sẽ tự động được hoàn trả vào số dư khả dụng của người dùng.
               </Typography>
               <TextField
@@ -452,7 +452,7 @@ export default function AdminWalletsPage() {
             color="error"
             onClick={handleConfirmReject}
             disabled={actionLoading || !rejectionReason.trim()}
-            sx={{ bgcolor: "#DC2626", "&:hover": { bgcolor: "#B91C1C" } }}
+            sx={{ bgcolor: "var(--color-danger)", "&:hover": { bgcolor: "var(--color-danger)", filter: "brightness(0.88)" } }}
           >
             {actionLoading ? "Đang xử lý..." : "Xác nhận Từ chối & Hoàn tiền"}
           </AdminPrimaryButton>

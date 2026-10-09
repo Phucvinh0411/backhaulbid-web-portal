@@ -1,3 +1,5 @@
+"use client";
+
 import Drawer from "@mui/material/Drawer";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -6,71 +8,39 @@ import CloseIcon from "@mui/icons-material/Close";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 
+/** Detail surface: centered dialog ("modal") or right drawer; full screen on phones either way. */
 export const DetailDrawer = ({ open, onClose, title, children, width = 450, variant = "drawer" }) => {
+  const theme = useTheme();
+  const phone = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const header = (
+    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
+      <Typography component="h2" sx={{ fontWeight: 700, fontSize: "1.0625rem", overflowWrap: "anywhere" }}>
+        {title}
+      </Typography>
+      <IconButton onClick={onClose} aria-label="Đóng chi tiết" sx={{ width: 44, height: 44, mr: -1, flexShrink: 0 }}>
+        <CloseIcon />
+      </IconButton>
+    </Box>
+  );
+
   if (variant === "modal") {
     return (
-      <Dialog
-        open={open}
-        onClose={onClose}
-        fullWidth
-        maxWidth="xl"
-        PaperProps={{
-          sx: {
-            width: "min(1120px, calc(100vw - 32px))",
-            maxHeight: "90vh",
-            borderRadius: { xs: 0, sm: "20px" },
-          },
-        }}
-      >
-        <DialogTitle className="flex items-center justify-between gap-4 border-b border-slate-100 !px-6 !py-4 !font-bold text-[#1B4965]">
-          {title}
-          <IconButton
-            onClick={onClose}
-            size="small"
-            aria-label="Đóng chi tiết"
-            className="bg-slate-100 text-slate-500 hover:bg-slate-200"
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers className="!bg-slate-50/40 !p-4 sm:!p-6">
-          {children}
-        </DialogContent>
+      <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" fullScreen={phone} scroll="paper">
+        <DialogTitle sx={{ py: 1, borderBottom: "1px solid", borderColor: "divider" }}>{header}</DialogTitle>
+        <DialogContent sx={{ p: { xs: 2, sm: 3 }, pb: "calc(16px + var(--safe-bottom))" }}>{children}</DialogContent>
       </Dialog>
     );
   }
 
   return (
-    <Drawer 
-      anchor="right" 
-      open={open} 
-      onClose={onClose}
-      PaperProps={{
-        sx: { 
-          width: { xs: '100%', sm: width },
-          borderTopLeftRadius: { xs: 0, sm: '16px' },
-          borderBottomLeftRadius: { xs: 0, sm: '16px' }
-        }
-      }}
-    >
-      <Box className="flex flex-col h-full bg-slate-50/30">
-        <Box className="p-4 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10 border-b border-slate-100">
-          <Typography variant="h6" className="font-bold text-[#1B4965]">
-            {title}
-          </Typography>
-          <IconButton 
-            onClick={onClose} 
-            size="small" 
-            className="bg-slate-100 hover:bg-slate-200 text-slate-500"
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-        
-        <Box className="p-5 flex-1 overflow-y-auto">
-          {children}
-        </Box>
+    <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: { xs: "100%", sm: width } } }}>
+      <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        <Box sx={{ px: 2, py: 1, position: "sticky", top: 0, bgcolor: "background.paper", borderBottom: "1px solid", borderColor: "divider", zIndex: 1 }}>{header}</Box>
+        <Box sx={{ p: 2, flex: 1, overflowY: "auto", pb: "calc(16px + var(--safe-bottom))" }}>{children}</Box>
       </Box>
     </Drawer>
   );

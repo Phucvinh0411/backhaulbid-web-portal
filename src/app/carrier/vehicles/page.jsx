@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { ConfirmDialog, EmptyState, ErrorState } from "@/components/ui";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
@@ -49,7 +51,10 @@ import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 export default function VehiclesPage() {
   const notify = useGlobalNotification();
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down("sm"));
+  const [loadErrorMessage, setLoadErrorMessage] = useState("");
   const [vehicles, setVehicles] = useState([]);
+  const [confirmDeactivate, setConfirmDeactivate] = useState(null);
   const [loading, setLoading] = useState(true);
   const setError = (message) => {
     if (message) notify.error(message);
@@ -93,16 +98,14 @@ export default function VehiclesPage() {
 
   const loadVehicles = async () => {
     setLoading(true);
+    setLoadErrorMessage("");
     setError("");
     try {
       setVehicles(await getMyVehicles());
     } catch (loadError) {
-      setError(
-        getApiErrorMessage(
-          loadError,
-          "Không thể tải danh sách phương tiện. Vui lòng thử lại.",
-        ),
-      );
+      const message = getApiErrorMessage(loadError, "Không thể tải danh sách phương tiện. Vui lòng thử lại.");
+      setLoadErrorMessage(message);
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -349,7 +352,6 @@ export default function VehiclesPage() {
   };
 
   const handleDeactivate = async (vehicle) => {
-    if (!window.confirm("Bạn có chắc muốn vô hiệu hóa xe này?")) return;
     try {
       await deactivateVehicle(vehicle.id);
       await loadVehicles();
@@ -541,7 +543,7 @@ export default function VehiclesPage() {
             label="Chờ duyệt"
             size="small"
             color="warning"
-            className="font-semibold text-amber-700 bg-amber-100"
+            className="font-semibold text-warning bg-warning-soft"
           />
         );
       case "REJECTED":
@@ -569,17 +571,17 @@ export default function VehiclesPage() {
           { label: "Đội xe", path: "/carrier/vehicles" },
         ]}
         action={
-          <Box className="flex gap-2">
+          <Box className="flex flex-wrap gap-2">
             <Button
               variant="outlined"
               startIcon={<FileUploadIcon />}
               onClick={handleOpenImport}
               sx={{
-                borderColor: "#1B4965",
-                color: "#1B4965",
+                borderColor: "var(--color-brand)",
+                color: "var(--color-brand)",
                 "&:hover": {
                   backgroundColor: "rgba(27,73,101,0.05)",
-                  borderColor: "#0d2b3e",
+                  borderColor: "var(--color-brand-hover)",
                 },
                 borderRadius: "8px",
                 px: 2,
@@ -592,8 +594,8 @@ export default function VehiclesPage() {
               startIcon={<AddIcon />}
               onClick={handleOpen}
               sx={{
-                backgroundColor: "#1B4965",
-                "&:hover": { backgroundColor: "#0d2b3e" },
+                backgroundColor: "var(--color-brand)",
+                "&:hover": { backgroundColor: "var(--color-brand-hover)" },
                 borderRadius: "8px",
                 px: 3,
               }}
@@ -617,11 +619,15 @@ export default function VehiclesPage() {
         }}
       >
         <Tabs
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
           value={filter}
           onChange={(e, v) => setFilter(v)}
           textColor="primary"
           indicatorColor="primary"
           sx={{
+            maxWidth: "100%",
             "& .MuiTab-root": {
               textTransform: "none",
               fontWeight: 600,
@@ -635,31 +641,32 @@ export default function VehiclesPage() {
           <Tab value="REJECTED" label="Bị từ chối" />
         </Tabs>
 
-        <ViewModeToggle
+        {!isMobile && <ViewModeToggle
           viewMode={viewMode}
           onChange={setViewMode}
           sx={{ mb: { xs: 2, sm: 0 } }}
-        />
+        />}
       </Box>
 
       {loading && (
         <Box
           role="status"
-          className="mb-4 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500"
+          className="mb-4 rounded-lg border border-line bg-white px-4 py-3 text-sm text-ink-muted"
         >
           Đang tải dữ liệu phương tiện...
         </Box>
       )}
 
-      {filteredVehicles.length === 0 && (
-        <Box className="text-center p-10 bg-white/50 backdrop-blur-md rounded-2xl border border-slate-200 mb-4">
-          <Typography variant="h6" className="text-slate-400">
-            Không có phương tiện nào
-          </Typography>
-        </Box>
+      {loadErrorMessage && <ErrorState description={loadErrorMessage} onRetry={loadVehicles} />}
+      {!loading && !loadErrorMessage && filteredVehicles.length === 0 && (
+        <EmptyState
+          title={filter === "ALL" ? "Chưa có phương tiện" : "Không có phương tiện trong nhóm này"}
+          description={filter === "ALL" ? "Thêm hồ sơ và gửi duyệt để có thể phân công chuyến." : "Chọn nhóm khác để xem các hồ sơ còn lại."}
+          action={<Button variant="outlined" onClick={filter === "ALL" ? handleOpen : () => setFilter("ALL")}>{filter === "ALL" ? "Thêm phương tiện" : "Xem tất cả"}</Button>}
+        />
       )}
 
-      {viewMode === "CARD" ? (
+      {isMobile || viewMode === "CARD" ? (
         <Grid container spacing={3}>
           {sortedVehicles.map((v) => (
             <Grid item xs={12} sm={6} md={4} key={v.id}>
@@ -673,10 +680,10 @@ export default function VehiclesPage() {
       ) : (
         <TableContainer
           component={Paper}
-          className="rounded-2xl border border-slate-200 shadow-sm overflow-x-auto"
+          className="rounded-xl border border-line shadow-sm overflow-x-auto"
         >
           <Table sx={{ minWidth: 650 }}>
-            <TableHead className="bg-slate-50">
+            <TableHead className="bg-surface-sunken">
               <TableRow>
                 {columnsList.map((col, idx) => (
                   <TableCell
@@ -686,7 +693,7 @@ export default function VehiclesPage() {
                     onDragStart={(e) => handleDragStart(e, idx)}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, idx)}
-                    className="font-bold text-slate-600 select-none cursor-move hover:bg-slate-100 transition-colors"
+                    className="font-bold text-ink-muted select-none cursor-move hover:bg-surface-sunken transition-colors"
                   >
                     {col.sortable !== false ? (
                       <TableSortLabel
@@ -712,11 +719,11 @@ export default function VehiclesPage() {
                         <TableCell key={col.id}>
                           <Box className="flex items-center gap-2">
                             <DirectionsCarIcon
-                              sx={{ color: "#1B4965", fontSize: 20 }}
+                              sx={{ color: "var(--color-brand)", fontSize: 20 }}
                             />
                             <Typography
                               variant="body2"
-                              className="font-mono font-bold text-[#1B4965]"
+                              className="font-mono font-bold text-[var(--color-brand)]"
                             >
                               {v.plate}
                             </Typography>
@@ -729,7 +736,7 @@ export default function VehiclesPage() {
                         <TableCell key={col.id}>
                           <Typography
                             variant="body2"
-                            className="text-slate-800"
+                            className="text-ink"
                           >
                             {v.capacity}
                           </Typography>
@@ -741,7 +748,7 @@ export default function VehiclesPage() {
                         <TableCell key={col.id}>
                           <Typography
                             variant="body2"
-                            className="text-slate-800"
+                            className="text-ink"
                           >
                             {v.type}
                           </Typography>
@@ -760,7 +767,7 @@ export default function VehiclesPage() {
                         <TableCell key={col.id}>
                           <Typography
                             variant="body2"
-                            className={`font-medium ${v.active ? "text-emerald-600" : "text-slate-500"}`}
+                            className={`font-medium ${v.active ? "text-success" : "text-ink-muted"}`}
                           >
                             {v.active ? "Sẵn sàng" : "Bảo trì"}
                           </Typography>
@@ -812,11 +819,11 @@ export default function VehiclesPage() {
         fullWidth
         PaperProps={{ sx: { borderRadius: "12px" } }}
       >
-        <DialogTitle sx={{ borderBottom: "1px solid #f1f5f9", pb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#1B4965" }}>
+        <DialogTitle sx={{ borderBottom: "1px solid var(--color-surface-sunken)", pb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--color-brand)" }}>
             Khai báo phương tiện mới
           </Typography>
-          <Typography variant="body2" sx={{ mt: 0.5, color: "#64748b" }}>
+          <Typography variant="body2" sx={{ mt: 0.5, color: "var(--color-ink-muted)" }}>
             Hoàn thiện thông tin và hồ sơ trước khi gửi Admin xét duyệt.
           </Typography>
         </DialogTitle>
@@ -843,22 +850,22 @@ export default function VehiclesPage() {
                 fontWeight: 600,
                 borderColor:
                   createStep === index + 1
-                    ? "#1B4965"
+                    ? "var(--color-brand)"
                     : createStep > index + 1
-                      ? "#a7f3d0"
-                      : "#e2e8f0",
+                      ? "var(--color-success-soft)"
+                      : "var(--color-line)",
                 bgcolor:
                   createStep === index + 1
-                    ? "#1B4965"
+                    ? "var(--color-brand)"
                     : createStep > index + 1
-                      ? "#ecfdf5"
-                      : "#f8fafc",
+                      ? "var(--color-success-soft)"
+                      : "var(--color-surface-sunken)",
                 color:
                   createStep === index + 1
-                    ? "#fff"
+                    ? "common.white"
                     : createStep > index + 1
-                      ? "#065f46"
-                      : "#94a3b8",
+                      ? "var(--color-success)"
+                      : "var(--color-ink-subtle)",
                 transition: "all 0.2s ease",
               }}
             >
@@ -944,7 +951,7 @@ export default function VehiclesPage() {
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <Typography
                 variant="subtitle2"
-                sx={{ fontWeight: 700, color: "#334155" }}
+                sx={{ fontWeight: 700, color: "var(--color-ink-muted)" }}
               >
                 Tài liệu bắt buộc
               </Typography>
@@ -967,9 +974,9 @@ export default function VehiclesPage() {
                       cursor: "pointer",
                       borderStyle: "dashed",
                       borderWidth: 2,
-                      bgcolor: "#f8fafc",
+                      bgcolor: "var(--color-surface-sunken)",
                       transition: "border-color 0.2s",
-                      "&:hover": { borderColor: "#1B4965" },
+                      "&:hover": { borderColor: "var(--color-brand)" },
                     }}
                   >
                     <input
@@ -992,11 +999,11 @@ export default function VehiclesPage() {
                       <Box>
                         <Typography
                           variant="subtitle2"
-                          sx={{ fontWeight: 700, color: "#334155" }}
+                          sx={{ fontWeight: 700, color: "var(--color-ink-muted)" }}
                         >
                           {document.label} *
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                        <Typography variant="caption" sx={{ color: "var(--color-ink-subtle)" }}>
                           JPG, PNG hoặc PDF, tối đa 5MB
                         </Typography>
                       </Box>
@@ -1004,7 +1011,7 @@ export default function VehiclesPage() {
                         variant="body2"
                         sx={{
                           fontWeight: 600,
-                          color: "#1B4965",
+                          color: "var(--color-brand)",
                           whiteSpace: "nowrap",
                           maxWidth: 100,
                           overflow: "hidden",
@@ -1027,14 +1034,14 @@ export default function VehiclesPage() {
                 flexDirection: "column",
                 gap: 1.5,
                 borderRadius: "12px",
-                border: "1px solid #e2e8f0",
-                bgcolor: "#f8fafc",
+                border: "1px solid var(--color-line)",
+                bgcolor: "var(--color-surface-sunken)",
                 p: 2.5,
               }}
             >
               <Typography
                 variant="subtitle1"
-                sx={{ fontWeight: 700, color: "#1e293b" }}
+                sx={{ fontWeight: 700, color: "var(--color-ink)" }}
               >
                 Kiểm tra trước khi gửi
               </Typography>
@@ -1052,7 +1059,7 @@ export default function VehiclesPage() {
               </Typography>
               <Typography
                 variant="caption"
-                sx={{ color: "#64748b", display: "block" }}
+                sx={{ color: "var(--color-ink-muted)", display: "block" }}
               >
                 Sau khi gửi, xe sẽ ở trạng thái Chờ duyệt để Admin kiểm tra hồ
                 sơ.
@@ -1063,11 +1070,11 @@ export default function VehiclesPage() {
           <Box
             sx={{
               p: 1.5,
-              bgcolor: "#eff6ff",
-              color: "#1e40af",
+              bgcolor: "var(--color-info-soft)",
+              color: "var(--color-info)",
               borderRadius: "8px",
               fontSize: "0.8125rem",
-              border: "1px solid #bfdbfe",
+              border: "1px solid var(--color-info-soft)",
             }}
           >
             <strong>Lưu ý:</strong> Phương tiện mới thêm sẽ ở trạng thái{" "}
@@ -1075,7 +1082,7 @@ export default function VehiclesPage() {
           </Box>
         </DialogContent>
         <DialogActions
-          sx={{ px: 3, pb: 3, pt: 1.5, borderTop: "1px solid #f1f5f9" }}
+          sx={{ px: 3, pb: 3, pt: 1.5, borderTop: "1px solid var(--color-surface-sunken)" }}
         >
           {createStep > 1 && (
             <Button
@@ -1099,9 +1106,9 @@ export default function VehiclesPage() {
             variant="contained"
             sx={{
               borderRadius: "8px",
-              bgcolor: "#1B4965",
+              bgcolor: "var(--color-brand)",
               fontWeight: 600,
-              "&:hover": { bgcolor: "#0d2b3e" },
+              "&:hover": { bgcolor: "var(--color-brand-hover)" },
             }}
           >
             {saving
@@ -1123,15 +1130,15 @@ export default function VehiclesPage() {
       >
         <DialogTitle
           sx={{
-            borderBottom: "1px solid #f1f5f9",
+            borderBottom: "1px solid var(--color-surface-sunken)",
             pb: 2,
             display: "flex",
             alignItems: "center",
             gap: 1,
           }}
         >
-          <EditIcon sx={{ color: "#1B4965", fontSize: 22 }} />
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#1B4965" }}>
+          <EditIcon sx={{ color: "var(--color-brand)", fontSize: 22 }} />
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--color-brand)" }}>
             Chỉnh sửa thông số Phương tiện
           </Typography>
         </DialogTitle>
@@ -1196,7 +1203,7 @@ export default function VehiclesPage() {
           <Box>
             <Typography
               variant="subtitle2"
-              sx={{ fontWeight: 700, color: "#334155", mb: 1.5 }}
+              sx={{ fontWeight: 700, color: "var(--color-ink-muted)", mb: 1.5 }}
             >
               Thay hồ sơ (không bắt buộc)
             </Typography>
@@ -1219,9 +1226,9 @@ export default function VehiclesPage() {
                     cursor: "pointer",
                     borderStyle: "dashed",
                     borderWidth: 2,
-                    bgcolor: "#f8fafc",
+                    bgcolor: "var(--color-surface-sunken)",
                     transition: "border-color 0.2s",
-                    "&:hover": { borderColor: "#1B4965" },
+                    "&:hover": { borderColor: "var(--color-brand)" },
                   }}
                 >
                   <input
@@ -1235,7 +1242,7 @@ export default function VehiclesPage() {
                   <CardContent sx={{ p: "10px 12px !important" }}>
                     <Typography
                       variant="caption"
-                      sx={{ display: "block", color: "#64748b" }}
+                      sx={{ display: "block", color: "var(--color-ink-muted)" }}
                     >
                       {document.label}
                     </Typography>
@@ -1243,7 +1250,7 @@ export default function VehiclesPage() {
                       variant="body2"
                       sx={{
                         fontWeight: 600,
-                        color: "#1B4965",
+                        color: "var(--color-brand)",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
@@ -1259,7 +1266,7 @@ export default function VehiclesPage() {
           </Box>
         </DialogContent>
         <DialogActions
-          sx={{ px: 3, pb: 3, pt: 1.5, borderTop: "1px solid #f1f5f9" }}
+          sx={{ px: 3, pb: 3, pt: 1.5, borderTop: "1px solid var(--color-surface-sunken)" }}
         >
           <Button
             onClick={handleCloseEdit}
@@ -1276,9 +1283,9 @@ export default function VehiclesPage() {
             variant="contained"
             sx={{
               borderRadius: "8px",
-              bgcolor: "#1B4965",
+              bgcolor: "var(--color-brand)",
               fontWeight: 600,
-              "&:hover": { bgcolor: "#0d2b3e" },
+              "&:hover": { bgcolor: "var(--color-brand-hover)" },
             }}
           >
             {saving ? "Đang lưu..." : "Lưu thay đổi"}
@@ -1294,11 +1301,11 @@ export default function VehiclesPage() {
         fullWidth
         PaperProps={{ sx: { borderRadius: "12px" } }}
       >
-        <DialogTitle className="border-b border-slate-100 pb-3">
-          <Typography variant="h6" className="font-bold text-[#1B4965]">
+        <DialogTitle className="border-b border-line pb-3">
+          <Typography variant="h6" className="font-bold text-[var(--color-brand)]">
             Nhập hồ sơ phương tiện
           </Typography>
-          <Typography variant="body2" className="mt-1 text-slate-500">
+          <Typography variant="body2" className="mt-1 text-ink-muted">
             Gom thông tin và tài liệu theo từng bước để tránh nhầm file.
           </Typography>
         </DialogTitle>
@@ -1310,7 +1317,7 @@ export default function VehiclesPage() {
             {["Thông tin", "Hồ sơ", "Xác nhận"].map((label, index) => (
               <Box
                 key={label}
-                className={`rounded-lg border px-3 py-2 text-center text-sm font-semibold ${importStep === index + 1 ? "border-[#1B4965] bg-[#1B4965] text-white" : importStep > index + 1 ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500"}`}
+                className={`rounded-lg border px-3 py-2 text-center text-sm font-semibold ${importStep === index + 1 ? "border-[var(--color-brand)] bg-[var(--color-brand)] text-white" : importStep > index + 1 ? "border-success-soft bg-success-soft text-success" : "border-line bg-surface-sunken text-ink-muted"}`}
               >
                 {index + 1}. {label}
               </Box>
@@ -1319,20 +1326,20 @@ export default function VehiclesPage() {
 
           {importStep === 1 && (
             <Box className="space-y-4">
-              <Box className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
+              <Box className="rounded-lg border border-brand-soft bg-brand-soft px-4 py-3">
                 <Typography
                   variant="subtitle2"
-                  className="font-bold text-[#1B4965]"
+                  className="font-bold text-[var(--color-brand)]"
                 >
                   Bắt đầu bằng file thông tin
                 </Typography>
-                <Typography variant="body2" className="mt-1 text-slate-600">
+                <Typography variant="body2" className="mt-1 text-ink-muted">
                   Mỗi dòng CSV là một phương tiện. Tên file tài liệu ở hai cột
                   cuối sẽ được đối chiếu ở bước tiếp theo.
                 </Typography>
               </Box>
               <Box className="flex flex-wrap items-center justify-between gap-3">
-                <Typography variant="body2" className="text-slate-600">
+                <Typography variant="body2" className="text-ink-muted">
                   Định dạng: CSV, tối đa 500 dòng.
                 </Typography>
                 <Button
@@ -1354,7 +1361,7 @@ export default function VehiclesPage() {
                 component="label"
                 htmlFor="vehicle-csv-input-v2"
                 variant="outlined"
-                className="cursor-pointer border-2 border-dashed bg-slate-50 transition-colors hover:border-[#1B4965]"
+                className="cursor-pointer border-2 border-dashed bg-surface-sunken transition-colors hover:border-[var(--color-brand)]"
               >
                 <input
                   id="vehicle-csv-input-v2"
@@ -1364,14 +1371,14 @@ export default function VehiclesPage() {
                   onChange={handleImportCsvFile}
                 />
                 <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
-                  <FileUploadIcon sx={{ fontSize: 42, color: "#1B4965" }} />
+                  <FileUploadIcon sx={{ fontSize: 42, color: "var(--color-brand)" }} />
                   <Typography
                     variant="subtitle1"
-                    className="font-semibold text-slate-700"
+                    className="font-semibold text-ink"
                   >
                     {importFileName || "Chọn file CSV thông tin"}
                   </Typography>
-                  <Typography variant="caption" className="text-slate-500">
+                  <Typography variant="caption" className="text-ink-muted">
                     Bắt buộc có biển số, tải trọng và tên file cà vẹt, đăng
                     kiểm.
                   </Typography>
@@ -1380,7 +1387,7 @@ export default function VehiclesPage() {
               {importRows.length > 0 && (
                 <Box
                   role="status"
-                  className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+                  className="rounded-lg border border-success-soft bg-success-soft px-3 py-2 text-sm text-success"
                 >
                   Đã đọc {importRows.length} dòng thông tin.
                 </Box>
@@ -1390,14 +1397,14 @@ export default function VehiclesPage() {
 
           {importStep === 2 && (
             <Box className="space-y-4">
-              <Box className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
+              <Box className="rounded-lg border border-brand-soft bg-brand-soft px-4 py-3">
                 <Typography
                   variant="subtitle2"
-                  className="font-bold text-[#1B4965]"
+                  className="font-bold text-[var(--color-brand)]"
                 >
                   Tải ảnh và tài liệu rời
                 </Typography>
-                <Typography variant="body2" className="mt-1 text-slate-600">
+                <Typography variant="body2" className="mt-1 text-ink-muted">
                   Không cần nén ZIP. Chọn các file JPG, PNG hoặc PDF có tên
                   trùng với tên đã ghi trong CSV.
                 </Typography>
@@ -1406,7 +1413,7 @@ export default function VehiclesPage() {
                 component="label"
                 htmlFor="vehicle-documents-input-v2"
                 variant="outlined"
-                className="cursor-pointer border-2 border-dashed bg-slate-50 transition-colors hover:border-[#1B4965]"
+                className="cursor-pointer border-2 border-dashed bg-surface-sunken transition-colors hover:border-[var(--color-brand)]"
               >
                 <input
                   id="vehicle-documents-input-v2"
@@ -1417,16 +1424,16 @@ export default function VehiclesPage() {
                   onChange={handleImportDocumentFiles}
                 />
                 <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
-                  <FileUploadIcon sx={{ fontSize: 42, color: "#1B4965" }} />
+                  <FileUploadIcon sx={{ fontSize: 42, color: "var(--color-brand)" }} />
                   <Typography
                     variant="subtitle1"
-                    className="font-semibold text-slate-700"
+                    className="font-semibold text-ink"
                   >
                     {documentFiles.length
                       ? `Đã chọn ${documentFiles.length} file tài liệu`
                       : "Chọn ảnh và file hồ sơ"}
                   </Typography>
-                  <Typography variant="caption" className="text-slate-500">
+                  <Typography variant="caption" className="text-ink-muted">
                     Mỗi file tối đa 5MB. Hệ thống sẽ kiểm tra đủ cà vẹt và đăng
                     kiểm cho từng xe.
                   </Typography>
@@ -1437,10 +1444,10 @@ export default function VehiclesPage() {
                   {documentFiles.map((file) => (
                     <Box
                       key={file.name}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                      className="rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink"
                     >
                       <span className="font-medium">{file.name}</span>
-                      <span className="ml-2 text-xs text-slate-400">
+                      <span className="ml-2 text-xs text-ink-subtle">
                         {(file.size / 1024 / 1024).toFixed(2)}MB
                       </span>
                     </Box>
@@ -1452,14 +1459,14 @@ export default function VehiclesPage() {
 
           {importStep === 3 && (
             <Box className="space-y-4">
-              <Box className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <Box className="rounded-lg border border-line bg-surface-sunken px-4 py-3">
                 <Typography
                   variant="subtitle2"
-                  className="font-bold text-slate-800"
+                  className="font-bold text-ink"
                 >
                   Kiểm tra trước khi gửi
                 </Typography>
-                <Typography variant="body2" className="mt-1 text-slate-600">
+                <Typography variant="body2" className="mt-1 text-ink-muted">
                   {importRows.length} phương tiện sẽ được tạo ở trạng thái Chờ
                   duyệt. Admin sẽ kiểm tra từng bộ hồ sơ.
                 </Typography>
@@ -1468,28 +1475,28 @@ export default function VehiclesPage() {
                 {importRows.map((row) => (
                   <Box
                     key={row.licensePlate}
-                    className="grid grid-cols-1 gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm sm:grid-cols-3"
+                    className="grid grid-cols-1 gap-1 rounded-lg border border-line bg-white px-3 py-2 text-sm sm:grid-cols-3"
                   >
-                    <Typography className="font-semibold text-[#1B4965]">
+                    <Typography className="font-semibold text-[var(--color-brand)]">
                       {row.licensePlate}
                     </Typography>
-                    <Typography className="truncate text-slate-600">
+                    <Typography className="truncate text-ink-muted">
                       Cà vẹt: {row.registrationFile}
                     </Typography>
-                    <Typography className="truncate text-slate-600">
+                    <Typography className="truncate text-ink-muted">
                       Đăng kiểm: {row.inspectionFile}
                     </Typography>
                   </Box>
                 ))}
               </Box>
-              <Typography variant="caption" className="block text-slate-500">
+              <Typography variant="caption" className="block text-ink-muted">
                 Sau khi gửi, hồ sơ sẽ xuất hiện trong danh sách Chờ duyệt của
                 bạn.
               </Typography>
             </Box>
           )}
         </DialogContent>
-        <DialogActions className="border-t border-slate-100 px-6 pb-5 pt-3">
+        <DialogActions className="border-t border-line px-6 pb-5 pt-3">
           {importStep > 1 && (
             <Button
               onClick={handleImportBack}
@@ -1512,7 +1519,7 @@ export default function VehiclesPage() {
             variant="contained"
             sx={{
               borderRadius: "8px",
-              backgroundColor: "#1B4965",
+              backgroundColor: "var(--color-brand)",
               fontWeight: 600,
             }}
           >
@@ -1529,7 +1536,7 @@ export default function VehiclesPage() {
         open={!!selectedVehicle}
         onClose={handleCloseDetails}
         title={
-          <Box className="flex items-center justify-between w-full pr-4">
+          <Box className="flex items-center justify-between gap-2 w-full pr-4">
             <span>Chi tiết Phương tiện</span>
             {selectedVehicle &&
               getVerificationChip(selectedVehicle.verification)}
@@ -1539,12 +1546,12 @@ export default function VehiclesPage() {
         {selectedVehicle && (
           <Box className="space-y-6">
             <Box>
-              <Typography variant="subtitle2" className="text-slate-500 mb-1">
+              <Typography variant="subtitle2" className="text-ink-muted mb-1">
                 Biển số xe
               </Typography>
               <Typography
                 variant="h5"
-                className="font-mono font-bold text-slate-800"
+                className="font-mono font-bold text-ink"
               >
                 {selectedVehicle.plate}
               </Typography>
@@ -1552,7 +1559,7 @@ export default function VehiclesPage() {
 
             <Grid container spacing={2}>
               <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500">
+                <Typography variant="body2" className="text-ink-muted">
                   Tải trọng
                 </Typography>
                 <Typography variant="body1" className="font-medium">
@@ -1560,7 +1567,7 @@ export default function VehiclesPage() {
                 </Typography>
               </Grid>
               <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500">
+                <Typography variant="body2" className="text-ink-muted">
                   Loại xe
                 </Typography>
                 <Typography variant="body1" className="font-medium">
@@ -1573,16 +1580,16 @@ export default function VehiclesPage() {
 
             <Typography
               variant="subtitle2"
-              className="font-bold text-slate-800"
+              className="font-bold text-ink"
             >
               Giấy tờ kèm theo
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500 mb-1">
+                <Typography variant="body2" className="text-ink-muted mb-1">
                   Cà vẹt xe
                 </Typography>
-                <Box className="w-full h-32 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center relative overflow-hidden group p-1">
+                <Box className="w-full h-32 bg-surface-sunken rounded-lg border border-line flex items-center justify-center relative overflow-hidden group p-1">
                   {selectedVehicle.registrationDocumentUrl ? (
                     <Button
                       component="a"
@@ -1597,7 +1604,7 @@ export default function VehiclesPage() {
                   ) : (
                     <Typography
                       variant="caption"
-                      className="px-2 text-center text-slate-500"
+                      className="px-2 text-center text-ink-muted"
                     >
                       Chưa có ảnh cà vẹt
                     </Typography>
@@ -1605,10 +1612,10 @@ export default function VehiclesPage() {
                 </Box>
               </Grid>
               <Grid item xs={6}>
-                <Typography variant="body2" className="text-slate-500 mb-1">
+                <Typography variant="body2" className="text-ink-muted mb-1">
                   Sổ đăng kiểm
                 </Typography>
-                <Box className="w-full h-32 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center relative overflow-hidden group p-1">
+                <Box className="w-full h-32 bg-surface-sunken rounded-lg border border-line flex items-center justify-center relative overflow-hidden group p-1">
                   {selectedVehicle.inspectionDocumentUrl ? (
                     <Button
                       component="a"
@@ -1623,7 +1630,7 @@ export default function VehiclesPage() {
                   ) : (
                     <Typography
                       variant="caption"
-                      className="px-2 text-center text-slate-500"
+                      className="px-2 text-center text-ink-muted"
                     >
                       Chưa có ảnh đăng kiểm
                     </Typography>
@@ -1640,7 +1647,7 @@ export default function VehiclesPage() {
                 fullWidth
                 sx={{
                   borderRadius: "8px",
-                  backgroundColor: "#1B4965",
+                  backgroundColor: "var(--color-brand)",
                   fontWeight: 600,
                 }}
               >
@@ -1651,7 +1658,7 @@ export default function VehiclesPage() {
                 variant="outlined"
                 fullWidth
                 sx={{ borderRadius: "8px" }}
-                onClick={() => handleDeactivate(selectedVehicle)}
+                onClick={() => setConfirmDeactivate(selectedVehicle)}
               >
                 Vô hiệu hóa xe
               </Button>
@@ -1659,6 +1666,17 @@ export default function VehiclesPage() {
           </Box>
         )}
       </DetailDrawer>
+      <ConfirmDialog
+        open={Boolean(confirmDeactivate)}
+        title="Vô hiệu hóa xe?"
+        message={`Xe ${confirmDeactivate?.plate || confirmDeactivate?.licensePlate || ""} sẽ không còn dùng được để phân công chuyến.`}
+        confirmLabel="Vô hiệu hóa"
+        onConfirm={async () => {
+          await handleDeactivate(confirmDeactivate);
+          setConfirmDeactivate(null);
+        }}
+        onClose={() => setConfirmDeactivate(null)}
+      />
     </Box>
   );
 }

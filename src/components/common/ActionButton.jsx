@@ -22,20 +22,20 @@ export default function ActionButton({
 }) {
   const sizeClasses = {
     sm: "!py-1.5 !px-3.5 !text-xs !rounded-xl",
-    md: "!py-2.5 !px-5 !text-xs md:!text-sm !rounded-2xl",
-    lg: "!py-3.5 !px-6 !text-sm md:!text-base !rounded-2xl",
+    md: "!py-2.5 !px-5 !text-xs md:!text-sm !rounded-xl",
+    lg: "!py-3.5 !px-6 !text-sm md:!text-base !rounded-xl",
   };
 
   const getVariantStyles = () => {
     switch (variant) {
       case "primary":
         return {
-          background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)",
-          color: "#FFFFFF",
-          boxShadow: "0 4px 14px rgba(27, 73, 101, 0.25)",
+          background: "var(--color-brand)",
+          color: "var(--color-surface)",
+          boxShadow: "none",
           "&:hover": {
-            background: "linear-gradient(135deg, #0D2B3E 0%, #1B4965 100%)",
-            boxShadow: "0 6px 20px rgba(27, 73, 101, 0.35)",
+            background: "var(--color-brand-hover)",
+            boxShadow: "none",
             transform: "translateY(-1px)",
           },
         };
@@ -43,58 +43,58 @@ export default function ActionButton({
       case "secondary":
       case "outlined":
         return {
-          backgroundColor: "#FFFFFF",
-          color: "#1B4965",
-          border: "1px solid #CBD5E1",
+          backgroundColor: "var(--color-surface)",
+          color: "var(--color-brand)",
+          border: "1px solid var(--color-line-strong)",
           boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
           "&:hover": {
-            backgroundColor: "#F8FAFC",
-            borderColor: "#1B4965",
+            backgroundColor: "var(--color-surface-sunken)",
+            borderColor: "var(--color-brand)",
             transform: "translateY(-1px)",
           },
         };
 
       case "danger":
         return {
-          background: "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)",
-          color: "#FFFFFF",
-          boxShadow: "0 4px 14px rgba(239, 68, 68, 0.25)",
+          background: "var(--color-danger)",
+          color: "var(--color-surface)",
+          boxShadow: "none",
           "&:hover": {
-            background: "linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)",
+            background: "var(--color-danger)", filter: "brightness(0.88)",
             transform: "translateY(-1px)",
           },
         };
 
       case "danger-outlined":
         return {
-          backgroundColor: "#FEF2F2",
-          color: "#E11D48",
-          border: "1px solid #FECDD3",
+          backgroundColor: "var(--color-danger-soft)",
+          color: "var(--color-danger)",
+          border: "1px solid var(--color-danger-soft)",
           "&:hover": {
-            backgroundColor: "#FFE4E6",
-            borderColor: "#FDA4AF",
+            backgroundColor: "var(--color-danger-soft)",
+            borderColor: "var(--color-danger)",
             transform: "translateY(-1px)",
           },
         };
 
       case "success":
         return {
-          background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
-          color: "#FFFFFF",
-          boxShadow: "0 4px 14px rgba(16, 185, 129, 0.25)",
+          background: "var(--color-success)",
+          color: "var(--color-surface)",
+          boxShadow: "none",
           "&:hover": {
-            background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+            background: "var(--color-success)", filter: "brightness(0.88)",
             transform: "translateY(-1px)",
           },
         };
 
       case "warning":
         return {
-          background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
-          color: "#FFFFFF",
-          boxShadow: "0 4px 14px rgba(245, 158, 11, 0.25)",
+          background: "var(--color-warning)",
+          color: "var(--color-surface)",
+          boxShadow: "none",
           "&:hover": {
-            background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)",
+            background: "var(--color-warning)", filter: "brightness(0.88)",
             transform: "translateY(-1px)",
           },
         };
@@ -102,7 +102,7 @@ export default function ActionButton({
       case "text":
         return {
           backgroundColor: "transparent",
-          color: "#1B4965",
+          color: "var(--color-brand)",
           "&:hover": {
             backgroundColor: "rgba(27, 73, 101, 0.06)",
           },
@@ -126,10 +126,10 @@ export default function ActionButton({
       sx={{
         ...getVariantStyles(),
         "&.Mui-disabled": {
-          background: "#E2E8F0",
+          background: "var(--color-line)",
           backgroundImage: "none",
-          borderColor: "#CBD5E1",
-          color: "#475569",
+          borderColor: "var(--color-line-strong)",
+          color: "var(--color-ink-muted)",
           boxShadow: "none",
           opacity: 1,
         },

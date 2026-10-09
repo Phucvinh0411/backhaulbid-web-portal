@@ -15,19 +15,9 @@ export const SHARED_ENV_FILE = defaultCandidates.find((candidate) => fs.existsSy
 export const FRONTEND_ENV_KEYS = Object.freeze([
   "NEXT_PUBLIC_GATEWAY_URL",
   "NEXT_PUBLIC_BIDDING_SOCKET_PATH",
-  "NEXT_PUBLIC_VNPT_EKYC_BACKEND_URL",
-  "NEXT_PUBLIC_VNPT_EKYC_TOKEN_KEY",
-  "NEXT_PUBLIC_VNPT_EKYC_TOKEN_ID",
-  "NEXT_PUBLIC_VNPT_EKYC_AUTH",
 ]);
 
-const REQUIRED_EKYC_ENV_KEYS = Object.freeze([
-  "NEXT_PUBLIC_VNPT_EKYC_BACKEND_URL",
-  "NEXT_PUBLIC_VNPT_EKYC_TOKEN_KEY",
-  "NEXT_PUBLIC_VNPT_EKYC_TOKEN_ID",
-  "NEXT_PUBLIC_VNPT_EKYC_AUTH",
-]);
-
+/** Removes dotenv quoting and inline comments from one environment value. */
 function normalizeDotEnvValue(rawValue) {
   const value = rawValue.trim();
 
@@ -45,6 +35,7 @@ function normalizeDotEnvValue(rawValue) {
     : value;
 }
 
+/** Parses dotenv assignments while ignoring blank lines and comments. */
 export function parseDotEnv(text) {
   const values = {};
 
@@ -76,6 +67,7 @@ export function parseDotEnv(text) {
   return values;
 }
 
+/** Selects only the public variables consumed by the web portal. */
 export function selectFrontendEnvironment(values = {}) {
   return FRONTEND_ENV_KEYS.reduce((selected, key) => {
     if (Object.prototype.hasOwnProperty.call(values, key)) {
@@ -86,6 +78,7 @@ export function selectFrontendEnvironment(values = {}) {
   }, {});
 }
 
+/** Merges the shared frontend configuration over the process environment. */
 export function mergeFrontendEnvironment(baseEnvironment = {}, sharedEnvironment = {}) {
   const merged = { ...baseEnvironment };
   const selectedSharedEnvironment = selectFrontendEnvironment(sharedEnvironment);
@@ -97,12 +90,7 @@ export function mergeFrontendEnvironment(baseEnvironment = {}, sharedEnvironment
   return merged;
 }
 
-export function validateRequiredFrontendEnvironment(environment = {}) {
-  return REQUIRED_EKYC_ENV_KEYS.filter(
-    (key) => !String(environment[key] ?? "").trim(),
-  );
-}
-
+/** Includes blank shared values so local process values cannot override the shared file. */
 function getAuthoritativeSharedEnvironment(parsedEnvironment) {
   return FRONTEND_ENV_KEYS.reduce((selected, key) => {
     selected[key] = parsedEnvironment[key] ?? "";
@@ -110,6 +98,7 @@ function getAuthoritativeSharedEnvironment(parsedEnvironment) {
   }, {});
 }
 
+/** Loads gateway and socket settings from the shared infrastructure dotenv file. */
 export function loadFrontendEnvironment({
   filePath = SHARED_ENV_FILE,
   existingEnvironment = process.env,
@@ -126,7 +115,6 @@ export function loadFrontendEnvironment({
         existingEnvironment,
         sharedEnvironment,
       ),
-      missing: validateRequiredFrontendEnvironment(sharedEnvironment),
     };
   }
 
@@ -149,6 +137,5 @@ export function loadFrontendEnvironment({
   return {
     source: "process",
     environment: { ...existingEnvironment },
-    missing: validateRequiredFrontendEnvironment(existingFrontendEnvironment),
   };
 }

@@ -1,0 +1,335 @@
+{
+  "results": [
+    {
+      "role": "carrier",
+      "route": "/carrier/contracts",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/wallet",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/drivers",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/vehicles",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/settings",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/transports/77603a8f-fd54-44e3-b306-52c01e578b80",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/contracts",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/wallet",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/drivers",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/vehicles",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/settings",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/transports/77603a8f-fd54-44e3-b306-52c01e578b80",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/contracts",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/wallet",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/drivers",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/vehicles",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/settings",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/transports/77603a8f-fd54-44e3-b306-52c01e578b80",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/contracts",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/wallet",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/drivers",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/vehicles",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/settings",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/transports/77603a8f-fd54-44e3-b306-52c01e578b80",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/contracts",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/wallet",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/drivers",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/vehicles",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/settings",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "carrier",
+      "route": "/carrier/transports/77603a8f-fd54-44e3-b306-52c01e578b80",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/contracts",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/wallet/overview",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/bidding/create",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/settings",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/tracking?id=77603a8f-fd54-44e3-b306-52c01e578b80",
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/contracts",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/wallet/overview",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/bidding/create",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/settings",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/tracking?id=77603a8f-fd54-44e3-b306-52c01e578b80",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/contracts",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/wallet/overview",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/bidding/create",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/settings",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/tracking?id=77603a8f-fd54-44e3-b306-52c01e578b80",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/contracts",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/wallet/overview",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/bidding/create",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/settings",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/tracking?id=77603a8f-fd54-44e3-b306-52c01e578b80",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/contracts",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/wallet/overview",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/bidding/create",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/settings",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "shipper",
+      "route": "/shipper/tracking?id=77603a8f-fd54-44e3-b306-52c01e578b80",
+      "width": 1440,
+      "overflow": false
+    }
+  ],
+  "errors": []
+}

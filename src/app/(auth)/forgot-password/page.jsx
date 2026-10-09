@@ -1,19 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
+import AuthShell from "@/components/auth/AuthShell";
 
+// identity-service has no password-reset endpoint yet, so this page does not offer a form.
 export default function ForgotPasswordPage() {
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
-        <h1 className="text-2xl font-bold text-slate-900 mb-4">Khôi phục mật khẩu</h1>
-        <p className="text-slate-600 mb-8">
-          Vui lòng nhập email đăng ký để nhận liên kết khôi phục mật khẩu.
-        </p>
-        <Link href="/login" className="text-blue-600 font-medium hover:underline">
-          &larr; Quay lại trang đăng nhập
-        </Link>
-      </div>
-    </div>
+    <AuthShell title="Quên mật khẩu" subtitle="Hệ thống chưa hỗ trợ tự khôi phục mật khẩu trực tuyến.">
+      <Box sx={{ display: "grid", gap: 2 }}>
+        <Typography sx={{ color: "text.secondary" }}>
+          Liên hệ quản trị viên BackHaulBid để được đặt lại mật khẩu cho số điện thoại đã đăng ký.
+        </Typography>
+        <Button component={Link} href="/login" variant="contained" size="large" fullWidth>
+          Quay lại đăng nhập
+        </Button>
+      </Box>
+    </AuthShell>
   );
 }

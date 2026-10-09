@@ -9,6 +9,7 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForwardOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
+import { StickyActionBar } from "@/components/ui";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { createAuction } from "@/services/biddingApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
@@ -111,6 +112,7 @@ const validateForm = (form) => {
 export default function CreateAuctionScreen() {
   const notify = useGlobalNotification();
   const creationIdempotencyKeyRef = useRef(null);
+  const submittingRef = useRef(false);
   const [activeStep, setActiveStep] = useState(0);
   const [form, setForm] = useState(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -119,7 +121,7 @@ export default function CreateAuctionScreen() {
   const [imageUploading, setImageUploading] = useState(false);
 
   const updateForm = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => ({ ...prev, [field]: value, ...((field === "fromAddress" || field === "fromProvince") && prev[field] !== value ? { fromPoint: null } : {}), ...((field === "toAddress" || field === "toProvince") && prev[field] !== value ? { toPoint: null } : {}) }));
   };
 
   const handleOpenAddressBook = (target) => {
@@ -136,6 +138,7 @@ export default function CreateAuctionScreen() {
       [`${prefix}Province`]: address.province,
       [`${prefix}ContactName`]: address.contactName,
       [`${prefix}ContactPhone`]: address.contactPhone,
+      [`${prefix}Point`]: address.latitude != null && address.longitude != null ? { latitude: address.latitude, longitude: address.longitude, coordinateSource: address.coordinateSource, coordinateConfirmedAt: address.coordinateConfirmedAt } : null,
     }));
     setAddressModalOpen(false);
   };
@@ -191,6 +194,7 @@ export default function CreateAuctionScreen() {
   };
 
   const handleSubmit = async () => {
+    if (submittingRef.current) return;
     const validationError = validateCreateAuctionForm(form);
     if (validationError) {
       showToast(validationError, "warning");
@@ -203,6 +207,7 @@ export default function CreateAuctionScreen() {
         `auction-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -252,7 +257,7 @@ export default function CreateAuctionScreen() {
         "Không thể tạo phiên đấu giá. Vui lòng kiểm tra lại dữ liệu.",
       );
       showToast(message);
-    } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -296,13 +301,20 @@ export default function CreateAuctionScreen() {
             <Step3AuctionConfig form={form} updateForm={updateForm} />
           )}
 
-          <div className="flex items-center justify-between pt-6 mt-6 border-t border-slate-200/80">
+
+        </Grid>
+
+        <Grid item xs={12} md={5} lg={4}>
+          <SummarySidebar form={form} />
+        </Grid>
+      </Grid>
+      <Box sx={{ mt: 3 }}><StickyActionBar hint={activeStep === 2 ? "Kiểm tra thông tin và mức phí trước khi tạo phiên." : `Bước ${activeStep + 1} / 3`}>
             <Button
               variant="outlined"
               onClick={handleBack}
-              disabled={activeStep === 0}
+              disabled={activeStep === 0 || isSubmitting}
               startIcon={<ArrowBackIcon />}
-              className="!rounded-2xl !py-3 !px-5 !font-bold !capitalize"
+              className="!rounded-xl !py-3 !px-5 !font-bold !capitalize"
             >
               Quay lại
             </Button>
@@ -310,9 +322,10 @@ export default function CreateAuctionScreen() {
             {activeStep < 2 ? (
               <Button
                 variant="contained"
+                disabled={isSubmitting || imageUploading}
                 onClick={handleNext}
                 endIcon={<ArrowForwardIcon />}
-                className="!rounded-2xl !py-3 !px-6 !font-bold !capitalize"
+                className="!rounded-xl !py-3 !px-6 !font-bold !capitalize"
               >
                 Tiếp theo
               </Button>
@@ -320,28 +333,22 @@ export default function CreateAuctionScreen() {
               <Button
                 variant="contained"
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || imageUploading}
                 startIcon={<CheckCircleIcon />}
-                className="!rounded-2xl !py-3 !px-7 !font-bold !capitalize !text-white"
+                className="!rounded-xl !py-3 !px-7 !font-bold !capitalize !text-white"
                 sx={{
                   background:
-                    "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                    "var(--color-success)",
                   "&:hover": {
                     background:
-                      "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                      "var(--color-success)",
                   },
                 }}
               >
                 {isSubmitting ? "Đang khởi tạo..." : "Xác nhận và xuất phiên"}
               </Button>
             )}
-          </div>
-        </Grid>
-
-        <Grid item xs={12} md={5} lg={4}>
-          <SummarySidebar form={form} />
-        </Grid>
-      </Grid>
+          </StickyActionBar></Box>
 
       <AddressBookModal
         open={addressModalOpen}

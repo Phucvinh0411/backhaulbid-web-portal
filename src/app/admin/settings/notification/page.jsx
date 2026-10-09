@@ -177,9 +177,9 @@ export default function NotificationSettingsPage() {
                   sx={{
                     width: 240,
                     height: 440,
-                    border: "12px solid #0D2B3E",
+                    border: "12px solid var(--color-brand-hover)",
                     borderRadius: 5,
-                    bgcolor: "#1E293B",
+                    bgcolor: "var(--color-ink)",
                     position: "relative",
                     boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
                     overflow: "hidden",
@@ -188,7 +188,7 @@ export default function NotificationSettingsPage() {
                   }}
                 >
                   {/* Speaker notch */}
-                  <Box sx={{ width: 60, height: 16, bgcolor: "#0D2B3E", borderBottomLeftRadius: 10, borderBottomRightRadius: 10, position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", zIndex: 10 }} />
+                  <Box sx={{ width: 60, height: 16, bgcolor: "var(--color-brand-hover)", borderBottomLeftRadius: 10, borderBottomRightRadius: 10, position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", zIndex: 10 }} />
 
                   {/* Status Bar */}
                   <Box sx={{ display: "flex", justifyContent: "space-between", px: 2, pt: 1.5, pb: 0.5, color: "rgba(255,255,255,0.7)", fontSize: "0.62rem" }}>
@@ -200,7 +200,7 @@ export default function NotificationSettingsPage() {
                   </Box>
 
                   {/* Screen Content */}
-                  <Box sx={{ flex: 1, p: 1.5, display: "flex", flexDirection: "column", gap: 1.5, backgroundImage: "linear-gradient(to bottom, #1e3a8a, #0f172a)" }}>
+                  <Box sx={{ flex: 1, p: 1.5, display: "flex", flexDirection: "column", gap: 1.5, bgcolor: "var(--color-band)" }}>
                     <Typography sx={{ color: "rgba(255,255,255,0.6)", fontSize: "0.62rem", textAlign: "center", mt: 1 }}>
                       HÔM NAY
                     </Typography>

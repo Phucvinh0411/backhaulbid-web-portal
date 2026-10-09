@@ -21,6 +21,7 @@ import TableSortLabel from "@mui/material/TableSortLabel";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import DescriptionIcon from "@mui/icons-material/DescriptionOutlined";
 import LocalShippingIcon from "@mui/icons-material/LocalShippingOutlined";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUserOutlined";
@@ -35,7 +36,7 @@ import {
 import ContractItem, { getContractStatusDesign } from "./ContractItem";
 import { contractApi } from "@/services/contractApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
-import { mapContractResponses } from "@/services/contractMapper";
+import { mapContractResponses, getContractTrackingHref } from "@/services/contractMapper";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 export const CONTRACT_FILTERS = [
@@ -57,10 +58,7 @@ function getPartnerName(contract, role) {
 }
 
 function getTrackingHref(contract, isShipper) {
-  if (!isShipper) return `/carrier/transports/${contract.id}`;
-  return contract.tripId
-    ? `/shipper/tracking?id=${encodeURIComponent(contract.tripId)}`
-    : "/shipper/tracking";
+  return getContractTrackingHref(contract, isShipper ? "shipper" : "carrier");
 }
 
 export default function ContractsManagementScreen({
@@ -81,6 +79,7 @@ export default function ContractsManagementScreen({
   const [signing, setSigning] = useState(false);
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("id");
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down("sm"));
 
   const isShipper = role === "shipper";
   const basePath = isShipper ? "/shipper" : "/carrier";
@@ -163,7 +162,7 @@ export default function ContractsManagementScreen({
   };
 
   const handleSign = async () => {
-    if (selectedContract) {
+    if (selectedContract && agreeTerms && !signing) {
       setSigning(true);
       try {
         const response = await contractApi.sign(selectedContract.backendId);
@@ -200,7 +199,7 @@ export default function ContractsManagementScreen({
         ]}
       />
 
-      <Box className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200">
+      <Box className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-line">
         <Tabs
           value={filter}
           onChange={(_, value) => setFilter(value)}
@@ -221,7 +220,7 @@ export default function ContractsManagementScreen({
           ))}
         </Tabs>
 
-        <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
+        {!isMobile && <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />}
       </Box>
 
       {loading ? (
@@ -229,19 +228,19 @@ export default function ContractsManagementScreen({
           <CircularProgress aria-label="Đang tải danh sách hợp đồng" />
         </Box>
       ) : loadError ? (
-        <Box className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
-          <Typography variant="h6" className="text-red-700">
+        <Box className="rounded-xl border border-danger-soft bg-danger-soft p-6 text-center">
+          <Typography variant="h6" className="text-danger">
             Không thể tải danh sách hợp đồng
           </Typography>
-          <Typography className="mt-2 text-red-600">{loadError}</Typography>
+          <Typography className="mt-2 text-danger">{loadError}</Typography>
         </Box>
       ) : visibleContracts.length === 0 ? (
-        <Box className="rounded-2xl border border-slate-200 bg-white/70 p-10 text-center">
-          <Typography variant="h6" className="text-slate-500">
+        <Box className="rounded-xl border border-line bg-white/70 p-10 text-center">
+          <Typography variant="h6" className="text-ink-muted">
             Không có hợp đồng phù hợp với bộ lọc hiện tại.
           </Typography>
         </Box>
-      ) : viewMode === "CARD" ? (
+      ) : isMobile || viewMode === "CARD" ? (
         <Grid container spacing={3}>
           {visibleContracts.map((contract) => (
             <Grid item xs={12} sm={6} md={4} key={contract.id}>
@@ -251,6 +250,7 @@ export default function ContractsManagementScreen({
                   partner: getPartnerName(contract, role),
                 }}
                 partnerLabel={partnerLabel}
+                trackingHref={getTrackingHref(contract, isShipper)}
                 onSign={openSign}
                 onViewDetail={openDetails}
               />
@@ -260,10 +260,10 @@ export default function ContractsManagementScreen({
       ) : (
         <TableContainer
           component={Paper}
-          className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm"
+          className="overflow-x-auto rounded-xl border border-line shadow-sm"
         >
           <Table sx={{ minWidth: 860 }}>
-            <TableHead className="bg-slate-50">
+            <TableHead className="bg-surface-sunken">
               <TableRow>
                 {[
                   { id: "id", label: "Mã HĐ" },
@@ -282,7 +282,7 @@ export default function ContractsManagementScreen({
                   <TableCell
                     key={column.id}
                     align={column.align || "left"}
-                    className="!font-bold text-slate-600"
+                    className="!font-bold text-ink-muted"
                   >
                     {column.sortable === false ? (
                       column.label
@@ -307,11 +307,11 @@ export default function ContractsManagementScreen({
                     <TableCell>
                       <Typography
                         variant="body2"
-                        className="!font-bold text-[#1B4965]"
+                        className="!font-bold text-[var(--color-brand)]"
                       >
                         {contract.id}
                       </Typography>
-                      <Typography variant="caption" className="text-slate-500">
+                      <Typography variant="caption" className="text-ink-muted">
                         {contract.auctionId}
                       </Typography>
                     </TableCell>
@@ -319,13 +319,13 @@ export default function ContractsManagementScreen({
                       <Typography variant="body2" className="font-semibold">
                         {contract.origin} → {contract.destination}
                       </Typography>
-                      <Typography variant="caption" className="text-slate-500">
+                      <Typography variant="caption" className="text-ink-muted">
                         {contract.cargoType}
                       </Typography>
                     </TableCell>
                     <TableCell>{getPartnerName(contract, role)}</TableCell>
                     <TableCell>{contract.date}</TableCell>
-                    <TableCell className="!font-bold text-emerald-600">
+                    <TableCell className="!font-bold text-success">
                       {contract.value}
                     </TableCell>
                     <TableCell>
@@ -393,8 +393,8 @@ export default function ContractsManagementScreen({
       >
         {selectedContract && (
           <Box className="space-y-4">
-            <Box className="rounded-2xl border border-slate-100 bg-white p-4">
-              <Typography className="mb-2 !font-bold text-[#1B4965]">
+            <Box className="rounded-xl border border-line bg-white p-4">
+              <Typography className="mb-2 !font-bold text-[var(--color-brand)]">
                 1. Thông tin hợp đồng
               </Typography>
               <DetailRow label="Mã hợp đồng" value={selectedContract.id} />
@@ -425,12 +425,12 @@ export default function ContractsManagementScreen({
               <DetailRow
                 label="Giá trị"
                 value={selectedContract.value}
-                valueColor="text-emerald-600"
+                valueColor="text-success"
               />
             </Box>
 
-            <Box className="rounded-2xl border border-slate-100 bg-white p-4">
-              <Typography className="mb-2 !font-bold text-[#1B4965]">
+            <Box className="rounded-xl border border-line bg-white p-4">
+              <Typography className="mb-2 !font-bold text-[var(--color-brand)]">
                 2. Hàng hóa & tuyến vận chuyển
               </Typography>
               <DetailRow label="Hàng hóa" value={selectedContract.cargoType} />
@@ -465,7 +465,7 @@ export default function ContractsManagementScreen({
                 Ký điện tử ngay
               </ActionButton>
             ) : selectedContract.status === "PENDING_SIGNATURE" ? (
-              <Typography role="status" className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
+              <Typography role="status" className="rounded-xl bg-surface-sunken p-3 text-sm text-ink-muted">
                 {selectedContract.pendingMessage}
               </Typography>
             ) : ["ACTIVE", "COMPLETED"].includes(selectedContract.status) ? (
@@ -489,21 +489,22 @@ export default function ContractsManagementScreen({
         onClose={() => setOpenSignDialog(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ className: "!rounded-2xl" }}
+        PaperProps={{ className: "!rounded-xl" }}
       >
-        <DialogTitle className="flex items-center gap-2 border-b border-slate-100 !font-bold text-[#1B4965]">
+        <DialogTitle className="flex items-center gap-2 border-b border-line !font-bold text-[var(--color-brand)]">
           <VerifiedUserIcon color="primary" />
           Ký hợp đồng điện tử
         </DialogTitle>
         <DialogContent className="!pt-5">
           {selectedContract && (
             <Box className="space-y-4">
-              <Typography variant="body2" className="text-slate-600">
+              <Typography variant="body2" className="text-ink-muted">
                 Bạn đang thực hiện ký xác nhận hợp đồng{" "}
-                <strong>{selectedContract.id}</strong>. Chữ ký số này có giá trị
-                pháp lý tương đương chữ ký tay trong hệ thống BackHaulBid.
+                <strong>{selectedContract.id}</strong>. Hệ thống sẽ ghi nhận
+                xác nhận của tài khoản bạn và tiếp tục quy trình vận chuyển
+                khi các bên đã ký đầy đủ.
               </Typography>
-              <Box className="rounded-xl border border-slate-100 bg-white px-4 py-2">
+              <Box className="rounded-xl border border-line bg-white px-4 py-2">
                 <DetailRow
                   label={partnerLabel}
                   value={getPartnerName(selectedContract, role)}
@@ -523,7 +524,7 @@ export default function ContractsManagementScreen({
                   />
                 }
                 label={
-                  <Typography variant="body2" className="text-slate-600">
+                  <Typography variant="body2" className="text-ink-muted">
                     Tôi đã đọc, hiểu rõ và đồng ý với điều khoản hợp đồng vận
                     chuyển điện tử.
                   </Typography>

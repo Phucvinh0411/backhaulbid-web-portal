@@ -16,31 +16,38 @@ export default function CarrierVehicleItem({ vehicle, onViewDetail }) {
       case "VERIFIED":
         return {
           label: "Đã duyệt",
-          bgColor: "#ECFDF5", // emerald-50
-          textColor: "#059669", // emerald-600
-          borderColor: "#D1FAE5", // emerald-200
+          bgColor: "var(--color-success-soft)",
+          textColor: "var(--color-success)",
+          borderColor: "var(--color-success-soft)",
         };
       case "PENDING":
         return {
           label: "Chờ duyệt",
-          bgColor: "#FFFBEB", // amber-50
-          textColor: "#D97706", // amber-600
-          borderColor: "#FDE68A", // amber-200
+          bgColor: "var(--color-warning-soft)",
+          textColor: "var(--color-warning)",
+          borderColor: "var(--color-warning-soft)",
           pulse: true,
         };
       case "REJECTED":
         return {
           label: "Từ chối",
-          bgColor: "#FEF2F2", // rose-50
-          textColor: "#E11D48", // rose-600
-          borderColor: "#FECDD3", // rose-200
+          bgColor: "var(--color-danger-soft)",
+          textColor: "var(--color-danger)",
+          borderColor: "var(--color-danger-soft)",
+        };
+      case "INACTIVE":
+        return {
+          label: "Ngừng sử dụng",
+          bgColor: "var(--color-surface-sunken)",
+          textColor: "var(--color-ink-muted)",
+          borderColor: "var(--color-line)",
         };
       default:
         return {
           label: status,
-          bgColor: "#F8FAFC",
-          textColor: "#64748B",
-          borderColor: "#E2E8F0",
+          bgColor: "var(--color-surface-sunken)",
+          textColor: "var(--color-ink-muted)",
+          borderColor: "var(--color-line)",
         };
     }
   };
@@ -60,7 +67,7 @@ export default function CarrierVehicleItem({ vehicle, onViewDetail }) {
     >
       <CardContent className="!p-6 space-y-4 flex-1">
         <div className="flex items-center justify-between">
-          <Typography className="!font-mono !font-bold text-[#1B4965] text-lg flex items-center gap-2">
+          <Typography className="!font-mono !font-bold text-[var(--color-brand)] text-lg flex items-center gap-2">
             <DirectionsCarIcon sx={{ fontSize: "1.3rem" }} />
             {vehicle.plate}
           </Typography>
@@ -82,25 +89,25 @@ export default function CarrierVehicleItem({ vehicle, onViewDetail }) {
           />
         </div>
 
-        <div className="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100/50 space-y-3.5">
+        <div className="bg-surface-sunken/60 p-3.5 rounded-xl border border-line/50 space-y-3.5">
           <div className="flex items-start gap-3">
-            <SpeedIcon className="text-slate-400 !text-[1.1rem] mt-0.5" />
+            <SpeedIcon className="text-ink-subtle !text-[1.1rem] mt-0.5" />
             <div className="min-w-0">
-              <Typography className="!text-[0.68rem] !font-bold text-slate-500 uppercase tracking-wider leading-none mb-0.5">
+              <Typography className="!text-[0.68rem] !font-bold text-ink-muted uppercase tracking-wider leading-none mb-0.5">
                 Tải trọng
               </Typography>
-              <Typography variant="body2" className="text-slate-700 font-bold">
+              <Typography variant="body2" className="text-ink font-bold">
                 {vehicle.capacity}
               </Typography>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <BuildCircleIcon className="text-slate-400 !text-[1.1rem] mt-0.5" />
+            <BuildCircleIcon className="text-ink-subtle !text-[1.1rem] mt-0.5" />
             <div className="min-w-0">
-              <Typography className="!text-[0.68rem] !font-bold text-slate-500 uppercase tracking-wider leading-none mb-0.5">
+              <Typography className="!text-[0.68rem] !font-bold text-ink-muted uppercase tracking-wider leading-none mb-0.5">
                 Loại xe
               </Typography>
-              <Typography variant="body2" className="text-slate-700 font-bold">
+              <Typography variant="body2" className="text-ink font-bold">
                 {vehicle.type}
               </Typography>
             </div>
@@ -109,22 +116,22 @@ export default function CarrierVehicleItem({ vehicle, onViewDetail }) {
 
         <div className="pt-2 flex flex-col gap-2.5 text-xs">
           <div className="flex justify-between items-center">
-            <Typography className="text-slate-500 font-medium">Trạng thái xe:</Typography>
-            <Typography className={`font-semibold ${vehicle.active ? 'text-emerald-600' : 'text-slate-500'}`}>
+            <Typography className="text-ink-muted font-medium">Trạng thái xe:</Typography>
+            <Typography className={`font-semibold ${vehicle.active ? 'text-success' : 'text-ink-muted'}`}>
               {vehicle.active ? 'Sẵn sàng hoạt động' : 'Đang bảo trì'}
             </Typography>
           </div>
         </div>
       </CardContent>
 
-      <div className="flex justify-end p-4 pt-3 border-t border-slate-100 gap-3">
+      <div className="flex justify-end p-4 pt-3 border-t border-line gap-3">
         <Button 
           size="small" 
           variant="text" 
           color="primary" 
           startIcon={<SettingsIcon />} 
           onClick={() => onViewDetail && onViewDetail(vehicle)}
-          className="!text-[#1B4965] !font-bold !text-[0.8rem] !capitalize !rounded-xl"
+          className="!text-[var(--color-brand)] !font-bold !text-[0.8rem] !capitalize !rounded-xl"
           sx={{ "&:hover": { backgroundColor: "rgba(27, 73, 101, 0.05)" } }}
         >
           Chi tiết

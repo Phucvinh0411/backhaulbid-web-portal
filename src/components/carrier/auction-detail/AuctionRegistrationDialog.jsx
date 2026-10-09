@@ -15,6 +15,8 @@ import Divider from "@mui/material/Divider";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DirectionsCarOutlinedIcon from "@mui/icons-material/DirectionsCarOutlined";
@@ -71,6 +73,8 @@ export default function AuctionRegistrationDialog({
   onCompleted,
 }) {
   const { notify } = useGlobalNotification();
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -166,39 +170,26 @@ export default function AuctionRegistrationDialog({
       open={open}
       onClose={submitting ? undefined : onClose}
       fullWidth
+      fullScreen={fullScreen}
       maxWidth="md"
       scroll="paper"
-      PaperProps={{
-        sx: {
-          borderRadius: { xs: 0, sm: "18px" },
-          overflow: "hidden",
-          border: "1px solid rgba(148, 163, 184, 0.24)",
-          boxShadow: "0 24px 70px rgba(15, 23, 42, 0.2)",
-        },
-      }}
+      aria-labelledby="auction-registration-title"
     >
       <DialogTitle sx={{ p: 0 }}>
-        <Box className="flex items-start justify-between gap-4 bg-[#1B4965] px-6 py-5 text-white sm:px-7">
+        <Box className="flex items-start justify-between gap-4 border-b border-line bg-surface px-4 py-3 sm:px-6">
           <Box>
-            <Typography
-              variant="overline"
-              className="!font-bold !tracking-[0.16em] !text-sky-100"
-            >
-              ĐĂNG KÝ THAM GIA PHIÊN
+            <Typography id="auction-registration-title" component="h2" sx={{ fontWeight: 700, fontSize: "1.0625rem" }}>
+              Đăng ký tham gia phiên
             </Typography>
-            <Typography variant="h6" className="!mt-1 !font-extrabold">
-              Xác nhận quyền tham gia đấu giá
-            </Typography>
-            <Typography variant="body2" className="!mt-1 !text-sky-100">
-              {auction.id} · Chọn phương tiện và hoàn tất khoản thanh toán trước
-              hạn đăng ký.
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.25 }}>
+              Chọn phương tiện và thanh toán trước hạn đóng đăng ký.
             </Typography>
           </Box>
           <IconButton
             aria-label="Đóng đăng ký"
             onClick={onClose}
             disabled={submitting}
-            className="!text-white hover:!bg-white/10"
+            sx={{ width: 44, height: 44 }}
           >
             <CloseIcon />
           </IconButton>
@@ -208,32 +199,32 @@ export default function AuctionRegistrationDialog({
       <DialogContent sx={{ p: 0 }}>
         {success ? (
           <Box className="px-6 py-12 text-center sm:px-10">
-            <Box className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+            <Box className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-soft text-success">
               <CheckCircleOutlineIcon sx={{ fontSize: 38 }} />
             </Box>
             <Typography
               variant="h5"
-              className="!mt-5 !font-extrabold !text-slate-900"
+              className="!mt-5 !font-extrabold !text-ink"
             >
               Đăng ký thành công
             </Typography>
-            <Typography className="!mx-auto !mt-2 !max-w-lg !text-slate-500">
+            <Typography className="!mx-auto !mt-2 !max-w-lg !text-ink-muted">
               Phí tham gia đã được xử lý
               {paymentSummary.depositRequired
                 ? " và tiền đặt cọc đã được khóa"
                 : ""}
               . Bạn chỉ được vào phòng khi đến giờ bắt đầu phiên.
             </Typography>
-            <Box className="mx-auto mt-6 max-w-md rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 text-left">
+            <Box className="mx-auto mt-6 max-w-md rounded-xl border border-success-soft bg-success-soft/70 p-4 text-left">
               <Box className="flex items-center justify-between gap-4 text-sm">
-                <span className="text-slate-500">Phương tiện</span>
-                <span className="font-bold text-slate-800">
+                <span className="text-ink-muted">Phương tiện</span>
+                <span className="font-bold text-ink">
                   {selectedVehicle?.plate || selectedVehicleId}
                 </span>
               </Box>
               <Box className="mt-2 flex items-center justify-between gap-4 text-sm">
-                <span className="text-slate-500">Mở phòng</span>
-                <span className="font-bold text-slate-800">
+                <span className="text-ink-muted">Mở phòng</span>
+                <span className="font-bold text-ink">
                   {formatDate(auction.startTime)}
                 </span>
               </Box>
@@ -241,7 +232,7 @@ export default function AuctionRegistrationDialog({
             <Button
               onClick={onClose}
               variant="contained"
-              className="!mt-7 !rounded-lg !bg-[#1B4965] !px-7 !py-2.5 !font-bold"
+              className="!mt-7 !rounded-lg !bg-[var(--color-brand)] !px-7 !py-2.5 !font-bold"
             >
               Đã hiểu
             </Button>
@@ -250,25 +241,25 @@ export default function AuctionRegistrationDialog({
           <Box className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr]">
             <Box className="px-6 py-6 sm:px-7">
               <Box className="mb-5 flex items-center gap-2">
-                <Box className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-50 text-sky-700">
+                <Box className="flex h-9 w-9 items-center justify-center rounded-lg bg-info-soft text-info">
                   <DirectionsCarOutlinedIcon />
                 </Box>
                 <Box>
                   <Typography
                     variant="subtitle1"
-                    className="!font-extrabold !text-slate-900"
+                    className="!font-extrabold !text-ink"
                   >
                     Thông tin đăng ký
                   </Typography>
-                  <Typography variant="caption" className="!text-slate-500">
+                  <Typography variant="caption" className="!text-ink-muted">
                     Chọn đúng xe sẽ thực hiện chuyến hàng này.
                   </Typography>
                 </Box>
               </Box>
 
               <Box className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Box className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
-                  <Box className="flex items-center gap-2 text-slate-500">
+                <Box className="rounded-xl border border-line bg-surface-sunken/70 p-3.5">
+                  <Box className="flex items-center gap-2 text-ink-muted">
                     <RouteOutlinedIcon sx={{ fontSize: 18 }} />
                     <Typography variant="caption" className="!font-bold">
                       Tuyến vận chuyển
@@ -276,19 +267,19 @@ export default function AuctionRegistrationDialog({
                   </Box>
                   <Typography
                     variant="body2"
-                    className="!mt-2 !font-extrabold !text-slate-800"
+                    className="!mt-2 !font-extrabold !text-ink"
                   >
                     {auction.origin || auction.from?.name || "Điểm lấy hàng"}
                   </Typography>
-                  <Typography variant="caption" className="!text-slate-500">
+                  <Typography variant="caption" className="!text-ink-muted">
                     →{" "}
                     {auction.destination ||
                       auction.to?.name ||
                       "Điểm giao hàng"}
                   </Typography>
                 </Box>
-                <Box className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
-                  <Box className="flex items-center gap-2 text-slate-500">
+                <Box className="rounded-xl border border-line bg-surface-sunken/70 p-3.5">
+                  <Box className="flex items-center gap-2 text-ink-muted">
                     <EventAvailableOutlinedIcon sx={{ fontSize: 18 }} />
                     <Typography variant="caption" className="!font-bold">
                       Hạn đăng ký
@@ -296,13 +287,13 @@ export default function AuctionRegistrationDialog({
                   </Box>
                   <Typography
                     variant="body2"
-                    className="!mt-2 !font-extrabold !text-slate-800"
+                    className="!mt-2 !font-extrabold !text-ink"
                   >
                     {formatDate(
                       auction.registrationEndTime || auction.regEndTime,
                     )}
                   </Typography>
-                  <Typography variant="caption" className="!text-slate-500">
+                  <Typography variant="caption" className="!text-ink-muted">
                     Mở phòng: {formatDate(auction.startTime)}
                   </Typography>
                 </Box>
@@ -310,7 +301,7 @@ export default function AuctionRegistrationDialog({
 
               <Typography
                 variant="subtitle2"
-                className="!mb-2 !font-extrabold !text-slate-800"
+                className="!mb-2 !font-extrabold !text-ink"
               >
                 Phương tiện thực hiện chuyến hàng
               </Typography>
@@ -326,7 +317,7 @@ export default function AuctionRegistrationDialog({
                 </Alert>
               )}
               {vehiclesLoading && (
-                <Box className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                <Box className="flex items-center gap-2 rounded-xl border border-line bg-surface-sunken p-4 text-sm text-ink-muted">
                   <CircularProgress size={18} /> Đang tải phương tiện đã xác
                   minh...
                 </Box>
@@ -342,33 +333,33 @@ export default function AuctionRegistrationDialog({
                         className="!block !w-full !rounded-xl !text-left"
                         sx={{
                           border: "1px solid",
-                          borderColor: selected ? "#1B4965" : "#e2e8f0",
+                          borderColor: selected ? "var(--color-brand)" : "var(--color-line)",
                           backgroundColor: selected
                             ? "rgba(27, 73, 101, 0.05)"
-                            : "#fff",
+                            : "var(--color-surface)",
                           transition: "all 160ms ease",
                           "&:hover": {
-                            borderColor: "#1B4965",
+                            borderColor: "var(--color-brand)",
                             backgroundColor: "rgba(27, 73, 101, 0.035)",
                           },
                         }}
                       >
                         <Box className="flex items-center gap-3 px-3.5 py-3">
                           <Box
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${selected ? "bg-[#1B4965] text-white" : "bg-slate-100 text-slate-500"}`}
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${selected ? "bg-[var(--color-brand)] text-white" : "bg-surface-sunken text-ink-muted"}`}
                           >
                             <DirectionsCarOutlinedIcon sx={{ fontSize: 20 }} />
                           </Box>
                           <Box className="min-w-0 flex-1">
                             <Typography
                               variant="body2"
-                              className="!font-extrabold !text-slate-800"
+                              className="!font-extrabold !text-ink"
                             >
                               {vehicle.plate}
                             </Typography>
                             <Typography
                               variant="caption"
-                              className="!text-slate-500"
+                              className="!text-ink-muted"
                             >
                               {vehicle.capacity} · {vehicle.type}
                             </Typography>
@@ -377,7 +368,7 @@ export default function AuctionRegistrationDialog({
                             <Chip
                               label="Đã chọn"
                               size="small"
-                              className="!font-bold !text-[#1B4965]"
+                              className="!font-bold !text-[var(--color-brand)]"
                             />
                           )}
                         </Box>
@@ -390,14 +381,14 @@ export default function AuctionRegistrationDialog({
                 !selectedVehicleId && (
                   <Typography
                     variant="caption"
-                    className="!mt-2 !block !text-amber-700"
+                    className="!mt-2 !block !text-warning"
                   >
                     Chọn một phương tiện để tiếp tục.
                   </Typography>
                 )}
 
               <Box
-                className={`mt-5 rounded-xl border p-3 ${acknowledged ? "border-[#1B4965]/30 bg-sky-50/60" : "border-slate-200 bg-slate-50/70"}`}
+                className={`mt-5 rounded-xl border p-3 ${acknowledged ? "border-[var(--color-brand)]/30 bg-info-soft/60" : "border-line bg-surface-sunken/70"}`}
               >
                 <FormControlLabel
                   control={
@@ -413,15 +404,15 @@ export default function AuctionRegistrationDialog({
                       }}
                       sx={{
                         p: 0.25,
-                        color: "#94a3b8",
-                        "&.Mui-checked": { color: "#1B4965" },
+                        color: "var(--color-ink-subtle)",
+                        "&.Mui-checked": { color: "var(--color-brand)" },
                       }}
                     />
                   }
                   label={
                     <Typography
                       variant="caption"
-                      className="!leading-5 !text-slate-600"
+                      className="!leading-5 !text-ink-muted"
                     >
                       Tôi xác nhận phương tiện đáp ứng yêu cầu của phiên và đồng
                       ý để hệ thống trừ phí tham gia, đồng thời khóa tiền đặt
@@ -439,39 +430,39 @@ export default function AuctionRegistrationDialog({
               </Box>
             </Box>
 
-            <Box className="border-t border-slate-200 bg-slate-50/70 px-6 py-6 lg:border-l lg:border-t-0 sm:px-7">
+            <Box className="border-t border-line bg-surface-sunken/70 px-6 py-6 lg:border-l lg:border-t-0 sm:px-7">
               <Typography
                 variant="overline"
-                className="!font-bold !tracking-[0.14em] !text-slate-400"
+                className="!font-bold !tracking-[0.14em] !text-ink-subtle"
               >
                 TÓM TẮT THANH TOÁN
               </Typography>
               <Typography
                 variant="h6"
-                className="!mt-1 !font-extrabold !text-slate-900"
+                className="!mt-1 !font-extrabold !text-ink"
               >
                 Khoản cần xử lý
               </Typography>
 
-              <Box className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
+              <Box className="mt-5 rounded-xl border border-line bg-white p-4">
                 <Box className="flex items-start justify-between gap-4">
                   <Box className="flex gap-2.5">
-                    <PaymentsOutlinedIcon className="!text-sky-700" />
+                    <PaymentsOutlinedIcon className="!text-info" />
                     <Box>
                       <Typography
                         variant="body2"
-                        className="!font-extrabold !text-slate-800"
+                        className="!font-extrabold !text-ink"
                       >
                         Phí tham gia
                       </Typography>
-                      <Typography variant="caption" className="!text-slate-500">
+                      <Typography variant="caption" className="!text-ink-muted">
                         Bắt buộc · thu khi đăng ký
                       </Typography>
                     </Box>
                   </Box>
                   <Typography
                     variant="body2"
-                    className="!font-extrabold !text-slate-900"
+                    className="!font-extrabold !text-ink"
                   >
                     {formatCurrency(paymentSummary.fee)}
                   </Typography>
@@ -482,18 +473,18 @@ export default function AuctionRegistrationDialog({
                     <LockOutlinedIcon
                       className={
                         paymentSummary.depositRequired
-                          ? "!text-amber-600"
-                          : "!text-slate-400"
+                          ? "!text-warning"
+                          : "!text-ink-subtle"
                       }
                     />
                     <Box>
                       <Typography
                         variant="body2"
-                        className="!font-extrabold !text-slate-800"
+                        className="!font-extrabold !text-ink"
                       >
                         Tiền đặt cọc
                       </Typography>
-                      <Typography variant="caption" className="!text-slate-500">
+                      <Typography variant="caption" className="!text-ink-muted">
                         {paymentSummary.depositRequired
                           ? "Khóa tạm thời theo điều kiện phiên"
                           : "Phiên này không yêu cầu"}
@@ -502,7 +493,7 @@ export default function AuctionRegistrationDialog({
                   </Box>
                   <Typography
                     variant="body2"
-                    className={`!font-extrabold ${paymentSummary.depositRequired ? "!text-amber-700" : "!text-slate-400"}`}
+                    className={`!font-extrabold ${paymentSummary.depositRequired ? "!text-warning" : "!text-ink-subtle"}`}
                   >
                     {paymentSummary.depositRequired
                       ? formatCurrency(paymentSummary.deposit)
@@ -513,28 +504,28 @@ export default function AuctionRegistrationDialog({
                 <Box className="flex items-end justify-between gap-4">
                   <Typography
                     variant="body2"
-                    className="!font-extrabold !text-slate-700"
+                    className="!font-extrabold !text-ink"
                   >
                     Tổng xử lý
                   </Typography>
                   <Typography
                     variant="h6"
-                    className="!font-black !text-[#1B4965]"
+                    className="!font-black !text-[var(--color-brand)]"
                   >
                     {formatCurrency(paymentSummary.total)}
                   </Typography>
                 </Box>
               </Box>
 
-              <Box className="mt-4 rounded-xl border border-sky-100 bg-sky-50/70 p-3.5">
+              <Box className="mt-4 rounded-xl border border-info-soft bg-info-soft/70 p-3.5">
                 <Box className="flex gap-2">
                   <AccountBalanceWalletOutlinedIcon
-                    className="!text-sky-700"
+                    className="!text-info"
                     sx={{ fontSize: 20 }}
                   />
                   <Typography
                     variant="caption"
-                    className="!leading-5 !text-sky-900"
+                    className="!leading-5 !text-info"
                   >
                     Khoản tiền được xử lý từ ví nhà xe. Nếu số dư không đủ, hệ
                     thống sẽ báo lỗi và bạn có thể nạp thêm tiền tại Ví thanh
@@ -574,12 +565,12 @@ export default function AuctionRegistrationDialog({
                 }
                 className="!mt-5 !rounded-lg !py-3 !font-extrabold"
                 sx={{
-                  backgroundColor: "#1B4965",
-                  color: "#fff",
-                  "&:hover": { backgroundColor: "#12364c" },
+                  backgroundColor: "var(--color-brand)",
+                  color: "var(--color-surface)",
+                  "&:hover": { backgroundColor: "var(--color-brand-hover)" },
                   "&.Mui-disabled": {
-                    backgroundColor: "#CBD5E1",
-                    color: "#475569",
+                    backgroundColor: "var(--color-line-strong)",
+                    color: "var(--color-ink-muted)",
                     opacity: 1,
                   },
                 }}
@@ -588,7 +579,7 @@ export default function AuctionRegistrationDialog({
               </Button>
               <Typography
                 variant="caption"
-                className="!mt-2 !block !text-center !leading-5 !text-slate-400"
+                className="!mt-2 !block !text-center !leading-5 !text-ink-subtle"
               >
                 Sau khi đăng ký thành công, bạn chờ đến giờ mở phòng mới có thể
                 đặt giá.

@@ -75,11 +75,11 @@ function getRepresentativeName(data) {
 
 function UploadBox({ label, file, onChange, required = false }) {
   return (
-    <Box className="rounded-xl border-2 border-dashed border-slate-200 bg-white p-5 text-center">
-      <UploadIcon className="!text-4xl text-slate-400" />
+    <Box className="rounded-xl border-2 border-dashed border-line bg-white p-5 text-center">
+      <UploadIcon className="!text-4xl text-ink-subtle" />
       <Typography variant="body2" className="mt-2 !font-semibold">
         {file?.name || label}
-        {required ? <span className="text-rose-500"> *</span> : null}
+        {required ? <span className="text-danger"> *</span> : null}
       </Typography>
       <Typography variant="caption" color="text.secondary">
         PDF, PNG hoặc JPG; tối đa 5MB
@@ -343,12 +343,12 @@ export default function BusinessVerificationPanel({
         <Box>
           <Typography
             variant="h6"
-            className="flex items-center gap-2 !font-bold text-[#1B4965]"
+            className="flex items-center gap-2 !font-bold text-[var(--color-brand)]"
           >
             <BusinessIcon />
             Xác minh doanh nghiệp
           </Typography>
-          <Typography variant="body2" className="mt-1 text-slate-500">
+          <Typography variant="body2" className="mt-1 text-ink-muted">
             Nhập MST để hệ thống tự tra cứu, điền thông tin doanh nghiệp và gửi
             hồ sơ cho admin xét duyệt.
           </Typography>
@@ -395,7 +395,7 @@ export default function BusinessVerificationPanel({
       )}
 
       {!canSubmit && (
-        <Box className="rounded-xl border border-slate-200 bg-white p-4">
+        <Box className="rounded-xl border border-line bg-white p-4">
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <Typography variant="caption" color="text.secondary">
@@ -461,12 +461,12 @@ export default function BusinessVerificationPanel({
               FormHelperTextProps={{
                 className:
                   phase === "looking-up"
-                    ? "!text-[#1B4965]"
+                    ? "!text-[var(--color-brand)]"
                     : taxCodeInvalid || (lookupMessage && !lookup?.valid)
-                      ? "!text-rose-600"
+                      ? "!text-danger"
                       : lookup?.valid && lookupMessage
-                      ? "!text-emerald-600"
-                      : "!text-slate-500",
+                      ? "!text-success"
+                      : "!text-ink-muted",
               }}
               error={taxCodeInvalid && phase !== "looking-up"}
               inputProps={{ inputMode: "numeric", maxLength: 13 }}
@@ -549,13 +549,13 @@ export default function BusinessVerificationPanel({
             <Box
               className={`rounded-xl border p-4 ${
                 requiresAuthorization
-                  ? "border-amber-200 bg-amber-50"
-                  : "border-emerald-200 bg-emerald-50/60"
+                  ? "border-warning-soft bg-warning-soft"
+                  : "border-success-soft bg-success-soft/60"
               }`}
             >
               <Typography
                 className={`flex items-center gap-2 !font-bold ${
-                  requiresAuthorization ? "text-amber-800" : "text-emerald-800"
+                  requiresAuthorization ? "text-warning" : "text-success"
                 }`}
               >
                 {requiresAuthorization ? (
@@ -567,7 +567,7 @@ export default function BusinessVerificationPanel({
                   ? "Người đại diện doanh nghiệp không trùng eKYC"
                   : "Đã tìm thấy và tự điền thông tin doanh nghiệp"}
               </Typography>
-              <Typography variant="body2" className="mt-2 text-slate-600">
+              <Typography variant="body2" className="mt-2 text-ink-muted">
                 {requiresAuthorization
                   ? "Vui lòng nộp thêm giấy ủy quyền người đại diện để admin kiểm tra cùng giấy phép kinh doanh."
                   : "Bạn kiểm tra lại thông tin, tải giấy phép kinh doanh và gửi admin duyệt."}
@@ -596,8 +596,8 @@ export default function BusinessVerificationPanel({
             )}
           </Grid>
 
-          <Box className="mt-1 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <Typography variant="caption" className="max-w-xl text-slate-500">
+          <Box className="mt-1 flex flex-col gap-2 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <Typography variant="caption" className="max-w-xl text-ink-muted">
               {canSendReview
                 ? "Hồ sơ sẽ được chuyển cho admin kiểm tra sau khi gửi."
                 : submitHint}

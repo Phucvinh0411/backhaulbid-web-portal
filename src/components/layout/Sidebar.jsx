@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
@@ -11,262 +11,103 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Collapse from "@mui/material/Collapse";
 import Typography from "@mui/material/Typography";
-import Avatar from "@mui/material/Avatar";
 import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
-import LocalShippingTwoToneIcon from "@mui/icons-material/LocalShippingTwoTone";
-import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
-import SettingsTwoToneIcon from "@mui/icons-material/SettingsTwoTone";
-import { appApiService } from "@/services/apiService";
-import { useGlobalNotification } from "@/components/common/NotificationPopup";
+import CloseIcon from "@mui/icons-material/Close";
+import { homePathByRole, isPathActive } from "@/navigation/navigation";
+import BrandMark from "./BrandMark";
 
-const SIDEBAR_WIDTH = 280;
+export const SIDEBAR_WIDTH = 264;
 
-const fallbackProfiles = {
-  shipper: {
-    name: "Tài khoản Chủ hàng",
-    email: "shipper@backhaulbid.vn",
-    roleName: "Chủ hàng",
-    avatarLetter: "C",
-    settingsPath: "/shipper/settings",
-  },
-  carrier: {
-    name: "Tài khoản Nhà xe",
-    email: "carrier@backhaulbid.vn",
-    roleName: "Nhà xe",
-    avatarLetter: "N",
-    settingsPath: "/carrier/settings",
-  },
-  admin: {
-    name: "Tài khoản",
-    email: "",
-    roleName: "Quản trị viên",
-    avatarLetter: "A",
-    settingsPath: "/admin/settings",
-  },
-};
-
-export default function Sidebar({ open, onClose, variant = "permanent", navigation = [], userInfo }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const notify = useGlobalNotification();
+function NavContent({ navigation, pathname, onNavigate, role, onClose, showClose }) {
   const [openMenus, setOpenMenus] = useState({});
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
-    const nextOpenMenus = {};
-    navigation.forEach((group) => {
+    const next = {};
+    navigation.forEach((group) =>
       group.items.forEach((item) => {
-        if (item.children?.some((child) => pathname === child.path || pathname.startsWith(`${child.path}/`))) {
-          nextOpenMenus[item.path] = true;
-        }
-      });
-    });
-    setOpenMenus((prev) => ({ ...prev, ...nextOpenMenus }));
+        if (item.children?.some((child) => isPathActive(pathname, child.path, { exact: child.exact }))) next[item.path] = true;
+      }),
+    );
+    setOpenMenus((prev) => ({ ...prev, ...next }));
   }, [pathname, navigation]);
 
-  const handleToggle = (path) => {
-    setOpenMenus((prev) => ({ ...prev, [path]: !prev[path] }));
-  };
+  const itemActive = (item) =>
+    isPathActive(pathname, item.path, { exact: item.exact || item.path.split("/").filter(Boolean).length === 1 }) ||
+    item.children?.some((child) => isPathActive(pathname, child.path, { exact: child.exact }));
 
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
-
-    setIsLoggingOut(true);
-
-    try {
-      await appApiService.post("/api/auth/logout");
-      window.localStorage.removeItem("userRole");
-      window.localStorage.removeItem("isEkycVerified");
-      router.replace("/login");
-      router.refresh();
-    } catch {
-      notify.error("Không thể đăng xuất. Vui lòng thử lại.");
-      setIsLoggingOut(false);
-    }
-  };
-
-  const isRootSectionPath = (path) => path.split("/").filter(Boolean).length === 1;
-  const isActivePath = (path, exact) => {
-    if (exact || isRootSectionPath(path)) {
-      return pathname === path;
-    }
-    return pathname === path || pathname.startsWith(`${path}/`);
-  };
-  const isItemActive = (item) => isActivePath(item.path, item.exact) || item.children?.some((child) => isActivePath(child.path, child.exact));
-
-  const userRole = pathname.includes("/admin") ? "admin" : pathname.includes("/carrier") ? "carrier" : "shipper";
-  const fallback = fallbackProfiles[userRole] || fallbackProfiles.shipper;
-  const profile = userInfo
-    ? {
-        name: userInfo.name,
-        email: userInfo.email,
-        roleName: userInfo.role,
-        avatarLetter: userInfo.avatar,
-        settingsPath: userInfo.settingsPath || fallback.settingsPath,
-      }
-    : fallback;
-
-  const drawerContent = (
-    <Box className="flex flex-col h-full bg-white/80 backdrop-blur-xl border border-white/50 shadow-[0_8px_32px_0_rgba(27,73,101,0.05)] rounded-3xl p-4">
-      <Box 
-        component={Link} 
-        href={(() => {
-          const segments = pathname.split("/").filter(Boolean);
-          const currentRole = segments[0];
-          if (currentRole === "admin") return "/admin";
-          if (currentRole === "shipper") return "/shipper/dashboard";
-          if (currentRole === "carrier") return "/carrier/dashboard";
-          return "/";
-        })()}
-        className="flex items-center gap-3.5 px-3 py-4 mb-4 cursor-pointer no-underline group"
-      >
-        <Box
-          className="flex items-center justify-center w-11 h-11 rounded-2xl shadow-lg transition-all duration-300 group-hover:rotate-6 group-hover:scale-105"
-          style={{
-            background: "linear-gradient(135deg, #1B4965 0%, #62B6CB 100%)",
-            boxShadow: "0 8px 20px rgba(27, 73, 101, 0.25)",
-          }}
-        >
-          <LocalShippingTwoToneIcon sx={{ color: "#fff", fontSize: 24 }} />
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "background.paper" }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 2, minHeight: 64, borderBottom: "1px solid", borderColor: "divider" }}>
+        <Box component={Link} href={homePathByRole[role] || "/"} onClick={onNavigate} sx={{ textDecoration: "none" }}>
+          <BrandMark />
         </Box>
-        <Box>
-          <Typography variant="h6" className="!text-[1.05rem] !font-black !leading-tight text-slate-800 tracking-tight transition-colors group-hover:text-[#1B4965]">
-            BackHaulBid
-          </Typography>
-          <Typography variant="caption" className="!text-[0.7rem] text-cyan-600 !font-bold tracking-widest uppercase">
-            B2B Logistics
-          </Typography>
-        </Box>
+        {showClose && (
+          <IconButton onClick={onClose} aria-label="Đóng menu" sx={{ width: 44, height: 44 }}>
+            <CloseIcon />
+          </IconButton>
+        )}
       </Box>
 
-      <Box className="flex-1 overflow-y-auto pr-1 -mr-2 sidebar-scroll">
+      <Box component="nav" aria-label="Menu theo vai trò" sx={{ flex: 1, overflowY: "auto", px: 1.5, py: 2 }}>
         {navigation.map((group) => (
-          <Box key={group.title} className="mb-6">
-            <Typography
-              variant="overline"
-              className="!text-xs !font-bold text-slate-400 !tracking-wider px-4.5 py-1.5 block !normal-case"
-            >
+          <Box key={group.title} sx={{ mb: 2 }}>
+            <Typography component="p" sx={{ px: 1.5, pb: 0.5, fontSize: "0.75rem", fontWeight: 600, color: "var(--color-ink-subtle)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
               {group.title}
             </Typography>
-
-            <List disablePadding className="space-y-1">
+            <List disablePadding>
               {group.items.map((item) => {
                 const Icon = item.icon;
-                const active = Boolean(isItemActive(item));
+                const active = Boolean(itemActive(item));
                 const hasChildren = Boolean(item.children?.length);
-                const isOpen = openMenus[item.path];
-
+                const isOpen = Boolean(openMenus[item.path]);
                 return (
-                  <Box key={item.path}>
+                  <Box component="li" key={item.path} sx={{ listStyle: "none" }}>
                     <ListItemButton
-                      component={hasChildren ? "div" : Link}
+                      component={hasChildren ? "button" : Link}
                       href={hasChildren ? undefined : item.path}
-                      onClick={hasChildren ? () => handleToggle(item.path) : onClose}
-                      selected={active && !hasChildren}
-                      className="!rounded-xl !mb-0.5 group/btn relative overflow-hidden"
+                      onClick={hasChildren ? () => setOpenMenus((prev) => ({ ...prev, [item.path]: !prev[item.path] })) : onNavigate}
+                      aria-expanded={hasChildren ? isOpen : undefined}
+                      aria-current={!hasChildren && active ? "page" : undefined}
+                      selected={!hasChildren && active}
                       sx={{
-                        minHeight: 46,
-                        px: 2.5,
-                        transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-                        "&.Mui-selected": {
-                          background: "linear-gradient(135deg, rgba(27, 73, 101, 0.05) 0%, rgba(98, 182, 203, 0.02) 100%)",
-                          color: "#1B4965",
-                          fontWeight: 700,
-                          boxShadow: "0 2px 8px rgba(27, 73, 101, 0.03)",
-                          "&:hover": {
-                            background: "linear-gradient(135deg, rgba(27, 73, 101, 0.08) 0%, rgba(98, 182, 203, 0.04) 100%)",
-                          },
-                        },
-                        "&:hover": {
-                          backgroundColor: "rgba(27, 73, 101, 0.03)",
-                          transform: "translateX(4px)",
-                        },
+                        width: "100%",
+                        borderRadius: 2,
+                        minHeight: 44,
+                        px: 1.5,
+                        mb: 0.25,
+                        color: active ? "primary.main" : "text.primary",
+                        // DESIGN.md: active row = soft navy fill + 3 px navy bar on the left.
+                        "&.Mui-selected": { bgcolor: "var(--color-brand-soft)", boxShadow: "inset 3px 0 0 var(--color-brand)", "&:hover": { bgcolor: "var(--color-brand-soft)" } },
                       }}
                     >
-                      {active && !hasChildren && (
-                        <Box
-                          className="absolute left-0 w-1.5 h-6 rounded-r-full"
-                          style={{ background: "linear-gradient(180deg, #1B4965 0%, #62B6CB 100%)" }}
-                        />
+                      {Icon && (
+                        <ListItemIcon sx={{ minWidth: 34, color: active ? "primary.main" : "text.secondary" }}>
+                          <Icon fontSize="small" />
+                        </ListItemIcon>
                       )}
-
-                      <ListItemIcon
-                        sx={{
-                          minWidth: 36,
-                          color: active ? "#1B4965" : "#94A3B8",
-                          transition: "color 0.25s",
-                          ".group-hover\\/btn:hover &": { color: "#1B4965" },
-                        }}
-                      >
-                        <Icon fontSize="medium" />
-                      </ListItemIcon>
-
-                      <ListItemText
-                        primary={item.title}
-                        primaryTypographyProps={{
-                          fontSize: "0.88rem",
-                          fontWeight: active ? 700 : 500,
-                          className: active ? "text-[#1B4965]" : "text-slate-600 hover:text-slate-800",
-                        }}
-                      />
-
-                      {hasChildren &&
-                        (isOpen ? (
-                          <ExpandLess fontSize="small" sx={{ color: "#1B4965" }} />
-                        ) : (
-                          <ExpandMore fontSize="small" sx={{ color: "#94A3B8" }} />
-                        ))}
+                      <ListItemText primary={item.title} primaryTypographyProps={{ fontSize: "0.9375rem", fontWeight: active ? 600 : 500 }} />
+                      {hasChildren && (isOpen ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />)}
                     </ListItemButton>
-
                     {hasChildren && (
                       <Collapse in={isOpen} timeout="auto" unmountOnExit>
-                        <List disablePadding className="mt-1 pl-4 border-l-2 border-slate-100 ml-6 space-y-1">
+                        <List disablePadding sx={{ pl: 4.25, mb: 0.5 }}>
                           {item.children.map((child) => {
-                            const childActive = isActivePath(child.path, child.exact);
+                            const childActive = isPathActive(pathname, child.path, { exact: child.exact });
                             return (
-                              <ListItemButton
-                                key={child.path}
-                                component={Link}
-                                href={child.path}
-                                onClick={onClose}
-                                selected={childActive}
-                                className="!rounded-lg relative"
-                                sx={{
-                                  minHeight: 36,
-                                  px: 2,
-                                  transition: "all 0.2s",
-                                  "&.Mui-selected": {
-                                    backgroundColor: "rgba(27, 73, 101, 0.05)",
-                                    color: "#1B4965",
-                                    "&:hover": { backgroundColor: "rgba(27, 73, 101, 0.08)" },
-                                  },
-                                  "&:hover": {
-                                    backgroundColor: "rgba(0, 0, 0, 0.02)",
-                                    transform: "translateX(2px)",
-                                  },
-                                }}
-                              >
-                                {childActive && (
-                                  <Box
-                                    className="absolute left-0 w-1 h-4 rounded-r-full"
-                                    style={{
-                                      background: "#1B4965",
-                                      marginLeft: "-2px",
-                                    }}
-                                  />
-                                )}
-                                <ListItemText
-                                  primary={child.title}
-                                  primaryTypographyProps={{
-                                    fontSize: "0.82rem",
-                                    fontWeight: childActive ? 700 : 500,
-                                    className: childActive ? "text-[#1B4965]" : "text-slate-500 hover:text-slate-800",
-                                  }}
-                                />
-                              </ListItemButton>
+                              <Box component="li" key={child.path} sx={{ listStyle: "none" }}>
+                                <ListItemButton
+                                  component={Link}
+                                  href={child.path}
+                                  onClick={onNavigate}
+                                  selected={childActive}
+                                  aria-current={childActive ? "page" : undefined}
+                                  sx={{ borderRadius: 2, minHeight: 40, px: 1.5, "&.Mui-selected": { bgcolor: "var(--color-brand-soft)", color: "primary.main", boxShadow: "inset 3px 0 0 var(--color-brand)" } }}
+                                >
+                                  <ListItemText primary={child.title} primaryTypographyProps={{ fontSize: "0.875rem", fontWeight: childActive ? 600 : 500 }} />
+                                </ListItemButton>
+                              </Box>
                             );
                           })}
                         </List>
@@ -280,85 +121,42 @@ export default function Sidebar({ open, onClose, variant = "permanent", navigati
         ))}
       </Box>
 
-      <Box
-        className="mt-auto p-3.5 rounded-2xl flex items-center gap-3 border border-slate-100/60"
-        style={{
-          background: "linear-gradient(135deg, rgba(27,73,101,0.02) 0%, rgba(98,182,203,0.02) 100%)",
-        }}
-      >
-        <Avatar
-          sx={{
-            width: 38,
-            height: 38,
-            bgcolor: "#1B4965",
-            fontSize: "0.95rem",
-            fontWeight: 700,
-            border: "2px solid #fff",
-            boxShadow: "0 4px 10px rgba(27, 73, 101, 0.15)",
-          }}
-        >
-          {profile.avatarLetter}
-        </Avatar>
-        <Box className="flex-1 min-w-0">
-          <Typography variant="body2" className="!text-[0.82rem] !font-bold text-slate-700 truncate leading-none mb-1">
-            {profile.name}
-          </Typography>
-          <Typography variant="caption" className="!text-[0.68rem] text-slate-400 font-medium truncate block leading-none">
-            {profile.email}
-          </Typography>
-        </Box>
-        <Box className="flex gap-0.5">
-          <Tooltip title="Cài đặt">
-            <IconButton
-              size="small"
-              component={Link}
-              href={profile.settingsPath}
-              sx={{ color: "#94A3B8", "&:hover": { color: "#1B4965" } }}
-            >
-              <SettingsTwoToneIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Đăng xuất">
-            <span>
-              <IconButton
-                size="small"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                aria-label="Đăng xuất"
-                sx={{ color: "#94A3B8", "&:hover": { color: "#F43F5E" } }}
-              >
-                <LogoutRoundedIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
-        </Box>
-      </Box>
     </Box>
   );
+}
+
+/** Permanent sidebar from md up; on phones the same content opens as a drawer from "Thêm". */
+export default function Sidebar({ open, onClose, navigation = [], role }) {
+  const pathname = usePathname();
 
   return (
     <>
-      <Drawer
-        variant={variant}
-        open={variant === "permanent" ? true : open}
-        onClose={onClose}
+      <Box
+        component="aside"
         sx={{
+          display: { xs: "none", md: "block" },
+          position: "fixed",
+          top: 0,
+          left: 0,
+          bottom: 0,
           width: SIDEBAR_WIDTH,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: SIDEBAR_WIDTH,
-            boxSizing: "border-box",
-            border: "none",
-            background: "transparent",
-            p: variant === "permanent" ? 2.5 : 2,
-            pr: variant === "permanent" ? 1.25 : 2,
-          },
+          borderRight: "1px solid",
+          borderColor: "divider",
+          zIndex: 1050,
         }}
       >
-        {drawerContent}
+        <NavContent navigation={navigation} pathname={pathname} role={role} />
+      </Box>
+      <Drawer
+        anchor="left"
+        open={Boolean(open)}
+        onClose={onClose}
+        ModalProps={{ keepMounted: true }}
+        sx={{ display: { xs: "block", md: "none" } }}
+        PaperProps={{ sx: { width: "min(320px, 88vw)" } }}
+      >
+        <NavContent navigation={navigation} pathname={pathname} onNavigate={onClose} onClose={onClose} showClose role={role} />
       </Drawer>
     </>
   );
 }
-
-export { SIDEBAR_WIDTH };

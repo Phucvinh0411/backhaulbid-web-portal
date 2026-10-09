@@ -2,314 +2,196 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import CircularProgress from "@mui/material/CircularProgress";
-import AccessTimeIcon from "@mui/icons-material/AccessTimeOutlined";
-import PaymentsIcon from "@mui/icons-material/PaymentsOutlined";
-import SecurityIcon from "@mui/icons-material/SecurityOutlined";
+import Typography from "@mui/material/Typography";
 
-import {
-  getAuctionAccess,
-  retryRegistrationPayment,
-} from "@/services/biddingApi";
+import { getAuctionAccess, retryRegistrationPayment } from "@/services/biddingApi";
 import { getMyVehicles } from "@/services/fleetApi";
-import { formatCurrency } from "@/utils/auctionFormatters";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
+import { KeyValueList, ListSkeleton, Panel } from "@/components/ui";
+import { formatCountdown, formatDateTime, formatMoney, secondsUntil, toAmount } from "@/lib/format";
 import AuctionRegistrationDialog from "./AuctionRegistrationDialog";
 
-const formatRemaining = (date) => {
-  const seconds = Math.max(
-    0,
-    Math.floor((new Date(date).getTime() - Date.now()) / 1000),
-  );
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = seconds % 60;
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
-};
+// Access only changes on the server at fixed moments (payment, room opening), so a
+// slow refresh while waiting is enough; terminal states stop refreshing.
+const WAITING_REFRESH_MS = 30000;
+const TERMINAL = new Set(["AUCTION_COMPLETED", "AUCTION_CANCELLED", "REGISTRATION_CLOSED", "REGISTRATION_CANCELLED", "AUCTION_OPEN"]);
 
-export default function CarrierRegistrationGate({
-  auctionId,
-  shipment,
-  onAccessChange,
-}) {
+export default function CarrierRegistrationGate({ auctionId, auction, onAccessChange }) {
   const { notify } = useGlobalNotification();
   const [access, setAccess] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [remaining, setRemaining] = useState("");
-  const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [vehicles, setVehicles] = useState([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [vehiclesError, setVehiclesError] = useState("");
 
-  const updateAccess = useCallback(
-    (nextAccess) => {
-      setAccess(nextAccess);
-      onAccessChange?.(nextAccess);
-    },
-    [onAccessChange],
-  );
-
   const loadAccess = useCallback(async () => {
     try {
-      const nextAccess = await getAuctionAccess(auctionId);
-      updateAccess(nextAccess);
+      const next = await getAuctionAccess(auctionId);
+      setAccess(next);
+      onAccessChange?.(next);
       setError("");
     } catch (requestError) {
-      const nextError = getApiErrorMessage(
-        requestError,
-        "Không thể kiểm tra quyền tham gia phiên đấu giá. Vui lòng thử lại.",
-      );
-      setError(nextError);
-      notify.error(nextError);
+      const message = getApiErrorMessage(requestError, "Không thể kiểm tra quyền tham gia phiên. Vui lòng thử lại.");
+      setError(message);
+      notify.error(message);
     } finally {
       setLoading(false);
     }
-  }, [auctionId, notify, updateAccess]);
+  }, [auctionId, notify, onAccessChange]);
 
   useEffect(() => {
     void loadAccess();
-    const interval = window.setInterval(loadAccess, 5000);
-    return () => window.clearInterval(interval);
   }, [loadAccess]);
+
+  const status = access?.accessStatus;
+  useEffect(() => {
+    if (!status || TERMINAL.has(status)) return undefined;
+    const interval = window.setInterval(loadAccess, WAITING_REFRESH_MS);
+    return () => window.clearInterval(interval);
+  }, [loadAccess, status]);
+
+  useEffect(() => {
+    if (status !== "WAITING_FOR_START") return undefined;
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, [status]);
+
+  // When the local countdown reaches the start time, ask the server instead of assuming the room opened.
+  const startsIn = secondsUntil(access?.startTime || auction?.startTime, now);
+  useEffect(() => {
+    if (status === "WAITING_FOR_START" && startsIn === 0) void loadAccess();
+  }, [loadAccess, startsIn, status]);
 
   useEffect(() => {
     let active = true;
     getMyVehicles()
-      .then((response) => {
-        if (active) setVehicles(Array.isArray(response) ? response : []);
-      })
+      .then((response) => active && setVehicles(Array.isArray(response) ? response : []))
       .catch((requestError) => {
         if (!active) return;
-        const nextError = getApiErrorMessage(
-          requestError,
-          "Không thể tải phương tiện đã xác minh. Vui lòng thử lại.",
-        );
-        setVehiclesError(nextError);
-        notify.error(nextError);
+        const message = getApiErrorMessage(requestError, "Không thể tải phương tiện đã xác minh. Vui lòng thử lại.");
+        setVehiclesError(message);
+        notify.error(message);
       })
-      .finally(() => {
-        if (active) setVehiclesLoading(false);
-      });
-
+      .finally(() => active && setVehiclesLoading(false));
     return () => {
       active = false;
     };
   }, [notify]);
 
-  useEffect(() => {
-    const startTime = access?.startTime || shipment?.startTime;
-    if (!startTime) return undefined;
-
-    const updateRemaining = () => setRemaining(formatRemaining(startTime));
-    updateRemaining();
-    const interval = window.setInterval(updateRemaining, 1000);
-    return () => window.clearInterval(interval);
-  }, [access?.startTime, shipment?.startTime]);
-
-  const paymentSummary = useMemo(() => {
-    const fee = Number(shipment?.participationFee || 0);
-    const depositRequired =
-      shipment?.isDepositRequired ?? Number(shipment?.depositAmount || 0) > 0;
-    const deposit = depositRequired ? Number(shipment.depositAmount || 0) : 0;
-    return { fee, deposit, depositRequired, total: fee + deposit };
-  }, [shipment]);
-
-  const handleRegister = () => {
-    setError("");
-    setRegistrationDialogOpen(true);
-  };
-
-  const handleRegistrationCompleted = async () => {
-    await loadAccess();
-  };
+  const payment = useMemo(() => {
+    const fee = toAmount(auction?.participationFeeAmount) || 0;
+    const deposit = auction?.isDepositRequired ? toAmount(auction?.depositAmount) || 0 : 0;
+    return { fee, deposit, total: fee + deposit };
+  }, [auction]);
 
   const handleRetryPayment = async () => {
-    if (!access?.registrationId) return;
+    if (!access?.registrationId || submitting) return;
     setSubmitting(true);
     setError("");
     try {
-      await retryRegistrationPayment(auctionId, access.registrationId, {
-        idempotencyKey: globalThis.crypto.randomUUID(),
-      });
-      notify.success("Đã gửi lại yêu cầu thanh toán đăng ký.");
+      await retryRegistrationPayment(auctionId, access.registrationId, { idempotencyKey: globalThis.crypto.randomUUID() });
+      notify.success("Đã thanh toán đăng ký. Đang cập nhật quyền vào phòng.");
       await loadAccess();
     } catch (requestError) {
-      const nextError = getApiErrorMessage(
-        requestError,
-        "Không thể hoàn tất thanh toán. Vui lòng kiểm tra số dư rồi thử lại.",
-      );
-      setError(nextError);
-      notify.error(nextError);
+      const message = getApiErrorMessage(requestError, "Không thể hoàn tất thanh toán. Vui lòng kiểm tra số dư ví rồi thử lại.");
+      setError(message);
+      notify.error(message);
       await loadAccess();
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="mb-6 flex items-center justify-center gap-3 rounded-3xl border border-slate-200 bg-white p-8 text-slate-500">
-        <CircularProgress size={22} /> Đang kiểm tra trạng thái đăng ký...
-      </div>
-    );
-  }
+  if (loading) return <ListSkeleton rows={1} height={120} label="Đang kiểm tra đăng ký" />;
+  if (access?.canEnter) return null;
 
-  const status = access?.accessStatus;
-  const canEnter = access?.canEnter === true;
-
-  if (canEnter) {
-    return (
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-emerald-200 bg-emerald-50 p-4">
-        <Alert severity="success" className="!rounded-2xl !border-0 !bg-transparent !p-0">
-          Bạn đã đủ điều kiện. Phòng đấu giá đang mở, có thể đặt giá.
-        </Alert>
-        <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-sm font-bold text-emerald-800">
-          Điểm uy tín: {access?.reputationScore ?? "—"} / 100 · Tối thiểu {access?.minimumReputationScore ?? 70}
-        </span>
-      </div>
-    );
-  }
+  const reputation = access?.reputationScore !== undefined && access?.reputationScore !== null
+    ? `${access.reputationScore}/100 (tối thiểu ${access.minimumReputationScore ?? 70})`
+    : null;
 
   return (
     <>
-      <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <Panel title="Điều kiện tham gia">
         {error && (
-          <Alert severity="error" className="!mb-4 !rounded-2xl">
+          <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
 
         {status === "REGISTRATION_REQUIRED" && (
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wider text-slate-400">
-                Điều kiện tham gia
-              </p>
-              <h2 className="mt-1 text-lg font-black text-slate-800">
-                Đăng ký và hoàn tất thanh toán trước hạn đóng đăng ký
-              </h2>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 sm:col-span-2">
-                <SecurityIcon className="text-indigo-700" />
-                <p className="mt-2 text-xs font-bold text-slate-500">Điểm uy tín tham gia đấu giá</p>
-                <p className="font-mono text-lg font-black text-indigo-800">
-                  {access?.reputationScore ?? "—"} / 100 · cần tối thiểu {access?.minimumReputationScore ?? 70}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
-                <PaymentsIcon className="text-sky-700" />
-                <p className="mt-2 text-xs font-bold text-slate-500">
-                  Phí tham gia bắt buộc
-                </p>
-                <p className="font-mono text-lg font-black text-sky-800">
-                  {formatCurrency(paymentSummary.fee)}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-                <SecurityIcon className="text-amber-700" />
-                <p className="mt-2 text-xs font-bold text-slate-500">
-                  Tiền đặt cọc
-                </p>
-                <p className="font-mono text-lg font-black text-amber-800">
-                  {paymentSummary.depositRequired
-                    ? formatCurrency(paymentSummary.deposit)
-                    : "Không yêu cầu"}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4">
-              <span className="text-sm font-bold text-slate-600">
-                Tổng cần thanh toán/khóa
-              </span>
-              <span className="font-mono text-lg font-black text-slate-900">
-                {formatCurrency(paymentSummary.total)}
-              </span>
-            </div>
-            <Button
-              variant="contained"
-              onClick={handleRegister}
-              disabled={submitting}
-              className="!rounded-2xl !px-6 !py-3 !font-bold"
-            >
-              {submitting ? "Đang xử lý..." : "Đăng ký tham gia"}
-            </Button>
-          </div>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Typography variant="body2" sx={{ maxWidth: "70ch" }}>
+              Đăng ký với một phương tiện đã xác minh và thanh toán trước {formatDateTime(auction?.registrationEndTime)}. Bạn chỉ vào được phòng khi đến giờ bắt đầu.
+            </Typography>
+            <KeyValueList
+              columns={3}
+              items={[
+                { label: "Phí tham gia", value: formatMoney(payment.fee), numeric: true },
+                { label: "Tiền cọc (được khóa)", value: auction?.isDepositRequired ? formatMoney(payment.deposit) : "Không yêu cầu", numeric: true },
+                { label: "Tổng cần thanh toán hoặc khóa", value: formatMoney(payment.total), numeric: true, strong: true },
+                { label: "Điểm uy tín của bạn", value: reputation, hidden: !reputation },
+              ]}
+            />
+            <Box>
+              <Button variant="contained" size="large" onClick={() => setDialogOpen(true)}>
+                Đăng ký tham gia
+              </Button>
+            </Box>
+          </Box>
         )}
 
         {status === "PAYMENT_INCOMPLETE" && (
-          <div className="space-y-3">
-            <p className="text-lg font-black text-slate-800">
-              Đăng ký đã tạo nhưng thanh toán chưa hoàn tất
-            </p>
-            <p className="text-sm text-slate-500">
-              Bạn có thể thử lại trước khi phiên bắt đầu. Nếu quá thời điểm bắt
-              đầu, hệ thống sẽ khóa thao tác này.
-            </p>
-            <Button
-              variant="contained"
-              onClick={handleRetryPayment}
-              disabled={submitting}
-              className="!rounded-2xl !px-6 !py-3 !font-bold"
-            >
-              {submitting ? "Đang xử lý..." : "Thử lại thanh toán"}
-            </Button>
-          </div>
-        )}
-
-        {status === "REPUTATION_TOO_LOW" && (
-          <Alert severity="warning" className="!rounded-2xl">
-            <strong>Chưa đủ điểm để tham gia phiên này.</strong> Điểm uy tín hiện tại của bạn là {access?.reputationScore ?? "—"}/100; cần tối thiểu {access?.minimumReputationScore ?? 70} điểm. Điểm uy tín giảm khi vi phạm chính sách giao hàng trễ.
-          </Alert>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <Alert severity="error">Đăng ký đã tạo nhưng thanh toán chưa hoàn tất. Bạn có thể thử lại trước giờ mở phiên.</Alert>
+            <Box>
+              <Button variant="contained" onClick={handleRetryPayment} disabled={submitting}>
+                {submitting ? "Đang thanh toán..." : `Thử lại thanh toán ${formatMoney(payment.total)}`}
+              </Button>
+            </Box>
+          </Box>
         )}
 
         {status === "WAITING_FOR_START" && (
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wider text-emerald-600">
-                Đã đăng ký thành công
-              </p>
-              <p className="mt-1 text-lg font-black text-slate-800">
-                Phòng sẽ mở khi đến giờ bắt đầu
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                Bạn chưa thể xem phòng hoặc đặt giá trước thời điểm này.
-              </p>
-            </div>
-            <div className="rounded-2xl bg-emerald-50 px-5 py-3 text-center text-emerald-800">
-              <AccessTimeIcon />
-              <p className="font-mono text-xl font-black">{remaining}</p>
-            </div>
-          </div>
+          <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+            <Box>
+              <Typography sx={{ fontWeight: 700 }}>Đã đăng ký thành công</Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                Phòng mở lúc {formatDateTime(access?.startTime || auction?.startTime)}. Trang tự kiểm tra lại khi đến giờ.
+              </Typography>
+            </Box>
+            <Box role="timer" aria-label="Thời gian đến khi mở phòng" sx={{ px: 2, py: 1, borderRadius: 2, bgcolor: "var(--color-success-soft)", textAlign: "center" }}>
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>Mở phòng sau</Typography>
+              <Typography className="tabular" sx={{ fontWeight: 700, fontSize: "1.25rem" }}>{formatCountdown(startsIn)}</Typography>
+            </Box>
+          </Box>
         )}
 
-        {status === "REGISTRATION_CLOSED" && (
-          <p className="font-black text-slate-700">
-            Phiên đã đóng đăng ký, không thể tham gia thêm.
-          </p>
+        {status === "REPUTATION_TOO_LOW" && (
+          <Alert severity="warning">
+            Điểm uy tín hiện tại {reputation || "chưa xác định"}. Điểm giảm khi vi phạm chính sách giao hàng trễ.
+          </Alert>
         )}
-        {status === "AUCTION_COMPLETED" && (
-          <p className="font-black text-slate-700">
-            Phiên đấu giá đã kết thúc.
-          </p>
-        )}
-        {status === "AUCTION_CANCELLED" && (
-          <p className="font-black text-slate-700">Phiên đấu giá đã bị hủy.</p>
-        )}
-      </div>
+        {status === "REGISTRATION_CLOSED" && <Typography variant="body2">Phiên đã đóng đăng ký. Bạn không thể tham gia phiên này.</Typography>}
+        {status === "REGISTRATION_CANCELLED" && <Typography variant="body2">Đăng ký của bạn đã bị hủy.</Typography>}
+        {status === "AUCTION_COMPLETED" && <Typography variant="body2">Phiên đã kết thúc. Kết quả của bạn hiển thị bên dưới nếu bạn đã đặt giá.</Typography>}
+        {status === "AUCTION_CANCELLED" && <Typography variant="body2">Phiên đã bị hủy.</Typography>}
+      </Panel>
 
       <AuctionRegistrationDialog
-        open={registrationDialogOpen}
-        auction={shipment}
+        open={dialogOpen}
+        auction={auction}
         vehicles={vehicles}
         vehiclesLoading={vehiclesLoading}
         vehiclesError={vehiclesError}
-        onClose={() => setRegistrationDialogOpen(false)}
-        onCompleted={handleRegistrationCompleted}
+        onClose={() => setDialogOpen(false)}
+        onCompleted={loadAccess}
       />
     </>
   );

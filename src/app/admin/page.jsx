@@ -67,7 +67,7 @@ export default function AdminDashboardPage() {
     ...data.drivers.map((driver) => ({ id: driver.id, type: "Tài xế", subject: driver.fullName || "Chưa có tên", owner: driver.phone || "Chưa cập nhật", status: driver.status })),
   ], [data.drivers, data.vehicles]);
 
-  if (loading) return <AdminPageShell><Box className="flex min-h-[320px] items-center justify-center gap-2 text-slate-500"><CircularProgress size={24} /> Đang tải tổng quan admin...</Box></AdminPageShell>;
+  if (loading) return <AdminPageShell><Box className="flex min-h-[320px] items-center justify-center gap-2 text-ink-muted"><CircularProgress size={24} /> Đang tải tổng quan admin...</Box></AdminPageShell>;
   if (error) return <AdminPageShell><Alert severity="error">{error}</Alert></AdminPageShell>;
 
   return (
@@ -76,7 +76,7 @@ export default function AdminDashboardPage() {
         title="Bảng điều khiển Admin"
         subtitle="Theo dõi dữ liệu tài khoản, đấu giá và các hồ sơ cần duyệt từ các service thật."
         breadcrumbs={[{ label: "Admin", path: "/admin" }, { label: "Tổng quan" }]}
-        action={<AdminSecondaryButton component={Link} href="/admin/fleet-verifications">Mở duyệt đội xe</AdminSecondaryButton>}
+        action={<Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}><AdminSecondaryButton component={Link} href="/admin/statistics">Xem thống kê</AdminSecondaryButton><AdminSecondaryButton component={Link} href="/admin/fleet-verifications">Mở duyệt đội xe</AdminSecondaryButton></Box>}
       />
 
       <Grid container spacing={3}>
@@ -91,10 +91,10 @@ export default function AdminDashboardPage() {
         subtitle={reviewRows.length ? `${reviewRows.length} hồ sơ đang ở trạng thái PENDING` : "Không có hồ sơ PENDING trong dữ liệu hiện tại."}
         action={<AdminSecondaryButton component={Link} href="/admin/fleet-verifications" size="small">Xem tất cả</AdminSecondaryButton>}
       >
-        {reviewRows.length === 0 ? <Box className="p-10 text-center text-slate-500">Không có tác vụ cần xử lý.</Box> : <TableContainer><Table aria-label="Hồ sơ đội xe cần xử lý"><TableHead sx={{ bgcolor: "rgba(27, 73, 101, 0.04)" }}><TableRow><TableCell sx={{ fontWeight: 700 }}>Loại hồ sơ</TableCell><TableCell sx={{ fontWeight: 700 }}>Đối tượng</TableCell><TableCell sx={{ fontWeight: 700 }}>Chủ hồ sơ / liên hệ</TableCell><TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell><TableCell align="right" sx={{ fontWeight: 700 }}>Thao tác</TableCell></TableRow></TableHead><TableBody>{reviewRows.slice(0, 10).map((row) => <TableRow key={`${row.type}-${row.id}`} hover><TableCell>{row.type}</TableCell><TableCell sx={{ fontWeight: 700, color: "primary.main" }}>{row.subject}</TableCell><TableCell sx={{ color: "text.secondary" }}>{row.owner}</TableCell><TableCell><AdminStatusChip label={row.status || "PENDING"} tone={reviewTone(row.status)} /></TableCell><TableCell align="right"><AdminSecondaryButton component={Link} href="/admin/fleet-verifications" size="small">Mở duyệt</AdminSecondaryButton></TableCell></TableRow>)}</TableBody></Table></TableContainer>}
+        {reviewRows.length === 0 ? <Box className="p-10 text-center text-ink-muted">Không có tác vụ cần xử lý.</Box> : <TableContainer><Table aria-label="Hồ sơ đội xe cần xử lý"><TableHead sx={{ bgcolor: "rgba(27, 73, 101, 0.04)" }}><TableRow><TableCell sx={{ fontWeight: 700 }}>Loại hồ sơ</TableCell><TableCell sx={{ fontWeight: 700 }}>Đối tượng</TableCell><TableCell sx={{ fontWeight: 700 }}>Chủ hồ sơ / liên hệ</TableCell><TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell><TableCell align="right" sx={{ fontWeight: 700 }}>Thao tác</TableCell></TableRow></TableHead><TableBody>{reviewRows.slice(0, 10).map((row) => <TableRow key={`${row.type}-${row.id}`} hover><TableCell>{row.type}</TableCell><TableCell sx={{ fontWeight: 700, color: "primary.main" }}>{row.subject}</TableCell><TableCell sx={{ color: "text.secondary" }}>{row.owner}</TableCell><TableCell><AdminStatusChip label={row.status || "PENDING"} tone={reviewTone(row.status)} /></TableCell><TableCell align="right"><AdminSecondaryButton component={Link} href="/admin/fleet-verifications" size="small">Mở duyệt</AdminSecondaryButton></TableCell></TableRow>)}</TableBody></Table></TableContainer>}
       </AdminSectionCard>
 
-      <Box className="rounded-xl border border-slate-200 bg-slate-50 p-4"><Typography variant="body2" className="text-slate-600"><strong>Wallet sandbox:</strong> số liệu lấy từ giao dịch SUCCESS; việc chuyển tiền ra ngân hàng vẫn là quy trình duyệt thủ công.</Typography></Box>
+      <Box className="rounded-xl border border-line bg-surface-sunken p-4"><Typography variant="body2" className="text-ink-muted"><strong>Wallet sandbox:</strong> số liệu lấy từ giao dịch SUCCESS; việc chuyển tiền ra ngân hàng vẫn là quy trình duyệt thủ công.</Typography></Box>
     </AdminPageShell>
   );
 }
@@ -106,11 +106,11 @@ function formatCurrency(value) {
 
 function Stat({ title, value, subtitle, icon: Icon, tone }) {
   const styles = {
-    primary: { bg: "#EAF4F8", color: "#1B4965" },
-    info: { bg: "#EFF6FF", color: "#1D4ED8" },
-    warning: { bg: "#FFFBEB", color: "#B45309" },
-    neutral: { bg: "#F8FAFC", color: "#475569" },
+    primary: { bg: "var(--color-brand-soft)", color: "var(--color-brand)" },
+    info: { bg: "var(--color-info-soft)", color: "var(--color-info)" },
+    warning: { bg: "var(--color-warning-soft)", color: "var(--color-warning)" },
+    neutral: { bg: "var(--color-surface-sunken)", color: "var(--color-ink-muted)" },
   };
   const style = styles[tone] || styles.primary;
-  return <Box className="rounded-2xl border border-slate-200 bg-white/85 p-5 shadow-sm"><Box className="flex items-start justify-between gap-2"><Box><Typography variant="body2" className="font-bold text-slate-500">{title}</Typography><Typography variant="h4" className="mt-2 font-extrabold text-slate-800">{value}</Typography><Typography variant="caption" sx={{ color: style.color }} className="mt-2 block font-bold">{subtitle}</Typography></Box><Box className="flex h-11 w-11 items-center justify-center rounded-xl" sx={{ bgcolor: style.bg, color: style.color }}><Icon fontSize="small" /></Box></Box></Box>;
+  return <Box className="rounded-xl border border-line bg-white/85 p-5 shadow-sm"><Box className="flex items-start justify-between gap-2"><Box><Typography variant="body2" className="font-bold text-ink-muted">{title}</Typography><Typography variant="h4" className="mt-2 font-extrabold text-ink">{value}</Typography><Typography variant="caption" sx={{ color: style.color }} className="mt-2 block font-bold">{subtitle}</Typography></Box><Box className="flex h-11 w-11 items-center justify-center rounded-xl" sx={{ bgcolor: style.bg, color: style.color }}><Icon fontSize="small" /></Box></Box></Box>;
 }
