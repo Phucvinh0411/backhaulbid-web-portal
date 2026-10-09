@@ -1,4 +1,5 @@
 import { getParticipationFeeQuote } from "./mockData.js";
+import { coordinate } from "../../tracking/trackingPresentation.js";
 
 const requiredRouteFields = [
   "LocationName",
@@ -77,12 +78,24 @@ const toIsoOrUndefined = (value) => {
   return date ? date.toISOString() : undefined;
 };
 
+const confirmedCoordinates = (point) => {
+  const position = coordinate(point);
+  return position ? { latitude: position[0], longitude: position[1], coordinateSource: "USER_CONFIRMED", coordinateConfirmedAt: point.coordinateConfirmedAt } : {};
+};
+
+// Street detail first, then the ward; empty parts are dropped.
+const joinAddress = (detail, ward) => [detail?.trim(), ward?.trim()].filter(Boolean).join(", ");
+
 export const mapFormToAuctionPayload = (form) => ({
   title: form.goodsName.trim(),
   goodsType: form.goodsCategory,
   weight: Number(form.weight),
   volume: form.volume ? Number(form.volume) : undefined,
   goodsValue: form.goodsValue ? Number(form.goodsValue).toString() : undefined,
+  // Value documents are upload URLs from the private folder; the server keeps only their keys.
+  valueDocuments: form.valueDocuments?.length ? [...form.valueDocuments] : undefined,
+  // Sent only when the shipper ticks the box; without it the payload is the same as before this requirement existed.
+  ...(form.requireCarrierCoverage === true ? { requireCarrierCoverage: true } : {}),
   vehicleTypeRequired: form.requiredVehicleType,
   requiredTemp: form.requiredTemp?.trim() || undefined,
   vehicleSpecs: {
@@ -91,18 +104,20 @@ export const mapFormToAuctionPayload = (form) => ({
     height: form.vehicleHeight ? Number(form.vehicleHeight) : undefined,
   },
   pickupLocation: {
+    ...confirmedCoordinates(form.fromPoint),
     locationName: form.fromLocationName?.trim() || "",
     province: form.fromProvince?.trim() || "",
-    address: form.fromAddress?.trim() || "",
+    address: joinAddress(form.fromAddress, form.fromWard),
     contactName: form.fromContactName?.trim() || undefined,
     contactPhone: form.fromContactPhone?.trim() || undefined,
     earliestTime: toIsoOrUndefined(form.earliestPickup),
     latestTime: toIsoOrUndefined(form.latestPickup),
   },
   deliveryLocation: {
+    ...confirmedCoordinates(form.toPoint),
     locationName: form.toLocationName?.trim() || "",
     province: form.toProvince?.trim() || "",
-    address: form.toAddress?.trim() || "",
+    address: joinAddress(form.toAddress, form.toWard),
     contactName: form.toContactName?.trim() || undefined,
     contactPhone: form.toContactPhone?.trim() || undefined,
     earliestTime: toIsoOrUndefined(form.earliestDelivery),

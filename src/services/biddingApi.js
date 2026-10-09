@@ -54,8 +54,10 @@ export const listBids = (auctionId, params) =>
     .get(biddingPath(`/auctions/${auctionId}/bids`), params)
     .then(unwrapApiData);
 
-export const cancelAuction = (auctionId) =>
-  apiService.post(biddingPath(`/auctions/${auctionId}/cancel`));
+export const cancelAuction = (auctionId, reason) =>
+  apiService
+    .post(biddingPath(`/auctions/${auctionId}/cancel`), reason ? { reason } : {})
+    .then(unwrapApiData);
 
 export const selectWinner = (auctionId, bidId) =>
   apiService

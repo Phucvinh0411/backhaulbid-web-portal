@@ -11,37 +11,37 @@ export default function CarrierStatsGrid({ carrier }) {
     {
       label: "Đánh giá sao",
       value: `${carrier.rating} / 5.0`,
-      icon: <StarIcon className="text-amber-500 !text-xl" />,
+      icon: <StarIcon className="text-warning !text-xl" />,
       subtext: "Đánh giá sao từ chủ hàng",
-      badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
+      badgeColor: "bg-warning-soft text-warning border-warning-soft",
     },
     {
       label: "Điểm uy tín đấu giá",
       value: carrier.reputationScore == null ? "Chưa có dữ liệu" : `${carrier.reputationScore} / 100`,
-      icon: <ShieldIcon className="text-indigo-600 !text-xl" />,
+      icon: <ShieldIcon className="text-brand !text-xl" />,
       subtext: "Điểm dùng để xét quyền tham gia đấu giá",
-      badgeColor: "bg-indigo-50 text-indigo-800 border-indigo-200",
+      badgeColor: "bg-brand-soft text-brand border-brand-soft",
     },
     {
       label: "Chuyến hoàn thành",
       value: `${carrier.completedTrips}+`,
-      icon: <LocalShippingIcon className="text-[#1B4965] !text-xl" />,
+      icon: <LocalShippingIcon className="text-[var(--color-brand)] !text-xl" />,
       subtext: "Đơn hàng giao thành công",
-      badgeColor: "bg-sky-50 text-sky-800 border-sky-200",
+      badgeColor: "bg-info-soft text-info border-info-soft",
     },
     {
       label: "Tỷ lệ đúng giờ",
       value: carrier.onTimeRate,
-      icon: <AccessTimeIcon className="text-emerald-600 !text-xl" />,
+      icon: <AccessTimeIcon className="text-success !text-xl" />,
       subtext: "Cam kết đúng thời gian",
-      badgeColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
+      badgeColor: "bg-success-soft text-success border-success-soft",
     },
     {
       label: "Tỷ lệ hủy chuyến",
       value: carrier.cancellationRate,
-      icon: <ShieldIcon className="text-purple-600 !text-xl" />,
+      icon: <ShieldIcon className="text-brand !text-xl" />,
       subtext: "Chỉ số an toàn vận hành",
-      badgeColor: "bg-purple-50 text-purple-800 border-purple-200",
+      badgeColor: "bg-brand-soft text-brand border-brand-soft",
     },
   ];
 
@@ -50,15 +50,15 @@ export default function CarrierStatsGrid({ carrier }) {
       {stats.map((item, index) => (
         <RoundedBox key={index} padding="sm" className="hover:-translate-y-1 transition-all">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-500">{item.label}</span>
-            <div className={`p-2 rounded-2xl border ${item.badgeColor}`}>
+            <span className="text-xs font-semibold text-ink-muted">{item.label}</span>
+            <div className={`p-2 rounded-xl border ${item.badgeColor}`}>
               {item.icon}
             </div>
           </div>
-          <div className="text-xl md:text-2xl font-black text-slate-800 tracking-tight">
+          <div className="text-xl md:text-2xl font-black text-ink tracking-tight">
             {item.value}
           </div>
-          <p className="text-[0.7rem] text-slate-400 font-medium mt-1">
+          <p className="text-[0.7rem] text-ink-subtle font-medium mt-1">
             {item.subtext}
           </p>
         </RoundedBox>

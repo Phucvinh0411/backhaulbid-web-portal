@@ -1,133 +1,241 @@
 "use client";
 
 // ============================================
-// src/theme/theme.jsx - MUI v5 Theme Configuration
-// Theme: Xanh dương (Primary) + Trắng (Surface)
+// src/theme/theme.jsx — BackHaulBid design tokens for MUI.
+// The same values are exposed as CSS variables in app/globals.css so
+// Tailwind utilities and MUI components share one palette.
+// Rules and measured contrast ratios live in DESIGN.md at the repository root.
 // ============================================
 
 import { createTheme } from "@mui/material/styles";
 
+// Navy is the only action colour; greys are cool-tinted to match it.
+export const tokens = {
+  ink: "#0F1E2E",
+  inkMuted: "#4A5B6C",
+  inkSubtle: "#5E6A77",
+  canvas: "#F4F6F8",
+  surface: "#FFFFFF",
+  surfaceSunken: "#EDF0F4",
+  line: "#DFE4EA",
+  lineStrong: "#C3CCD6",
+  brand: "#1B4965",
+  brandHover: "#143A51",
+  brandSoft: "#E6EEF4",
+  band: "#102F44",
+  bandHover: "#1A3D55",
+  onBandSoft: "#B7C6D3",
+  focus: "#2B7BB9",
+  success: "#0E7C3A",
+  successSoft: "#E3F3E8",
+  warning: "#8A5300",
+  warningSoft: "#FBEFD9",
+  danger: "#C0262D",
+  dangerSoft: "#FBE7E7",
+  info: "#1F5FBF",
+  infoSoft: "#E6EEFA",
+  neutralSoft: "#EDF0F4",
+};
+
+export const radii = { sm: 6, md: 8, lg: 12, xl: 16, pill: 999 };
+
+export const elevation = {
+  level1: "0 4px 16px rgba(15, 30, 46, 0.10)",
+  level2: "0 4px 16px rgba(15, 30, 46, 0.16)",
+  level3: "0 2px 8px rgba(15, 30, 46, 0.16)",
+};
+
+// Be Vietnam Pro is loaded by next/font in app/layout.jsx as the --font-be-vietnam variable.
+const fontStack = 'var(--font-be-vietnam), "Be Vietnam Pro", system-ui, "Segoe UI", Roboto, Arial, sans-serif';
+
+const focusRing = { outline: `2px solid ${tokens.focus}`, outlineOffset: 2 };
+const press = { "&:active:not(.Mui-disabled)": { transform: "scale(0.98)" } };
+
 const theme = createTheme({
+  breakpoints: {
+    values: { xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536 },
+  },
   palette: {
-    primary: {
-      main: "#1B4965",
-      light: "#5FA8D3",
-      dark: "#0D2B3E",
-      contrastText: "#FFFFFF",
-    },
-    secondary: {
-      main: "#62B6CB",
-      light: "#BEE9E8",
-      dark: "#3A8FA0",
-      contrastText: "#FFFFFF",
-    },
-    success: {
-      main: "#2E7D32",
-      light: "#4CAF50",
-      dark: "#1B5E20",
-    },
-    warning: {
-      main: "#ED6C02",
-      light: "#FF9800",
-      dark: "#E65100",
-    },
-    error: {
-      main: "#D32F2F",
-      light: "#EF5350",
-      dark: "#C62828",
-    },
-    background: {
-      default: "#F8FAFC",
-      paper: "#FFFFFF",
-    },
-    text: {
-      primary: "#1E293B",
-      secondary: "#64748B",
-    },
+    primary: { main: tokens.brand, dark: tokens.brandHover, light: "#3E6E8C", contrastText: "#FFFFFF" },
+    // Kept for older screens; new UI uses primary only (DESIGN.md: one action colour).
+    secondary: { main: tokens.brand, light: tokens.brandSoft, dark: tokens.brandHover, contrastText: "#FFFFFF" },
+    success: { main: tokens.success, light: tokens.successSoft, dark: "#0A5E2C", contrastText: "#FFFFFF" },
+    warning: { main: tokens.warning, light: tokens.warningSoft, dark: "#6B4000", contrastText: "#FFFFFF" },
+    error: { main: tokens.danger, light: tokens.dangerSoft, dark: "#951C22", contrastText: "#FFFFFF" },
+    info: { main: tokens.info, light: tokens.infoSoft, dark: "#174A95", contrastText: "#FFFFFF" },
+    background: { default: tokens.canvas, paper: tokens.surface },
+    text: { primary: tokens.ink, secondary: tokens.inkMuted, disabled: "#8A97A5" },
+    divider: tokens.line,
+    action: { hover: "rgba(15, 30, 46, 0.04)", selected: tokens.brandSoft, focus: "rgba(43, 123, 185, 0.16)" },
   },
   typography: {
-    fontFamily: "var(--font-inter), 'Inter', 'Roboto', sans-serif",
-    h1: { fontSize: "2.25rem", fontWeight: 700, lineHeight: 1.2 },
-    h2: { fontSize: "1.875rem", fontWeight: 700, lineHeight: 1.3 },
-    h3: { fontSize: "1.5rem", fontWeight: 600, lineHeight: 1.4 },
-    h4: { fontSize: "1.25rem", fontWeight: 600, lineHeight: 1.4 },
-    h5: { fontSize: "1.125rem", fontWeight: 600, lineHeight: 1.5 },
-    h6: { fontSize: "1rem", fontWeight: 600, lineHeight: 1.5 },
-    body1: { fontSize: "0.9375rem", lineHeight: 1.6 },
-    body2: { fontSize: "0.875rem", lineHeight: 1.6 },
-    button: { textTransform: "none", fontWeight: 600 },
+    fontFamily: fontStack,
+    h1: { fontSize: "2rem", fontWeight: 700, lineHeight: 1.25 },
+    h2: { fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.33 },
+    h3: { fontSize: "1.25rem", fontWeight: 700, lineHeight: 1.4 },
+    h4: { fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.33 },
+    h5: { fontSize: "1.125rem", fontWeight: 700, lineHeight: 1.4 },
+    h6: { fontSize: "1rem", fontWeight: 700, lineHeight: 1.45 },
+    subtitle1: { fontSize: "1rem", fontWeight: 500 },
+    subtitle2: { fontSize: "0.875rem", fontWeight: 500 },
+    body1: { fontSize: "0.9375rem", lineHeight: 1.55 },
+    body2: { fontSize: "0.875rem", lineHeight: 1.45 },
+    caption: { fontSize: "0.75rem", lineHeight: 1.5 },
+    overline: { fontSize: "0.75rem", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" },
+    button: { textTransform: "none", fontWeight: 500, fontSize: "0.9375rem" },
   },
-  shape: {
-    borderRadius: 10,
-  },
+  shape: { borderRadius: radii.md },
   shadows: [
     "none",
-    "0px 1px 3px rgba(0, 0, 0, 0.04), 0px 1px 2px rgba(0, 0, 0, 0.06)",
-    "0px 2px 6px rgba(0, 0, 0, 0.06), 0px 1px 3px rgba(0, 0, 0, 0.08)",
-    "0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.06)",
-    "0px 6px 16px rgba(0, 0, 0, 0.08), 0px 3px 6px rgba(0, 0, 0, 0.06)",
-    "0px 8px 24px rgba(0, 0, 0, 0.09), 0px 4px 8px rgba(0, 0, 0, 0.06)",
-    ...Array(19).fill(
-      "0px 10px 32px rgba(0, 0, 0, 0.1), 0px 5px 10px rgba(0, 0, 0, 0.06)"
-    ),
+    "none",
+    elevation.level3,
+    elevation.level3,
+    elevation.level1,
+    elevation.level1,
+    ...Array(19).fill(elevation.level2),
   ],
+  zIndex: { appBar: 1100, drawer: 1200, modal: 1300, snackbar: 1400, tooltip: 1500 },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: { backgroundColor: tokens.canvas, color: tokens.ink },
+      },
+    },
+    MuiButtonBase: { defaultProps: { disableRipple: false } },
+    // Pill controls: one navy primary per view, white/soft secondaries.
     MuiButton: {
+      defaultProps: { disableElevation: true },
       styleOverrides: {
         root: {
-          borderRadius: 8,
-          padding: "8px 20px",
-          fontSize: "0.875rem",
+          borderRadius: radii.pill,
+          minHeight: 40,
+          padding: "8px 18px",
+          transition: "background-color 150ms, border-color 150ms, color 150ms, transform 150ms",
+          "&.Mui-focusVisible": focusRing,
+          "@media (pointer: coarse)": { minHeight: 44 },
+          ...press,
         },
-        contained: {
-          boxShadow: "0px 2px 6px rgba(0, 0, 0, 0.12)",
-          "&:hover": {
-            boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.16)",
-          },
-        },
+        sizeSmall: { minHeight: 32, padding: "4px 14px", fontSize: "0.875rem", "@media (pointer: coarse)": { minHeight: 40 } },
+        sizeLarge: { minHeight: 48, padding: "12px 24px", fontSize: "1rem" },
+        // Transparent so outlined buttons also work on the navy band.
+        outlined: { borderColor: tokens.line, color: tokens.ink, "&:hover": { borderColor: tokens.lineStrong, backgroundColor: "rgba(15, 30, 46, 0.04)" } },
+        outlinedPrimary: { color: tokens.brand },
+        // Status outlined buttons keep their colour; the plain outlined override above would turn them ink.
+        outlinedError: { color: tokens.danger, borderColor: tokens.dangerSoft, "&:hover": { borderColor: tokens.danger, backgroundColor: tokens.dangerSoft } },
+        outlinedSuccess: { color: tokens.success, borderColor: tokens.successSoft, "&:hover": { borderColor: tokens.success, backgroundColor: tokens.successSoft } },
+        outlinedWarning: { color: tokens.warning, borderColor: tokens.warningSoft, "&:hover": { borderColor: tokens.warning, backgroundColor: tokens.warningSoft } },
+        text: { "&:hover": { backgroundColor: tokens.brandSoft } },
+        containedInherit: { backgroundColor: tokens.surfaceSunken, color: tokens.ink, "&:hover": { backgroundColor: tokens.line } },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: { borderRadius: radii.pill, "&.Mui-focusVisible": focusRing, ...press },
+      },
+    },
+    MuiToggleButton: {
+      styleOverrides: { root: { textTransform: "none", fontWeight: 500, borderColor: tokens.line } },
+    },
+    MuiFab: { styleOverrides: { root: { boxShadow: elevation.level3 } } },
+    MuiPaper: {
+      defaultProps: { elevation: 0 },
+      styleOverrides: {
+        rounded: { borderRadius: radii.xl },
+        outlined: { borderColor: tokens.line },
       },
     },
     MuiCard: {
+      defaultProps: { elevation: 0 },
+      styleOverrides: {
+        root: { borderRadius: radii.xl, border: `1px solid ${tokens.line}`, boxShadow: "none" },
+      },
+    },
+    MuiCardContent: { styleOverrides: { root: { padding: 20, "&:last-child": { paddingBottom: 20 } } } },
+    // Soft-filled inputs (DESIGN.md): label inside the field, no border at rest,
+    // navy 2 px ring on focus, danger ring on error. Explicit variant="outlined" still works.
+    MuiTextField: { defaultProps: { variant: "filled", size: "small", InputLabelProps: { shrink: true } } },
+    MuiFormControl: { defaultProps: { variant: "filled" } },
+    // Labels always sit shrunk inside the field, so an empty value must still show its "Tất cả" option.
+    MuiSelect: { defaultProps: { variant: "filled", displayEmpty: true }, styleOverrides: { icon: { color: tokens.inkMuted } } },
+    MuiFilledInput: {
+      defaultProps: { disableUnderline: true },
       styleOverrides: {
         root: {
-          borderRadius: 12,
-          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.06)",
-          border: "1px solid rgba(0, 0, 0, 0.06)",
+          borderRadius: radii.md,
+          backgroundColor: tokens.surfaceSunken,
+          border: "2px solid transparent",
+          transition: "background-color 150ms, border-color 150ms",
+          "&:hover": { backgroundColor: tokens.line },
+          "&.Mui-focused": { backgroundColor: tokens.surface, borderColor: tokens.brand },
+          "&.Mui-error": { borderColor: tokens.danger },
+          "&.Mui-disabled": { backgroundColor: tokens.canvas },
         },
+        input: { "@media (pointer: coarse)": { fontSize: 16 } },
       },
     },
-    MuiTextField: {
-      defaultProps: {
-        variant: "outlined",
-        size: "small",
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          borderRadius: radii.md,
+          backgroundColor: tokens.surfaceSunken,
+          "& .MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
+          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: tokens.lineStrong },
+          "&.Mui-focused": { backgroundColor: tokens.surface },
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: tokens.brand, borderWidth: 2 },
+          "&.Mui-error .MuiOutlinedInput-notchedOutline": { borderColor: tokens.danger, borderWidth: 2 },
+          "&.Mui-disabled": { backgroundColor: tokens.canvas },
+        },
+        input: { "@media (pointer: coarse)": { fontSize: 16 } },
       },
     },
+    MuiInputLabel: { styleOverrides: { root: { color: tokens.inkMuted, "&.Mui-focused": { color: tokens.brand } } } },
+    MuiFormHelperText: { styleOverrides: { root: { marginLeft: 2, marginRight: 0 } } },
     MuiChip: {
       styleOverrides: {
-        root: {
-          borderRadius: 6,
-          fontWeight: 500,
-        },
+        // Only the neutral chip is restyled; coloured chips keep their palette colour.
+        root: { borderRadius: radii.pill, fontWeight: 500, "&.MuiChip-filled.MuiChip-colorDefault": { backgroundColor: tokens.surfaceSunken, color: tokens.ink } },
+        outlined: { borderColor: tokens.line },
+        sizeSmall: { height: 24, fontSize: "0.75rem" },
       },
     },
-    MuiDrawer: {
+    MuiAlert: {
       styleOverrides: {
-        paper: {
-          border: "none",
-        },
+        root: { borderRadius: radii.lg, alignItems: "flex-start" },
+        standardInfo: { backgroundColor: tokens.infoSoft, color: "#163F7D" },
+        standardSuccess: { backgroundColor: tokens.successSoft, color: "#0A4F25" },
+        standardWarning: { backgroundColor: tokens.warningSoft, color: "#5E3900" },
+        standardError: { backgroundColor: tokens.dangerSoft, color: "#7A161B" },
       },
     },
-    MuiInputLabel: {
+    MuiDialog: {
       styleOverrides: {
-        root: {
-          // Fix label overlapping with border when Tailwind Preflight breaks the legend gap
-          backgroundColor: "#FFFFFF",
-          paddingLeft: "4px",
-          paddingRight: "4px",
-          borderRadius: "4px",
-        },
+        paper: { borderRadius: radii.xl, border: "none", boxShadow: elevation.level2 },
+        paperFullScreen: { borderRadius: 0 },
       },
     },
+    MuiDialogTitle: { styleOverrides: { root: { fontWeight: 700, fontSize: "1.125rem" } } },
+    MuiDrawer: { styleOverrides: { paper: { border: "none" } } },
+    MuiMenu: { styleOverrides: { paper: { borderRadius: radii.lg, boxShadow: elevation.level2 } } },
+    MuiPopover: { styleOverrides: { paper: { borderRadius: radii.lg, boxShadow: elevation.level2 } } },
+    MuiTableCell: {
+      styleOverrides: {
+        root: { borderColor: tokens.line, fontSize: "0.875rem" },
+        head: { color: tokens.inkMuted, fontWeight: 500, backgroundColor: tokens.surfaceSunken },
+      },
+    },
+    MuiTableRow: { styleOverrides: { hover: { "&:hover": { backgroundColor: `${tokens.canvas} !important` } } } },
+    MuiTab: {
+      styleOverrides: {
+        root: { textTransform: "none", fontWeight: 500, minHeight: 44, "&.Mui-selected": { color: tokens.brand } },
+      },
+    },
+    MuiTabs: { styleOverrides: { root: { minHeight: 44 }, indicator: { height: 3, borderRadius: 3, backgroundColor: tokens.brand } } },
+    MuiTooltip: { styleOverrides: { tooltip: { backgroundColor: tokens.ink, fontSize: "0.75rem", borderRadius: radii.sm } } },
+    MuiLinearProgress: { styleOverrides: { root: { borderRadius: radii.pill, backgroundColor: tokens.surfaceSunken } } },
+    MuiSkeleton: { defaultProps: { animation: "wave" }, styleOverrides: { root: { backgroundColor: tokens.surfaceSunken } } },
+    // Initials avatars: navy with white text (9.6:1) instead of MUI grey (white on #BDBDBD is 1.9:1).
+    MuiAvatar: { styleOverrides: { colorDefault: { backgroundColor: tokens.brand, color: "#FFFFFF", fontWeight: 600 } } },
+    MuiSwitch: { styleOverrides: { switchBase: { "&.Mui-checked + .MuiSwitch-track": { backgroundColor: tokens.brand, opacity: 1 } } } },
   },
 });
 

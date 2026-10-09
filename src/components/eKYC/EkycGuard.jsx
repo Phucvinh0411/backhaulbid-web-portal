@@ -9,13 +9,17 @@ import { dispatchGlobalNotification } from "@/components/common/NotificationPopu
 import EkycModal from "./EkycModal";
 import { getRepresentativeVerificationStatus } from "@/services/representativeVerificationApi";
 
+/** Blocks protected business pages until the account's eKYC status is verified. */
 export default function EkycGuard({ children, role }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [verificationRefreshKey, setVerificationRefreshKey] = useState(0);
 
   useEffect(() => {
     let active = true;
+    setIsLoading(true);
+    setIsVerified(false);
 
     getRepresentativeVerificationStatus({ skipGlobalNotification: true })
       .then((data) => {
@@ -39,11 +43,13 @@ export default function EkycGuard({ children, role }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [verificationRefreshKey]);
 
+  /** Closes the NFC dialog and reloads the account verification status. */
   const handleEkycComplete = () => {
-    setIsVerified(true);
     setShowModal(false);
+    setIsLoading(true);
+    setVerificationRefreshKey((value) => value + 1);
   };
 
   return (
@@ -57,7 +63,7 @@ export default function EkycGuard({ children, role }) {
         {/* Blocking Overlay */}
         {!isLoading && !isVerified && (
           <Box
-            className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+            className="absolute inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm"
             role="dialog"
             aria-modal="true"
             aria-labelledby="ekyc-guard-title"
@@ -66,17 +72,17 @@ export default function EkycGuard({ children, role }) {
               className="w-full max-w-md p-6 text-center sm:p-8"
               showAccent={false}
             >
-              <Box className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-50 text-[#1B4965]">
+              <Box className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-info-soft text-[var(--color-brand)]">
                 <SecurityIcon fontSize="large" />
               </Box>
               <Typography
                 id="ekyc-guard-title"
                 variant="h6"
-                className="!font-bold text-slate-800"
+                className="!font-bold text-ink"
               >
                 Tài khoản chưa được xác thực
               </Typography>
-              <Typography variant="body2" className="mt-2 text-slate-500">
+              <Typography variant="body2" className="mt-2 text-ink-muted">
                 Theo quy định của hệ thống BackHaulBid, bạn bắt buộc phải hoàn tất định danh người đại diện pháp luật (eKYC) để sử dụng các tính năng giao dịch.
               </Typography>
               <ActionButton
@@ -94,8 +100,8 @@ export default function EkycGuard({ children, role }) {
       </div>
 
       {showModal && (
-        <EkycModal 
-          role={role} 
+        <EkycModal
+          role={role}
           onClose={() => setShowModal(false)}
           onComplete={handleEkycComplete}
         />

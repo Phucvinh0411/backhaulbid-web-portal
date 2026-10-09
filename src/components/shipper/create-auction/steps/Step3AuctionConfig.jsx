@@ -36,12 +36,12 @@ export default function Step3AuctionConfig({ form, updateForm }) {
   return (
     <div className="space-y-6">
       {/* Category 1: Auction Mode Selection */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-          <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+      <div className="bg-white rounded-xl border border-line/80 p-5 shadow-xs space-y-4">
+        <div className="flex items-center gap-2 border-b border-line pb-3">
+          <div className="w-8 h-8 rounded-xl bg-brand-soft text-brand flex items-center justify-center">
             <GavelIcon className="!text-[1.1rem]" />
           </div>
-          <Typography className="!font-black text-slate-800 !text-sm">
+          <Typography className="!font-black text-ink !text-sm">
             1. Chọn Hình Thức Đấu Giá
           </Typography>
         </div>
@@ -50,29 +50,29 @@ export default function Step3AuctionConfig({ form, updateForm }) {
           {/* PUBLIC Card */}
           <div
             onClick={() => updateForm("auctionType", "PUBLIC")}
-            className={`p-5 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between space-y-3 relative overflow-hidden ${
+            className={`p-5 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between space-y-3 relative overflow-hidden ${
               !isSealed
-                ? "border-sky-500 bg-sky-50/70 shadow-md ring-2 ring-sky-100"
-                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                ? "border-info bg-info-soft/70 shadow-md ring-2 ring-info-soft"
+                : "border-line bg-white hover:border-line-strong hover:bg-surface-sunken"
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-info-soft text-info flex items-center justify-center">
                   <PublicIcon className="!text-[1.1rem]" />
                 </div>
-                <span className="font-black text-slate-800 text-sm">Đấu Giá Công Khai (Open Bid)</span>
+                <span className="font-black text-ink text-sm">Đấu Giá Công Khai (Open Bid)</span>
               </div>
-              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${!isSealed ? "border-sky-600 bg-sky-600" : "border-slate-300"}`}>
+              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${!isSealed ? "border-info bg-info" : "border-line-strong"}`}>
                 {!isSealed && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
               </span>
             </div>
 
-            <p className="text-[0.73rem] text-slate-600 leading-relaxed font-medium">
+            <p className="text-[0.73rem] text-ink-muted leading-relaxed font-medium">
               Giá thầu được <strong>công khai theo thời gian thực</strong>. Các nhà xe thấy giá nhau và liên tục điều chỉnh giảm giá. Hệ thống tự động chọn nhà xe có giá thấp nhất khi hết giờ.
             </p>
 
-            <span className="text-[0.65rem] font-extrabold text-sky-800 bg-sky-100 px-2.5 py-1 rounded-lg w-fit">
+            <span className="text-[0.65rem] font-extrabold text-info bg-info-soft px-2.5 py-1 rounded-lg w-fit">
               Phù hợp với hàng bách hóa, nông sản, vận tải phổ thông
             </span>
           </div>
@@ -80,29 +80,29 @@ export default function Step3AuctionConfig({ form, updateForm }) {
           {/* SEALED Card */}
           <div
             onClick={() => updateForm("auctionType", "SEALED")}
-            className={`p-5 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between space-y-3 relative overflow-hidden ${
+            className={`p-5 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between space-y-3 relative overflow-hidden ${
               isSealed
-                ? "border-amber-500 bg-amber-50/70 shadow-md ring-2 ring-amber-100"
-                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                ? "border-warning bg-warning-soft/70 shadow-md ring-2 ring-warning-soft"
+                : "border-line bg-white hover:border-line-strong hover:bg-surface-sunken"
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-warning-soft text-warning flex items-center justify-center">
                   <LockIcon className="!text-[1.1rem]" />
                 </div>
-                <span className="font-black text-slate-800 text-sm">Đấu Giá Kín (Sealed Bid)</span>
+                <span className="font-black text-ink text-sm">Đấu Giá Kín (Sealed Bid)</span>
               </div>
-              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSealed ? "border-amber-600 bg-amber-600" : "border-slate-300"}`}>
+              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSealed ? "border-warning bg-warning" : "border-line-strong"}`}>
                 {isSealed && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
               </span>
             </div>
 
-            <p className="text-[0.73rem] text-slate-600 leading-relaxed font-medium">
+            <p className="text-[0.73rem] text-ink-muted leading-relaxed font-medium">
               Giá thầu <strong>bảo mật tuyệt đối</strong> giữa các nhà xe. Mỗi nhà xe chỉ biết giá của mình. Sau khi đóng phiên, chủ hàng xem danh sách xếp hạng và chủ động chọn người thắng thầu.
             </p>
 
-            <span className="text-[0.65rem] font-extrabold text-amber-800 bg-amber-100 px-2.5 py-1 rounded-lg w-fit">
+            <span className="text-[0.65rem] font-extrabold text-warning bg-warning-soft px-2.5 py-1 rounded-lg w-fit">
               Phù hợp với linh kiện cao cấp, hàng đông lạnh, siêu trường
             </span>
           </div>
@@ -110,12 +110,12 @@ export default function Step3AuctionConfig({ form, updateForm }) {
       </div>
 
       {/* Category 2: Financial Config */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-          <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+      <div className="bg-white rounded-xl border border-line/80 p-5 shadow-xs space-y-4">
+        <div className="flex items-center gap-2 border-b border-line pb-3">
+          <div className="w-8 h-8 rounded-xl bg-success-soft text-success flex items-center justify-center">
             <span className="font-black text-sm">$</span>
           </div>
-          <Typography className="!font-black text-slate-800 !text-sm">
+          <Typography className="!font-black text-ink !text-sm">
             2. Cấu Hình Tài Chính & Tiền Cọc
           </Typography>
         </div>
@@ -139,7 +139,7 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             required
             helperText="Giá tối đa chủ hàng chấp nhận chi trả"
             InputProps={{
-              endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-slate-500">đ</span></InputAdornment>,
+              endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-ink-muted">đ</span></InputAdornment>,
             }}
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" }, "& input": { fontFamily: "monospace", fontWeight: 700, fontSize: "1rem" } }}
           />
@@ -154,22 +154,22 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             placeholder="VD: 100.000"
             helperText="Mức giảm tối thiểu mỗi lượt thầu"
             InputProps={{
-              endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-slate-500">đ</span></InputAdornment>,
+              endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-ink-muted">đ</span></InputAdornment>,
             }}
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" }, "& input": { fontFamily: "monospace", fontWeight: 700 } }}
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className={`rounded-2xl border p-4 transition-colors ${isParticipationFeeRequired ? "border-sky-200 bg-sky-50/60" : "border-slate-200 bg-slate-50/60"}`}>
+          <div className={`rounded-xl border p-4 transition-colors ${isParticipationFeeRequired ? "border-info-soft bg-info-soft/60" : "border-line bg-surface-sunken/60"}`}>
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex items-start gap-2.5">
-                <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isParticipationFeeRequired ? "bg-sky-100 text-sky-700" : "bg-slate-200 text-slate-500"}`}>
+                <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isParticipationFeeRequired ? "bg-info-soft text-info" : "bg-line text-ink-muted"}`}>
                   <PaymentsIcon className="!text-[1.1rem]" />
                 </span>
                 <div>
-                  <p className="text-sm font-black text-slate-800">Phí tham gia</p>
-                  <p className="text-[0.7rem] text-slate-500 leading-relaxed mt-0.5">Phí dịch vụ, thu một lần khi nhà xe đăng ký.</p>
+                  <p className="text-sm font-black text-ink">Phí tham gia</p>
+                  <p className="text-[0.7rem] text-ink-muted leading-relaxed mt-0.5">Phí dịch vụ, thu một lần khi nhà xe đăng ký.</p>
                 </div>
               </div>
             </div>
@@ -183,24 +183,24 @@ export default function Step3AuctionConfig({ form, updateForm }) {
                 helperText={`Auto-calculated from max price (${participationFeeQuote.tier})`}
                 InputProps={{
                   readOnly: true,
-                  endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-slate-500">đ</span></InputAdornment>,
+                  endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-ink-muted">đ</span></InputAdornment>,
                 }}
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: "14px", backgroundColor: "white" }, "& input": { fontFamily: "monospace", fontWeight: 700 } }}
               />
             ) : (
-              <p className="text-xs font-semibold text-slate-500 bg-white/70 border border-slate-200 rounded-xl px-3 py-2.5">Miễn phí tham gia phiên đấu giá.</p>
+              <p className="text-xs font-semibold text-ink-muted bg-white/70 border border-line rounded-xl px-3 py-2.5">Miễn phí tham gia phiên đấu giá.</p>
             )}
           </div>
 
-          <div className={`rounded-2xl border p-4 transition-colors ${isDepositRequired ? "border-amber-200 bg-amber-50/60" : "border-slate-200 bg-slate-50/60"}`}>
+          <div className={`rounded-xl border p-4 transition-colors ${isDepositRequired ? "border-warning-soft bg-warning-soft/60" : "border-line bg-surface-sunken/60"}`}>
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex items-start gap-2.5">
-                <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isDepositRequired ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-500"}`}>
+                <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isDepositRequired ? "bg-warning-soft text-warning" : "bg-line text-ink-muted"}`}>
                   <SecurityIcon className="!text-[1.1rem]" />
                 </span>
                 <div>
-                  <p className="text-sm font-black text-slate-800">Tiền đặt cọc</p>
-                  <p className="text-[0.7rem] text-slate-500 leading-relaxed mt-0.5">Khóa tạm trong ví, hoàn lại theo điều kiện phiên.</p>
+                  <p className="text-sm font-black text-ink">Tiền đặt cọc</p>
+                  <p className="text-[0.7rem] text-ink-muted leading-relaxed mt-0.5">Khóa tạm trong ví, hoàn lại theo điều kiện phiên.</p>
                 </div>
               </div>
               <FormControlLabel
@@ -219,12 +219,12 @@ export default function Step3AuctionConfig({ form, updateForm }) {
                 onChange={(e) => updateForm("depositAmount", parseDisplayNumber(e.target.value))}
                 helperText="Gợi ý mặc định: 10% giá trần"
                 InputProps={{
-                  endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-slate-500">đ</span></InputAdornment>,
+                  endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-ink-muted">đ</span></InputAdornment>,
                 }}
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: "14px", backgroundColor: "white" }, "& input": { fontFamily: "monospace", fontWeight: 700 } }}
               />
             ) : (
-              <p className="text-xs font-semibold text-slate-500 bg-white/70 border border-slate-200 rounded-xl px-3 py-2.5">Không yêu cầu nhà xe đặt cọc.</p>
+              <p className="text-xs font-semibold text-ink-muted bg-white/70 border border-line rounded-xl px-3 py-2.5">Không yêu cầu nhà xe đặt cọc.</p>
             )}
           </div>
         </div>
@@ -239,20 +239,20 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             helperText="Lần / nhà xe"
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
-          <div className="rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-3 flex items-start gap-2.5">
-            <InfoOutlinedIcon className="!text-[1.1rem] text-slate-400 mt-0.5" />
-            <p className="text-[0.7rem] text-slate-500 leading-relaxed">Nhà xe sẽ thấy rõ từng khoản và tổng thanh toán trước khi xác nhận đăng ký.</p>
+          <div className="rounded-xl border border-line bg-surface-sunken/70 px-4 py-3 flex items-start gap-2.5">
+            <InfoOutlinedIcon className="!text-[1.1rem] text-ink-subtle mt-0.5" />
+            <p className="text-[0.7rem] text-ink-muted leading-relaxed">Nhà xe sẽ thấy rõ từng khoản và tổng thanh toán trước khi xác nhận đăng ký.</p>
           </div>
         </div>
       </div>
 
       {/* Category 3: Timeframe */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-          <div className="w-8 h-8 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center">
+      <div className="bg-white rounded-xl border border-line/80 p-5 shadow-xs space-y-4">
+        <div className="flex items-center gap-2 border-b border-line pb-3">
+          <div className="w-8 h-8 rounded-xl bg-info-soft text-info flex items-center justify-center">
             <CalendarMonthIcon className="!text-[1.1rem]" />
           </div>
-          <Typography className="!font-black text-slate-800 !text-sm">
+          <Typography className="!font-black text-ink !text-sm">
             3. Khung Thời Gian Diễn Ra Phiên Đấu Giá
           </Typography>
         </div>

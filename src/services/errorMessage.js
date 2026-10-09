@@ -19,6 +19,36 @@ function getRawMessage(error) {
   return Array.isArray(message) ? message.join(", ") : message;
 }
 
+const BID_MESSAGES = [
+  [/bid must be lower than the current lowest bid/i, "Giá vừa có người đặt thấp hơn. Hãy nhập giá thấp hơn giá thấp nhất hiện tại."],
+  [/improve the current lowest bid by at least the price step/i, "Giá phải thấp hơn giá thấp nhất hiện tại ít nhất một bước giá."],
+  [/maximum number of bids/i, "Bạn đã dùng hết số lượt đặt giá của phiên này."],
+  [/auction is not accepting bids/i, "Phiên không còn nhận giá. Có thể phiên vừa kết thúc."],
+  [/positive and not exceed maxprice/i, "Giá phải lớn hơn 0 và không vượt giá trần."],
+  [/carrier cannot bid: ?payment_incomplete/i, "Bạn cần hoàn tất thanh toán đăng ký trước khi đặt giá."],
+  [/carrier cannot bid: ?(waiting_for_start)/i, "Phòng chưa mở. Bạn chỉ đặt giá được khi đến giờ bắt đầu."],
+  [/carrier cannot bid: ?(registration_required|registration_closed|registration_cancelled)/i, "Bạn chưa có đăng ký hợp lệ cho phiên này."],
+  [/carrier cannot bid: ?(auction_completed|auction_cancelled)/i, "Phiên đã kết thúc hoặc đã bị hủy."],
+  [/carrier cannot bid: ?reputation_too_low/i, "Điểm uy tín chưa đạt mức tối thiểu để tham gia phiên."],
+  [/registration for this auction is closed/i, "Phiên đã đóng đăng ký."],
+  [/auction is not accepting registrations/i, "Phiên hiện không nhận đăng ký."],
+  [/only sealed auctions require winner selection/i, "Chỉ phiên đấu giá kín mới cần chọn người thắng."],
+  [/auction must be completed before selecting a winner/i, "Chỉ chọn người thắng được sau khi phiên kết thúc."],
+  [/only pending or open auctions can be cancelled/i, "Chỉ hủy được phiên chưa kết thúc."],
+  [/carrier must sign the contract first/i, "Nhà xe cần ký hợp đồng trước, sau đó chủ hàng mới ký."],
+  [/contract signing deadline has passed/i, "Đã quá hạn ký hợp đồng."],
+  [/complaint is already closed/i, "Khiếu nại đã đóng, không thể cập nhật thêm."],
+  [/invalid trip status transition/i, "Trạng thái chuyến đã thay đổi. Hãy tải lại để xem bước tiếp theo."],
+  [/cannot (update|add proof to|add tracking to|update location for) a closed trip/i, "Chuyến đã kết thúc, không thể cập nhật thêm."],
+  [/incident note is required/i, "Vui lòng mô tả sự cố."],
+];
+
+export function translateBidMessage(message) {
+  const normalized = String(message || "");
+  const match = BID_MESSAGES.find(([pattern]) => pattern.test(normalized));
+  return match ? match[1] : undefined;
+}
+
 function translateKnownMessage(message, status, code) {
   const normalized = String(message || "").trim();
   if (!normalized) return undefined;
@@ -39,11 +69,13 @@ function translateKnownMessage(message, status, code) {
   if (/auction time order/i.test(normalized)) {
     return "Thứ tự thời gian phiên đấu giá chưa hợp lệ. Vui lòng kiểm tra thời điểm đăng ký và đấu giá.";
   }
+  const bidMessage = translateBidMessage(normalized);
+  if (bidMessage) return bidMessage;
   if (/insufficient (available )?balance/i.test(normalized)) {
     return "Số dư ví không đủ để thanh toán. Vui lòng nạp thêm tiền rồi thử lại.";
   }
   if (/wallet did not return a creation fee hold|wallet service did not return a valid creation fee hold|wallet service returned an invalid response/i.test(normalized)) {
-    return "Dá»‹ch vá»¥ vÃ­ chÆ°a tráº£ vá» mÃ£ giá»¯ phÃ­ táº¡o phiÃªn. Giao dá»‹ch chÆ°a hoÃ n táº¥t; vui lÃ²ng thá»­ láº¡i sau hoáº·c liÃªn há»‡ quáº£n trá»‹ viÃªn.";
+    return "Dịch vụ ví chưa trả về mã giữ phí tạo phiên. Giao dịch chưa hoàn tất; vui lòng thử lại sau hoặc liên hệ quản trị viên.";
   }
   if (/payment amount does not match/i.test(normalized)) {
     return "Số tiền thanh toán không khớp với đơn nạp. Vui lòng kiểm tra lại đơn và thử lại.";

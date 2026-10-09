@@ -94,3 +94,10 @@ export function mapContractResponses(response, role = "carrier") {
     ? values.map((contract) => mapContractResponse(contract, role))
     : [];
 }
+
+export function getContractTrackingHref(contract, role = "carrier") {
+  const base = role === "shipper" ? "/shipper/tracking" : "/carrier/transports";
+  if (!contract.tripId) return base;
+  const tripId = encodeURIComponent(contract.tripId);
+  return role === "shipper" ? `${base}?id=${tripId}` : `${base}/${tripId}`;
+}

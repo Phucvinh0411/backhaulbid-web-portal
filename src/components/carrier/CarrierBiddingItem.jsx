@@ -1,87 +1,85 @@
 "use client";
 
+import Link from "next/link";
+import Button from "@mui/material/Button";
 import AuctionSessionCard from "@/components/auctions/AuctionSessionCard";
-import { ActionButton } from "@/components/common";
+import { getAccessStatusMeta, getAuctionPhaseMeta } from "@/lib/statusMeta";
 
-const STATUS_MAP = {
-  OPEN_REGISTER: "pending_bids",
-  WAITING_START: "pending_bids",
-  PAYMENT_INCOMPLETE: "pending_bids",
-  BIDDING: "active_bids",
-  CLOSED: "awarded",
-  CANCELLED: "cancelled",
-};
+/**
+ * Carrier view model: what the carrier should see and do for an auction, derived
+ * only from the auction and the carrier's own access status.
+ */
+export function normalizeCarrierAuction(auction, access) {
+  const accessStatus = access?.accessStatus;
+  const base = { status: getAuctionPhaseMeta(auction), note: null, noteTone: "neutral", primary: null };
+  if (access === undefined) return { ...base, note: "Đang kiểm tra trạng thái đăng ký của bạn...", primary: "view" };
 
-function numberValue(value) {
-  if (typeof value === "number") return value;
-  const parsed = Number(String(value || "").replace(/[^0-9]/g, ""));
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-export function normalizeCarrierAuction(auction) {
-  return {
-    ...auction,
-    title: auction.title || auction.goodsName || auction.goodsInfo?.goodsName,
-    status: STATUS_MAP[auction.status] || auction.status,
-    goodsType: auction.cargoType || auction.goodsType || "Hàng hóa",
-    volume: auction.volume || "Theo yêu cầu",
-    maxPrice: numberValue(auction.maxPrice ?? auction.basePrice),
-    currentLowestBid: numberValue(auction.currentLowestBid),
-    closeTime: auction.closeTime || auction.auctionEndAt || "",
-    from: {
-      province: auction.originProvince || "Điểm lấy hàng",
-      detail: auction.origin || "Chưa cập nhật",
-    },
-    to: {
-      province: auction.destinationProvince || "Điểm giao hàng",
-      detail: auction.destination || "Chưa cập nhật",
-    },
-  };
-}
-
-function getStatusLabel(auction, mode) {
-  if (auction.status === "PAYMENT_INCOMPLETE") return "Chưa hoàn tất thanh toán";
-  if (auction.status === "OPEN_REGISTER") {
-    return mode === "marketplace" ? "Sắp diễn ra" : "Chờ mở phiên";
+  switch (accessStatus) {
+    case "REGISTRATION_REQUIRED":
+      return { ...base, note: "Đăng ký và thanh toán để được vào phòng", noteTone: "info", primary: "register" };
+    case "PAYMENT_INCOMPLETE":
+      return { ...base, status: getAccessStatusMeta(accessStatus), note: "Thanh toán chưa xong, cần thử lại trước giờ mở phiên", noteTone: "danger", primary: "pay" };
+    case "WAITING_FOR_START":
+      return { ...base, status: getAccessStatusMeta(accessStatus), note: "Đã đăng ký. Phòng mở khi đến giờ bắt đầu", noteTone: "success", primary: "view" };
+    case "AUCTION_OPEN":
+      return { ...base, status: getAccessStatusMeta(accessStatus), note: "Phòng đang mở, có thể đặt giá", noteTone: "success", primary: "enter" };
+    case "REPUTATION_TOO_LOW":
+      return { ...base, note: "Điểm uy tín chưa đạt mức tối thiểu của phiên", noteTone: "warning", primary: "view" };
+    case "REGISTRATION_CLOSED":
+    case "REGISTRATION_CANCELLED":
+    case "AUCTION_COMPLETED":
+    case "AUCTION_CANCELLED":
+      return { ...base, status: getAccessStatusMeta(accessStatus), primary: "view" };
+    default:
+      return { ...base, primary: "view" };
   }
-  if (auction.status === "WAITING_START") return "Chờ giờ mở phiên";
-  if (auction.status === "BIDDING") return "Đang đấu giá";
-  if (auction.status === "CLOSED") return auction.isWinner ? "Trúng thầu" : "Đã đóng";
-  return "Đã hủy";
 }
 
-export default function CarrierBiddingItem({
-  auction,
-  mode = "my-auctions",
-  customActions,
-  onCancel,
-  onViewDetail,
-  onEnterRoom,
-}) {
-  const session = normalizeCarrierAuction(auction);
-  const actions = customActions || (
-    <>
-      <ActionButton variant="text" size="sm" onClick={() => onViewDetail?.(auction)}>
-        Xem chi tiết
-      </ActionButton>
-      {auction.status === "BIDDING" && auction.isRegistered ? (
-        <ActionButton variant="primary" size="sm" onClick={() => onEnterRoom?.(auction.id)}>
-          Vào phòng đấu giá
-        </ActionButton>
-      ) : auction.status === "OPEN_REGISTER" && onCancel ? (
-        <ActionButton variant="danger-outlined" size="sm" onClick={() => onCancel(auction)}>
-          Hủy đăng ký
-        </ActionButton>
-      ) : null}
-    </>
-  );
+export default function CarrierBiddingItem({ auction, access, onViewDetail, onRegister, extraFacts }) {
+  const view = normalizeCarrierAuction(auction, access);
+  const roomHref = `/carrier/auctions/${encodeURIComponent(auction.id)}`;
+
+  let primary = null;
+  if (view.primary === "register") {
+    primary = (
+      <Button variant="contained" onClick={() => onRegister?.(auction)}>
+        Đăng ký tham gia
+      </Button>
+    );
+  } else if (view.primary === "enter") {
+    primary = (
+      <Button variant="contained" color="success" component={Link} href={roomHref}>
+        Vào phòng đấu giá
+      </Button>
+    );
+  } else if (view.primary === "pay") {
+    primary = (
+      <Button variant="contained" color="error" component={Link} href={roomHref}>
+        Hoàn tất thanh toán
+      </Button>
+    );
+  }
 
   return (
     <AuctionSessionCard
-      shipment={session}
-      customActions={actions}
-      statusLabelOverride={getStatusLabel(auction, mode)}
-      onViewDetail={onViewDetail}
+      auction={auction}
+      status={view.status}
+      note={view.note}
+      noteTone={view.noteTone}
+      extraFacts={extraFacts}
+      onOpen={() => onViewDetail?.(auction)}
+      actions={
+        <>
+          <Button variant="outlined" color="inherit" onClick={() => onViewDetail?.(auction)}>
+            Chi tiết
+          </Button>
+          {primary || (
+            <Button variant="outlined" component={Link} href={roomHref}>
+              Mở phiên
+            </Button>
+          )}
+        </>
+      }
     />
   );
 }

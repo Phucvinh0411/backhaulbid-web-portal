@@ -1,386 +1,227 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Chip from "@mui/material/Chip";
-import CircularProgress from "@mui/material/CircularProgress";
-import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
 import CheckIcon from "@mui/icons-material/Check";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
-import Inventory2Icon from "@mui/icons-material/Inventory2";
-import PlaceIcon from "@mui/icons-material/Place";
-import dynamic from "next/dynamic";
-
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { ErrorState, ForbiddenState, KeyValueList, ListSkeleton, Panel, ResponsiveDialog, StatusBadge } from "@/components/ui";
 import { contractApi } from "@/services/contractApi";
+import { getApiErrorMessage } from "@/services/errorMessage";
+import { getTripCompletionSummary, getTripStatusMeta, isTripClosed } from "@/lib/statusMeta";
+import { formatDateTime, formatMoney, shortId } from "@/lib/format";
+import { toMediaViewUrl } from "@/lib/mediaUrl";
+import { GATEWAY_URL } from "@/config/clientConfig";
+import TripActions from "./TripActions";
+import TripMilestonesPanel from "./TripMilestonesPanel";
+import TripReviewPanel from "./TripReviewPanel";
+import TripHandoverPanel from "./TripHandoverPanel";
+import TripClaimPanel from "./TripClaimPanel";
+import TripProgress from "./TripProgress";
+import JourneyTimeline from "./JourneyTimeline";
+import TripRouteEditor from "./TripRouteEditor";
+import useTripTracking from "./useTripTracking";
+import { buildGpsSegments, buildJourneyTimeline, coordinate, getFreshnessMeta, plannedRoute, routeStatusText, selectRouteAnchors, locationTime, latestTrackingLocation, locationSourceLabel } from "./trackingPresentation";
+
+const mediaUrl = (url) => toMediaViewUrl(url, GATEWAY_URL);
 
 const Map = dynamic(() => import("@/components/map/Map"), {
   ssr: false,
   loading: () => (
-    <Box className="flex h-full w-full items-center justify-center bg-slate-100">
-      <Typography variant="body2" className="animate-pulse text-slate-500">Đang tải bản đồ...</Typography>
+    <Box sx={{ height: "100%", display: "grid", placeItems: "center", bgcolor: "var(--color-surface-sunken)" }}>
+      <Typography variant="body2" sx={{ color: "text.secondary" }}>Đang tải bản đồ...</Typography>
     </Box>
   ),
 });
 
-const POLL_INTERVAL_MS = 15000;
-
-const STATUS_STEPS = [
-  { key: "WAITING_PICKUP", label: "Chờ lấy hàng" },
-  { key: "PICKED_UP", label: "Đã lấy hàng" },
-  { key: "IN_TRANSIT", label: "Đang vận chuyển" },
-  { key: "DELIVERED", label: "Đã giao" },
-];
-
-const STATUS_LABELS = {
-  WAITING_PICKUP: "Chờ lấy hàng",
-  PICKED_UP: "Đã lấy hàng",
-  IN_TRANSIT: "Đang vận chuyển",
-  DELIVERED: "Đã giao",
-  COMPLETED: "Hoàn thành",
-  CANCELLED: "Đã hủy",
-};
-
-const STATUS_TONES = {
-  WAITING_PICKUP: "warning",
-  PICKED_UP: "info",
-  IN_TRANSIT: "primary",
-  DELIVERED: "success",
-  COMPLETED: "success",
-  CANCELLED: "error",
-};
-
-const JOURNEY_EVENT_LABELS = {
-  DRIVER_ACCEPTED: "Tài xế nhận chuyến",
-  ARRIVED_PICKUP: "Đến điểm lấy hàng",
-  PICKUP_CONFIRMED: "Xác nhận lấy hàng",
-  DEPARTED_PICKUP: "Rời điểm lấy hàng",
-  ARRIVED_DELIVERY: "Đến điểm giao hàng",
-  DELIVERY_PROOF_SUBMITTED: "Gửi bằng chứng giao hàng",
-  DELIVERY_ACCEPTED: "Xác nhận giao hàng",
-  INCIDENT_REPORTED: "Báo cáo sự cố",
-  ADMIN_OVERRIDE: "Điều chỉnh từ hệ thống",
-};
-
-const statusStepIndex = (status) => {
-  switch (status) {
-    case "WAITING_PICKUP":
-      return 0;
-    case "PICKED_UP":
-      return 1;
-    case "IN_TRANSIT":
-      return 2;
-    case "DELIVERED":
-    case "COMPLETED":
-      return 3;
-    default:
-      return -1;
-  }
-};
-
-const formatTime = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "medium" }).format(date);
-};
-
-const formatMoney = (value) =>
-  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
-
-const asList = (response) => (Array.isArray(response) ? response : response?.data || []);
-
-export default function TripTrackingView({ tripId, allowLateCancellation = false }) {
-  const [trip, setTrip] = useState(null);
-  const [locations, setLocations] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [lastUpdated, setLastUpdated] = useState(null);
-  const [delaySettlements, setDelaySettlements] = useState([]);
+/** Trip detail for shipper and carrier; available actions depend on `role`. */
+export default function TripTrackingView({ tripId, role = "shipper", allowLateCancellation = false }) {
+  const { trip, tracking, locations, historySampled, historyTotalPoints, events, proofs, milestones, delaySettlements, state, error, loadTracking } = useTripTracking(tripId);
+  const [confirmLateCancel, setConfirmLateCancel] = useState(false);
   const [cancellingLateTrip, setCancellingLateTrip] = useState(false);
-
-  const loadTracking = useCallback(async () => {
-    if (!tripId) return;
-    try {
-      const [tripResponse, locationResponse, eventResponse, settlementResponse] = await Promise.all([
-        contractApi.getTrip(tripId),
-        contractApi.listLocations(tripId),
-        contractApi.listJourneyEvents(tripId),
-        contractApi.listTripDelaySettlements(tripId),
-      ]);
-      setTrip(tripResponse);
-      const locationList = asList(locationResponse)
-        .slice()
-        .sort((left, right) => new Date(left.recordedAt) - new Date(right.recordedAt));
-      setLocations(locationList);
-      setEvents(
-        asList(eventResponse)
-          .slice()
-          .sort((left, right) => new Date(right.recordedAt) - new Date(left.recordedAt)),
-      );
-      setDelaySettlements(asList(settlementResponse));
-      setLastUpdated(new Date());
-      setError("");
-    } catch (loadError) {
-      setError(loadError?.response?.data?.message || "Không thể tải dữ liệu theo dõi chuyến.");
-    } finally {
-      setLoading(false);
-    }
-  }, [tripId]);
+  const [lateCancelError, setLateCancelError] = useState("");
+  const closed = trip ? isTripClosed(trip.status) : false;
+  const traceSegments = useMemo(() => buildGpsSegments(locations), [locations]);
+  const latestLocation = latestTrackingLocation(tracking, locations);
+  const currentPos = coordinate(latestLocation) ? { ...latestLocation, timeLabel: formatDateTime(locationTime(latestLocation)) } : null;
+  const freshness = getFreshnessMeta(tracking?.freshness);
+  const latestEvent = buildJourneyTimeline(events, milestones)[0];
+  const anchors = selectRouteAnchors({ trip, tracking });
+  const pickupPoint = anchors.pickup;
+  const deliveryPoint = anchors.delivery;
+  // A poll may come back while the route is still being fetched. Reuse the last road geometry only
+  // for the same trip, route version and anchor pair; a definite "no route"/"rejected" drops it.
+  const routeKey = `${trip?.id}:${anchors.routeVersion}:${JSON.stringify([coordinate(pickupPoint), coordinate(deliveryPoint)])}`;
+  const [roadRoute, setRoadRoute] = useState(null);
+  useEffect(() => {
+    if (anchors.geometry) setRoadRoute({ key: routeKey, geometry: anchors.geometry });
+    else if (anchors.routingStatus === "NO_ROUTE" || anchors.routingStatus === "REJECTED") setRoadRoute(null);
+  }, [routeKey, anchors.geometry, anchors.routingStatus]);
+  const routeGeometry = anchors.geometry || (roadRoute?.key === routeKey ? roadRoute.geometry : null);
+  const routeKind = plannedRoute(pickupPoint, deliveryPoint, routeGeometry).kind;
+  const routeNote = routeStatusText(routeKind, anchors.routingStatus || (routeKind === "PENDING" ? "PENDING" : null));
 
   const handleCancelLateTrip = async () => {
-    if (!window.confirm("Bạn muốn hủy chuyến này vì xe đã trễ hơn 1 giờ? Khoản bồi thường sẽ được xử lý theo mức trễ hiện tại.")) return;
+    if (cancellingLateTrip) return;
     setCancellingLateTrip(true);
+    setLateCancelError("");
     try {
-      const response = await contractApi.cancelLateTrip(tripId, {
-        reason: "Chủ hàng hủy do giao trễ hơn 1 giờ",
-      });
-      setTrip(response?.data ?? response);
+      await contractApi.cancelLateTrip(tripId, { reason: "Chủ hàng hủy do giao trễ hơn 1 giờ" });
+      setConfirmLateCancel(false);
       await loadTracking();
     } catch (cancelError) {
-      setError(cancelError?.response?.data?.message || "Không thể hủy chuyến do giao trễ.");
+      setLateCancelError(getApiErrorMessage(cancelError, "Không thể hủy chuyến do giao trễ."));
     } finally {
       setCancellingLateTrip(false);
     }
   };
 
-  useEffect(() => {
-    setTrip(null);
-    setLocations([]);
-    setEvents([]);
-    setLoading(true);
-    loadTracking();
-    const interval = window.setInterval(loadTracking, POLL_INTERVAL_MS);
-    return () => window.clearInterval(interval);
-  }, [loadTracking]);
+  if (!tripId) return <Alert severity="info">Chọn một chuyến để xem chi tiết.</Alert>;
+  if (state === "loading") return <ListSkeleton rows={3} height={140} label="Đang tải chuyến" />;
+  if (state === "forbidden") return <ForbiddenState description="Chuyến này không thuộc tài khoản của bạn." />;
+  if (!trip) return <ErrorState description={error} onRetry={loadTracking} />;
 
-  const routePoints = useMemo(
-    () =>
-      locations
-        .map((location) => [Number(location.latitude), Number(location.longitude)])
-        .filter((point) => Number.isFinite(point[0]) && Number.isFinite(point[1])),
-    [locations],
-  );
-
-  const currentPos = useMemo(() => {
-    const latest = locations[locations.length - 1];
-    if (!latest || !Number.isFinite(Number(latest.latitude)) || !Number.isFinite(Number(latest.longitude))) {
-      return null;
-    }
-    return {
-      latitude: Number(latest.latitude),
-      longitude: Number(latest.longitude),
-      label: latest.label || "Vị trí hiện tại",
-    };
-  }, [locations]);
-
-  if (!tripId) {
-    return <Alert severity="info">Chọn một chuyến vận chuyển để theo dõi.</Alert>;
-  }
-  if (loading && !trip) {
-    return (
-      <Box className="flex min-h-[40vh] items-center justify-center">
-        <CircularProgress />
-      </Box>
-    );
-  }
-  if (!trip) {
-    return <Alert severity="error">{error || "Không tìm thấy chuyến vận chuyển."}</Alert>;
-  }
-
-  const stepIndex = statusStepIndex(trip.status);
-  const cancelled = trip.status === "CANCELLED";
-  const progressPct = stepIndex <= 0 ? 0 : (stepIndex / (STATUS_STEPS.length - 1)) * 100;
+  const statusMeta = getTripStatusMeta(trip.status);
+  const completion = getTripCompletionSummary(trip, events);
 
   return (
-    <Box className="flex flex-col gap-6">
-      {error && <Alert severity="warning">{error}</Alert>}
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {error && <Alert severity="warning">Không làm mới được dữ liệu: {error}</Alert>}
 
-      {trip.expectedDeliveryAt && (
-        <Alert severity={trip.lateMinutes > 0 ? "warning" : "info"} className="!rounded-2xl">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <strong>Hạn giao dự kiến: {formatTime(trip.expectedDeliveryAt)}</strong>
-              {trip.lateMinutes > 0 && <span> · Đang trễ {trip.lateMinutes} phút</span>}
-              <div className="mt-1 text-sm">
-                {trip.latePolicyEnabled
-                  ? "Mức bồi thường được trừ từ tiền đặt trước; điểm uy tín chủ xe giảm theo từng bậc."
-                  : "Chuyến này chưa có tiền đặt trước được giữ nên không áp dụng bồi thường tự động."}
-              </div>
-            </div>
-            {allowLateCancellation && trip.canCancelForLateDelivery && (
-              <Button
-                color="error"
-                variant="contained"
-                disabled={cancellingLateTrip}
-                onClick={handleCancelLateTrip}
-                className="!rounded-xl !font-bold"
-              >
-                {cancellingLateTrip ? "Đang hủy chuyến..." : "Hủy chuyến và nhận bồi thường"}
-              </Button>
-            )}
-          </div>
+      <Panel sx={{ borderTop: "3px solid", borderTopColor: trip.status === "CANCELLED" ? "error.main" : "primary.main" }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2, flexWrap: "wrap", mb: 2.5 }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>THEO DÕI CHUYẾN · #{shortId(trip.id)}</Typography>
+            <Typography component="h2" sx={{ mt: 0.5, fontSize: { xs: "1.35rem", md: "1.75rem" }, fontWeight: 750, color: trip.status === "CANCELLED" ? "error.main" : "primary.main" }}>{statusMeta.label}</Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+              {latestEvent ? `${latestEvent.title} · ${formatDateTime(latestEvent.time)}` : "Chờ mốc giao nhận đầu tiên"}
+            </Typography>
+          </Box>
+          <Button size="small" variant="outlined" startIcon={<RefreshIcon />} onClick={loadTracking} sx={{ minHeight: 44 }}>Làm mới</Button>
+        </Box>
+        {trip.status === "CANCELLED" ? <Alert severity="error">Chuyến đã hủy{trip.cancellationReason ? `: ${trip.cancellationReason}` : "."}</Alert> : <TripProgress status={trip.status} />}
+        {trip.expectedDeliveryAt && <Box sx={{ mt: 2.5, pt: 1.5, borderTop: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
+          <Typography variant="body2" className="tabular" sx={{ fontWeight: 600 }}>Hạn giao: {formatDateTime(trip.expectedDeliveryAt)}</Typography>
+          {trip.lateMinutes > 0 && !completion && <StatusBadge size="sm" tone="warning" label={`Trễ ${trip.lateMinutes} phút`} />}
+        </Box>}
+      </Panel>
+
+      {completion && (
+        <Alert severity="success" icon={<CheckIcon fontSize="inherit" />}>
+          <Typography sx={{ fontWeight: 700 }}>Đơn hàng đã hoàn tất</Typography>
+          <Typography variant="body2" className="tabular">
+            {completion.deliveredAt ? `Giao lúc ${formatDateTime(completion.deliveredAt)}` : "Đã giao"}
+            {completion.completedAt ? ` · Chủ hàng xác nhận lúc ${formatDateTime(completion.completedAt)}` : ""}
+            {completion.onTime === true ? " · Đúng hạn" : ""}
+            {completion.onTime === false ? ` · Trễ ${completion.lateMinutes} phút` : ""}
+            {completion.depositReleased ? " · Đã giải phóng tiền đặt trước" : ""}
+            {completion.incidentCount ? ` · ${completion.incidentCount} sự cố đã ghi nhận` : ""}
+          </Typography>
         </Alert>
       )}
 
-      {delaySettlements.length > 0 && (
-        <Card variant="outlined" className="!rounded-2xl border-amber-200 shadow-sm">
-          <CardContent className="!p-5">
-            <Typography className="!mb-3 !font-bold text-slate-800">Các mức xử lý giao trễ</Typography>
-            <div className="grid gap-3 md:grid-cols-3">
-              {delaySettlements.map((settlement) => (
-                <div key={settlement.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <strong className="text-slate-800">Bậc {settlement.tier} · {settlement.cumulativePenaltyPercent}% cọc</strong>
-                    <Chip label={settlement.overallStatus === "COMPLETED" ? "Đã xử lý" : "Đang thử lại"} color={settlement.overallStatus === "COMPLETED" ? "success" : "warning"} size="small" />
-                  </div>
-                  <Typography variant="body2" className="!mt-2 text-slate-600">
-                    Bồi thường: {formatMoney(settlement.totalCompensationAmount)} · Trừ {settlement.pointsDeducted} điểm uy tín
-                  </Typography>
-                  {settlement.lastError && <Typography variant="caption" className="!mt-2 block text-rose-700">{settlement.lastError}</Typography>}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {((role === "shipper" && trip.status === "DELIVERED") || (role === "carrier" && trip.status === "WAITING_PICKUP")) && <TripActions trip={trip} role={role} proofs={proofs} onChanged={loadTracking} />}
 
-      <Card variant="outlined" className="!rounded-2xl border-slate-200 shadow-sm">
-        <CardContent className="!p-5">
-          <Box className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <Box className="flex items-center gap-3">
-              <Box className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#1B4965]">
-                <LocalShippingIcon />
-              </Box>
-              <Box>
-                <Typography className="!font-bold text-slate-800">Chuyến {String(trip.id).slice(0, 8)}</Typography>
-                <Typography variant="caption" className="text-slate-500">
-                  {lastUpdated ? `Cập nhật lúc ${formatTime(lastUpdated)} · tự làm mới mỗi 15 giây` : "Đang tải dữ liệu..."}
+      <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 7fr) minmax(0, 5fr)" }, alignItems: "start" }}>
+        <Box sx={{ minWidth: 0, display: "grid", gap: 2 }}>
+          <Panel title="Đường đi của chuyến" subtitle={locations.length ? `${locations.length} vị trí đã ghi nhận` : "Kho lấy, kho giao và vị trí xe"} padded={false} actions={role === "shipper" && trip.status === "WAITING_PICKUP" ? <TripRouteEditor trip={trip} onChanged={loadTracking} /> : null}>
+            <Box sx={{ height: { xs: 320, md: 420 } }}><Map tripId={trip.id} pickupPoint={pickupPoint} deliveryPoint={deliveryPoint} milestones={milestones} traceSegments={traceSegments} currentPos={currentPos} routeGeometry={routeGeometry} emptyHint={role === "shipper" && trip.status === "WAITING_PICKUP" ? "Bấm “Xác nhận vị trí kho” để ghim" : role === "shipper" ? "Vị trí kho chỉ ghim được trước khi lấy hàng" : "Chủ hàng cần ghim vị trí kho trước khi lấy hàng"} /></Box>
+            <Box sx={{ px: 2, py: 1.5, borderTop: "1px solid", borderColor: "divider", display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center" }}>
+              {routeKind === "ROAD" && <Box sx={{ display: "flex", gap: 0.75, alignItems: "center" }}><Box aria-hidden sx={{ width: 22, height: 5, bgcolor: "primary.main", borderRadius: 1 }} /><Typography variant="caption">Tuyến đường bộ dự kiến A → B</Typography></Box>}
+              {routeNote && <Typography variant="caption" role="status" sx={{ color: "text.secondary" }}>{routeNote}</Typography>}
+              {traceSegments.length > 0 && <Box sx={{ display: "flex", gap: 0.75, alignItems: "center" }}><Box aria-hidden sx={{ width: 22, height: 4, bgcolor: "info.main", borderRadius: 1 }} /><Typography variant="caption">Vệt GPS xe đã chạy</Typography></Box>}
+              {traceSegments.length > 0 && <Typography variant="caption" sx={{ color: "text.secondary" }}>Khoảng mất GPS được ngắt trên vệt.</Typography>}
+              {historySampled && <Typography variant="caption" sx={{ color: "text.secondary" }}>Đường đi được lấy mẫu từ {historyTotalPoints.toLocaleString("vi-VN")} điểm</Typography>}
+            </Box>
+            <Box sx={{ px: 2, pb: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1 }}><StatusBadge size="sm" meta={freshness} />{latestLocation && <Typography variant="caption" className="tabular" sx={{ color: "text.secondary" }}>{locationSourceLabel(latestLocation.source)} · {formatDateTime(locationTime(latestLocation))}{latestLocation.accuracyMeters != null ? ` · sai số ${Math.round(latestLocation.accuracyMeters)} m` : ""}</Typography>}</Box>
+              <Typography variant="caption" sx={{ display: "block", mt: 0.75, color: "text.secondary" }}>{freshness.message}</Typography>
+            </Box>
+          </Panel>
+          <Panel title="Lấy và giao hàng">
+            <Box sx={{ display: "grid", gap: 2 }}>
+              {[["A", "Lấy hàng", pickupPoint || trip.pickupPoint || tracking?.pickupPoint, trip.pickupLocation], ["B", "Giao hàng", deliveryPoint || trip.deliveryPoint || tracking?.deliveryPoint, trip.deliveryLocation]].map(([letter, title, point, address]) => <Box key={letter} sx={{ display: "grid", gridTemplateColumns: "32px minmax(0,1fr)", gap: 1.5 }}>
+                <Box sx={{ width: 32, height: 32, display: "grid", placeItems: "center", borderRadius: "50%", bgcolor: letter === "A" ? "var(--color-brand-soft)" : "success.light", color: letter === "A" ? "primary.main" : "success.dark", fontWeight: 700 }}>{letter}</Box>
+                <Box sx={{ minWidth: 0 }}><Typography variant="caption" sx={{ color: "text.secondary" }}>{title}</Typography><Typography variant="body2" sx={{ fontWeight: 600, overflowWrap: "anywhere" }}>{point?.label || address || "Chưa có địa chỉ"}</Typography>{point?.address && point.address !== point.label && <Typography variant="body2" sx={{ color: "text.secondary", overflowWrap: "anywhere" }}>{point.address}</Typography>}</Box>
+              </Box>)}
+            </Box>
+          </Panel>
+        </Box>
+        <JourneyTimeline events={events} milestones={milestones} />
+      </Box>
+
+      {!((role === "shipper" && trip.status === "DELIVERED") || (role === "carrier" && trip.status === "WAITING_PICKUP")) && <TripActions trip={trip} role={role} proofs={proofs} onChanged={loadTracking} />}
+
+      {trip.expectedDeliveryAt && trip.lateMinutes > 0 && !completion && <Alert severity="warning" action={allowLateCancellation && trip.canCancelForLateDelivery ? <Button color="error" variant="contained" size="small" onClick={() => setConfirmLateCancel(true)}>Hủy chuyến do trễ</Button> : null}>
+        <Typography variant="body2">{trip.latePolicyEnabled ? "Bồi thường giao trễ được trừ từ tiền đặt trước của chủ xe; điểm uy tín giảm theo bậc." : "Chuyến chưa có tiền đặt trước được giữ nên không áp dụng bồi thường tự động."}</Typography>
+      </Alert>}
+
+      {delaySettlements.length > 0 && <Panel title="Xử lý giao trễ"><Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", md: "repeat(3,minmax(0,1fr))" } }}>{delaySettlements.map((settlement) => <Box key={settlement.id} sx={{ p: 1.5, border: "1px solid", borderColor: "divider", borderRadius: 2 }}>
+        <Typography variant="body2" sx={{ fontWeight: 700 }}>Bậc {settlement.tier} · {settlement.cumulativePenaltyPercent}% cọc</Typography><StatusBadge size="sm" tone={settlement.overallStatus === "COMPLETED" ? "success" : "warning"} label={settlement.overallStatus === "COMPLETED" ? "Đã xử lý" : "Đang thử lại"} /><Typography variant="body2" className="tabular" sx={{ mt: 0.5 }}>Bồi thường {formatMoney(settlement.totalCompensationAmount)} · trừ {settlement.pointsDeducted} điểm</Typography>{settlement.lastError && <Typography variant="caption" sx={{ color: "error.main" }}>{settlement.lastError}</Typography>}
+      </Box>)}</Box></Panel>}
+
+      <TripMilestonesPanel trip={trip} milestones={milestones} canCreate={role === "carrier" && !closed} onChanged={loadTracking} />
+
+      <TripHandoverPanel trip={trip} role={role} />
+
+      {role === "shipper" && <TripReviewPanel trip={trip} />}
+
+      {role === "shipper" && <TripClaimPanel trip={trip} />}
+
+      {proofs.length > 0 && (
+        <Panel title="Bằng chứng giao hàng">
+          <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" } }}>
+            {proofs.map((proof) => (
+              <Box key={proof.id} component="a" href={mediaUrl(proof.imageUrl)} target="_blank" rel="noreferrer" sx={{ display: "block", border: "1px solid", borderColor: "divider", borderRadius: 2, overflow: "hidden", textDecoration: "none", color: "inherit" }}>
+                <Box component="img" src={mediaUrl(proof.imageUrl)} alt={proof.note || "Ảnh bằng chứng giao hàng"} loading="lazy" sx={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", display: "block", bgcolor: "var(--color-surface-sunken)" }} />
+                <Typography variant="caption" className="tabular" sx={{ display: "block", p: 1, color: "text.secondary" }}>
+                  {formatDateTime(proof.uploadedAt)}
+                  {proof.note ? ` · ${proof.note}` : ""}
                 </Typography>
               </Box>
-            </Box>
-            <Chip
-              label={STATUS_LABELS[trip.status] || trip.status}
-              color={STATUS_TONES[trip.status] || "default"}
-              size="small"
-              className="!rounded-full !font-bold"
-            />
+            ))}
           </Box>
+        </Panel>
+      )}
 
-          {cancelled ? (
-            <Alert severity="error">Chuyến vận chuyển đã bị hủy{trip.cancellationReason ? `: ${trip.cancellationReason}` : "."}</Alert>
-          ) : (
-            <Box className="relative flex items-center justify-between">
-              <Box className="absolute left-0 top-4 h-1 w-full -translate-y-1/2 rounded-full bg-slate-200"></Box>
-              <Box
-                className="absolute left-0 top-4 h-1 -translate-y-1/2 rounded-full bg-[#1B4965] transition-all duration-700"
-                style={{ width: `${progressPct}%` }}
-              ></Box>
-              {STATUS_STEPS.map((step, index) => {
-                const done = index < stepIndex;
-                const active = index === stepIndex;
-                return (
-                  <Box key={step.key} className="z-10 flex flex-col items-center gap-1.5">
-                    <Box
-                      className={`flex h-8 w-8 items-center justify-center rounded-full shadow-md ${
-                        done
-                          ? "bg-[#1B4965] text-white"
-                          : active
-                            ? "border-2 border-[#1B4965] bg-white text-[#1B4965] ring-4 ring-[#1B4965]/20"
-                            : "border-2 border-slate-300 bg-slate-100 text-slate-400"
-                      }`}
-                    >
-                      {done ? <CheckIcon fontSize="small" /> : active ? <LocalShippingIcon fontSize="small" /> : <Inventory2Icon fontSize="small" />}
-                    </Box>
-                    <Typography
-                      variant="caption"
-                      className={active ? "!font-bold text-[#1B4965]" : done ? "!font-semibold text-[#1B4965]" : "!font-medium text-slate-500"}
-                    >
-                      {step.label}
-                    </Typography>
-                  </Box>
-                );
-              })}
-            </Box>
-          )}
-        </CardContent>
-      </Card>
+      <Panel title="Thông tin chuyến">
+        <KeyValueList
+          columns={3}
+          items={[
+            { label: "Điểm lấy hàng", value: trip.pickupLocation || "Chưa xác định" },
+            { label: "Điểm giao hàng", value: trip.deliveryLocation || "Chưa xác định" },
+            { label: "Giá hợp đồng", value: formatMoney(trip.agreedPrice), numeric: true, strong: true },
+            { label: "Tài xế", value: trip.driverConnected ? "Đã nhận chuyến bằng mã" : trip.driverId ? "Đã phân công, chờ nhập mã nhận chuyến" : "Chưa phân công" },
+            { label: "Tạo lúc", value: formatDateTime(trip.createdAt), numeric: true },
+            { label: "Đã giao lúc", value: formatDateTime(trip.deliveredAt), numeric: true, hidden: !trip.deliveredAt },
+          ]}
+        />
+      </Panel>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[7fr_5fr]">
-        <Card variant="outlined" className="!overflow-hidden !rounded-2xl border-slate-200 shadow-sm">
-          <Box className="h-[420px] w-full">
-            <Map routePoints={routePoints} currentPos={currentPos} />
-          </Box>
-        </Card>
-
-        <Card variant="outlined" className="!rounded-2xl border-slate-200 shadow-sm">
-          <CardContent className="!p-5">
-            <Typography className="!mb-4 !font-bold text-slate-800">Hành trình</Typography>
-            {events.length === 0 ? (
-              <Typography variant="body2" className="text-slate-500">
-                Chưa có sự kiện hành trình. Sự kiện sẽ xuất hiện khi tài xế xác nhận các mốc giao nhận.
-              </Typography>
-            ) : (
-              <Box className="flex flex-col">
-                {events.map((event, index) => (
-                  <Box key={event.id} className="relative flex gap-3 pb-5">
-                    {index < events.length - 1 && (
-                      <span className="absolute left-[7px] top-5 h-full w-0.5 bg-slate-200"></span>
-                    )}
-                    <span
-                      className={`z-10 mt-1 h-[15px] w-[15px] shrink-0 rounded-full border-2 ${
-                        index === 0 ? "border-[#1B4965] bg-[#1B4965]" : "border-slate-300 bg-white"
-                      }`}
-                    ></span>
-                    <Box>
-                      <Typography variant="body2" className="!font-semibold text-slate-800">
-                        {JOURNEY_EVENT_LABELS[event.eventType] || event.eventType}
-                      </Typography>
-                      <Typography variant="caption" className="text-slate-500">
-                        {formatTime(event.recordedAt)}
-                      </Typography>
-                      {event.note && (
-                        <Typography variant="body2" className="mt-0.5 text-slate-600">
-                          {event.note}
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card variant="outlined" className="!rounded-2xl border-slate-200 shadow-sm">
-        <CardContent className="!p-5">
-          <Typography className="!mb-4 !font-bold text-slate-800">Thông tin chuyến</Typography>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Box className="flex items-start gap-2">
-              <PlaceIcon className="!mt-0.5 text-emerald-600" />
-              <Box>
-                <Typography variant="caption" className="text-slate-500">Điểm lấy</Typography>
-                <Typography variant="body2" className="!font-semibold text-slate-800">{trip.pickupLocation || "Chưa xác định"}</Typography>
-              </Box>
-            </Box>
-            <Box className="flex items-start gap-2">
-              <PlaceIcon className="!mt-0.5 text-rose-600" />
-              <Box>
-                <Typography variant="caption" className="text-slate-500">Điểm giao</Typography>
-                <Typography variant="body2" className="!font-semibold text-slate-800">{trip.deliveryLocation || "Chưa xác định"}</Typography>
-              </Box>
-            </Box>
-            <Box>
-              <Typography variant="caption" className="text-slate-500">Giá hợp đồng</Typography>
-              <Typography variant="body2" className="!font-bold text-[#1B4965]">{formatMoney(trip.agreedPrice)}</Typography>
-            </Box>
-          </div>
-        </CardContent>
-      </Card>
+      <ResponsiveDialog
+        open={confirmLateCancel}
+        onClose={() => setConfirmLateCancel(false)}
+        busy={cancellingLateTrip}
+        maxWidth="xs"
+        title="Hủy chuyến do giao trễ?"
+        titleId="late-cancel-title"
+        actions={
+          <>
+            <Button color="inherit" onClick={() => setConfirmLateCancel(false)} disabled={cancellingLateTrip}>
+              Giữ chuyến
+            </Button>
+            <Button variant="contained" color="error" onClick={handleCancelLateTrip} disabled={cancellingLateTrip}>
+              {cancellingLateTrip ? "Đang hủy..." : "Hủy chuyến"}
+            </Button>
+          </>
+        }
+      >
+        {lateCancelError && <Alert severity="error" sx={{ mb: 1.5 }}>{lateCancelError}</Alert>}
+        <Typography variant="body2">Xe đã trễ hơn 1 giờ so với hạn giao. Bồi thường được xử lý theo mức trễ hiện tại; thao tác không hoàn tác được.</Typography>
+      </ResponsiveDialog>
     </Box>
   );
 }

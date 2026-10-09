@@ -37,7 +37,7 @@ export default function AdminLateDeliveryPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <Typography variant="h4" className="!font-black">Xử lý chuyến giao trễ</Typography>
-          <Typography className="!mt-1 text-slate-500">Xem các bậc trễ, tiền bồi thường, điểm uy tín và trạng thái xử lý của mọi chuyến.</Typography>
+          <Typography className="!mt-1 text-ink-muted">Xem các bậc trễ, tiền bồi thường, điểm uy tín và trạng thái xử lý của mọi chuyến.</Typography>
         </div>
         <Button variant="outlined" onClick={load} disabled={loading}>Làm mới</Button>
       </div>
@@ -47,21 +47,21 @@ export default function AdminLateDeliveryPage() {
       ) : rows.length === 0 ? (
         <Alert severity="info">Chưa có dữ liệu xử lý giao trễ.</Alert>
       ) : (
-        <Paper variant="outlined" className="overflow-x-auto !rounded-2xl">
+        <Paper variant="outlined" className="overflow-x-auto !rounded-xl">
           <table className="w-full min-w-[950px] border-collapse text-left text-sm">
-            <thead className="bg-slate-50 text-slate-600">
+            <thead className="bg-surface-sunken text-ink-muted">
               <tr>{["Chuyến / phiên", "Chủ hàng", "Chủ xe", "Mức trễ", "Bồi thường", "Điểm uy tín", "Trạng thái xử lý"].map((label) => <th key={label} className="p-4 font-bold">{label}</th>)}</tr>
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.id} className="border-t border-slate-100">
-                  <td className="p-4"><div className="font-bold">{String(row.tripId).slice(0, 8)}</div><div className="text-xs text-slate-500">Phiên {row.auctionId || "—"}</div><div className="text-xs">Bậc {row.tier} · {row.lateMinutes} phút</div></td>
+                <tr key={row.id} className="border-t border-line">
+                  <td className="p-4"><div className="font-bold">{String(row.tripId).slice(0, 8)}</div><div className="text-xs text-ink-muted">Phiên {row.auctionId || "—"}</div><div className="text-xs">Bậc {row.tier} · {row.lateMinutes} phút</div></td>
                   <td className="p-4 font-mono text-xs">{row.shipperId}</td>
                   <td className="p-4 font-mono text-xs">{row.carrierId}</td>
                   <td className="p-4">{row.cumulativePenaltyPercent}% tiền cọc</td>
-                  <td className="p-4"><div>{money(row.totalCompensationAmount)} tổng mức</div><div className="text-xs text-slate-500">+{money(row.incrementalCompensationAmount)} ở bậc này</div></td>
+                  <td className="p-4"><div>{money(row.totalCompensationAmount)} tổng mức</div><div className="text-xs text-ink-muted">+{money(row.incrementalCompensationAmount)} ở bậc này</div></td>
                   <td className="p-4">−{row.pointsDeducted} điểm</td>
-                  <td className="p-4"><div className="flex flex-wrap gap-1"><Chip size="small" label={`Ví: ${row.walletStatus}`} color={row.walletStatus === "COMPLETED" ? "success" : "warning"} /><Chip size="small" label={`Uy tín: ${row.reputationStatus}`} color={row.reputationStatus === "COMPLETED" ? "success" : "warning"} /><Chip size="small" label={`Thông báo: ${row.notificationStatus}`} color={row.notificationStatus === "COMPLETED" ? "success" : "warning"} /></div>{row.lastError && <div className="mt-2 max-w-sm text-xs text-rose-700">{row.lastError}</div>}</td>
+                  <td className="p-4"><div className="flex flex-wrap gap-1"><Chip size="small" label={`Ví: ${row.walletStatus}`} color={row.walletStatus === "COMPLETED" ? "success" : "warning"} /><Chip size="small" label={`Uy tín: ${row.reputationStatus}`} color={row.reputationStatus === "COMPLETED" ? "success" : "warning"} /><Chip size="small" label={`Thông báo: ${row.notificationStatus}`} color={row.notificationStatus === "COMPLETED" ? "success" : "warning"} /></div>{row.lastError && <div className="mt-2 max-w-sm text-xs text-danger">{row.lastError}</div>}</td>
                 </tr>
               ))}
             </tbody>

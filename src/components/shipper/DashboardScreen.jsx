@@ -31,6 +31,7 @@ import {
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import GavelIcon from "@mui/icons-material/Gavel";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
@@ -38,7 +39,9 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import RouteIcon from "@mui/icons-material/Route";
 
 import { PageHeader, StatCard } from "@/components/common";
+import ActionInbox from "@/components/dashboard/ActionInbox";
 import AppCard from "@/components/common/AppCard";
+import { tokens } from "@/theme/theme";
 import { useShipperDashboard } from "@/hooks/useShipperDashboard";
 
 const formatCurrency = (value) => {
@@ -102,28 +105,21 @@ export default function DashboardScreen() {
   }
 
   return (
-    <Box className="animate-fade-in-up pb-12 w-full mt-2 flex flex-col gap-6">
+    <Box className="w-full flex flex-col gap-4">
       <PageHeader
-        title="Trung tâm điều phối Logistics"
-        subtitle="Tổng quan hoạt động đấu giá và quản lý vận tải của doanh nghiệp"
+        title="Tổng quan"
+        subtitle="Việc cần xử lý trước, sau đó là tình hình phiên đấu giá và chuyến vận chuyển."
         action={
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => router.push("/shipper/bidding/create")}
-            className="!rounded-2xl !py-3 !px-6 !text-sm !font-bold !capitalize shadow-lg hover:shadow-xl transition-all duration-300"
-            sx={{
-              background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              "&:hover": {
-                background: "linear-gradient(135deg, #0D2B3E 0%, #1B4965 100%)",
-              },
-            }}
           >
-            Tạo lô hàng mới
+            Tạo phiên đấu giá
           </Button>
         }
       />
+      <ActionInbox role="shipper" />
 
       {/* KPI Cards */}
       <Box>
@@ -134,7 +130,7 @@ export default function DashboardScreen() {
               value={`${data.activeAuctionsCount} lô hàng`}
               subtitle="Phiên đấu thầu mở"
               icon={GavelIcon}
-              color="#1B4965"
+              color="var(--color-brand)"
               tooltipInfo="Các lô hàng của bạn đang trong thời gian mở thầu công khai"
             />
           </Grid>
@@ -144,7 +140,7 @@ export default function DashboardScreen() {
               value={`${data.inTransitCount} đơn hàng`}
               subtitle="Đang di chuyển thực tế"
               icon={LocalShippingIcon}
-              color="#10b981"
+              color="var(--color-success)"
               tooltipInfo="Đơn hàng đã chốt thầu và đang được đơn vị vận chuyển giao hàng"
             />
           </Grid>
@@ -154,7 +150,7 @@ export default function DashboardScreen() {
               value={formatShortCurrency(data.monthlySpend)}
               subtitle="So với tháng trước"
               icon={AccountBalanceWalletIcon}
-              color="#3b82f6"
+              color={tokens.info}
               tooltipInfo="Tổng cước phí vận chuyển đã thanh toán & dự kiến chi trong tháng"
             />
           </Grid>
@@ -164,7 +160,7 @@ export default function DashboardScreen() {
               value={formatShortCurrency(data.estimatedSavings)}
               subtitle="Nhờ đấu giá ngược"
               icon={AssignmentTurnedInIcon}
-              color="#f59e0b"
+              color="var(--color-warning)"
               tooltipInfo="Số tiền tiết kiệm được so với mức giá tối đa ban đầu"
             />
           </Grid>
@@ -179,10 +175,10 @@ export default function DashboardScreen() {
             <Box className="flex flex-col gap-6">
               
               {/* Spending & Savings Chart */}
-              <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+              <AppCard showAccent={false} className="glass overflow-hidden rounded-xl border-white/50 shadow-sm relative">
                 <CardContent className="p-6">
                   <Box className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
-                    <Typography variant="h6" className="font-bold text-[#1B4965]">
+                    <Typography variant="h6" className="font-bold text-[var(--color-brand)]">
                       Phân tích chi phí & Tiết kiệm (VNĐ)
                     </Typography>
                     <ToggleButtonGroup
@@ -197,11 +193,11 @@ export default function DashboardScreen() {
                           textTransform: "none",
                           fontWeight: 600,
                           fontSize: "0.8rem",
-                          color: "#64748b",
-                          borderColor: "#e2e8f0",
+                          color: "var(--color-ink-muted)",
+                          borderColor: "var(--color-line)",
                         },
                         "& .Mui-selected": {
-                          color: "#1B4965 !important",
+                          color: "var(--color-brand) !important",
                           bgcolor: "rgba(27,73,101,0.08) !important",
                         },
                       }}
@@ -216,26 +212,26 @@ export default function DashboardScreen() {
                       <AreaChart data={data.spendData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorSpend" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#1B4965" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#1B4965" stopOpacity={0} />
+                            <stop offset="5%" stopColor={tokens.brand} stopOpacity={0.3} />
+                            <stop offset="95%" stopColor={tokens.brand} stopOpacity={0} />
                           </linearGradient>
                           <linearGradient id="colorSavings" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                            <stop offset="5%" stopColor={tokens.success} stopOpacity={0.3} />
+                            <stop offset="95%" stopColor={tokens.success} stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={tokens.line} />
                         <XAxis
                           dataKey="name"
                           axisLine={false}
                           tickLine={false}
-                          tick={{ fill: "#64748b", fontSize: 12, fontWeight: 600 }}
+                          tick={{ fill: tokens.inkSubtle, fontSize: 12, fontWeight: 600 }}
                           dy={10}
                         />
                         <YAxis
                           axisLine={false}
                           tickLine={false}
-                          tick={{ fill: "#64748b", fontSize: 12, fontWeight: 600 }}
+                          tick={{ fill: tokens.inkSubtle, fontSize: 12, fontWeight: 600 }}
                           tickFormatter={(value) => `${value / 1000000}Tr`}
                           dx={-5}
                         />
@@ -246,7 +242,7 @@ export default function DashboardScreen() {
                           ]}
                           contentStyle={{
                             borderRadius: "12px",
-                            border: "1px solid #e2e8f0",
+                            border: "1px solid var(--color-line)",
                             boxShadow: "0 8px 30px rgba(27,73,101,0.1)",
                           }}
                         />
@@ -254,7 +250,7 @@ export default function DashboardScreen() {
                           type="monotone"
                           dataKey="spend"
                           name="spend"
-                          stroke="#1B4965"
+                          stroke={tokens.brand}
                           strokeWidth={3}
                           fillOpacity={1}
                           fill="url(#colorSpend)"
@@ -263,7 +259,7 @@ export default function DashboardScreen() {
                           type="monotone"
                           dataKey="savings"
                           name="savings"
-                          stroke="#10b981"
+                          stroke={tokens.success}
                           strokeWidth={2}
                           fillOpacity={1}
                           fill="url(#colorSavings)"
@@ -275,10 +271,10 @@ export default function DashboardScreen() {
               </AppCard>
 
               {/* Active Shipments in transit */}
-              <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+              <AppCard showAccent={false} className="glass overflow-hidden rounded-xl border-white/50 shadow-sm relative">
                 <CardContent className="p-6">
                   <Box className="flex items-center justify-between mb-4">
-                    <Typography variant="h6" className="font-bold text-[#1B4965]">
+                    <Typography variant="h6" className="font-bold text-[var(--color-brand)]">
                       Lô hàng đang vận chuyển
                     </Typography>
                     <Button
@@ -287,31 +283,31 @@ export default function DashboardScreen() {
                       variant="text"
                       size="small"
                       endIcon={<ChevronRightIcon />}
-                      sx={{ color: "#1B4965", fontWeight: "bold" }}
+                      sx={{ color: "var(--color-brand)", fontWeight: "bold" }}
                     >
                       Xem tất cả
                     </Button>
                   </Box>
                   <Box className="flex flex-col gap-3">
                     {data.activeShipments.length === 0 ? (
-                      <Typography variant="body2" className="text-slate-500 italic py-4 text-center">
+                      <Typography variant="body2" className="text-ink-muted italic py-4 text-center">
                         Không có lô hàng nào đang vận chuyển.
                       </Typography>
                     ) : (
                       data.activeShipments.map((shipment) => (
                         <Box
                           key={shipment.id}
-                        className="p-4 rounded-xl border border-slate-100 bg-white/60 hover:bg-white transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_20px_rgba(27,73,101,0.06)]"
+                        className="p-4 rounded-xl border border-line bg-white/60 hover:bg-white transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_20px_rgba(27,73,101,0.06)]"
                       >
                         <Box className="flex items-center gap-4">
-                          <Box className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#1B4965]">
+                          <Box className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center text-[var(--color-brand)]">
                             <LocalShippingIcon fontSize="small" />
                           </Box>
                           <Box>
-                            <Typography variant="subtitle2" className="font-bold text-slate-800">
+                            <Typography variant="subtitle2" className="font-bold text-ink">
                               {shipment.id} ({shipment.goodsType})
                             </Typography>
-                            <Typography variant="body2" className="text-slate-500 font-medium">
+                            <Typography variant="body2" className="text-ink-muted font-medium">
                               {shipment.route}
                             </Typography>
                           </Box>
@@ -319,16 +315,16 @@ export default function DashboardScreen() {
                         <Box className="flex items-center gap-4 w-full md:w-[45%]">
                           <Box className="w-full flex flex-col gap-1">
                             <Box className="flex justify-between items-center">
-                              <Typography variant="caption" className="text-slate-500 font-bold uppercase tracking-wider">
+                              <Typography variant="caption" className="text-ink-muted font-bold uppercase tracking-wider">
                                 {shipment.driverPlate} • {shipment.driverName}
                               </Typography>
-                              <Typography variant="caption" className="text-[#1B4965] font-bold">
+                              <Typography variant="caption" className="text-[var(--color-brand)] font-bold">
                                 {shipment.progress}%
                               </Typography>
                             </Box>
-                            <Box className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <Box className="w-full h-2 bg-surface-sunken rounded-full overflow-hidden">
                               <Box
-                                className="h-full bg-gradient-to-r from-blue-400 to-[#1B4965] rounded-full"
+                                className="h-full bg-brand rounded-full"
                                 style={{ width: `${shipment.progress}%` }}
                               ></Box>
                             </Box>
@@ -338,7 +334,7 @@ export default function DashboardScreen() {
                               component={Link}
                               href={`/shipper/fleet/routes?tripId=${shipment.id}`}
                               size="small"
-                              className="bg-white text-[#1B4965] border border-slate-200 shadow-sm hover:bg-slate-50"
+                              className="bg-white text-[var(--color-brand)] border border-line shadow-sm hover:bg-surface-sunken"
                             >
                               <ChevronRightIcon />
                             </IconButton>
@@ -357,31 +353,30 @@ export default function DashboardScreen() {
             <Box className="flex flex-col gap-6 h-full">
               
               {/* Ending Auctions */}
-              <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+              <AppCard showAccent={false} className="glass overflow-hidden rounded-xl border-white/50 shadow-sm relative">
                 <CardContent className="p-6">
                   <Box className="flex items-center justify-between mb-4">
-                    <Typography variant="h6" className="font-bold text-[#1B4965]">
+                    <Typography variant="h6" className="font-bold text-[var(--color-brand)]">
                       Phiên đấu giá sắp kết thúc
                     </Typography>
                     <Chip label="Đang Đấu" size="small" color="primary" sx={{ fontWeight: "bold" }} />
                   </Box>
                   <Box className="flex flex-col gap-4">
                     {data.endingAuctions.length === 0 ? (
-                      <Typography variant="body2" className="text-slate-500 italic py-4 text-center">
+                      <Typography variant="body2" className="text-ink-muted italic py-4 text-center">
                         Không có phiên đấu giá nào đang diễn ra.
                       </Typography>
                     ) : (
                       data.endingAuctions.map((auction) => (
                         <Box
                           key={auction.id}
-                        className="p-4 rounded-xl border border-slate-200 bg-white/80 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden"
+                        className="p-4 rounded-xl border border-line bg-white/80 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden"
                       >
-                        <Box className="absolute -right-6 -top-6 w-16 h-16 bg-gradient-to-br from-transparent via-[#62b6cb]/10 to-[#62b6cb]/30 rounded-full group-hover:scale-[2] transition-transform duration-500"></Box>
 
                         <Box className="flex justify-between items-start gap-2 mb-1 relative z-10">
                           <Typography
                             variant="subtitle2"
-                            className="font-mono font-black text-[#1B4965] tracking-tight truncate max-w-[150px]"
+                            className="font-mono font-black text-[var(--color-brand)] tracking-tight truncate max-w-[150px]"
                             title={`Mã phiên: ${auction.id}`}
                           >
                             {formatDisplayId(auction.id)}
@@ -390,18 +385,18 @@ export default function DashboardScreen() {
                             variant="caption"
                             className={`shrink-0 px-2 py-0.5 rounded font-semibold border ${
                               auction.isEnded
-                                ? "text-slate-500 bg-slate-100 border-slate-200"
-                                : "text-orange-600 bg-orange-50 border-orange-100"
+                                ? "text-ink-muted bg-surface-sunken border-line"
+                                : "text-warning bg-warning-soft border-warning-soft"
                             }`}
                           >
                             {auction.timeLeft}
                           </Typography>
                         </Box>
 
-                        <Typography variant="body2" className="text-slate-700 font-bold mb-1 relative z-10">
+                        <Typography variant="body2" className="text-ink font-bold mb-1 relative z-10">
                           {auction.goodsType}
                         </Typography>
-                        <Typography variant="body2" className="text-slate-500 mb-3 relative z-10 font-medium">
+                        <Typography variant="body2" className="text-ink-muted mb-3 relative z-10 font-medium">
                           {auction.route}
                         </Typography>
 
@@ -409,10 +404,10 @@ export default function DashboardScreen() {
 
                         <Box className="flex justify-between items-center relative z-10">
                           <Box>
-                            <Typography variant="caption" className="text-slate-400 block uppercase tracking-widest font-bold text-[0.6rem]">
+                            <Typography variant="caption" className="text-ink-subtle block uppercase tracking-widest font-bold text-[0.6rem]">
                               Giá thấp nhất / Khởi điểm
                             </Typography>
-                            <Typography variant="body2" className="font-extrabold text-emerald-600">
+                            <Typography variant="body2" className="font-extrabold text-success">
                               {formatCurrency(auction.currentLowest)}
                             </Typography>
                           </Box>
@@ -422,9 +417,9 @@ export default function DashboardScreen() {
                             variant="contained"
                             size="small"
                             sx={{
-                              bgcolor: "#1B4965",
+                              bgcolor: "var(--color-brand)",
                               borderRadius: "8px",
-                              "&:hover": { bgcolor: "#0d2b3e" },
+                              "&:hover": { bgcolor: "var(--color-brand-hover)" },
                               px: 2,
                               py: 0.75,
                               fontSize: "0.75rem",
@@ -441,9 +436,9 @@ export default function DashboardScreen() {
               </AppCard>
 
               {/* Quick Actions Card */}
-              <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+              <AppCard showAccent={false} className="glass overflow-hidden rounded-xl border-white/50 shadow-sm relative">
                 <CardContent className="p-6">
-                  <Typography variant="h6" className="font-bold text-[#1B4965] mb-4">
+                  <Typography variant="h6" className="font-bold text-[var(--color-brand)] mb-4">
                     Thao tác nhanh
                   </Typography>
                   <Grid container spacing={2}>
@@ -460,12 +455,12 @@ export default function DashboardScreen() {
                           py: 2,
                           borderRadius: "16px",
                           borderColor: "rgba(27,73,101,0.15)",
-                          color: "#1B4965",
+                          color: "var(--color-brand)",
                           "& .MuiButton-startIcon": { m: 0 },
                           fontSize: "0.8rem",
                           fontWeight: "bold",
                           "&:hover": {
-                            borderColor: "#1B4965",
+                            borderColor: "var(--color-brand)",
                             bgcolor: "rgba(27,73,101,0.02)",
                           },
                         }}
@@ -486,12 +481,12 @@ export default function DashboardScreen() {
                           py: 2,
                           borderRadius: "16px",
                           borderColor: "rgba(27,73,101,0.15)",
-                          color: "#1B4965",
+                          color: "var(--color-brand)",
                           "& .MuiButton-startIcon": { m: 0 },
                           fontSize: "0.8rem",
                           fontWeight: "bold",
                           "&:hover": {
-                            borderColor: "#1B4965",
+                            borderColor: "var(--color-brand)",
                             bgcolor: "rgba(27,73,101,0.02)",
                           },
                         }}
@@ -512,12 +507,12 @@ export default function DashboardScreen() {
                           py: 2,
                           borderRadius: "16px",
                           borderColor: "rgba(27,73,101,0.15)",
-                          color: "#1B4965",
+                          color: "var(--color-brand)",
                           "& .MuiButton-startIcon": { m: 0 },
                           fontSize: "0.8rem",
                           fontWeight: "bold",
                           "&:hover": {
-                            borderColor: "#1B4965",
+                            borderColor: "var(--color-brand)",
                             bgcolor: "rgba(27,73,101,0.02)",
                           },
                         }}
@@ -538,17 +533,29 @@ export default function DashboardScreen() {
                           py: 2,
                           borderRadius: "16px",
                           borderColor: "rgba(27,73,101,0.15)",
-                          color: "#1B4965",
+                          color: "var(--color-brand)",
                           "& .MuiButton-startIcon": { m: 0 },
                           fontSize: "0.8rem",
                           fontWeight: "bold",
                           "&:hover": {
-                            borderColor: "#1B4965",
+                            borderColor: "var(--color-brand)",
                             bgcolor: "rgba(27,73,101,0.02)",
                           },
                         }}
                       >
                         Cấu Hình
+                      </Button>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Button
+                        component={Link}
+                        href="/shipper/statistics"
+                        variant="outlined"
+                        fullWidth
+                        startIcon={<BarChartOutlinedIcon />}
+                        sx={{ flexDirection: "column", gap: 1, py: 2, borderRadius: "16px", borderColor: "rgba(27,73,101,0.15)", color: "var(--color-brand)", "& .MuiButton-startIcon": { m: 0 }, fontSize: "0.8rem", fontWeight: "bold" }}
+                      >
+                        Thống kê
                       </Button>
                     </Grid>
                   </Grid>

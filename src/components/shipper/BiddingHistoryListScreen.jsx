@@ -278,7 +278,7 @@ export default function BiddingHistoryListScreen() {
 
       {loadError && <Alert severity="error" className="!mb-4">{loadError}</Alert>}
       {loading && (
-        <div className="mb-6 flex items-center gap-3 rounded-2xl bg-white p-5 text-slate-600 shadow-sm" role="status">
+        <div className="mb-6 flex items-center gap-3 rounded-xl bg-white p-5 text-ink-muted shadow-sm" role="status">
           <CircularProgress size={22} />
           Đang tải lịch sử đấu giá...
         </div>
@@ -287,17 +287,17 @@ export default function BiddingHistoryListScreen() {
       {/* KPI Cards Overview */}
       <Grid container spacing={3} className="!mb-6">
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="!rounded-3xl border border-slate-100/80 bg-white/80 shadow-[0_4px_20px_rgba(27,73,101,0.02)] backdrop-blur-md">
+          <Card className="!rounded-xl border border-line/80 bg-white/80 shadow-[0_4px_20px_rgba(27,73,101,0.02)] backdrop-blur-md">
             <CardContent className="!p-5 flex items-center justify-between">
               <div>
-                <Typography variant="caption" className="text-slate-400 font-bold block uppercase tracking-wider">
+                <Typography variant="caption" className="text-ink-subtle font-bold block uppercase tracking-wider">
                   Tổng phiên đấu giá
                 </Typography>
-                <Typography variant="h4" className="!font-extrabold text-slate-800 !mt-1">
+                <Typography variant="h4" className="!font-extrabold text-ink !mt-1">
                   {kpis.total}
                 </Typography>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-[#1B4965] border border-blue-100/50">
+              <div className="w-12 h-12 rounded-xl bg-brand-soft flex items-center justify-center text-[var(--color-brand)] border border-brand-soft/50">
                 <GavelIcon />
               </div>
             </CardContent>
@@ -305,17 +305,17 @@ export default function BiddingHistoryListScreen() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="!rounded-3xl border border-slate-100/80 bg-white/80 shadow-[0_4px_20px_rgba(27,73,101,0.02)] backdrop-blur-md">
+          <Card className="!rounded-xl border border-line/80 bg-white/80 shadow-[0_4px_20px_rgba(27,73,101,0.02)] backdrop-blur-md">
             <CardContent className="!p-5 flex items-center justify-between">
               <div>
-                <Typography variant="caption" className="text-slate-400 font-bold block uppercase tracking-wider">
+                <Typography variant="caption" className="text-ink-subtle font-bold block uppercase tracking-wider">
                   Đang hoạt động
                 </Typography>
-                <Typography variant="h4" className="!font-extrabold text-amber-600 !mt-1">
+                <Typography variant="h4" className="!font-extrabold text-warning !mt-1">
                   {kpis.active}
                 </Typography>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100/50">
+              <div className="w-12 h-12 rounded-xl bg-warning-soft flex items-center justify-center text-warning border border-warning-soft/50">
                 <AccessTimeIcon />
               </div>
             </CardContent>
@@ -323,17 +323,17 @@ export default function BiddingHistoryListScreen() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="!rounded-3xl border border-slate-100/80 bg-white/80 shadow-[0_4px_20px_rgba(27,73,101,0.02)] backdrop-blur-md">
+          <Card className="!rounded-xl border border-line/80 bg-white/80 shadow-[0_4px_20px_rgba(27,73,101,0.02)] backdrop-blur-md">
             <CardContent className="!p-5 flex items-center justify-between">
               <div>
-                <Typography variant="caption" className="text-slate-400 font-bold block uppercase tracking-wider">
+                <Typography variant="caption" className="text-ink-subtle font-bold block uppercase tracking-wider">
                   Giao thành công
                 </Typography>
-                <Typography variant="h4" className="!font-extrabold text-emerald-600 !mt-1">
+                <Typography variant="h4" className="!font-extrabold text-success !mt-1">
                   {kpis.completed}
                 </Typography>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100/50">
+              <div className="w-12 h-12 rounded-xl bg-success-soft flex items-center justify-center text-success border border-success-soft/50">
                 <CheckCircleIcon />
               </div>
             </CardContent>
@@ -341,17 +341,17 @@ export default function BiddingHistoryListScreen() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="!rounded-3xl border border-emerald-100/30 bg-emerald-500/5 shadow-[0_4px_20px_rgba(16,185,129,0.04)]">
+          <Card className="!rounded-xl border border-success-soft/30 bg-success/5 shadow-[0_4px_20px_rgba(16,185,129,0.04)]">
             <CardContent className="!p-5 flex items-center justify-between">
               <div>
-                <Typography variant="caption" className="text-emerald-700 font-bold block uppercase tracking-wider">
+                <Typography variant="caption" className="text-success font-bold block uppercase tracking-wider">
                   Tiết kiệm tích lũy
                 </Typography>
-                <Typography variant="h4" className="!font-black text-emerald-600 !mt-1">
+                <Typography variant="h4" className="!font-black text-success !mt-1">
                   {formatCurrency(kpis.totalSavings)}
                 </Typography>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 border border-emerald-500/20">
+              <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center text-success border border-success/20">
                 <MonetizationOnIcon />
               </div>
             </CardContent>
@@ -361,14 +361,14 @@ export default function BiddingHistoryListScreen() {
 
       {/* Main Container Card containing Filters and Table */}
       <Card 
-        className="!rounded-3xl border border-slate-100 !shadow-[0_8px_32px_0_rgba(27,73,101,0.02)] overflow-hidden"
+        className="!rounded-xl border border-line !shadow-[0_8px_32px_0_rgba(27,73,101,0.02)] overflow-hidden"
         sx={{
           background: "rgba(255, 255, 255, 0.8)",
           backdropFilter: "blur(20px)",
         }}
       >
         {/* Status Tabs */}
-        <Box className="border-b border-slate-100 bg-slate-50/50 px-6">
+        <Box className="border-b border-line bg-surface-sunken/50 px-6">
           <Tabs
             value={statusTab}
             onChange={(e, val) => setStatusTab(val)}
@@ -379,16 +379,16 @@ export default function BiddingHistoryListScreen() {
                 textTransform: "none",
                 fontWeight: "bold",
                 fontSize: "0.85rem",
-                color: "#64748b",
+                color: "var(--color-ink-muted)",
                 py: 2,
                 minWidth: "auto",
                 mr: 3,
               },
               "& .Mui-selected": {
-                color: "#1B4965 !important",
+                color: "var(--color-brand) !important",
               },
               "& .MuiTabs-indicator": {
-                backgroundColor: "#1B4965",
+                backgroundColor: "var(--color-brand)",
                 height: "3px",
                 borderRadius: "3px",
               },
@@ -405,7 +405,7 @@ export default function BiddingHistoryListScreen() {
         </Box>
 
         {/* Filter Toolbar */}
-        <Box className="p-6 border-b border-slate-100 space-y-4">
+        <Box className="p-6 border-b border-line space-y-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Search Box */}
             <TextField
@@ -417,7 +417,7 @@ export default function BiddingHistoryListScreen() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon className="text-slate-400" fontSize="small" />
+                    <SearchIcon className="text-ink-subtle" fontSize="small" />
                   </InputAdornment>
                 ),
                 endAdornment: searchTerm && (
@@ -427,7 +427,7 @@ export default function BiddingHistoryListScreen() {
                     </IconButton>
                   </InputAdornment>
                 ),
-                className: "!rounded-xl bg-slate-50/50 hover:bg-slate-50 focus-within:bg-white transition-all",
+                className: "!rounded-xl bg-surface-sunken/50 hover:bg-surface-sunken focus-within:bg-white transition-all",
               }}
               sx={{
                 "& .MuiOutlinedInput-notchedOutline": {
@@ -437,7 +437,7 @@ export default function BiddingHistoryListScreen() {
                   borderColor: "rgba(27,73,101,0.15)",
                 },
                 "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#1B4965",
+                  borderColor: "var(--color-brand)",
                 },
               }}
             />
@@ -446,7 +446,7 @@ export default function BiddingHistoryListScreen() {
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
               {/* Origin Filter */}
               <FormControl size="small" className="min-w-[130px] flex-1 md:flex-initial">
-                <InputLabel id="origin-select-label" className="!font-semibold !text-slate-500 !text-sm">Điểm xuất phát</InputLabel>
+                <InputLabel id="origin-select-label" className="!font-semibold !text-ink-muted !text-sm">Điểm xuất phát</InputLabel>
                 <Select
                   labelId="origin-select-label"
                   value={originFilter}
@@ -460,7 +460,7 @@ export default function BiddingHistoryListScreen() {
                     "& .MuiSelect-select": {
                       fontSize: "0.85rem",
                       fontWeight: 600,
-                      color: "#334155",
+                      color: "var(--color-ink-muted)",
                     }
                   }}
                 >
@@ -475,7 +475,7 @@ export default function BiddingHistoryListScreen() {
 
               {/* Destination Filter */}
               <FormControl size="small" className="min-w-[130px] flex-1 md:flex-initial">
-                <InputLabel id="dest-select-label" className="!font-semibold !text-slate-500 !text-sm">Điểm giao hàng</InputLabel>
+                <InputLabel id="dest-select-label" className="!font-semibold !text-ink-muted !text-sm">Điểm giao hàng</InputLabel>
                 <Select
                   labelId="dest-select-label"
                   value={destFilter}
@@ -489,7 +489,7 @@ export default function BiddingHistoryListScreen() {
                     "& .MuiSelect-select": {
                       fontSize: "0.85rem",
                       fontWeight: 600,
-                      color: "#334155",
+                      color: "var(--color-ink-muted)",
                     }
                   }}
                 >
@@ -510,7 +510,7 @@ export default function BiddingHistoryListScreen() {
                   size="small"
                   onClick={handleResetFilters}
                   startIcon={<FilterListIcon />}
-                  className="!text-slate-500 !font-bold !capitalize"
+                  className="!text-ink-muted !font-bold !capitalize"
                 >
                   Xóa lọc
                 </Button>
@@ -522,7 +522,7 @@ export default function BiddingHistoryListScreen() {
         {/* Data Table */}
         <TableContainer component={Paper} className="!shadow-none !bg-transparent">
           <Table sx={{ minWidth: 800 }}>
-            <TableHead className="bg-slate-50/50">
+            <TableHead className="bg-surface-sunken/50">
               <TableRow>
                 {columnsList.map((col, idx) => (
                   <TableCell
@@ -532,15 +532,15 @@ export default function BiddingHistoryListScreen() {
                     onDragStart={(e) => handleDragStart(e, idx)}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, idx)}
-                    className="!font-bold !text-slate-400 !text-xs uppercase !border-slate-100 select-none hover:bg-slate-100/80 transition-colors cursor-move"
+                    className="!font-bold !text-ink-subtle !text-xs uppercase !border-line select-none hover:bg-surface-sunken/80 transition-colors cursor-move"
                   >
                     {col.sortable !== false ? (
                       <TableSortLabel
                         active={orderBy === col.id}
                         direction={orderBy === col.id ? order : "asc"}
                         onClick={() => handleRequestSort(col.id)}
-                        className="!font-bold hover:!text-slate-700"
-                        sx={{ '& .MuiTableSortLabel-icon': { color: '#64748B !important' } }}
+                        className="!font-bold hover:!text-ink"
+                        sx={{ '& .MuiTableSortLabel-icon': { color: 'var(--color-ink-muted) !important' } }}
                       >
                         {col.label}
                       </TableSortLabel>
@@ -554,15 +554,15 @@ export default function BiddingHistoryListScreen() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={columnsList.length} align="center" className="!py-16 !border-slate-100">
-                    <CircularProgress size={40} sx={{ color: "#1B4965" }} />
+                  <TableCell colSpan={columnsList.length} align="center" className="!py-16 !border-line">
+                    <CircularProgress size={40} sx={{ color: "var(--color-brand)" }} />
                   </TableCell>
                 </TableRow>
               ) : 
               paginatedShipments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columnsList.length} align="center" className="!py-16 !border-slate-100">
-                    <Typography variant="body2" className="text-slate-400 font-medium">
+                  <TableCell colSpan={columnsList.length} align="center" className="!py-16 !border-line">
+                    <Typography variant="body2" className="text-ink-subtle font-medium">
                       Không tìm thấy phiên đấu giá nào phù hợp với bộ lọc hiện tại.
                     </Typography>
                   </TableCell>
@@ -573,11 +573,11 @@ export default function BiddingHistoryListScreen() {
                   const finalPriceToShow = shipment.finalPrice || shipment.currentLowestBid || 0;
                   
                   return (
-                    <TableRow key={shipment.id} className="hover:bg-slate-50/30 transition-colors">
+                    <TableRow key={shipment.id} className="hover:bg-surface-sunken/30 transition-colors">
                       {columnsList.map((col) => {
                         if (col.id === "id") {
                           return (
-                            <TableCell key={col.id} className="!font-mono !font-bold !text-[#1B4965] !border-slate-100">
+                            <TableCell key={col.id} className="!font-mono !font-bold !text-[var(--color-brand)] !border-line">
                               <Link href={`/shipper/bidding/history?id=${shipment.id}`} className="hover:underline">
                                 {shipment.id}
                               </Link>
@@ -586,17 +586,17 @@ export default function BiddingHistoryListScreen() {
                         }
                         if (col.id === "goodsType") {
                           return (
-                            <TableCell key={col.id} className="!border-slate-100">
+                            <TableCell key={col.id} className="!border-line">
                               <div className="flex flex-col">
-                                <span className="font-bold text-slate-800 text-xs sm:text-sm">
+                                <span className="font-bold text-ink text-xs sm:text-sm">
                                   {shipment.title || shipment.goodsName || shipment.goodsType}
                                 </span>
                                 {(shipment.title || shipment.goodsName) && (
-                                  <span className="text-[0.68rem] text-sky-600 font-semibold mt-0.5">
+                                  <span className="text-[0.68rem] text-info font-semibold mt-0.5">
                                     Loại: {shipment.goodsType}
                                   </span>
                                 )}
-                                <span className="text-[0.7rem] text-slate-400 font-bold mt-0.5">
+                                <span className="text-[0.7rem] text-ink-subtle font-bold mt-0.5">
                                   {shipment.weight} • {shipment.volume}
                                 </span>
                               </div>
@@ -605,13 +605,13 @@ export default function BiddingHistoryListScreen() {
                         }
                         if (col.id === "route") {
                           return (
-                            <TableCell key={col.id} className="!border-slate-100">
+                            <TableCell key={col.id} className="!border-line">
                               <div className="flex flex-col">
-                                <span className="font-bold text-slate-800 text-xs">
+                                <span className="font-bold text-ink text-xs">
                                   {shipment.from.province} → {shipment.to.province}
                                 </span>
                                 <Tooltip title={`Từ: ${shipment.from.detail} | Đến: ${shipment.to.detail}`} arrow>
-                                  <span className="text-[0.68rem] text-slate-400 truncate max-w-[180px] font-medium block mt-0.5 cursor-help">
+                                  <span className="text-[0.68rem] text-ink-subtle truncate max-w-[180px] font-medium block mt-0.5 cursor-help">
                                     {shipment.from.detail}
                                   </span>
                                 </Tooltip>
@@ -621,7 +621,7 @@ export default function BiddingHistoryListScreen() {
                         }
                         if (col.id === "maxPrice") {
                           return (
-                            <TableCell key={col.id} align="right" className="!font-mono !text-slate-500 !text-xs !border-slate-100">
+                            <TableCell key={col.id} align="right" className="!font-mono !text-ink-muted !text-xs !border-line">
                               {formatCurrency(shipment.maxPrice)}
                             </TableCell>
                           );
@@ -631,10 +631,10 @@ export default function BiddingHistoryListScreen() {
                             <TableCell 
                               key={col.id}
                               align="right" 
-                              className={`!font-mono !font-bold !border-slate-100 ${
+                              className={`!font-mono !font-bold !border-line ${
                                 shipment.status === "completed" || shipment.status === "shipping" || shipment.status === "awarded"
-                                  ? "!text-emerald-600"
-                                  : "!text-slate-700"
+                                  ? "!text-success"
+                                  : "!text-ink"
                               }`}
                             >
                               {finalPriceToShow > 0 ? formatCurrency(finalPriceToShow) : "Chưa có"}
@@ -643,14 +643,14 @@ export default function BiddingHistoryListScreen() {
                         }
                         if (col.id === "bidCount") {
                           return (
-                            <TableCell key={col.id} align="center" className="!border-slate-100">
+                            <TableCell key={col.id} align="center" className="!border-line">
                               <Chip
                                 label={`${shipment.bidCount} thầu`}
                                 size="small"
                                 className={`!font-bold !text-[0.7rem] ${
                                   shipment.bidCount > 0
-                                    ? "bg-blue-50 text-blue-600 border border-blue-100"
-                                    : "bg-slate-100 text-slate-400"
+                                    ? "bg-brand-soft text-brand border border-brand-soft"
+                                    : "bg-surface-sunken text-ink-subtle"
                                 }`}
                               />
                             </TableCell>
@@ -658,7 +658,7 @@ export default function BiddingHistoryListScreen() {
                         }
                         if (col.id === "status") {
                           return (
-                            <TableCell key={col.id} align="center" className="!border-slate-100">
+                            <TableCell key={col.id} align="center" className="!border-line">
                               <Chip
                                 label={statusInfo.label}
                                 size="small"
@@ -670,14 +670,14 @@ export default function BiddingHistoryListScreen() {
                         }
                         if (col.id === "actions") {
                           return (
-                            <TableCell key={col.id} align="center" className="!border-slate-100">
+                            <TableCell key={col.id} align="center" className="!border-line">
                               <div className="flex justify-center items-center gap-1.5">
                                 <Tooltip title="Xem thầu & Chi tiết">
                                   <IconButton
                                     component={Link}
                                     href={`/shipper/bidding/history?id=${shipment.id}`}
                                     size="small"
-                                    className="text-[#1B4965] hover:bg-[#1B4965]/5 bg-slate-50"
+                                    className="text-[var(--color-brand)] hover:bg-[var(--color-brand)]/5 bg-surface-sunken"
                                   >
                                     <VisibilityIcon fontSize="small" />
                                   </IconButton>
@@ -688,7 +688,7 @@ export default function BiddingHistoryListScreen() {
                                     <Link href={getTrackingHref(shipment)} passHref>
                                       <IconButton
                                         size="small"
-                                        className="text-cyan-600 hover:bg-cyan-50 bg-slate-50"
+                                        className="text-info hover:bg-info-soft bg-surface-sunken"
                                       >
                                         <LocalShippingIcon fontSize="small" />
                                       </IconButton>
@@ -701,7 +701,7 @@ export default function BiddingHistoryListScreen() {
                                     <Link href={`/shipper/contracts?id=${shipment.id}`} passHref>
                                       <IconButton
                                         size="small"
-                                        className="text-blue-600 hover:bg-blue-50 bg-slate-50"
+                                        className="text-brand hover:bg-brand-soft bg-surface-sunken"
                                       >
                                         <DescriptionIcon fontSize="small" />
                                       </IconButton>
@@ -724,9 +724,9 @@ export default function BiddingHistoryListScreen() {
 
         {/* Pagination Footer */}
         {totalPages > 1 && (
-          <Box className="px-6 py-4.5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/20">
+          <Box className="px-6 py-4.5 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-4 bg-surface-sunken/20">
             <div className="flex items-center gap-2">
-              <Typography variant="caption" className="text-slate-400 font-medium">
+              <Typography variant="caption" className="text-ink-subtle font-medium">
                 Hiển thị
               </Typography>
               <Select
@@ -741,7 +741,7 @@ export default function BiddingHistoryListScreen() {
                   height: 28,
                   fontSize: "0.75rem",
                   fontWeight: 600,
-                  color: "#475569",
+                  color: "var(--color-ink-muted)",
                   "& .MuiOutlinedInput-notchedOutline": {
                     borderColor: "rgba(27,73,101,0.08)",
                   },
@@ -755,7 +755,7 @@ export default function BiddingHistoryListScreen() {
                 <MenuItem value={10}>10 phiên</MenuItem>
                 <MenuItem value={20}>20 phiên</MenuItem>
               </Select>
-              <Typography variant="caption" className="text-slate-400 font-medium">
+              <Typography variant="caption" className="text-ink-subtle font-medium">
                 mỗi trang / Tổng số {filteredAndSortedShipments.length} phiên
               </Typography>
             </div>
@@ -769,7 +769,7 @@ export default function BiddingHistoryListScreen() {
               size="small"
               sx={{
                 "& .MuiPaginationItem-root": {
-                  color: "#475569",
+                  color: "var(--color-ink-muted)",
                   fontWeight: 600,
                   fontSize: "0.75rem",
                   borderColor: "rgba(27,73,101,0.08)",
@@ -779,9 +779,9 @@ export default function BiddingHistoryListScreen() {
                   },
                 },
                 "& .Mui-selected": {
-                  backgroundColor: "#1B4965 !important",
-                  color: "#fff !important",
-                  borderColor: "#1B4965 !important",
+                  backgroundColor: "var(--color-brand) !important",
+                  color: "var(--color-surface) !important",
+                  borderColor: "var(--color-brand) !important",
                 },
               }}
             />

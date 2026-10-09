@@ -1,7 +1,6 @@
 "use client";
 
 import Box from "@mui/material/Box";
-import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -13,37 +12,36 @@ import MenuItem from "@mui/material/MenuItem";
 import TableContainer from "@mui/material/TableContainer";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import Link from "next/link";
 import SearchIcon from "@mui/icons-material/Search";
+import PageHeader from "@/components/common/PageHeader";
 
 export const adminColors = {
-  primary: "#1B4965",
-  primaryDark: "#0D2B3E",
-  secondary: "#62B6CB",
-  text: "#1E293B",
-  muted: "#64748B",
-  border: "#E2E8F0",
-  surface: "rgba(255, 255, 255, 0.86)",
+  primary: "var(--color-brand)",
+  primaryDark: "var(--color-brand-hover)",
+  secondary: "var(--color-brand)",
+  text: "var(--color-ink)",
+  muted: "var(--color-ink-muted)",
+  border: "var(--color-line)",
+  surface: "var(--color-surface)",
 };
 
 const toneConfig = {
-  success: { bg: "#ECFDF5", color: "#047857", border: "#A7F3D0" },
-  warning: { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" },
-  danger: { bg: "#FFF1F2", color: "#BE123C", border: "#FECDD3" },
-  info: { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
-  primary: { bg: "#EAF4F8", color: adminColors.primary, border: "#C9E3EC" },
-  neutral: { bg: "#F8FAFC", color: "#475569", border: "#E2E8F0" },
+  success: { bg: "var(--color-success-soft)", color: "var(--color-success)", border: "var(--color-success-soft)" },
+  warning: { bg: "var(--color-warning-soft)", color: "var(--color-warning)", border: "var(--color-warning-soft)" },
+  danger: { bg: "var(--color-danger-soft)", color: "var(--color-danger)", border: "var(--color-danger-soft)" },
+  info: { bg: "var(--color-info-soft)", color: "var(--color-info)", border: "var(--color-info-soft)" },
+  primary: { bg: "var(--color-brand-soft)", color: adminColors.primary, border: "var(--color-brand-soft)" },
+  neutral: { bg: "var(--color-surface-sunken)", color: "var(--color-ink-muted)", border: "var(--color-line)" },
 };
 
 export function AdminPageShell({ children }) {
   return (
     <Box
-      className="animate-fade-in-up"
       sx={{
         minHeight: "100%",
         display: "flex",
         flexDirection: "column",
-        gap: 3,
+        gap: 2,
       }}
     >
       {children}
@@ -52,74 +50,7 @@ export function AdminPageShell({ children }) {
 }
 
 export function AdminPageHeader({ title, subtitle, breadcrumbs = [], action }) {
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 1.5,
-      }}
-    >
-      {breadcrumbs.length > 0 && (
-        <Breadcrumbs
-          separator="›"
-          sx={{
-            color: "#94A3B8",
-            fontSize: "0.8125rem",
-            "& .MuiBreadcrumbs-separator": { mx: 0.75 },
-          }}
-        >
-          {breadcrumbs.map((crumb, index) => {
-            const isLast = index === breadcrumbs.length - 1;
-            return isLast || !crumb.path ? (
-              <Typography key={crumb.label} sx={{ fontSize: "0.8125rem", color: "#64748B", fontWeight: 600 }}>
-                {crumb.label}
-              </Typography>
-            ) : (
-              <Link
-                key={crumb.label}
-                href={crumb.path}
-                className="no-underline"
-                style={{ color: "#94A3B8", fontSize: "0.8125rem", fontWeight: 600 }}
-              >
-                {crumb.label}
-              </Link>
-            );
-          })}
-        </Breadcrumbs>
-      )}
-
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: { xs: "flex-start", md: "center" },
-          gap: 2,
-          flexDirection: { xs: "column", md: "row" },
-        }}
-      >
-        <Box sx={{ maxWidth: 720 }}>
-          <Typography
-            variant="h4"
-            sx={{
-              color: adminColors.text,
-              fontWeight: 800,
-              letterSpacing: 0,
-              fontSize: { xs: "1.5rem", md: "1.875rem" },
-            }}
-          >
-            {title}
-          </Typography>
-          {subtitle && (
-            <Typography variant="body2" sx={{ color: adminColors.muted, mt: 0.5, maxWidth: 680 }}>
-              {subtitle}
-            </Typography>
-          )}
-        </Box>
-        {action && <Box sx={{ width: { xs: "100%", md: "auto" } }}>{action}</Box>}
-      </Box>
-    </Box>
-  );
+  return <PageHeader title={title} subtitle={subtitle} breadcrumbs={breadcrumbs} action={action} />;
 }
 
 export function AdminMetricCard({ title, value, helper, icon: Icon, tone = "primary" }) {
@@ -289,14 +220,14 @@ export function AdminSearchField({ value, onChange, placeholder = "Tìm kiếm..
       placeholder={placeholder}
       sx={{
         minWidth: { xs: "100%", sm: 280 },
-        bgcolor: "#FFFFFF",
+        bgcolor: "var(--color-surface)",
         borderRadius: 2,
         "& .MuiOutlinedInput-root": { borderRadius: 2 },
       }}
       InputProps={{
         startAdornment: (
           <InputAdornment position="start">
-            <SearchIcon fontSize="small" sx={{ color: "#94A3B8" }} />
+            <SearchIcon fontSize="small" sx={{ color: "var(--color-ink-subtle)" }} />
           </InputAdornment>
         ),
       }}
@@ -313,7 +244,7 @@ export function AdminSelectField({ value, onChange, options, minWidth = 160 }) {
       onChange={onChange}
       sx={{
         minWidth: { xs: "100%", sm: minWidth },
-        bgcolor: "#FFFFFF",
+        bgcolor: "var(--color-surface)",
         borderRadius: 2,
         "& .MuiOutlinedInput-root": { borderRadius: 2 },
       }}
@@ -353,14 +284,14 @@ export function AdminSecondaryButton({ children, sx, ...props }) {
       variant="outlined"
       sx={{
         borderRadius: 2,
-        borderColor: "#CBD5E1",
+        borderColor: "var(--color-line-strong)",
         color: adminColors.text,
-        bgcolor: "#FFFFFF",
+        bgcolor: "var(--color-surface)",
         fontWeight: 800,
         px: 2.25,
         "&:hover": {
           borderColor: adminColors.primary,
-          bgcolor: "#F8FAFC",
+          bgcolor: "var(--color-surface-sunken)",
         },
         ...sx,
       }}

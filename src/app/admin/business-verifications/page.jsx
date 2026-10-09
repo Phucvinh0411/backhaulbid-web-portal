@@ -293,7 +293,7 @@ export default function AdminBusinessVerificationsPage() {
       >
         <DialogTitle>Hồ sơ xác minh doanh nghiệp</DialogTitle>
         <DialogContent className="space-y-4 !pt-2">
-          <Box className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <Box className="rounded-xl border border-line bg-surface-sunken p-4">
             <Typography variant="h6" fontWeight={700}>
               {selected?.companyName}
             </Typography>
@@ -310,8 +310,8 @@ export default function AdminBusinessVerificationsPage() {
           <Box
             className={`rounded-xl border p-4 ${
               getRepresentativeMatchStatus(selected) === "MISMATCH"
-                ? "border-amber-200 bg-amber-50"
-                : "border-emerald-200 bg-emerald-50"
+                ? "border-warning-soft bg-warning-soft"
+                : "border-success-soft bg-success-soft"
             }`}
           >
             <Typography
@@ -332,7 +332,7 @@ export default function AdminBusinessVerificationsPage() {
                   ? "Người đại diện doanh nghiệp trùng khớp eKYC"
                   : "Chưa có dữ liệu so khớp người đại diện"}
             </Typography>
-            <Typography variant="body2" className="mt-1 text-slate-600">
+            <Typography variant="body2" className="mt-1 text-ink-muted">
               Nếu không trùng, admin cần kiểm tra giấy ủy quyền cùng giấy phép
               kinh doanh trước khi phê duyệt.
             </Typography>

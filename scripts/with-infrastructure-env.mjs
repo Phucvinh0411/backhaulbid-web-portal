@@ -12,13 +12,6 @@ if (commandAndArguments.length === 0) {
 } else {
   try {
     const loadedEnvironment = loadFrontendEnvironment();
-    const missingVariables = loadedEnvironment.missing;
-
-    if (missingVariables.length > 0) {
-      console.warn(
-        `[shared-env] Thiếu cấu hình eKYC: ${missingVariables.join(", ")}. Trang eKYC sẽ hiển thị hướng dẫn cấu hình.`,
-      );
-    }
 
     const [command, ...argumentsForCommand] = commandAndArguments;
     const childProcess = spawn(command, argumentsForCommand, {

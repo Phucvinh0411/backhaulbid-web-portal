@@ -1,83 +1,67 @@
 "use client";
 
-import { DashboardOutlined as DashboardIcon, GavelOutlined as GavelIcon, LocalShippingOutlined as LocalShippingIcon, AccountCircleOutlined as AccountCircleIcon, AssignmentTurnedInOutlined as AssignmentTurnedInIcon, AccountBalanceWalletOutlined as AccountBalanceWalletIcon, DirectionsCarOutlined as DirectionsCarIcon, ReportProblemOutlined as ReportProblemIcon } from "@mui/icons-material";
+import {
+  DashboardOutlined as DashboardIcon,
+  BarChartOutlined as StatisticsIcon,
+  GavelOutlined as GavelIcon,
+  LocalShippingOutlined as LocalShippingIcon,
+  AccountCircleOutlined as AccountCircleIcon,
+  AssignmentTurnedInOutlined as AssignmentTurnedInIcon,
+  AccountBalanceWalletOutlined as AccountBalanceWalletIcon,
+  DirectionsCarOutlined as DirectionsCarIcon,
+  ReportProblemOutlined as ReportProblemIcon,
+  TravelExploreOutlined as ExploreIcon,
+} from "@mui/icons-material";
 
 const carrierNavigation = [
   {
-    title: "TỔNG QUAN",
+    title: "Tổng quan",
     items: [
-      {
-        title: "Bảng điều khiển",
-        path: "/carrier/dashboard",
-        icon: DashboardIcon,
-      },
+      { title: "Việc cần xử lý", path: "/carrier/dashboard", icon: DashboardIcon, exact: true },
+      { title: "Thống kê", path: "/carrier/statistics", icon: StatisticsIcon, exact: true },
     ],
   },
   {
-    title: "VẬN HÀNH",
+    title: "Vận hành",
     items: [
       {
         title: "Đấu giá",
-        path: "/carrier/auction-group", // virtual path
+        path: "/carrier/auction-group",
         icon: GavelIcon,
         children: [
-          {
-            title: "Khám phá đấu giá",
-            path: "/carrier/auctions",
-          },
-          {
-            title: "Phiên của tôi",
-            path: "/carrier/my-auctions",
-          }
-        ]
+          { title: "Tìm phiên", path: "/carrier/auctions" },
+          { title: "Phiên của tôi", path: "/carrier/my-auctions" },
+        ],
       },
-      {
-        title: "Vận chuyển",
-        path: "/carrier/transports",
-        icon: LocalShippingIcon,
-      },
-      {
-        title: "Hợp đồng",
-        path: "/carrier/contracts",
-        icon: AssignmentTurnedInIcon,
-      },
-      {
-        title: "Khiếu nại",
-        path: "/carrier/complaints",
-        icon: ReportProblemIcon,
-      },
+      { title: "Chuyến vận chuyển", path: "/carrier/transports", icon: LocalShippingIcon },
+      { title: "Hợp đồng", path: "/carrier/contracts", icon: AssignmentTurnedInIcon },
+      { title: "Khiếu nại", path: "/carrier/complaints", icon: ReportProblemIcon },
       {
         title: "Đội xe",
-        path: "/carrier/fleet", // virtual path
+        path: "/carrier/fleet",
         icon: DirectionsCarIcon,
         children: [
-          {
-            title: "Phương tiện",
-            path: "/carrier/vehicles",
-          },
-          {
-            title: "Tài xế",
-            path: "/carrier/drivers",
-          },
-        ]
+          { title: "Phương tiện", path: "/carrier/vehicles" },
+          { title: "Tài xế", path: "/carrier/drivers" },
+        ],
       },
     ],
   },
   {
-    title: "CÁ NHÂN",
+    title: "Cá nhân",
     items: [
-      {
-        title: "Hồ sơ & eKYC",
-        path: "/carrier/settings",
-        icon: AccountCircleIcon,
-      },
-      {
-        title: "Ví thanh toán",
-        path: "/carrier/wallet",
-        icon: AccountBalanceWalletIcon,
-      },
+      { title: "Xác minh tài khoản", path: "/carrier/settings", icon: AccountCircleIcon },
+      { title: "Ví thanh toán", path: "/carrier/wallet", icon: AccountBalanceWalletIcon },
     ],
   },
+];
+
+/** Bottom navigation on phones: what needs action now, then the auction funnel and trips. */
+export const carrierMobileNavigation = [
+  { title: "Việc cần làm", path: "/carrier/dashboard", icon: DashboardIcon },
+  { title: "Tìm phiên", path: "/carrier/auctions", icon: ExploreIcon },
+  { title: "Phiên của tôi", path: "/carrier/my-auctions", icon: GavelIcon },
+  { title: "Chuyến", path: "/carrier/transports", icon: LocalShippingIcon },
 ];
 
 export default carrierNavigation;

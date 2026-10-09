@@ -33,7 +33,7 @@ export const deactivateVehicle = (vehicleId) =>
   apiService.delete(`/api/v1/vehicles/${vehicleId}`);
 
 export const getMyDrivers = async () => {
-  const res = await apiService.get("/api/v1/drivers/mine").catch(() => []);
+  const res = await apiService.get("/api/v1/drivers/mine");
   const drivers = res?.data || res;
   return (Array.isArray(drivers) ? drivers : []).map((driver) => ({
     ...driver,

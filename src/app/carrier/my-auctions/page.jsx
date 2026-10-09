@@ -1,428 +1,246 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
-import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogActions from "@mui/material/DialogActions";
-import Alert from "@mui/material/Alert";
-import CircularProgress from "@mui/material/CircularProgress";
-import { 
-  ArrowForward as ArrowForwardIcon,
-  CancelOutlined as CancelOutlinedIcon,
-  EmojiEvents as EmojiEventsIcon
-} from "@mui/icons-material";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import TableSortLabel from "@mui/material/TableSortLabel";
-import { PageHeader, ViewModeToggle, DetailDrawer } from "@/components/common";
-import CarrierBiddingItem from "@/components/carrier/CarrierBiddingItem";
+import Typography from "@mui/material/Typography";
+import { PageHeader, DetailDrawer } from "@/components/common";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
+import { EmptyState, ErrorState, ListSkeleton, ResponsiveDialog } from "@/components/ui";
+import AuctionSessionCard from "@/components/auctions/AuctionSessionCard";
 import AuctionDetailContent from "@/components/carrier/auction-detail/AuctionDetailContent";
-import { useRouter } from "next/navigation";
-import { cancelRegistration, listMyRegistrations } from "@/services/biddingApi";
+import { cancelRegistration, listBids, listMyRegistrations } from "@/services/biddingApi";
 import { getMyVehicles } from "@/services/fleetApi";
+import { getApiErrorMessage } from "@/services/errorMessage";
 import { unwrapListData } from "@/services/responseData";
+import useCurrentAccount from "@/hooks/useCurrentAccount";
+import { MY_BID_OUTCOME_META, getAccessStatusMeta, getMyBidOutcome } from "@/lib/statusMeta";
+import { formatMoney } from "@/lib/format";
 
-const formatAmount = (value) =>
-  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value) || 0);
+const GROUPS = [
+  { value: "ACTION", label: "Cần xử lý", statuses: ["PAYMENT_INCOMPLETE", "AUCTION_OPEN"] },
+  { value: "UPCOMING", label: "Sắp diễn ra", statuses: ["WAITING_FOR_START"] },
+  { value: "DONE", label: "Đã kết thúc", statuses: ["AUCTION_COMPLETED", "AUCTION_CANCELLED", "REGISTRATION_CANCELLED", "REGISTRATION_CLOSED"] },
+  { value: "ALL", label: "Tất cả", statuses: null },
+];
+const URGENCY = { AUCTION_OPEN: 0, PAYMENT_INCOMPLETE: 1, WAITING_FOR_START: 2 };
+const CANCELLABLE = new Set(["WAITING_FOR_START", "PAYMENT_INCOMPLETE"]);
 
-const formatDate = (value) => {
-  if (!value) return "Chưa cập nhật";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Chưa cập nhật";
-  return new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-};
-
-const getRegistrationStatus = (accessStatus, registrationStatus) => {
-  if (registrationStatus === "CANCELLED" || accessStatus === "REGISTRATION_CANCELLED") return "CANCELLED";
-  if (accessStatus === "PAYMENT_INCOMPLETE") return "PAYMENT_INCOMPLETE";
-  if (accessStatus === "WAITING_FOR_START") return "WAITING_START";
-  if (accessStatus === "AUCTION_OPEN") return "BIDDING";
-  if (accessStatus === "AUCTION_CANCELLED") return "CANCELLED";
-  if (accessStatus === "AUCTION_COMPLETED") return "CLOSED";
-  return "OPEN_REGISTER";
-};
-
-const mapRegistrationToAuction = (item, vehicles = []) => {
-  const registration = item?.registration || {};
-  const auction = item?.auction || {};
-  const access = item?.access || {};
-  const vehicle = vehicles.find((candidate) => candidate.id === registration.vehicleId);
-  const status = getRegistrationStatus(access.accessStatus, registration.status);
-
-  return {
-    ...auction,
-    id: auction.id,
-    registrationId: registration.id,
-    origin: auction.originLocationName || auction.origin || "Chưa cập nhật",
-    destination: auction.destinationLocationName || auction.destination || "Chưa cập nhật",
-    cargoType: auction.goodsType || auction.title || "Hàng hóa",
-    weight: `${auction.weight || 0} Tấn`,
-    pickupTime: formatDate(auction.startTime),
-    status,
-    basePrice: formatAmount(auction.maxPrice),
-    currentLowestBid: auction.currentLowestBid ? formatAmount(auction.currentLowestBid) : undefined,
-    registeredVehicle: vehicle
-      ? `${vehicle.plate} (${vehicle.capacity})`
-      : registration.vehicleId || "Chưa cập nhật",
-    isRegistered: true,
-    canEnter: Boolean(access.canEnter),
-    participationFee: Number(registration.participationFeeAmount || 0),
-    depositAmount: Number(registration.depositAmount || 0),
-    registrationPaymentStatus: registration.paymentStatus,
-    participationFeeStatus: registration.participationFeeStatus,
-    depositStatus: registration.depositStatus,
-    registrationStatus: registration.status,
-    registeredAt: registration.registeredAt,
-  };
-};
-
-export default function MyAuctionsPage() {
-  const router = useRouter();
-  const [auctions, setAuctions] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function CarrierMyAuctionsPage() {
+  const { notify } = useGlobalNotification();
+  const account = useCurrentAccount();
+  const [rows, setRows] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  const [state, setState] = useState("loading");
   const [error, setError] = useState("");
+  const [group, setGroup] = useState("ALL");
+  const [detail, setDetail] = useState(null);
+  const [toCancel, setToCancel] = useState(null);
   const [cancelling, setCancelling] = useState(false);
-  const [filter, setFilter] = useState("ALL");
-  const [viewMode, setViewMode] = useState("CARD");
-  
-  const [openDetailDrawer, setOpenDetailDrawer] = useState(false);
-  const [selectedAuction, setSelectedAuction] = useState(null);
+  const [cancelError, setCancelError] = useState("");
+  const [outcomes, setOutcomes] = useState({});
+  const requestedOutcomesRef = useRef(new Set());
 
-  // Modal Cancel State
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [auctionToCancel, setAuctionToCancel] = useState(null);
-
-  const loadMyAuctions = React.useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async () => {
+    setState("loading");
     setError("");
     try {
-      const [registrationsResponse, vehiclesResponse] = await Promise.all([
-        listMyRegistrations({ page: 1, pageSize: 100 }),
-        getMyVehicles().catch((err) => {
-          console.error("Failed to load vehicles for auction mapping:", err);
-          return [];
-        }),
-      ]);
-      const registrations = unwrapListData(registrationsResponse);
-      setAuctions(registrations.map((item) => mapRegistrationToAuction(item, vehiclesResponse)));
-    } catch (requestError) {
-      const message = requestError?.response?.data?.message;
-      setError(Array.isArray(message) ? message.join(", ") : message || "Không thể tải các phiên đã đăng ký.");
-      setAuctions([]);
-    } finally {
-      setLoading(false);
+      const [response, vehicleList] = await Promise.all([listMyRegistrations({ page: 1, pageSize: 100 }), getMyVehicles().catch(() => [])]);
+      setRows(unwrapListData(response));
+      setVehicles(Array.isArray(vehicleList) ? vehicleList : []);
+      setState("ready");
+    } catch (loadError) {
+      setError(getApiErrorMessage(loadError, "Không thể tải các phiên đã đăng ký."));
+      setState("error");
     }
   }, []);
 
   useEffect(() => {
-    void loadMyAuctions();
-  }, [loadMyAuctions]);
+    void load();
+  }, [load]);
 
-  const handleOpenDetails = (auction) => {
-    setSelectedAuction(auction);
-    setOpenDetailDrawer(true);
+  // For finished auctions, the carrier's own bids decide "won/lost"; bids are fetched only for those.
+  useEffect(() => {
+    if (!account?.accountId) return;
+    rows
+      .filter(({ auction }) => auction?.status === "COMPLETED" && !requestedOutcomesRef.current.has(auction.id))
+      .forEach(({ auction }) => {
+        requestedOutcomesRef.current.add(auction.id);
+        listBids(auction.id, { page: 1, pageSize: 100 })
+          .then((response) => {
+            const mine = (response?.data || []).filter((bid) => auction.auctionType === "SEALED" || bid.carrierId === account.accountId);
+            setOutcomes((current) => ({ ...current, [auction.id]: getMyBidOutcome({ auction, myBidIds: mine.map((bid) => bid.id) }) }));
+          })
+          .catch(() => setOutcomes((current) => ({ ...current, [auction.id]: null })));
+      });
+  }, [account?.accountId, rows]);
+
+  const counts = useMemo(() => {
+    const result = {};
+    GROUPS.forEach((item) => {
+      result[item.value] = item.statuses ? rows.filter((row) => item.statuses.includes(row.access?.accessStatus)).length : rows.length;
+    });
+    return result;
+  }, [rows]);
+
+  const visible = useMemo(() => {
+    const selected = GROUPS.find((item) => item.value === group);
+    return rows
+      .filter((row) => !selected.statuses || selected.statuses.includes(row.access?.accessStatus))
+      .sort((a, b) => (URGENCY[a.access?.accessStatus] ?? 9) - (URGENCY[b.access?.accessStatus] ?? 9) || new Date(b.registration?.registeredAt) - new Date(a.registration?.registeredAt));
+  }, [group, rows]);
+
+  const vehicleLabel = (vehicleId) => {
+    const vehicle = vehicles.find((item) => item.id === vehicleId);
+    return vehicle ? vehicle.licensePlate || vehicle.plate || vehicleId : "Phương tiện đã chọn";
   };
 
-  const handleCancelRequest = (auction) => {
-    setAuctionToCancel(auction);
-    setCancelModalOpen(true);
-  };
-
-  const handleConfirmCancel = async () => {
-    if (!auctionToCancel?.registrationId) return;
-
+  const confirmCancel = async () => {
+    if (!toCancel || cancelling) return;
     setCancelling(true);
+    setCancelError("");
     try {
-      await cancelRegistration(auctionToCancel.id, auctionToCancel.registrationId);
-      await loadMyAuctions();
-      setCancelModalOpen(false);
-      setAuctionToCancel(null);
+      await cancelRegistration(toCancel.auction.id, toCancel.registration.id);
+      notify.success("Đã hủy đăng ký. Tiền cọc (nếu có) được mở khóa.");
+      setToCancel(null);
+      await load();
     } catch (requestError) {
-      const message = requestError?.response?.data?.message;
-      setError(Array.isArray(message) ? message.join(", ") : message || "Không thể hủy đăng ký phiên đấu giá.");
+      setCancelError(getApiErrorMessage(requestError, "Không thể hủy đăng ký. Vui lòng thử lại."));
     } finally {
       setCancelling(false);
     }
   };
 
-  const handleEnterRoom = (id) => {
-    router.push(`/carrier/auctions/${id}`);
-  };
-
-  const getStatusChip = (status, isWinner) => {
-    switch (status) {
-      case "OPEN_REGISTER":
-        return <Chip label="Đang chờ mở phiên" color="info" size="small" className="font-semibold" />;
-      case "BIDDING":
-        return <Chip label="Đang đấu giá" color="success" size="small" className="font-semibold animate-pulse-glow" />;
-      case "WAITING_START":
-        return <Chip label="Chờ giờ mở phiên" color="info" size="small" className="font-semibold" />;
-      case "PAYMENT_INCOMPLETE":
-        return <Chip label="Chưa hoàn tất thanh toán" color="warning" size="small" className="font-semibold" />;
-      case "CLOSED":
-        if (isWinner) {
-          return <Chip icon={<EmojiEventsIcon />} label="Trúng thầu" color="warning" size="small" className="font-bold text-amber-600 bg-amber-100" sx={{ "& .MuiChip-icon": { color: "inherit" } }} />;
-        }
-        return <Chip icon={<CancelOutlinedIcon />} label={isWinner === false ? "Trượt thầu" : "Đã kết thúc"} color="default" size="small" className="font-semibold text-slate-500 bg-slate-200" />;
-      case "CANCELLED":
-        return <Chip icon={<CancelOutlinedIcon />} label="Đã hủy đăng ký" color="default" size="small" className="font-semibold text-slate-500 bg-slate-200" />;
-      default:
-        return <Chip label={status} size="small" />;
-    }
-  };
-
-  const filteredAuctions = React.useMemo(() => {
-    return auctions.filter(a => {
-      if (filter === "BIDDING") return a.status === 'BIDDING';
-      if (filter === "OPEN_REGISTER") return ["OPEN_REGISTER", "WAITING_START", "PAYMENT_INCOMPLETE"].includes(a.status);
-      if (filter === "CLOSED") return ["CLOSED", "CANCELLED"].includes(a.status);
-      return true; // ALL
-    });
-  }, [auctions, filter]);
-
-  const [order, setOrder] = useState("desc");
-  const [orderBy, setOrderBy] = useState("id");
-
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === "asc";
-    setOrder(isAsc ? "desc" : "asc");
-    setOrderBy(property);
-  };
-
-  const sortedAuctions = React.useMemo(() => {
-    let result = [...filteredAuctions];
-    result.sort((a, b) => {
-      let comparison;
-      if (orderBy === "basePrice") {
-        const valA = parseInt(a.basePrice.replace(/\D/g, ""), 10) || 0;
-        const valB = parseInt(b.basePrice.replace(/\D/g, ""), 10) || 0;
-        comparison = valA - valB;
-      } else {
-        comparison = String(a[orderBy] || "").localeCompare(String(b[orderBy] || ""));
-      }
-      return order === "desc" ? -comparison : comparison;
-    });
-    return result;
-  }, [filteredAuctions, order, orderBy]);
-
   return (
-    <Box className="animate-fade-in-up">
-      <PageHeader 
-        title="Phiên đấu giá của tôi" 
-        subtitle="Quản lý và xem lịch sử các chuyến hàng bạn đã tham gia đấu giá"
-        breadcrumbs={[
-          { label: "Trang chủ", path: "/carrier/dashboard" },
-          { label: "Vận hành", path: "#" },
-          { label: "Phiên đấu giá của tôi", path: "#" }
-        ]}
+    <Box>
+      <PageHeader
+        title="Phiên của tôi"
+        subtitle="Các phiên bạn đã đăng ký, sắp xếp theo việc cần làm trước."
+        breadcrumbs={[{ label: "Trang chủ", path: "/carrier/dashboard" }, { label: "Phiên của tôi" }]}
+        action={
+          <Button component={Link} href="/carrier/auctions" variant="contained">
+            Tìm phiên mới
+          </Button>
+        }
       />
 
-      <Box sx={{ mb: 3, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-        <Tabs 
-          value={filter} 
-          onChange={(e, v) => setFilter(v)}
-          textColor="primary"
-          indicatorColor="primary"
-          sx={{
-            "& .MuiTab-root": { textTransform: 'none', fontWeight: 600, fontSize: '0.95rem' }
-          }}
-        >
-          <Tab value="ALL" label="Tất cả" />
-          <Tab value="BIDDING" label="Đang diễn ra" />
-          <Tab value="OPEN_REGISTER" label="Chờ mở phiên" />
-          <Tab value="CLOSED" label="Đã kết thúc" />
-        </Tabs>
-        
-        <ViewModeToggle 
-          viewMode={viewMode}
-          onChange={setViewMode}
-          sx={{ mb: { xs: 2, sm: 0 } }}
-        />
+      <Box role="tablist" aria-label="Nhóm phiên" sx={{ display: "flex", gap: 1, mb: 2, overflowX: "auto", pb: 0.5 }}>
+        {GROUPS.map((item) => (
+          <Chip
+            key={item.value}
+            role="tab"
+            aria-selected={group === item.value}
+            label={`${item.label} (${counts[item.value] ?? 0})`}
+            onClick={() => setGroup(item.value)}
+            color={group === item.value ? "primary" : "default"}
+            variant={group === item.value ? "filled" : "outlined"}
+            sx={{ minHeight: 40, fontSize: "0.875rem" }}
+          />
+        ))}
       </Box>
 
-      {error && <Alert severity="error" className="!mb-4 !rounded-xl">{error}</Alert>}
-
-      {loading && (
-        <Box className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/70 p-10 text-slate-500">
-          <CircularProgress size={22} /> Đang tải các phiên đã đăng ký...
-        </Box>
+      {state === "loading" && <ListSkeleton rows={3} height={220} label="Đang tải phiên của bạn" />}
+      {state === "error" && <ErrorState description={error} onRetry={load} />}
+      {state === "ready" && visible.length === 0 && (
+        <EmptyState
+          title={rows.length ? "Không có phiên trong nhóm này" : "Bạn chưa đăng ký phiên nào"}
+          description={rows.length ? "Chọn nhóm khác để xem." : "Tìm phiên phù hợp với tuyến và phương tiện của bạn để đăng ký."}
+          action={!rows.length && <Button component={Link} href="/carrier/auctions" variant="contained">Tìm phiên</Button>}
+        />
       )}
-
-      {!loading && filteredAuctions.length === 0 && (
-        <Box className="text-center p-10 bg-white/50 backdrop-blur-md rounded-2xl border border-slate-200">
-          <Typography variant="h6" className="text-slate-400">Không có dữ liệu</Typography>
-        </Box>
-      )}
-
-      {!loading && viewMode === "CARD" ? (
-        <Grid container spacing={3}>
-          {sortedAuctions.map((a) => (
-            <Grid item xs={12} sm={6} md={4} key={a.id}>
-              <CarrierBiddingItem 
-                auction={a} 
-                onCancel={handleCancelRequest}
-                onViewDetail={handleOpenDetails}
-                onEnterRoom={handleEnterRoom}
-              />
-            </Grid>
-          ))}
-        </Grid>
-      ) : !loading ? (
-        <TableContainer component={Paper} className="rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
-          <Table sx={{ minWidth: 800 }}>
-            <TableHead className="bg-slate-50">
-              <TableRow>
-                {[{id: 'id', label: 'Mã phiên'}, {id: 'origin', label: 'Tuyến đường', sortable: false}, {id: 'cargoType', label: 'Hàng hóa'}, {id: 'registeredVehicle', label: 'Xe đăng ký'}, {id: 'pickupTime', label: 'Thời gian bốc'}, {id: 'status', label: 'Trạng thái'}, {id: 'actions', label: 'Thao tác', align: 'right', sortable: false}].map(col => (
-                  <TableCell key={col.id} align={col.align || 'left'} className="font-bold text-slate-600">
-                    {col.sortable !== false ? (
-                      <TableSortLabel
-                        active={orderBy === col.id}
-                        direction={orderBy === col.id ? order : "asc"}
-                        onClick={() => handleRequestSort(col.id)}
-                      >
-                        {col.label}
-                      </TableSortLabel>
-                    ) : col.label}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {sortedAuctions.map((a) => (
-                <TableRow key={a.id} hover className="transition-colors">
-                  <TableCell>
-                    <Typography variant="body2" className="font-mono font-bold text-[#1B4965]">{a.id}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box className="flex items-center gap-1">
-                      <Typography variant="body2" className="font-bold text-slate-800">{a.origin}</Typography>
-                      <ArrowForwardIcon sx={{ fontSize: 16 }} className="text-slate-400" />
-                      <Typography variant="body2" className="font-bold text-slate-800">{a.destination}</Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" className="text-slate-800">{a.cargoType} ({a.weight})</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" className="font-semibold text-[#1B4965] inline-block bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                      {a.registeredVehicle}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" className="text-slate-800">{a.pickupTime}</Typography>
-                  </TableCell>
-                  <TableCell>{getStatusChip(a.status, a.isWinner)}</TableCell>
-                  <TableCell align="right">
-                    {a.status === "BIDDING" ? (
-                      <Button 
-                        size="small" 
-                        variant="contained"
-                        color="primary"
-                        onClick={() => handleEnterRoom(a.id)}
-                        sx={{ borderRadius: "6px", ml: 1 }}
-                      >
-                        Vào phòng
+      {state === "ready" && visible.length > 0 && (
+        <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" } }}>
+          {visible.map((row) => {
+            const { auction, access, registration } = row;
+            const accessStatus = access?.accessStatus;
+            const outcome = outcomes[auction.id];
+            const outcomeMeta = outcome ? MY_BID_OUTCOME_META[outcome] : null;
+            const href = `/carrier/auctions/${encodeURIComponent(auction.id)}`;
+            const primary =
+              accessStatus === "AUCTION_OPEN" ? (
+                <Button variant="contained" color="success" component={Link} href={href}>Vào phòng</Button>
+              ) : accessStatus === "PAYMENT_INCOMPLETE" ? (
+                <Button variant="contained" color="error" component={Link} href={href}>Thanh toán lại</Button>
+              ) : outcome === "WON" && auction.awardStatus === "SIGNED" && auction.awardTripId ? (
+                <Button variant="contained" component={Link} href={`/carrier/transports/${encodeURIComponent(auction.awardTripId)}`}>Mở chuyến</Button>
+              ) : outcome === "WON" && auction.awardStatus === "AWAITING_CARRIER_SIGNATURE" ? (
+                <Button variant="contained" component={Link} href="/carrier/contracts">Ký hợp đồng</Button>
+              ) : (
+                <Button variant="outlined" component={Link} href={href}>Mở phiên</Button>
+              );
+            return (
+              <AuctionSessionCard
+                key={registration?.id || auction.id}
+                auction={auction}
+                status={outcomeMeta || getAccessStatusMeta(accessStatus)}
+                note={
+                  accessStatus === "AUCTION_COMPLETED" && outcome === undefined
+                    ? "Đang xác định kết quả của bạn..."
+                    : outcome === "WON"
+                      ? auction.awardStatus === "SIGNED"
+                        ? "Hợp đồng đã ký đủ. Chuyến đã được tạo."
+                        : auction.awardStatus === "AWAITING_CARRIER_SIGNATURE"
+                          ? "Bạn thắng phiên. Ký hợp đồng trước hạn để nhận chuyến."
+                          : "Bạn có giá thắng. Xem tiến trình trao thầu trong trang phiên."
+                      : null
+                }
+                noteTone={outcome === "WON" ? "success" : "neutral"}
+                extraFacts={[
+                  { label: "Xe đăng ký", value: vehicleLabel(registration?.vehicleId) },
+                  { label: "Đã thanh toán / khóa", value: formatMoney(Number(registration?.participationFeeAmount || 0) + Number(registration?.depositAmount || 0)) },
+                ]}
+                onOpen={() => setDetail(auction)}
+                actions={
+                  <>
+                    {CANCELLABLE.has(accessStatus) && auction.status === "PENDING" ? (
+                      <Button variant="outlined" color="error" onClick={() => setToCancel(row)}>
+                        Hủy đăng ký
                       </Button>
                     ) : (
-                      <>
-                        <Button 
-                          size="small" 
-                          variant="outlined"
-                          color="inherit"
-                          onClick={() => handleOpenDetails(a)}
-                          sx={{ borderRadius: "6px" }}
-                        >
-                          Xem chi tiết
-                        </Button>
-                        {a.status === "OPEN_REGISTER" && (
-                          <Button 
-                            size="small" 
-                            variant="outlined"
-                            color="error"
-                            onClick={() => handleCancelRequest(a)}
-                            sx={{ borderRadius: "6px", ml: 1 }}
-                          >
-                            Hủy
-                          </Button>
-                        )}
-                      </>
+                      <Button variant="outlined" color="inherit" onClick={() => setDetail(auction)}>
+                        Chi tiết
+                      </Button>
                     )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      ) : null}
-      
-      {/* Drawer Xem Chi tiết Phiên Đấu Giá */}
-      <DetailDrawer
-        open={openDetailDrawer}
-        onClose={() => setOpenDetailDrawer(false)}
-        variant="modal"
-        title={selectedAuction ? `Chi tiết phiên ${selectedAuction.id}` : "Chi tiết phiên đấu giá"}
-      >
-        {selectedAuction && (
-          <AuctionDetailContent
-            auction={selectedAuction}
-            footer={selectedAuction.status === "BIDDING" ? (
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={() => handleEnterRoom(selectedAuction.id)}
-                sx={{ borderRadius: "8px", bgcolor: "#1B4965", "&:hover": { bgcolor: "#0d2b3e" } }}
-              >
-                Vào phòng đấu giá
-              </Button>
-            ) : null}
-          />
-        )}
+                    {primary}
+                  </>
+                }
+              />
+            );
+          })}
+        </Box>
+      )}
+
+      <DetailDrawer open={Boolean(detail)} onClose={() => setDetail(null)} variant="modal" title={detail?.title || "Chi tiết phiên"}>
+        {detail && <AuctionDetailContent auction={detail} />}
       </DetailDrawer>
 
-      {/* Confirmation Modal for Cancellation */}
-      <Dialog
-        open={cancelModalOpen}
-        onClose={() => setCancelModalOpen(false)}
-        aria-labelledby="cancel-dialog-title"
-        aria-describedby="cancel-dialog-description"
-        PaperProps={{
-          sx: { borderRadius: "16px", padding: 1 }
-        }}
+      <ResponsiveDialog
+        open={Boolean(toCancel)}
+        onClose={() => setToCancel(null)}
+        busy={cancelling}
+        maxWidth="xs"
+        title="Hủy đăng ký phiên?"
+        titleId="cancel-registration-title"
+        actions={
+          <>
+            <Button color="inherit" onClick={() => setToCancel(null)} disabled={cancelling}>
+              Giữ đăng ký
+            </Button>
+            <Button variant="contained" color="error" onClick={confirmCancel} disabled={cancelling}>
+              {cancelling ? "Đang hủy..." : "Hủy đăng ký"}
+            </Button>
+          </>
+        }
       >
-        <DialogTitle id="cancel-dialog-title" className="text-slate-800 font-bold">
-          Xác nhận hủy đăng ký
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="cancel-dialog-description" className="text-slate-600">
-            Bạn có chắc chắn muốn hủy đăng ký tham gia phiên đấu giá <strong>{auctionToCancel?.id}</strong> không? Hành động này không thể hoàn tác.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCancelModalOpen(false)} sx={{ color: "#64748B", fontWeight: 600 }}>
-            Quay lại
-          </Button>
-          <Button onClick={handleConfirmCancel} disabled={cancelling} variant="contained" color="error" sx={{ fontWeight: 600, borderRadius: "8px" }} autoFocus>
-            {cancelling ? "Đang hủy..." : "Đồng ý hủy"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        {cancelError && <Alert severity="error" sx={{ mb: 1.5 }}>{cancelError}</Alert>}
+        <Typography variant="body2">
+          Bạn sẽ không thể vào phòng đấu giá này. Tiền cọc đang khóa
+          {toCancel?.registration?.depositAmount ? ` (${formatMoney(toCancel.registration.depositAmount)})` : ""} được mở khóa về ví. Phí tham gia đã thanh toán không được hoàn lại.
+        </Typography>
+      </ResponsiveDialog>
     </Box>
   );
 }

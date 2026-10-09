@@ -42,10 +42,14 @@ export default function CarrierProfileScreen({ carrierId }) {
       carrierProfileApi.getVehicles(carrierId),
       carrierProfileApi.getDrivers(carrierId),
       carrierProfileApi.getReputation(carrierId).catch(() => null),
+      // Review data is read with the same API as the winner-selection modal. A failure leaves the card in its
+      // "not loaded" state; it never turns into a zero-review profile.
+      carrierProfileApi.getReviewSummary(carrierId).catch(() => null),
+      carrierProfileApi.getReviews(carrierId, { page: 1, pageSize: 10 }).catch(() => null),
     ])
-      .then(([company, vehicles, drivers, reputation]) => {
+      .then(([company, vehicles, drivers, reputation, reviewSummary, reviewPage]) => {
         if (active) setCarrier({
-          ...mapCarrierProfile({ company, vehicles, drivers }),
+          ...mapCarrierProfile({ company, vehicles, drivers, reviewSummary, reviews: reviewPage?.items ?? [] }),
           reputationScore: reputation?.score ?? null,
           reputationHistory: reputation?.history ?? [],
         });
@@ -71,7 +75,7 @@ export default function CarrierProfileScreen({ carrierId }) {
   if (loading) {
     return (
       <Box className="flex min-h-[50vh] items-center justify-center">
-        <CircularProgress sx={{ color: "#1B4965" }} />
+        <CircularProgress sx={{ color: "var(--color-brand)" }} />
       </Box>
     );
   }
@@ -84,8 +88,8 @@ export default function CarrierProfileScreen({ carrierId }) {
           subtitle="Không thể hiển thị dữ liệu nhà xe từ hệ thống."
           breadcrumbs={[{ label: "Trang chủ", path: "/shipper/dashboard" }, { label: "Nhà xe" }]}
         />
-        <Box className="flex min-h-48 flex-col items-center justify-center gap-4 rounded-3xl border border-rose-100 bg-rose-50/60 p-6 text-center">
-          <Typography className="!font-semibold text-rose-700">{loadError || "Không tìm thấy hồ sơ nhà xe."}</Typography>
+        <Box className="flex min-h-48 flex-col items-center justify-center gap-4 rounded-xl border border-danger-soft bg-danger-soft/60 p-6 text-center">
+          <Typography className="!font-semibold text-danger">{loadError || "Không tìm thấy hồ sơ nhà xe."}</Typography>
           <Button onClick={() => router.back()} variant="outlined" className="!rounded-xl !font-bold !capitalize">
             Quay lại danh sách
           </Button>
@@ -126,7 +130,7 @@ export default function CarrierProfileScreen({ carrierId }) {
       <DriversRosterCard drivers={carrier.drivers} />
 
       {/* Section 4: Reviews & Feedback */}
-      <CarrierReviewsCard reviews={carrier.reviews} />
+      <CarrierReviewsCard summary={carrier.reviewSummary} reviews={carrier.reviews} />
     </Box>
   );
 }

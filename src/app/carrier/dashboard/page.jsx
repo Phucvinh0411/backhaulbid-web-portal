@@ -32,12 +32,14 @@ import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import Link from "next/link";
 import { PageHeader, StatCard } from "@/components/common";
+import ActionInbox from "@/components/dashboard/ActionInbox";
 import EmptyRouteDialog from "@/components/carrier/EmptyRouteDialog";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import AppCard from "@/components/common/AppCard";
 import { getMyVehicles } from "@/services/fleetApi";
 import { contractApi } from "@/services/contractApi";
 import { listAuctions, listMyRegistrations } from "@/services/biddingApi";
+import { tokens } from "@/theme/theme";
 import { unwrapListData } from "@/services/responseData";
 
 const ACTIVE_TRIP_STATUSES = new Set(["WAITING_PICKUP", "PICKED_UP", "IN_TRANSIT"]);
@@ -235,28 +237,28 @@ export default function CarrierDashboard() {
 
   if (loading) {
     return (
-      <Box className="flex min-h-[320px] items-center justify-center gap-2 text-slate-500">
+      <Box className="flex min-h-[320px] items-center justify-center gap-2 text-ink-muted">
         <CircularProgress size={24} /> Đang tải trung tâm điều hành...
       </Box>
     );
   }
 
   return (
-    <Box className="animate-fade-in-up pb-12 w-full mt-2 flex flex-col gap-6">
+    <Box className="w-full flex flex-col gap-4">
       <PageHeader 
-        title="Trung tâm điều hành" 
-        subtitle="Tổng quan hoạt động kinh doanh và vận tải" 
+        title="Tổng quan"
+        subtitle="Việc cần xử lý trước, sau đó là đội xe, phiên đang tham gia và chuyến."
         action={
           <Button 
             variant="contained" 
             startIcon={<LocalShippingIcon />}
             onClick={() => setEmptyRouteOpen(true)}
-            sx={{ bgcolor: "#1B4965", "&:hover": { bgcolor: "#0a1929" }, borderRadius: "8px" }}
           >
             Khai báo xe rỗng
           </Button>
         }
       />
+      <ActionInbox role="carrier" />
       <EmptyRouteDialog 
         open={emptyRouteOpen} 
         onClose={() => setEmptyRouteOpen(false)} 
@@ -264,30 +266,30 @@ export default function CarrierDashboard() {
       />
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Xe đã xác minh" value={`${verifiedVehicles} / ${dashboard.vehicles.length}`} subtitle="Hồ sơ đạt duyệt" icon={LocalShippingIcon} color="#1B4965" />
+          <StatCard title="Xe đã xác minh" value={`${verifiedVehicles} / ${dashboard.vehicles.length}`} subtitle="Hồ sơ đạt duyệt" icon={LocalShippingIcon} color="var(--color-brand)" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Đang tham gia" value={`${dashboard.registrations.length} phiên`} subtitle="Từ dữ liệu đăng ký của bạn" icon={GavelIcon} color="#ED6C02" />
+          <StatCard title="Đang tham gia" value={`${dashboard.registrations.length} phiên`} subtitle="Từ dữ liệu đăng ký của bạn" icon={GavelIcon} color="var(--color-warning)" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Đang vận chuyển" value={`${activeTrips.length} chuyến`} subtitle="Chờ lấy hàng hoặc đang chạy" icon={AssignmentTurnedInIcon} color="#2E7D32" />
+          <StatCard title="Đang vận chuyển" value={`${activeTrips.length} chuyến`} subtitle="Chờ lấy hàng hoặc đang chạy" icon={AssignmentTurnedInIcon} color="var(--color-success)" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Giá trị chuyến" value={formatShortCurrency(expectedValue)} subtitle="Các chuyến chưa bị hủy" icon={AccountBalanceWalletIcon} color="#62B6CB" tooltipInfo="Tổng giá trị thỏa thuận của các chuyến trong dữ liệu hiện tại; đây chưa phải số tiền đã quyết toán." />
+          <StatCard title="Giá trị chuyến" value={formatShortCurrency(expectedValue)} subtitle="Các chuyến chưa bị hủy" icon={AccountBalanceWalletIcon} color="var(--color-info)" tooltipInfo="Tổng giá trị thỏa thuận của các chuyến trong dữ liệu hiện tại; đây chưa phải số tiền đã quyết toán." />
         </Grid>
       </Grid>
 
       <Grid container spacing={4}>
         <Grid item xs={12} md={8}>
           <Box className="flex flex-col gap-6">
-            <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+            <AppCard showAccent={false} className="glass overflow-hidden rounded-xl border-white/50 shadow-sm relative">
               <CardContent className="p-6">
                 <Box className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
                   <Box>
-                    <Typography variant="h6" className="font-bold text-[#1B4965]">Giá trị chuyến (VNĐ)</Typography>
-                    <Typography variant="body2" className="text-slate-500">Tổng theo thời điểm tạo chuyến từ dữ liệu thật</Typography>
+                    <Typography variant="h6" className="font-bold text-[var(--color-brand)]">Giá trị chuyến (VNĐ)</Typography>
+                    <Typography variant="body2" className="text-ink-muted">Tổng theo thời điểm tạo chuyến từ dữ liệu thật</Typography>
                   </Box>
-                  <ToggleButtonGroup value={timeFilter} exclusive onChange={handleTimeChange} size="small" sx={{ "& .MuiToggleButton-root": { py: 0.5, px: 2, textTransform: "none", fontWeight: 600, fontSize: "0.8rem", color: "#64748b", borderColor: "#e2e8f0" }, "& .Mui-selected": { color: "#1B4965 !important", bgcolor: "rgba(27,73,101,0.08) !important" } }}>
+                  <ToggleButtonGroup value={timeFilter} exclusive onChange={handleTimeChange} size="small" sx={{ "& .MuiToggleButton-root": { py: 0.5, px: 2, textTransform: "none", fontWeight: 600, fontSize: "0.8rem", color: "var(--color-ink-muted)", borderColor: "var(--color-line)" }, "& .Mui-selected": { color: "var(--color-brand) !important", bgcolor: "rgba(27,73,101,0.08) !important" } }}>
                     <ToggleButton value="week">Tuần</ToggleButton>
                     <ToggleButton value="month">Tháng</ToggleButton>
                     <ToggleButton value="year">Năm</ToggleButton>
@@ -298,49 +300,49 @@ export default function CarrierDashboard() {
                     <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#1B4965" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#1B4965" stopOpacity={0} />
+                          <stop offset="5%" stopColor={tokens.brand} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={tokens.brand} stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 12, fontWeight: 600 }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 12, fontWeight: 600 }} tickFormatter={formatShortCurrency} dx={-5} />
-                      <RechartsTooltip formatter={(value) => [formatCurrency(value), "Giá trị chuyến"]} contentStyle={{ borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 8px 30px rgba(27,73,101,0.1)" }} />
-                      <Area type="monotone" dataKey="revenue" stroke="#1B4965" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={tokens.line} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: tokens.inkSubtle, fontSize: 12, fontWeight: 600 }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: tokens.inkSubtle, fontSize: 12, fontWeight: 600 }} tickFormatter={formatShortCurrency} dx={-5} />
+                      <RechartsTooltip formatter={(value) => [formatCurrency(value), "Giá trị chuyến"]} contentStyle={{ borderRadius: "12px", border: "1px solid var(--color-line)", boxShadow: "0 8px 30px rgba(27,73,101,0.1)" }} />
+                      <Area type="monotone" dataKey="revenue" stroke={tokens.brand} strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </Box>
               </CardContent>
             </AppCard>
 
-            <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm relative">
+            <AppCard showAccent={false} className="glass overflow-hidden rounded-xl border-white/50 shadow-sm relative">
               <CardContent className="p-6">
                 <Box className="flex items-center justify-between mb-4">
-                  <Typography variant="h6" className="font-bold text-[#1B4965]">Chuyến xe đang chạy</Typography>
-                  <Button component={Link} href="/carrier/transports" variant="text" size="small" endIcon={<ChevronRightIcon />} sx={{ color: "#1B4965", fontWeight: "bold" }}>Xem tất cả</Button>
+                  <Typography variant="h6" className="font-bold text-[var(--color-brand)]">Chuyến xe đang chạy</Typography>
+                  <Button component={Link} href="/carrier/transports" variant="text" size="small" endIcon={<ChevronRightIcon />} sx={{ color: "var(--color-brand)", fontWeight: "bold" }}>Xem tất cả</Button>
                 </Box>
                 {activeTrips.length === 0 ? (
-                  <Box className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-500">Chưa có chuyến đang vận chuyển.</Box>
+                  <Box className="rounded-xl border border-dashed border-line-strong p-8 text-center text-ink-muted">Chưa có chuyến đang vận chuyển.</Box>
                 ) : (
                   <Box className="flex flex-col gap-3">
                     {activeTrips.slice(0, 4).map((trip) => (
-                      <Box key={trip.backendId} className="p-4 rounded-xl border border-slate-100 bg-white/60 hover:bg-white transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                      <Box key={trip.backendId} className="p-4 rounded-xl border border-line bg-white/60 hover:bg-white transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                         <Box className="flex items-center gap-4">
-                          <Box className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600"><LocalShippingIcon fontSize="small" /></Box>
+                          <Box className="w-10 h-10 rounded-full bg-success-soft flex items-center justify-center text-success"><LocalShippingIcon fontSize="small" /></Box>
                           <Box>
-                            <Typography variant="subtitle2" className="font-bold text-slate-800">{trip.id}</Typography>
-                            <Typography variant="body2" className="text-slate-500 font-medium">{trip.route}</Typography>
+                            <Typography variant="subtitle2" className="font-bold text-ink">{trip.id}</Typography>
+                            <Typography variant="body2" className="text-ink-muted font-medium">{trip.route}</Typography>
                           </Box>
                         </Box>
                         <Box className="flex items-center gap-4 w-full md:w-[45%]">
                           <Box className="w-full flex flex-col gap-1">
                             <Box className="flex justify-between items-center">
-                              <Typography variant="caption" className="text-slate-500 font-bold uppercase tracking-wider">{trip.statusLabel}</Typography>
-                              <Typography variant="caption" className="text-emerald-600 font-bold">{trip.progress}%</Typography>
+                              <Typography variant="caption" className="text-ink-muted font-bold uppercase tracking-wider">{trip.statusLabel}</Typography>
+                              <Typography variant="caption" className="text-success font-bold">{trip.progress}%</Typography>
                             </Box>
-                            <Box className="w-full h-2 bg-slate-100 rounded-full overflow-hidden"><Box className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full" style={{ width: `${trip.progress}%` }} /></Box>
+                            <Box className="w-full h-2 bg-surface-sunken rounded-full overflow-hidden"><Box className="h-full bg-success rounded-full" style={{ width: `${trip.progress}%` }} /></Box>
                           </Box>
-                          <MuiTooltip title="Theo dõi chi tiết"><IconButton component={Link} href={`/carrier/transports/${trip.backendId}`} size="small" className="bg-white text-[#1B4965] border border-slate-200 shadow-sm hover:bg-slate-50"><ChevronRightIcon /></IconButton></MuiTooltip>
+                          <MuiTooltip title="Theo dõi chi tiết"><IconButton component={Link} href={`/carrier/transports/${trip.backendId}`} size="small" className="bg-white text-[var(--color-brand)] border border-line shadow-sm hover:bg-surface-sunken"><ChevronRightIcon /></IconButton></MuiTooltip>
                         </Box>
                       </Box>
                     ))}
@@ -352,31 +354,30 @@ export default function CarrierDashboard() {
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <AppCard showAccent={false} className="glass overflow-hidden rounded-2xl border-white/50 shadow-sm h-full relative">
+          <AppCard showAccent={false} className="glass overflow-hidden rounded-xl border-white/50 shadow-sm h-full relative">
             <CardContent className="p-6 flex flex-col h-full">
               <Box className="flex items-center justify-between mb-6">
-                <Typography variant="h6" className="font-bold text-[#1B4965]">Phiên đang mở</Typography>
+                <Typography variant="h6" className="font-bold text-[var(--color-brand)]">Phiên đang mở</Typography>
                 <Chip label={`${dashboard.auctions.length} phiên`} size="small" color="info" sx={{ fontWeight: "bold" }} />
               </Box>
               <Box className="flex flex-col gap-4 flex-1">
                 {currentAuctions.length === 0 ? (
-                  <Box className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-500">Hiện chưa có phiên đấu giá phù hợp.</Box>
+                  <Box className="rounded-xl border border-dashed border-line-strong p-8 text-center text-ink-muted">Hiện chưa có phiên đấu giá phù hợp.</Box>
                 ) : currentAuctions.map((auction) => (
-                  <Box key={auction.id} className="p-4 rounded-xl border border-slate-200 bg-white/80 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
-                    <Box className="absolute -right-6 -top-6 w-16 h-16 bg-gradient-to-br from-transparent via-[#62b6cb]/10 to-[#62b6cb]/30 rounded-full group-hover:scale-[2] transition-transform duration-500" />
+                  <Box key={auction.id} className="p-4 rounded-xl border border-line bg-white/80 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
                     {(() => {
                       const timeInfo = formatRemaining(auction.endTime);
                       return (
                         <Box className="flex justify-between items-start gap-2 mb-2 relative z-10">
-                          <Typography variant="subtitle2" className="font-bold text-[#1B4965] truncate max-w-[150px]">
+                          <Typography variant="subtitle2" className="font-bold text-[var(--color-brand)] truncate max-w-[150px]">
                             {String(auction.id).slice(0, 12)}
                           </Typography>
                           <Typography
                             variant="caption"
                             className={`shrink-0 px-2 py-0.5 rounded font-semibold border ${
                               timeInfo.isEnded
-                                ? "text-slate-500 bg-slate-100 border-slate-200"
-                                : "text-orange-600 bg-orange-50 border-orange-100"
+                                ? "text-ink-muted bg-surface-sunken border-line"
+                                : "text-warning bg-warning-soft border-warning-soft"
                             }`}
                           >
                             {timeInfo.text}
@@ -384,17 +385,18 @@ export default function CarrierDashboard() {
                         </Box>
                       );
                     })()}
-                    <Typography variant="body2" className="text-slate-600 mb-3 relative z-10 font-medium">{auction.route}</Typography>
+                    <Typography variant="body2" className="text-ink-muted mb-3 relative z-10 font-medium">{auction.route}</Typography>
                     <Divider className="my-3 opacity-60" />
                     <Box className="flex justify-between items-center relative z-10">
-                      <Box><Typography variant="caption" className="text-slate-400 block uppercase tracking-widest font-bold text-[0.6rem]">Giá tối đa</Typography><Typography variant="body1" className="font-extrabold text-slate-800">{formatCurrency(auction.price)}</Typography></Box>
-                      <Button component={Link} href={`/carrier/auctions/${auction.id}`} variant="contained" size="small" sx={{ bgcolor: "#1B4965", borderRadius: "8px", "&:hover": { bgcolor: "#0a1929" }, px: 2, py: 1 }}>Xem phiên</Button>
+                      <Box><Typography variant="caption" className="text-ink-subtle block uppercase tracking-widest font-bold text-[0.6rem]">Giá tối đa</Typography><Typography variant="body1" className="font-extrabold text-ink">{formatCurrency(auction.price)}</Typography></Box>
+                      <Button component={Link} href={`/carrier/auctions/${auction.id}`} variant="contained" size="small" sx={{ bgcolor: "var(--color-brand)", borderRadius: "8px", "&:hover": { bgcolor: "var(--color-ink)" }, px: 2, py: 1 }}>Xem phiên</Button>
                     </Box>
                   </Box>
                 ))}
               </Box>
               {dashboard.auctions.length > 0 && <Box className="flex justify-center mt-4"><Pagination count={totalPages} page={auctionPage} onChange={(event, value) => setAuctionPage(value)} size="small" color="primary" /></Box>}
-              <Button component={Link} href="/carrier/auctions" variant="outlined" fullWidth sx={{ mt: 4, borderRadius: "8px", color: "#1B4965", borderColor: "#1B4965", "&:hover": { borderColor: "#0a1929", bgcolor: "rgba(27,73,101,0.04)" }, py: 1 }}>Khám phá thêm</Button>
+              <Button component={Link} href="/carrier/auctions" variant="outlined" fullWidth sx={{ mt: 4, borderRadius: "8px", color: "var(--color-brand)", borderColor: "var(--color-brand)", "&:hover": { borderColor: "var(--color-ink)", bgcolor: "rgba(27,73,101,0.04)" }, py: 1 }}>Khám phá thêm</Button>
+              <Button component={Link} href="/carrier/statistics" variant="text" fullWidth sx={{ mt: 1, color: "var(--color-brand)", fontWeight: 700 }}>Xem thống kê</Button>
             </CardContent>
           </AppCard>
         </Grid>

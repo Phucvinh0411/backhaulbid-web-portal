@@ -19,11 +19,12 @@ const ICONS = {
   info: <InfoIcon />,
 };
 
+// DESIGN.md status colours; bar uses the same hue as the text.
 const TONE_COLORS = {
-  success: { main: "#2E7D32", light: "#E8F5E9", bar: "#4CAF50" },
-  error: { main: "#D32F2F", light: "#FFEBEE", bar: "#EF5350" },
-  warning: { main: "#ED6C02", light: "#FFF3E0", bar: "#FF9800" },
-  info: { main: "#1B4965", light: "#E3F2FD", bar: "#5FA8D3" },
+  success: { main: "var(--color-success)", light: "var(--color-success-soft)", bar: "var(--color-success)" },
+  error: { main: "var(--color-danger)", light: "var(--color-danger-soft)", bar: "var(--color-danger)" },
+  warning: { main: "var(--color-warning)", light: "var(--color-warning-soft)", bar: "var(--color-warning)" },
+  info: { main: "var(--color-brand)", light: "var(--color-brand-soft)", bar: "var(--color-brand)" },
 };
 
 function NotificationPopupItem({
@@ -53,16 +54,16 @@ function NotificationPopupItem({
       sx={{
         width: 380,
         maxWidth: "calc(100vw - 32px)",
-        backgroundColor: "#FFFFFF",
-        borderRadius: "14px",
-        border: `1px solid ${tone.main}25`,
-        boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06)",
+        backgroundColor: "var(--color-surface)",
+        borderRadius: "16px",
+        border: "none",
+        boxShadow: "var(--shadow-level-2)",
         overflow: "hidden",
         cursor: notification.onClick ? "pointer" : "default",
         transition: "transform 0.2s ease, box-shadow 0.2s ease",
         "&:hover": {
           transform: "translateY(-2px)",
-          boxShadow: "0 12px 32px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.08)",
+          boxShadow: "var(--shadow-level-2)",
         },
       }}
       onClick={notification.onClick ? () => notification.onClick() : undefined}
@@ -90,7 +91,7 @@ function NotificationPopupItem({
               variant="body2"
               sx={{
                 fontWeight: 700,
-                color: "#1E293B",
+                color: "var(--color-ink)",
                 lineHeight: 1.4,
                 mb: notification.message ? 0.25 : 0,
               }}
@@ -101,7 +102,7 @@ function NotificationPopupItem({
           <Typography
             variant="body2"
             sx={{
-              color: "#475569",
+              color: "var(--color-ink-muted)",
               lineHeight: 1.5,
               wordBreak: "break-word",
               display: "-webkit-box",
@@ -123,11 +124,11 @@ function NotificationPopupItem({
             onClose(notification.id);
           }}
           sx={{
-            color: "#94A3B8",
+            color: "var(--color-ink-subtle)",
             width: 28,
             height: 28,
             flexShrink: 0,
-            "&:hover": { color: "#475569", backgroundColor: "#F1F5F9" },
+            "&:hover": { color: "var(--color-ink-muted)", backgroundColor: "var(--color-surface-sunken)" },
           }}
         >
           <CloseIcon sx={{ fontSize: 18 }} />
@@ -140,7 +141,7 @@ function NotificationPopupItem({
         aria-label="Thời gian tự động đóng"
         sx={{
           height: 3,
-          backgroundColor: "#F1F5F9",
+          backgroundColor: "var(--color-surface-sunken)",
           "& .MuiLinearProgress-bar": {
             backgroundColor: tone.bar,
             transition: "width 0.1s linear",

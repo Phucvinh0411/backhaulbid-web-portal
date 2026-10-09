@@ -18,28 +18,12 @@ export function calculateDistanceKm(lat1, lon1, lat2, lon2) {
   return Math.round(R * c);
 }
 
-/**
- * Finds the nearest Vietnamese province from coordinates.
- */
-export function findNearestProvince(lat, lng) {
-  if (lat == null || lng == null) return null;
-  let nearest = null;
-  let minDistance = Infinity;
-
-  for (const p of VIETNAM_PROVINCES) {
-    const dist = calculateDistanceKm(lat, lng, p.lat, p.lng);
-    if (dist < minDistance) {
-      minDistance = dist;
-      nearest = p;
-    }
-  }
-
-  return { province: nearest, distanceKm: minDistance };
-}
+/** Shown when the address cannot be read from a pin: the user types it instead. */
+export const ADDRESS_UNAVAILABLE_MESSAGE = "Chưa lấy được địa chỉ từ ghim này. Vui lòng nhập địa chỉ và tỉnh/thành.";
 
 /**
- * Reverse geocodes coordinates into a human-readable Vietnamese address.
- * Tries OpenStreetMap Nominatim first; falls back to the nearest province.
+ * Reverse geocodes coordinates into a Vietnamese address with OpenStreetMap Nominatim.
+ * Returns "" when that fails. The province is never guessed from coordinates.
  */
 export async function reverseGeocode(lat, lng) {
   if (lat == null || lng == null) return "";
@@ -79,17 +63,10 @@ export async function reverseGeocode(lat, lng) {
       }
     }
   } catch {
-    // Network or timeout - fallback to local nearest province
+    // Network or timeout: the caller asks the user to type the address.
   }
 
-  const nearest = findNearestProvince(lat, lng);
-  if (nearest && nearest.province) {
-    return nearest.distanceKm <= 10
-      ? nearest.province.name
-      : `Gần ${nearest.province.name}`;
-  }
-
-  return `Tọa độ [${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}]`;
+  return "";
 }
 
 /**

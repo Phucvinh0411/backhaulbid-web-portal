@@ -36,6 +36,7 @@ import {
   AdminSelectField,
   AdminToolbar,
 } from "@/components/admin/AdminUI";
+import { tokens } from "@/theme/theme";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 const formatCurrency = (amount) =>
@@ -68,10 +69,10 @@ function LiveDot({ urgent = false }) {
     <span className="relative flex h-2.5 w-2.5">
       <span
         className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
-          urgent ? "bg-red-400" : "bg-emerald-400"
+          urgent ? "bg-danger" : "bg-success"
         }`}
       />
-      <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${urgent ? "bg-red-500" : "bg-emerald-500"}`} />
+      <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${urgent ? "bg-danger" : "bg-success"}`} />
     </span>
   );
 }
@@ -81,8 +82,8 @@ function ConnectionChip({ live }) {
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.68rem] font-extrabold uppercase tracking-widest ${
         live
-          ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-          : "border-slate-300 bg-slate-100 text-slate-500"
+          ? "border-success-soft bg-success-soft text-success"
+          : "border-line-strong bg-surface-sunken text-ink-muted"
       }`}
     >
       {live ? <WifiOutlinedIcon className="!text-[0.85rem]" /> : <WifiOffOutlinedIcon className="!text-[0.85rem]" />}
@@ -107,7 +108,7 @@ function ChartTooltip({ active, payload, label }) {
       <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>
         Thời gian: {label}
       </Typography>
-      <Typography variant="body2" sx={{ color: "#047857", fontWeight: 700 }}>
+      <Typography variant="body2" sx={{ color: "var(--color-success)", fontWeight: 700 }}>
         Giá thầu: {formatCurrency(payload[0].value)}
       </Typography>
     </Box>
@@ -120,8 +121,8 @@ function BidFeed({ bids, highlightLatest = false, dark = false }) {
   if (!latest.length) {
     return (
       <div
-        className={`rounded-2xl border px-3.5 py-3 text-xs font-medium ${
-          dark ? "border-white/10 bg-white/5 text-slate-400" : "border-slate-200 bg-slate-50 text-slate-500"
+        className={`rounded-xl border px-3.5 py-3 text-xs font-medium ${
+          dark ? "border-white/10 bg-white/5 text-ink-subtle" : "border-line bg-surface-sunken text-ink-muted"
         }`}
       >
         Chưa có báo giá nào trong phiên này.
@@ -131,7 +132,7 @@ function BidFeed({ bids, highlightLatest = false, dark = false }) {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className={`text-[0.62rem] font-bold uppercase tracking-widest ${dark ? "text-slate-400" : "text-slate-500"}`}>
+      <div className={`text-[0.62rem] font-bold uppercase tracking-widest ${dark ? "text-ink-subtle" : "text-ink-muted"}`}>
         Báo giá mới nhất
       </div>
       {latest.map((bid, index) => {
@@ -142,18 +143,18 @@ function BidFeed({ bids, highlightLatest = false, dark = false }) {
             className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs transition-colors ${
               dark
                 ? isLatest
-                  ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-100"
-                  : "border-white/10 bg-white/5 text-slate-300"
+                  ? "border-success/60 bg-success/15 text-success"
+                  : "border-white/10 bg-white/5 text-on-band-soft"
                 : isLatest
-                  ? "border-emerald-300 bg-emerald-50 text-emerald-900"
-                  : "border-slate-200 bg-white text-slate-600"
+                  ? "border-success-soft bg-success-soft text-success"
+                  : "border-line bg-white text-ink-muted"
             }`}
           >
-            <span className={`font-mono text-[0.68rem] ${dark ? "text-slate-400" : "text-slate-400"}`}>{bid.time}</span>
+            <span className={`font-mono text-[0.68rem] ${dark ? "text-ink-subtle" : "text-ink-subtle"}`}>{bid.time}</span>
             <span className="flex-1 truncate font-medium">
               {bid.carrierId ? `Nhà xe ${String(bid.carrierId).slice(0, 8)}` : "Nhà xe ẩn danh"}
             </span>
-            <span className={`font-mono font-extrabold ${dark ? "text-emerald-300" : "text-emerald-700"}`}>
+            <span className={`font-mono font-extrabold ${dark ? "text-success" : "text-success"}`}>
               {formatCurrency(bid.bid)}
             </span>
           </div>
@@ -165,9 +166,9 @@ function BidFeed({ bids, highlightLatest = false, dark = false }) {
 
 function DarkActionButton({ children, tone = "emerald", disabled = false, onClick }) {
   const toneClasses = {
-    emerald: "border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10",
-    amber: "border-amber-500/40 text-amber-300 hover:bg-amber-500/10",
-    rose: "border-rose-500/60 bg-rose-500/15 text-rose-300 hover:bg-rose-500/25",
+    emerald: "border-success/40 text-success hover:bg-success/10",
+    amber: "border-warning/40 text-warning hover:bg-warning/10",
+    rose: "border-danger/60 bg-danger/15 text-danger hover:bg-danger/25",
   };
 
   return (
@@ -184,8 +185,8 @@ function DarkActionButton({ children, tone = "emerald", disabled = false, onClic
 
 function LightActionButton({ children, tone = "primary", disabled = false, onClick }) {
   const toneClasses = {
-    primary: "border-slate-300 bg-white text-slate-600 hover:bg-slate-50",
-    amber: "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100",
+    primary: "border-line-strong bg-white text-ink-muted hover:bg-surface-sunken",
+    amber: "border-warning-soft bg-warning-soft text-warning hover:bg-warning-soft",
   };
 
   return (
@@ -214,33 +215,33 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
   if (!isOpen && !isPending) {
     const isCancelled = session.status === "CANCELLED";
     return (
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white/70 shadow-sm opacity-80">
+      <div className="relative overflow-hidden rounded-xl border border-line bg-white/70 shadow-sm opacity-80">
         <div className="flex flex-col gap-3.5 p-5">
           <div className="flex items-center justify-between gap-3">
             <span
               className={`rounded-full border px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest ${
                 isCancelled
-                  ? "border-rose-300 bg-rose-50 text-rose-700"
-                  : "border-sky-300 bg-sky-50 text-sky-700"
+                  ? "border-danger-soft bg-danger-soft text-danger"
+                  : "border-info-soft bg-info-soft text-info"
               }`}
             >
               {isCancelled ? "Đã hủy" : "Hoàn thành"}
             </span>
-            <span className="font-mono text-[0.68rem] font-bold text-slate-400">{session.id}</span>
+            <span className="font-mono text-[0.68rem] font-bold text-ink-subtle">{session.id}</span>
           </div>
           <div>
-            <Typography variant="subtitle1" className="!font-extrabold !text-slate-700">
+            <Typography variant="subtitle1" className="!font-extrabold !text-ink">
               {session.title}
             </Typography>
-            <div className="mt-0.5 text-xs font-medium text-slate-500">
+            <div className="mt-0.5 text-xs font-medium text-ink-muted">
               {session.route} · {session.vehicleType}
             </div>
           </div>
-          <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5">
-            <span className="text-[0.62rem] font-bold uppercase tracking-widest text-slate-400">
+          <div className="flex items-center justify-between rounded-xl border border-line bg-surface-sunken px-3.5 py-2.5">
+            <span className="text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">
               {session.winningBidAmount != null ? "Giá trúng thầu" : "Giá thấp nhất"}
             </span>
-            <span className="font-mono text-base font-black text-slate-700">
+            <span className="font-mono text-base font-black text-ink">
               {formatCurrency(session.winningBidAmount ?? session.currentBid)}
             </span>
           </div>
@@ -256,43 +257,43 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
 
   if (isPending) {
     return (
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-sm">
+      <div className="relative overflow-hidden rounded-xl border border-line bg-white/90 shadow-sm">
         <div className="flex flex-col gap-4 p-5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest text-amber-700">
+              <span className="rounded-full border border-warning-soft bg-warning-soft px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest text-warning">
                 Chờ mở
               </span>
               {sealed && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest text-slate-500">
+                <span className="inline-flex items-center gap-1 rounded-full border border-line-strong bg-surface-sunken px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest text-ink-muted">
                   <LockOutlinedIcon className="!text-[0.8rem]" /> Kín
                 </span>
               )}
             </div>
             <div className="text-right">
-              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-slate-400">Mở thầu sau</div>
-              <div className="font-mono text-xl font-black tracking-widest text-slate-700">
+              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">Mở thầu sau</div>
+              <div className="font-mono text-xl font-black tracking-widest text-ink">
                 {formatCountdown(remainingMs)}
               </div>
             </div>
           </div>
           <div>
-            <div className="font-mono text-[0.68rem] font-bold uppercase tracking-widest text-slate-400">{session.id}</div>
-            <Typography variant="subtitle1" className="!font-extrabold !text-slate-800">
+            <div className="font-mono text-[0.68rem] font-bold uppercase tracking-widest text-ink-subtle">{session.id}</div>
+            <Typography variant="subtitle1" className="!font-extrabold !text-ink">
               {session.title}
             </Typography>
-            <div className="mt-0.5 text-xs font-medium text-slate-500">
+            <div className="mt-0.5 text-xs font-medium text-ink-muted">
               {session.route} · {session.vehicleType}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5">
-              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-slate-400">Giá khởi điểm</div>
-              <div className="mt-0.5 font-mono text-sm font-black text-slate-700">{formatCurrency(session.startPrice)}</div>
+            <div className="rounded-xl border border-line bg-surface-sunken px-3.5 py-2.5">
+              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">Giá khởi điểm</div>
+              <div className="mt-0.5 font-mono text-sm font-black text-ink">{formatCurrency(session.startPrice)}</div>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5">
-              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-slate-400">Mở thầu lúc</div>
-              <div className="mt-0.5 font-mono text-sm font-black text-slate-700">{formatDateTime(session.startTime)}</div>
+            <div className="rounded-xl border border-line bg-surface-sunken px-3.5 py-2.5">
+              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">Mở thầu lúc</div>
+              <div className="mt-0.5 font-mono text-sm font-black text-ink">{formatDateTime(session.startTime)}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -310,21 +311,21 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
 
   return (
     <div
-      className="relative overflow-hidden rounded-3xl border shadow-md transition-all"
+      className="relative overflow-hidden rounded-xl border shadow-md transition-all"
       style={{
-        background: "linear-gradient(135deg, #0F172A 0%, #1E293B 55%, #064E3B 100%)",
+        background: "var(--color-ink)",
         borderColor: urgent ? "rgba(248,113,113,0.45)" : "rgba(52,211,153,0.25)",
       }}
     >
-      <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-emerald-500/20 blur-3xl" />
+      <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-success/20 blur-3xl" />
       {session.fraudFlag && (
-        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-rose-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-danger/15 blur-3xl" />
       )}
       <div className="relative z-10 flex flex-col gap-4 p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <LiveDot urgent={urgent} />
-            <span className="rounded-full border border-emerald-500/30 bg-emerald-950/60 px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest text-emerald-400">
+            <span className="rounded-full border border-success/30 bg-success/60 px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest text-success">
               {sealed ? (
                 <span className="inline-flex items-center gap-1">
                   <LockOutlinedIcon className="!text-[0.8rem]" /> Đấu giá kín
@@ -334,16 +335,16 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
               )}
             </span>
             {session.fraudFlag && (
-              <span className="rounded-full border border-rose-500/40 bg-rose-950/60 px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest text-rose-300">
+              <span className="rounded-full border border-danger/40 bg-danger/60 px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest text-danger">
                 Cờ rà soát
               </span>
             )}
           </div>
           <div className="text-right">
-            <div className="text-[0.62rem] font-bold uppercase tracking-widest text-slate-400">Đóng thầu sau</div>
+            <div className="text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">Đóng thầu sau</div>
             <div
               className={`font-mono text-xl font-black tracking-widest ${
-                urgent ? "animate-pulse text-red-400" : "text-white"
+                urgent ? "animate-pulse text-danger" : "text-white"
               }`}
             >
               {formatCountdown(remainingMs)}
@@ -352,41 +353,41 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
         </div>
 
         <div>
-          <div className="font-mono text-[0.68rem] font-bold uppercase tracking-widest text-slate-400">{session.id}</div>
+          <div className="font-mono text-[0.68rem] font-bold uppercase tracking-widest text-ink-subtle">{session.id}</div>
           <Typography variant="subtitle1" className="!font-extrabold !text-white">
             {session.title}
           </Typography>
-          <div className="mt-0.5 text-xs font-medium text-slate-300">
+          <div className="mt-0.5 text-xs font-medium text-on-band-soft">
             {session.route} · {session.vehicleType}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-emerald-400/80">
+              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-success/80">
                 Giá thấp nhất hiện tại
               </div>
-              <div className="mt-1 font-mono text-2xl font-black tracking-tight text-emerald-300">
+              <div className="mt-1 font-mono text-2xl font-black tracking-tight text-success">
                 {formatCurrency(session.currentBid)}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-slate-400">Giá khởi điểm</div>
-              <div className="mt-1 font-mono text-sm font-bold text-slate-200">{formatCurrency(session.startPrice)}</div>
+              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">Giá khởi điểm</div>
+              <div className="mt-1 font-mono text-sm font-bold text-on-band-soft">{formatCurrency(session.startPrice)}</div>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-            <div className="flex items-center gap-1 text-[0.62rem] font-bold uppercase tracking-widest text-slate-400">
+            <div className="flex items-center gap-1 text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">
               <GroupsOutlinedIcon className="!text-[0.8rem]" /> Nhà xe
             </div>
             <div className="mt-0.5 font-mono text-base font-extrabold text-white">{session.activeBidders}</div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-            <div className="flex items-center gap-1 text-[0.62rem] font-bold uppercase tracking-widest text-slate-400">
+            <div className="flex items-center gap-1 text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">
               <GavelIcon className="!text-[0.8rem]" /> Lượt thầu
             </div>
             <div className="mt-0.5 font-mono text-base font-extrabold text-white">{bids.length}</div>
@@ -413,11 +414,11 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
 
 function InfoItem({ label, value, emphasize = false }) {
   return (
-    <Box sx={{ p: 1.5, border: "1px solid #E2E8F0", borderRadius: 2, bgcolor: "#F8FAFC" }}>
-      <Typography variant="caption" sx={{ color: "#64748B", display: "block" }}>
+    <Box sx={{ p: 1.5, border: "1px solid var(--color-line)", borderRadius: 2, bgcolor: "var(--color-surface-sunken)" }}>
+      <Typography variant="caption" sx={{ color: "var(--color-ink-muted)", display: "block" }}>
         {label}
       </Typography>
-      <Typography variant="body2" sx={{ color: emphasize ? "#047857" : "#1E293B", fontWeight: 800, mt: 0.35 }}>
+      <Typography variant="body2" sx={{ color: emphasize ? "var(--color-success)" : "var(--color-ink)", fontWeight: 800, mt: 0.35 }}>
         {value}
       </Typography>
     </Box>
@@ -434,7 +435,7 @@ function SessionDetailDialog({ session, open, onClose, onFlag, onStop }) {
         <Typography variant="h6" sx={{ fontWeight: 800 }}>
           {session.title}
         </Typography>
-        <Typography variant="caption" sx={{ color: "#64748B", fontFamily: "monospace" }}>
+        <Typography variant="caption" sx={{ color: "var(--color-ink-muted)", fontFamily: "monospace" }}>
           {session.id} · {session.route}
         </Typography>
       </DialogTitle>
@@ -458,11 +459,11 @@ function SessionDetailDialog({ session, open, onClose, onFlag, onStop }) {
         <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1 }}>
           Diễn biến giá thầu
         </Typography>
-        <Box sx={{ height: 220, border: "1px solid #E2E8F0", borderRadius: 2, bgcolor: "#FFFFFF", p: 1 }}>
+        <Box sx={{ height: 220, border: "1px solid var(--color-line)", borderRadius: 2, bgcolor: "var(--color-surface)", p: 1 }}>
           {bids.length ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={bids} margin={{ top: 12, right: 16, left: 4, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={tokens.line} />
                 <XAxis dataKey="time" axisLine={false} tickLine={false} />
                 <YAxis
                   tickFormatter={(value) => `${Math.round(value / 1000)}k`}
@@ -474,14 +475,14 @@ function SessionDetailDialog({ session, open, onClose, onFlag, onStop }) {
                 <Line
                   type="stepAfter"
                   dataKey="bid"
-                  stroke="#047857"
+                  stroke={tokens.success}
                   strokeWidth={3}
-                  dot={{ r: 4, fill: "#047857", strokeWidth: 2, stroke: "#FFFFFF" }}
+                  dot={{ r: 4, fill: tokens.success, strokeWidth: 2, stroke: tokens.surface }}
                 />
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <Box sx={{ height: "100%", display: "grid", placeItems: "center", color: "#64748B" }}>
+            <Box sx={{ height: "100%", display: "grid", placeItems: "center", color: "var(--color-ink-muted)" }}>
               <Typography variant="body2">Chưa có báo giá trong phiên này.</Typography>
             </Box>
           )}
@@ -500,7 +501,7 @@ function SessionDetailDialog({ session, open, onClose, onFlag, onStop }) {
           startIcon={<BlockIcon />}
           onClick={() => onStop(session.id)}
           disabled={session.status !== "OPEN"}
-          sx={{ bgcolor: "#BE123C", "&:hover": { bgcolor: "#9F1239" } }}
+          sx={{ bgcolor: "var(--color-danger)", "&:hover": { bgcolor: "var(--color-danger)" } }}
         >
           Dừng phiên khẩn cấp
         </AdminPrimaryButton>
@@ -512,11 +513,11 @@ function SessionDetailDialog({ session, open, onClose, onFlag, onStop }) {
 function EmptyState({ filtered, query }) {
   return (
     <Box role="status" sx={{ py: 8, px: 3, textAlign: "center" }}>
-      <InsightsOutlinedIcon sx={{ color: "#94A3B8", fontSize: 42, mb: 1 }} />
-      <Typography variant="h6" sx={{ color: "#1E293B", fontWeight: 800 }}>
+      <InsightsOutlinedIcon sx={{ color: "var(--color-ink-subtle)", fontSize: 42, mb: 1 }} />
+      <Typography variant="h6" sx={{ color: "var(--color-ink)", fontWeight: 800 }}>
         {filtered ? "Không tìm thấy phiên phù hợp" : "Chưa có phiên đấu giá đang theo dõi"}
       </Typography>
-      <Typography variant="body2" sx={{ color: "#64748B", mt: 0.75, maxWidth: 520, mx: "auto" }}>
+      <Typography variant="body2" sx={{ color: "var(--color-ink-muted)", mt: 0.75, maxWidth: 520, mx: "auto" }}>
         {filtered
           ? `Không có phiên nào khớp với “${query}”. Hãy thử từ khóa khác.`
           : "Khi bidding service có phiên OPEN hoặc PENDING, dữ liệu sẽ xuất hiện tại đây."}
@@ -687,7 +688,7 @@ export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAu
           <AdminPrimaryButton
             onClick={confirmStop}
             disabled={actionLoading}
-            sx={{ bgcolor: "#BE123C", "&:hover": { bgcolor: "#9F1239" } }}
+            sx={{ bgcolor: "var(--color-danger)", "&:hover": { bgcolor: "var(--color-danger)" } }}
           >
             {actionLoading ? "Đang dừng..." : "Xác nhận dừng"}
           </AdminPrimaryButton>

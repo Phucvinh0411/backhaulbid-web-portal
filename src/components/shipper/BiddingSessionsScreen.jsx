@@ -1,622 +1,299 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
-import { useGlobalNotification } from "@/components/common/NotificationPopup";
-import { auctionService } from "@/services/auctionService";
-import AuctionSessionCard from "@/components/auctions/AuctionSessionCard";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Typography from "@mui/material/Typography";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import TextField from "@mui/material/TextField";
-import RadioGroup from "@mui/material/RadioGroup";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import Radio from "@mui/material/Radio";
-import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
-import SearchIcon from "@mui/icons-material/SearchOutlined";
-import AddIcon from "@mui/icons-material/Add";
-import CloseIcon from "@mui/icons-material/Close";
-import Grid from "@mui/material/Grid";
 import MenuItem from "@mui/material/MenuItem";
-import FilterListIcon from "@mui/icons-material/FilterListOutlined";
-import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
-import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
-import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
-import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
-import Divider from "@mui/material/Divider";
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import AddIcon from "@mui/icons-material/Add";
+import SearchIcon from "@mui/icons-material/Search";
+import { DetailDrawer, PageHeader } from "@/components/common";
+import { useGlobalNotification } from "@/components/common/NotificationPopup";
+import AuctionSessionCard from "@/components/auctions/AuctionSessionCard";
+import AuctionDetailContent from "@/components/carrier/auction-detail/AuctionDetailContent";
+import { EmptyState, ErrorState, ListSkeleton, ResponsiveDialog } from "@/components/ui";
+import { cancelAuction, listAuctions } from "@/services/biddingApi";
+import { getApiErrorMessage } from "@/services/errorMessage";
+import { getPageMeta, unwrapListData } from "@/services/responseData";
+import { getAuctionPhaseMeta, getAwardStatusMeta, getShipperNextStep } from "@/lib/statusMeta";
 
+const PAGE_SIZE = 100;
+const MAX_PAGES = 10;
+const TABS = [
+  { value: "", label: "Tất cả" },
+  { value: "PENDING", label: "Chờ mở phiên" },
+  { value: "OPEN", label: "Đang đấu giá" },
+  { value: "COMPLETED", label: "Đã kết thúc" },
+  { value: "CANCELLED", label: "Đã hủy" },
+];
+const CANCEL_REASONS = ["Thay đổi kế hoạch vận chuyển", "Hàng chưa sẵn sàng", "Đã tìm được đơn vị vận chuyển khác", "Khác"];
+const text = (value) => String(value || "").toLocaleLowerCase("vi");
 
-import {
-  ActionButton,
-  DetailDrawer,
-  DetailRow,
-  PageHeader,
-} from "@/components/common";
-import { mapBackendToShipment } from "@/services/shipperAuctionMapper";
-
-const getTrackingHref = (shipment) =>
-  shipment?.tripId
-    ? `/shipper/tracking?id=${encodeURIComponent(shipment.tripId)}`
-    : "/shipper/tracking";
+/** Loads every page for the shipper's own auctions so search and filters cover the full set. */
+async function loadAllShipperAuctions(status) {
+  const items = [];
+  for (let page = 1; page <= MAX_PAGES; page += 1) {
+    const response = await listAuctions({ page, pageSize: PAGE_SIZE, ...(status ? { status } : {}) });
+    items.push(...unwrapListData(response));
+    const meta = getPageMeta(response);
+    if (page >= meta.totalPages) return { items, complete: true };
+  }
+  return { items, complete: false };
+}
 
 export default function BiddingSessionsScreen() {
-  const notify = useGlobalNotification();
-  const [shipments, setShipments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState(0); // 0: Tất cả, 1: Chờ đấu giá, 2: Đang đấu giá, 3: Đã chốt, 4: Đang vận chuyển, 5: Hoàn thành, 6: Đã hủy
-  const [searchQuery, setSearchQuery] = useState("");
-  const [auctionTypeFilter, setAuctionTypeFilter] = useState("ALL"); // ALL, PUBLIC, SEALED
+  const { notify } = useGlobalNotification();
+  const [tab, setTab] = useState("");
+  const [items, setItems] = useState([]);
+  const [complete, setComplete] = useState(true);
+  const [state, setState] = useState("loading");
+  const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [auctionType, setAuctionType] = useState("");
+  const [onlyActionable, setOnlyActionable] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const [toCancel, setToCancel] = useState(null);
+  const [reason, setReason] = useState(CANCEL_REASONS[0]);
+  const [reasonNote, setReasonNote] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
 
-  // States for Cancel Dialog
-  const [openCancelDialog, setOpenCancelDialog] = useState(false);
-  const [selectedShipmentId, setSelectedShipmentId] = useState(null);
-  const [cancelReasonType, setCancelReasonType] = useState("Thay đổi kế hoạch kinh doanh");
-  const [cancelReasonNote, setCancelReasonNote] = useState("");
-  const [selectedShipment, setSelectedShipment] = useState(null);
-  const [openDetailDrawer, setOpenDetailDrawer] = useState(false);
-
-  const fetchAuctions = useCallback(async () => {
+  const load = useCallback(async () => {
+    setState("loading");
+    setError("");
     try {
-      setLoading(true);
-      const res = await auctionService.getShipperAuctions();
-      const auctionsData = Array.isArray(res) ? res : (res?.data?.data || res?.data?.content || res?.content || res?.data || []);
-      const mappedShipments = auctionsData.map(mapBackendToShipment);
-      setShipments(mappedShipments);
-    } catch (error) {
-      console.error("Error fetching auctions:", error);
-      notify.error("Không thể tải danh sách phiên đấu giá");
-    } finally {
-      setLoading(false);
+      const result = await loadAllShipperAuctions(tab);
+      setItems(result.items);
+      setComplete(result.complete);
+      setState("ready");
+    } catch (loadError) {
+      setError(getApiErrorMessage(loadError, "Không thể tải danh sách phiên đấu giá."));
+      setState("error");
     }
-  }, []);
+  }, [tab]);
 
   useEffect(() => {
-    fetchAuctions();
-  }, [fetchAuctions]);
+    void load();
+  }, [load]);
 
-  // Map Tab index to Shipment status
-  const tabStatusMap = [
-    "all",
-    "pending_bids",
-    "active_bids",
-    "awarded",
-    "shipping",
-    "completed",
-    "cancelled",
-  ];
+  const actionable = useMemo(() => items.filter((auction) => getShipperNextStep(auction)), [items]);
 
-  // Filter shipments based on search query, active tab, and auction type
-  const filteredShipments = shipments.filter((item) => {
-    const matchesSearch =
-      item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.goodsType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.from.province.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.to.province.toLowerCase().includes(searchQuery.toLowerCase());
+  const visible = useMemo(() => {
+    const needle = text(query.trim());
+    return items
+      .filter((auction) => {
+        if (onlyActionable && !getShipperNextStep(auction)) return false;
+        if (auctionType && auction.auctionType !== auctionType) return false;
+        if (!needle) return true;
+        return [auction.id, auction.title, auction.goodsType, auction.origin, auction.destination].map(text).join(" ").includes(needle);
+      })
+      .sort((a, b) => Number(Boolean(getShipperNextStep(b))) - Number(Boolean(getShipperNextStep(a))) || new Date(b.createdAt) - new Date(a.createdAt));
+  }, [auctionType, items, onlyActionable, query]);
 
-    const targetStatus = tabStatusMap[activeTab];
-    const matchesStatus = targetStatus === "all" ? true : item.status === targetStatus;
-    const matchesType = auctionTypeFilter === "ALL" ? true : item.auctionType === auctionTypeFilter;
-
-    return matchesSearch && matchesStatus && matchesType;
-  });
-
-  const handleOpenCancelDialog = (id) => {
-    setSelectedShipmentId(id);
-    setCancelReasonType("Thay đổi kế hoạch kinh doanh");
-    setCancelReasonNote("");
-    setOpenCancelDialog(true);
+  const openCancel = (auction) => {
+    setToCancel(auction);
+    setReason(CANCEL_REASONS[0]);
+    setReasonNote("");
+    setCancelError("");
   };
 
-  const handleCloseCancelDialog = () => {
-    setOpenCancelDialog(false);
-    setSelectedShipmentId(null);
-  };
-
-  const handleConfirmCancel = async () => {
-    if (!selectedShipmentId) return;
-
-    try {
-      const reasonStr = cancelReasonNote ? `${cancelReasonType}: ${cancelReasonNote}` : cancelReasonType;
-      await auctionService.cancelAuction(selectedShipmentId, reasonStr);
-      notify.success("Hủy phiên đấu giá thành công");
-      fetchAuctions();
-    } catch (error) {
-      console.error("Error cancelling auction:", error);
-      notify.error("Hủy phiên đấu giá thất bại");
-    } finally {
-      handleCloseCancelDialog();
+  const confirmCancel = async () => {
+    if (!toCancel || cancelling) return;
+    if (reason === "Khác" && !reasonNote.trim()) {
+      setCancelError("Nhập lý do hủy.");
+      return;
     }
-  };
-
-  const formatCurrency = (val) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" })
-      .format(val || 0)
-      .replace("₫", "đ");
-
-  const formatDateTime = (value) =>
-    value
-      ? new Intl.DateTimeFormat("vi-VN", {
-          hour: "2-digit",
-          minute: "2-digit",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }).format(new Date(value))
-      : "Chưa có";
-
-  const handleViewDetail = (shipment) => {
-    setSelectedShipment(shipment);
-    setOpenDetailDrawer(true);
+    setCancelling(true);
+    setCancelError("");
+    try {
+      const fullReason = reason === "Khác" ? reasonNote.trim() : reasonNote.trim() ? `${reason}: ${reasonNote.trim()}` : reason;
+      await cancelAuction(toCancel.id, fullReason.slice(0, 500));
+      notify.success("Đã hủy phiên đấu giá.");
+      setToCancel(null);
+      await load();
+    } catch (requestError) {
+      setCancelError(getApiErrorMessage(requestError, "Không thể hủy phiên. Phiên có thể vừa kết thúc."));
+    } finally {
+      setCancelling(false);
+    }
   };
 
   return (
-    <Box className="w-full min-h-screen">
-      {/* Header section with CTA Action */}
+    <Box>
       <PageHeader
-        title="Quản lý Lô hàng & Đấu giá"
-        subtitle="Quản lý tối ưu các lô hàng, tương tác trực tiếp với các đơn đấu giá vận tải."
-        breadcrumbs={[
-          { label: "Trang chủ", path: "/shipper/dashboard" },
-          { label: "Đấu giá vận tải", path: "/shipper/bidding/sessions" },
-          { label: "Quản lý lô hàng" },
-        ]}
+        title="Phiên đấu giá của tôi"
+        subtitle="Theo dõi giá nhà xe đưa ra, chọn người thắng với đấu giá kín và ký hợp đồng sau khi trao thầu."
+        breadcrumbs={[{ label: "Trang chủ", path: "/shipper/dashboard" }, { label: "Phiên đấu giá" }]}
         action={
-          <ActionButton
-            component={Link}
-            href="/shipper/bidding/create"
-            variant="primary"
-            startIcon={<AddIcon />}
-            size="lg"
-          >
-            Tạo lô hàng mới
-          </ActionButton>
+          <Button component={Link} href="/shipper/bidding/create" variant="contained" startIcon={<AddIcon />}>
+            Tạo phiên mới
+          </Button>
         }
       />
 
-      {/* Integrated Search & Filter Bar */}
-      <Box className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-3xl p-4 shadow-[0_8px_32px_0_rgba(27,73,101,0.04)] mb-6 space-y-3">
-        <div className="flex flex-col md:flex-row items-center gap-3">
-          {/* Search Input */}
-          <TextField
-            placeholder="Tìm kiếm mã lô hàng, loại hàng, điểm đi/đến..."
-            variant="outlined"
-            size="small"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full md:flex-1 bg-white rounded-2xl"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon className="text-slate-400 !text-[1.2rem]" />
-                </InputAdornment>
-              ),
-              endAdornment: searchQuery ? (
-                <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearchQuery("")}>
-                    <CloseIcon className="!text-[1rem] text-slate-400" />
-                  </IconButton>
-                </InputAdornment>
-              ) : null,
-              className: "!rounded-2xl !border-slate-200 hover:!border-slate-300 transition-all text-sm",
-            }}
-            sx={{
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: "#E2E8F0" },
-              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#CBD5E1" },
-              "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#1B4965" },
-            }}
-          />
-
-          {/* Status Filter Dropdown */}
-          <TextField
-            select
-            size="small"
-            value={activeTab}
-            onChange={(e) => setActiveTab(Number(e.target.value))}
-            className="w-full md:w-56 bg-white rounded-2xl shrink-0"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <FilterListIcon className="text-[#1B4965] !text-[1.1rem]" />
-                </InputAdornment>
-              ),
-              className: "!rounded-2xl !border-slate-200 text-sm font-semibold",
-            }}
-            sx={{
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: "#E2E8F0" },
-              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#CBD5E1" },
-              "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#1B4965" },
-            }}
-          >
-            <MenuItem value={0} className="!text-xs !font-medium">Tất cả trạng thái</MenuItem>
-            <MenuItem value={1} className="!text-xs !font-medium">Chờ đấu giá</MenuItem>
-            <MenuItem value={2} className="!text-xs !font-medium">Đang đấu giá</MenuItem>
-            <MenuItem value={3} className="!text-xs !font-medium">Đã chốt thầu</MenuItem>
-            <MenuItem value={4} className="!text-xs !font-medium">Đang vận chuyển</MenuItem>
-            <MenuItem value={5} className="!text-xs !font-medium">Hoàn thành</MenuItem>
-            <MenuItem value={6} className="!text-xs !font-medium">Đã hủy</MenuItem>
-          </TextField>
-
-          {/* Auction Type Filter Dropdown */}
-          <TextField
-            select
-            size="small"
-            value={auctionTypeFilter}
-            onChange={(e) => setAuctionTypeFilter(e.target.value)}
-            className="w-full md:w-52 bg-white rounded-2xl shrink-0"
-            InputProps={{
-              className: "!rounded-2xl !border-slate-200 text-sm font-semibold",
-            }}
-            sx={{
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: "#E2E8F0" },
-              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#CBD5E1" },
-              "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#1B4965" },
-            }}
-          >
-            <MenuItem value="ALL" className="!text-xs !font-medium">Tất cả hình thức</MenuItem>
-            <MenuItem value="PUBLIC" className="!text-xs !font-medium">Đấu giá công khai</MenuItem>
-            <MenuItem value="SEALED" className="!text-xs !font-medium">Đấu giá kín</MenuItem>
-          </TextField>
-        </div>
-
-        {/* Filter Summary & Active Badges Row */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100/80 text-xs">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-slate-500 font-medium">Bộ lọc đang áp dụng:</span>
-            
-            {activeTab !== 0 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200 font-bold text-[0.68rem]">
-                Trạng thái: {["Tất cả", "Chờ đấu giá", "Đang đấu giá", "Đã chốt thầu", "Đang vận chuyển", "Hoàn thành", "Đã hủy"][activeTab]}
-                <CloseIcon className="!text-[0.75rem] cursor-pointer hover:text-sky-900" onClick={() => setActiveTab(0)} />
-              </span>
-            )}
-
-            {auctionTypeFilter !== "ALL" && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[0.68rem]">
-                Hình thức: {auctionTypeFilter === "PUBLIC" ? "Đấu giá công khai" : "Đấu giá kín"}
-                <CloseIcon className="!text-[0.75rem] cursor-pointer hover:text-amber-900" onClick={() => setAuctionTypeFilter("ALL")} />
-              </span>
-            )}
-
-            {searchQuery && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-bold text-[0.68rem]">
-                Từ khóa: "{searchQuery}"
-                <CloseIcon className="!text-[0.75rem] cursor-pointer hover:text-slate-900" onClick={() => setSearchQuery("")} />
-              </span>
-            )}
-
-            {activeTab === 0 && auctionTypeFilter === "ALL" && !searchQuery && (
-              <span className="text-slate-400 font-medium italic text-[0.7rem]">Tất cả lô hàng</span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            {(activeTab !== 0 || auctionTypeFilter !== "ALL" || searchQuery) && (
-              <button
-                onClick={() => {
-                  setActiveTab(0);
-                  setAuctionTypeFilter("ALL");
-                  setSearchQuery("");
-                }}
-                className="text-[0.7rem] font-bold text-rose-600 hover:text-rose-800 transition-colors"
-              >
-                Xóa bộ lọc
-              </button>
-            )}
-
-            <span className="text-slate-500 font-medium">
-              Hiển thị <strong className="text-[#1B4965] font-black">{filteredShipments.length}</strong> lô hàng
-            </span>
-          </div>
-        </div>
-      </Box>
-
-      {/* Grid List of Shipments */}
-      {loading ? (
-        <Box className="flex items-center justify-center py-20">
-          <CircularProgress size={40} sx={{ color: "#1B4965" }} />
-        </Box>
-      ) : filteredShipments.length === 0 ? (
-        <Card className="!rounded-3xl border border-dashed border-slate-200/80 !shadow-none bg-slate-50/20 py-16 text-center">
-          <CardContent className="space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-slate-100 flex items-center justify-center mx-auto text-2xl text-slate-400">
-              📦
-            </div>
-            <div>
-              <Typography variant="h6" className="!font-bold text-slate-700">
-                Không tìm thấy lô hàng nào
-              </Typography>
-              <Typography variant="body2" className="text-slate-400 max-w-sm mx-auto">
-                Không có dữ liệu phù hợp với bộ lọc hiện tại. Thử thay đổi từ khóa hoặc bộ lọc của bạn.
-              </Typography>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Grid container spacing={3} alignItems="stretch">
-          {filteredShipments.map((shipment) => (
-            <Grid item xs={12} md={6} lg={4} key={shipment.id} className="!flex !flex-col">
-              <AuctionSessionCard
-                shipment={shipment}
-                onCancel={handleOpenCancelDialog}
-                onViewDetail={handleViewDetail}
-              />
-            </Grid>
-          ))}
-        </Grid>
+      {state === "ready" && actionable.length > 0 && !onlyActionable && (
+        <Alert
+          severity="warning"
+          sx={{ mb: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={() => setOnlyActionable(true)}>
+              Xem ngay
+            </Button>
+          }
+        >
+          {actionable.length} phiên đang chờ bạn chọn người thắng hoặc ký hợp đồng.
+        </Alert>
       )}
 
-      {/* Cancellation Dialog confirmation */}
-      <Dialog
-        open={openCancelDialog}
-        onClose={handleCloseCancelDialog}
-        maxWidth="xs"
-        fullWidth
-        className="backdrop-blur-sm"
-        PaperProps={{
-          className: "!rounded-3xl !p-2",
-        }}
-      >
-        <DialogTitle className="flex justify-between items-center !font-bold text-slate-800">
-          Xác nhận hủy lô hàng
-          <IconButton size="small" onClick={handleCloseCancelDialog} className="text-slate-400">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent className="space-y-4">
-          <Typography variant="body2" className="text-slate-500">
-            Bạn có chắc chắn muốn hủy lô hàng <span className="font-mono font-bold text-slate-700">{selectedShipmentId}</span>? Hành động này sẽ dừng phiên đấu giá và không thể phục hồi.
-          </Typography>
+      <Box role="tablist" aria-label="Trạng thái phiên" sx={{ display: "flex", gap: 1, mb: 1.5, overflowX: "auto", pb: 0.5 }}>
+        {TABS.map((item) => (
+          <Chip
+            key={item.value || "all"}
+            role="tab"
+            aria-selected={tab === item.value}
+            label={item.label}
+            onClick={() => setTab(item.value)}
+            color={tab === item.value ? "primary" : "default"}
+            variant={tab === item.value ? "filled" : "outlined"}
+            sx={{ minHeight: 40, fontSize: "0.875rem" }}
+          />
+        ))}
+      </Box>
 
-          <Box className="space-y-3 pt-2">
-            <Typography variant="body2" className="!font-bold text-slate-700">
-              Chọn lý do hủy:
-            </Typography>
-            <RadioGroup
-              value={cancelReasonType}
-              onChange={(e) => setCancelReasonType(e.target.value)}
-              className="space-y-1"
-            >
-              <FormControlLabel
-                value="Thay đổi kế hoạch kinh doanh"
-                control={<Radio size="small" sx={{ color: "#1B4965", "&.Mui-checked": { color: "#1B4965" } }} />}
-                label={<span className="text-sm font-medium text-slate-600">Thay đổi kế hoạch sản xuất/kinh doanh</span>}
-              />
-              <FormControlLabel
-                value="Tìm thấy đơn vị vận chuyển ngoài"
-                control={<Radio size="small" sx={{ color: "#1B4965", "&.Mui-checked": { color: "#1B4965" } }} />}
-                label={<span className="text-sm font-medium text-slate-600">Đã thỏa thuận được với nhà xe ngoài</span>}
-              />
-              <FormControlLabel
-                value="Nhập sai thông tin hàng hóa"
-                control={<Radio size="small" sx={{ color: "#1B4965", "&.Mui-checked": { color: "#1B4965" } }} />}
-                label={<span className="text-sm font-medium text-slate-600">Nhập sai thông tin kích thước/trọng tải</span>}
-              />
-              <FormControlLabel
-                value="Khác"
-                control={<Radio size="small" sx={{ color: "#1B4965", "&.Mui-checked": { color: "#1B4965" } }} />}
-                label={<span className="text-sm font-medium text-slate-600">Lý do khác</span>}
-              />
-            </RadioGroup>
+      <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", sm: "2fr 1fr" }, mb: 1.5 }}>
+        <TextField
+          label="Tìm theo mã phiên, hàng hóa, tuyến"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+        />
+        <TextField select label="Hình thức" value={auctionType} onChange={(event) => setAuctionType(event.target.value)}>
+          <MenuItem value="">Công khai và kín</MenuItem>
+          <MenuItem value="PUBLIC">Công khai</MenuItem>
+          <MenuItem value="SEALED">Đấu giá kín</MenuItem>
+        </TextField>
+      </Box>
 
-            {cancelReasonType === "Khác" && (
-              <TextField
-                placeholder="Nhập lý do chi tiết..."
-                fullWidth
-                multiline
-                rows={2}
-                value={cancelReasonNote}
-                onChange={(e) => setCancelReasonNote(e.target.value)}
-                className="mt-2"
-                InputProps={{
-                  className: "!rounded-2xl",
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#E2E8F0",
-                  },
-                }}
-              />
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions className="!px-6 !pb-4 flex justify-end gap-3">
-          <ActionButton
-            onClick={handleCloseCancelDialog}
-            variant="text"
-          >
-            Đóng
-          </ActionButton>
-          <ActionButton
-            onClick={handleConfirmCancel}
-            variant="danger"
-          >
-            Đồng ý Hủy
-          </ActionButton>
-        </DialogActions>
-      </Dialog>
+      {state === "ready" && (
+        <Typography component="div" variant="body2" role="status" sx={{ color: "text.secondary", mb: 1.5 }}>
+          {visible.length} phiên{query || auctionType || onlyActionable ? " khớp bộ lọc" : ""}
+          {!complete ? ` · chỉ tải ${PAGE_SIZE * MAX_PAGES} phiên mới nhất` : ""}
+          {onlyActionable && <Chip size="small" label="Chỉ việc cần xử lý" onDelete={() => setOnlyActionable(false)} sx={{ ml: 1 }} />}
+        </Typography>
+      )}
 
-      <DetailDrawer
-        open={openDetailDrawer}
-        onClose={() => setOpenDetailDrawer(false)}
-        variant="modal"
-        title="Chi tiết phiên vận chuyển"
-        width={560}
-      >
-        {selectedShipment && (
-          <Box className="space-y-5 px-1 pb-4">
-            {/* Header Section */}
-            <Box className="bg-gradient-to-br from-slate-50 to-slate-100/50 p-5 rounded-3xl border border-slate-200/60 shadow-sm relative overflow-hidden">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#1B4965]/5 rounded-full blur-2xl" />
-              <div className="flex items-center justify-between mb-4 relative z-10">
-                <span className="font-mono font-black text-[#1B4965] text-lg tracking-tight bg-white px-3 py-1 rounded-xl border border-slate-200/80 shadow-sm">
-                  {selectedShipment.id}
-                </span>
-                <span className={`px-3 py-1 rounded-xl text-xs font-bold ${
-                  selectedShipment.status === 'awarded' || selectedShipment.status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
-                  selectedShipment.status === 'cancelled' ? 'bg-rose-100 text-rose-800' :
-                  selectedShipment.status === 'active_bids' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800'
-                }`}>
-                  {
-                    {
-                      pending_bids: "Chờ đấu giá",
-                      active_bids: "Đang đấu giá",
-                      awarded: "Đã chốt thầu",
-                      shipping: "Đang vận chuyển",
-                      completed: "Đã hoàn thành",
-                      cancelled: "Đã hủy",
-                    }[selectedShipment.status] || "Không rõ"
-                  }
-                </span>
-              </div>
-              <Typography variant="h6" className="!font-bold text-slate-800 relative z-10 leading-snug">
-                {selectedShipment.goodsType}
-              </Typography>
-            </Box>
+      {state === "loading" && <ListSkeleton rows={3} height={220} label="Đang tải phiên" />}
+      {state === "error" && <ErrorState description={error} onRetry={load} />}
+      {state === "ready" && visible.length === 0 && (
+        <EmptyState
+          title={items.length ? "Không có phiên khớp bộ lọc" : "Chưa có phiên đấu giá"}
+          description={items.length ? "Thử bỏ bớt điều kiện." : "Tạo phiên để nhà xe đưa giá vận chuyển cho lô hàng của bạn."}
+          action={!items.length && <Button component={Link} href="/shipper/bidding/create" variant="contained">Tạo phiên</Button>}
+        />
+      )}
 
-            {/* Auction Info Section */}
-            <Box className="bg-white p-5 rounded-3xl border border-slate-100 shadow-[0_4px_20px_0_rgba(0,0,0,0.03)] transition-all hover:shadow-[0_4px_24px_0_rgba(0,0,0,0.06)]">
-              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100/80">
-                <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-                  <GavelOutlinedIcon fontSize="small" />
-                </div>
-                <Typography className="!font-extrabold text-slate-800">Cấu hình đấu giá</Typography>
-              </div>
-              <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-                <DetailRow label="Hình thức" value={selectedShipment.auctionType === "SEALED" ? "Đấu giá kín" : "Đấu giá công khai"} />
-                <DetailRow label="Lượt ra giá" value={`${selectedShipment.bidCount || 0} lượt`} />
-                <DetailRow label="Đóng thầu" value={formatDateTime(selectedShipment.closeTime)} />
-                <DetailRow label="Giá trần tối đa" value={formatCurrency(selectedShipment.maxPrice)} valueColor="text-slate-800 font-bold" />
-                {selectedShipment.status !== 'pending_bids' && (
-                  <div className="col-span-2 mt-2 bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100/50">
-                    <DetailRow 
-                      label="Giá thấp nhất / giá chốt" 
-                      value={formatCurrency(selectedShipment.finalPrice || selectedShipment.currentLowestBid || 0)} 
-                      valueColor="text-emerald-700 !text-[1.1rem] font-black" 
-                    />
-                  </div>
-                )}
-              </div>
-            </Box>
-
-            {/* Route Section */}
-            <Box className="bg-white p-5 rounded-3xl border border-slate-100 shadow-[0_4px_20px_0_rgba(0,0,0,0.03)] transition-all hover:shadow-[0_4px_24px_0_rgba(0,0,0,0.06)]">
-              <div className="flex items-center gap-2 mb-5">
-                <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600">
-                  <LocalShippingOutlinedIcon fontSize="small" />
-                </div>
-                <Typography className="!font-extrabold text-slate-800">Lộ trình vận chuyển</Typography>
-              </div>
-              
-              <div className="relative pl-3 space-y-6 before:absolute before:inset-y-2 before:left-5 before:w-0.5 before:bg-slate-100 before:-z-10">
-                {/* Source */}
-                <div className="flex items-start gap-4">
-                  <div className="w-5 h-5 rounded-full bg-white border-4 border-sky-500 mt-0.5 shadow-sm shrink-0" />
-                  <div>
-                    <Typography className="!text-[0.75rem] !font-bold text-sky-600 uppercase tracking-wider mb-1">Điểm lấy hàng ({selectedShipment.from.province})</Typography>
-                    <Typography variant="body2" className="text-slate-700 font-medium">{selectedShipment.from.detail}</Typography>
-                  </div>
-                </div>
-                {/* Destination */}
-                <div className="flex items-start gap-4">
-                  <div className="w-5 h-5 rounded-full bg-emerald-500 border-4 border-emerald-100 mt-0.5 shadow-sm shrink-0" />
-                  <div>
-                    <Typography className="!text-[0.75rem] !font-bold text-emerald-600 uppercase tracking-wider mb-1">Điểm giao hàng ({selectedShipment.to.province})</Typography>
-                    <Typography variant="body2" className="text-slate-700 font-medium">{selectedShipment.to.detail}</Typography>
-                  </div>
-                </div>
-              </div>
-            </Box>
-
-            {/* Goods Details Section */}
-            <Box className="bg-white p-5 rounded-3xl border border-slate-100 shadow-[0_4px_20px_0_rgba(0,0,0,0.03)] transition-all hover:shadow-[0_4px_24px_0_rgba(0,0,0,0.06)]">
-              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100/80">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
-                  <Inventory2OutlinedIcon fontSize="small" />
-                </div>
-                <Typography className="!font-extrabold text-slate-800">Thông tin hàng hóa</Typography>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <DetailRow label="Loại hàng" value={selectedShipment.goodsType} />
-                <DetailRow label="Trọng lượng" value={selectedShipment.weight} />
-                <DetailRow label="Thể tích" value={selectedShipment.volume} />
-                <DetailRow
-                  label="Yêu cầu đặc biệt"
-                  value={selectedShipment.goodsType.toLowerCase().includes("đông lạnh") ? "Bảo quản lạnh" : "Không có"}
-                />
-              </div>
-            </Box>
-
-            {/* Carrier/Result Section */}
-            {(selectedShipment.carrier || selectedShipment.cancelReason) && (
-              <Box className="bg-white p-5 rounded-3xl border border-slate-100 shadow-[0_4px_20px_0_rgba(0,0,0,0.03)]">
-                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100/80">
-                  <div className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
-                    <AssignmentTurnedInOutlinedIcon fontSize="small" />
-                  </div>
-                  <Typography className="!font-extrabold text-slate-800">Kết quả xử lý</Typography>
-                </div>
-                
-                {selectedShipment.carrier && (
-                  <div className="space-y-4">
-                    <DetailRow label="Đơn vị vận chuyển" value={selectedShipment.carrier} valueColor="text-[#1B4965] font-bold" />
-                    <DetailRow label="Liên hệ nhà xe" value={selectedShipment.carrierPhone || "Chưa cập nhật"} />
-                    {selectedShipment.driverName && (
-                      <>
-                        <Divider className="!my-2 border-dashed" />
-                        <div className="flex justify-between items-center">
-                          <DetailRow label="Tài xế phụ trách" value={selectedShipment.driverName} />
-                          <span className="font-mono bg-slate-100 text-slate-700 px-2 py-1 rounded-lg text-xs font-bold border border-slate-200">
-                            {selectedShipment.driverPlate || "N/A"}
-                          </span>
-                        </div>
-                      </>
+      {state === "ready" && visible.length > 0 && (
+        <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" } }}>
+          {visible.map((auction) => {
+            const next = getShipperNextStep(auction);
+            const award = getAwardStatusMeta(auction.awardStatus);
+            const detailHref = `/shipper/bidding/history?id=${encodeURIComponent(auction.id)}`;
+            const cancellable = auction.status === "PENDING" || auction.status === "OPEN";
+            return (
+              <AuctionSessionCard
+                key={auction.id}
+                auction={auction}
+                status={getAuctionPhaseMeta(auction)}
+                note={next?.label || award?.label}
+                noteTone={next?.tone || award?.tone}
+                onOpen={() => setDetail(auction)}
+                actions={
+                  <>
+                    {cancellable ? (
+                      <Button variant="outlined" color="error" onClick={() => openCancel(auction)}>
+                        Hủy phiên
+                      </Button>
+                    ) : (
+                      <Button variant="outlined" color="inherit" onClick={() => setDetail(auction)}>
+                        Chi tiết
+                      </Button>
                     )}
-                  </div>
-                )}
-                {selectedShipment.cancelReason && (
-                  <Box className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
-                    <Typography className="!text-[0.75rem] text-rose-500 font-bold uppercase mb-1">Lý do hủy đơn</Typography>
-                    <Typography className="text-slate-700 font-medium">{selectedShipment.cancelReason}</Typography>
-                  </Box>
-                )}
-              </Box>
-            )}
+                    {auction.awardStatus === "AWAITING_SHIPPER_SIGNATURE" ? (
+                      <Button variant="contained" component={Link} href="/shipper/contracts">Ký hợp đồng</Button>
+                    ) : auction.awardStatus === "SIGNED" && auction.awardTripId ? (
+                      <Button variant="contained" component={Link} href={`/shipper/tracking?id=${encodeURIComponent(auction.awardTripId)}`}>Theo dõi chuyến</Button>
+                    ) : (
+                      <Button variant={next ? "contained" : "outlined"} component={Link} href={detailHref}>
+                        {next ? next.label : "Xem giá"}
+                      </Button>
+                    )}
+                  </>
+                }
+              />
+            );
+          })}
+        </Box>
+      )}
 
-            <Box className="flex flex-col gap-3 pt-2">
-              <Link href={`/shipper/bidding/history?id=${selectedShipment.id}`} passHref className="w-full block">
-                <ActionButton
-                  variant="outlined"
-                  fullWidth
-                  size="lg"
-                  className="!rounded-2xl"
-                >
-                  Xem lịch sử thầu
-                </ActionButton>
-              </Link>
-              {selectedShipment.status === "shipping" && (
-                <Link href={getTrackingHref(selectedShipment)} passHref className="w-full block">
-                  <ActionButton
-                    variant="primary"
-                    fullWidth
-                    size="lg"
-                    className="!rounded-2xl shadow-md"
-                  >
-                    Theo dõi vận chuyển
-                  </ActionButton>
-                </Link>
-              )}
-            </Box>
-          </Box>
+      <DetailDrawer open={Boolean(detail)} onClose={() => setDetail(null)} variant="modal" title={detail?.title || "Chi tiết phiên"}>
+        {detail && (
+          <AuctionDetailContent
+            auction={detail}
+            footer={
+              <Button variant="contained" fullWidth component={Link} href={`/shipper/bidding/history?id=${encodeURIComponent(detail.id)}`}>
+                Mở trang theo dõi giá
+              </Button>
+            }
+          />
         )}
       </DetailDrawer>
+
+      <ResponsiveDialog
+        open={Boolean(toCancel)}
+        onClose={() => setToCancel(null)}
+        busy={cancelling}
+        maxWidth="xs"
+        title="Hủy phiên đấu giá?"
+        titleId="cancel-auction-title"
+        actions={
+          <>
+            <Button color="inherit" onClick={() => setToCancel(null)} disabled={cancelling}>
+              Giữ phiên
+            </Button>
+            <Button variant="contained" color="error" onClick={confirmCancel} disabled={cancelling}>
+              {cancelling ? "Đang hủy..." : "Hủy phiên"}
+            </Button>
+          </>
+        }
+      >
+        {cancelError && <Alert severity="error" sx={{ mb: 1.5 }}>{cancelError}</Alert>}
+        <Typography variant="body2" sx={{ mb: 1.5 }}>
+          Nhà xe sẽ không thể đăng ký hoặc đặt giá tiếp. Thao tác không hoàn tác được.
+        </Typography>
+        <RadioGroup value={reason} onChange={(event) => setReason(event.target.value)} aria-label="Lý do hủy">
+          {CANCEL_REASONS.map((item) => (
+            <FormControlLabel key={item} value={item} control={<Radio />} label={item} sx={{ minHeight: 44 }} />
+          ))}
+        </RadioGroup>
+        <TextField
+          fullWidth
+          multiline
+          minRows={2}
+          label={reason === "Khác" ? "Lý do hủy (bắt buộc)" : "Ghi chú thêm (không bắt buộc)"}
+          value={reasonNote}
+          onChange={(event) => setReasonNote(event.target.value)}
+          inputProps={{ maxLength: 400 }}
+          sx={{ mt: 1 }}
+        />
+      </ResponsiveDialog>
     </Box>
   );
 }
-

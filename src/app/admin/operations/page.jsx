@@ -10,6 +10,7 @@ import AuctionMonitorView from "@/components/admin/AuctionMonitorView";
 import useAuctionSocket from "@/hooks/useAuctionSocket";
 import { cancelAuction, flagAuction, listAuctions, listBids } from "@/services/biddingApi";
 import { getPageItems, unwrapListData } from "@/services/responseData";
+import { getVehicleTypeLabel } from "@/lib/statusMeta";
 
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
@@ -53,7 +54,7 @@ const mapAuction = async (auction) => {
     id: auction.id,
     title: auction.title || auction.cargoDescription || "Phiên đấu giá vận chuyển",
     route: `${auction.originLocationName || auction.origin || "Chưa xác định"} → ${auction.destinationLocationName || auction.destination || "Chưa xác định"}`,
-    vehicleType: auction.vehicleTypeRequired || "Chưa xác định",
+    vehicleType: getVehicleTypeLabel(auction.vehicleTypeRequired) || "Chưa xác định",
     auctionType: auction.auctionType || "PUBLIC",
     startTime: auction.startTime,
     endTime: auction.endTime,
@@ -191,14 +192,14 @@ export default function AdminOperationsPage() {
             minHeight: 360,
             display: "grid",
             placeItems: "center",
-            border: "1px solid #E2E8F0",
+            border: "1px solid var(--color-line)",
             borderRadius: 3,
             bgcolor: "rgba(255,255,255,0.72)",
           }}
         >
           <Box sx={{ display: "grid", justifyItems: "center", gap: 1.5 }}>
-            <CircularProgress size={30} sx={{ color: "#1B4965" }} />
-            <Typography variant="body2" sx={{ color: "#64748B" }}>
+            <CircularProgress size={30} sx={{ color: "var(--color-brand)" }} />
+            <Typography variant="body2" sx={{ color: "var(--color-ink-muted)" }}>
               Đang tải dữ liệu vận hành...
             </Typography>
           </Box>
@@ -225,9 +226,9 @@ export default function AdminOperationsPage() {
             display: "grid",
             gap: 2,
             p: { xs: 2.5, md: 4 },
-            border: "1px solid #FECDD3",
+            border: "1px solid var(--color-danger-soft)",
             borderRadius: 3,
-            bgcolor: "#FFF1F2",
+            bgcolor: "var(--color-danger-soft)",
           }}
         >
           <Alert severity="error" sx={{ bgcolor: "transparent", p: 0 }}>

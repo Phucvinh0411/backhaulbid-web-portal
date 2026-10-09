@@ -12,6 +12,10 @@ import { VIETNAM_PROVINCES } from "@/utils/provinces";
 import { addressBookApi } from "@/services/addressBookApi";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { getApiErrorMessage } from "@/services/errorMessage";
+import CoordinatePicker from "@/components/map/CoordinatePicker";
+import { provinceCodeOf } from "../wardOptions";
+import { useWardOptions } from "../useWardOptions";
+import { useAddressHint } from "../useAddressHint";
 
 const PROVINCE_NAMES = VIETNAM_PROVINCES.map((p) => p.name);
 
@@ -19,12 +23,18 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
   const notify = useGlobalNotification();
   const [savingFrom, setSavingFrom] = useState(false);
   const [savingTo, setSavingTo] = useState(false);
+  const fromWards = useWardOptions(provinceCodeOf(form.fromProvince));
+  const toWards = useWardOptions(provinceCodeOf(form.toProvince));
+  const fromHint = useAddressHint({ detail: form.fromAddress, ward: form.fromWard, province: form.fromProvince });
+  const toHint = useAddressHint({ detail: form.toAddress, ward: form.toWard, province: form.toProvince });
 
   const handleSaveAddress = async (type) => {
     const isFrom = type === "FROM";
     const label = isFrom ? form.fromLocationName : form.toLocationName;
     const province = isFrom ? form.fromProvince : form.toProvince;
-    const detail = isFrom ? form.fromAddress : form.toAddress;
+    const street = isFrom ? form.fromAddress : form.toAddress;
+    const ward = isFrom ? form.fromWard : form.toWard;
+    const detail = street?.trim() ? [street.trim(), ward?.trim()].filter(Boolean).join(", ") : "";
     const contactName = isFrom ? form.fromContactName : form.toContactName;
     const contactPhone = isFrom ? form.fromContactPhone : form.toContactPhone;
 
@@ -42,6 +52,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
 
     try {
       await addressBookApi.create({
+        ...((isFrom ? form.fromPoint : form.toPoint) || {}),
         label: label.trim(),
         province: province.trim(),
         detail: detail.trim(),
@@ -62,17 +73,17 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
   return (
     <div className="space-y-8">
       {/* Point A: Pickup Location */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+      <div className="bg-white rounded-xl border border-line/80 p-6 shadow-xs space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
           <div className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-2xl bg-sky-500 text-white font-black text-sm flex items-center justify-center shadow-xs">
+            <span className="w-9 h-9 rounded-xl bg-info text-white font-black text-sm flex items-center justify-center shadow-xs">
               A
             </span>
             <div>
-              <Typography className="!font-black text-slate-800 !text-sm">
+              <Typography className="!font-black text-ink !text-sm">
                 Điểm Nhận Hàng (Pickup)
               </Typography>
-              <span className="text-[0.7rem] text-slate-400 font-medium">
+              <span className="text-[0.7rem] text-ink-subtle font-medium">
                 Nơi nhà xe đến bốc hàng lên
               </span>
             </div>
@@ -84,7 +95,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
               variant="outlined"
               onClick={() => onOpenAddressBook("FROM")}
               startIcon={<ImportContactsIcon className="!text-[0.9rem]" />}
-              className="!rounded-xl !text-xs !font-bold !capitalize !text-sky-700 !border-sky-200 hover:!bg-sky-50 !py-1.5 !px-3"
+              className="!rounded-xl !text-xs !font-bold !capitalize !text-info !border-info-soft hover:!bg-info-soft !py-1.5 !px-3"
             >
               Sổ Địa Chỉ
             </Button>
@@ -100,7 +111,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
                   <BookmarkAddOutlinedIcon className="!text-[0.95rem]" />
                 )
               }
-              className="!rounded-xl !text-xs !font-bold !capitalize !bg-sky-700 hover:!bg-sky-800 !text-white !py-1.5 !px-3 shadow-xs"
+              className="!rounded-xl !text-xs !font-bold !capitalize !bg-info hover:!bg-info !text-white !py-1.5 !px-3 shadow-xs"
             >
               {savingFrom ? "Đang lưu..." : "Lưu địa chỉ"}
             </Button>
@@ -123,8 +134,8 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
             freeSolo
             options={PROVINCE_NAMES}
             value={form.fromProvince || ""}
-            onChange={(event, newValue) => updateForm("fromProvince", newValue || "")}
-            onInputChange={(event, newInputValue) => updateForm("fromProvince", newInputValue)}
+            onChange={(event, newValue) => { updateForm("fromProvince", newValue || ""); updateForm("fromWard", ""); }}
+            onInputChange={(event, newInputValue) => { updateForm("fromProvince", newInputValue); updateForm("fromWard", ""); }}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -138,9 +149,29 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
           />
         </div>
 
+        <Autocomplete
+          options={fromWards.wards.map((ward) => ward.name)}
+          value={form.fromWard || null}
+          onChange={(event, newValue) => updateForm("fromWard", newValue || "")}
+          loading={fromWards.loading}
+          disabled={!provinceCodeOf(form.fromProvince)}
+          noOptionsText={provinceCodeOf(form.fromProvince) ? "Không có dữ liệu phường/xã" : "Chọn tỉnh/thành trước"}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              fullWidth
+              label="Phường / Xã"
+              placeholder="VD: Phường Yên Bình"
+              helperText={fromWards.error || " "}
+              error={!!fromWards.error}
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
+            />
+          )}
+        />
+
         <TextField
           fullWidth
-          label="Địa chỉ chi tiết (Đường, Phường/Xã, Quận/Huyện)"
+          label="Địa chỉ chi tiết (Số nhà, đường, khu vực)"
           name="fromAddress"
           value={form.fromAddress}
           onChange={(e) => updateForm("fromAddress", e.target.value)}
@@ -148,6 +179,8 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
           required
           sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
         />
+
+        <CoordinatePicker label="A · Vị trí kho lấy hàng" value={form.fromPoint} onChange={(point) => updateForm("fromPoint", point)} hint={fromHint} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-1">
           <TextField
@@ -173,17 +206,17 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
       </div>
 
       {/* Point B: Delivery Location */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+      <div className="bg-white rounded-xl border border-line/80 p-6 shadow-xs space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
           <div className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-2xl bg-emerald-500 text-white font-black text-sm flex items-center justify-center shadow-xs">
+            <span className="w-9 h-9 rounded-xl bg-success text-white font-black text-sm flex items-center justify-center shadow-xs">
               B
             </span>
             <div>
-              <Typography className="!font-black text-slate-800 !text-sm">
+              <Typography className="!font-black text-ink !text-sm">
                 Điểm Giao Hàng (Delivery)
               </Typography>
-              <span className="text-[0.7rem] text-slate-400 font-medium">
+              <span className="text-[0.7rem] text-ink-subtle font-medium">
                 Nơi nhà xe dỡ hàng bàn giao
               </span>
             </div>
@@ -195,7 +228,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
               variant="outlined"
               onClick={() => onOpenAddressBook("TO")}
               startIcon={<ImportContactsIcon className="!text-[0.9rem]" />}
-              className="!rounded-xl !text-xs !font-bold !capitalize !text-emerald-700 !border-emerald-200 hover:!bg-emerald-50 !py-1.5 !px-3"
+              className="!rounded-xl !text-xs !font-bold !capitalize !text-success !border-success-soft hover:!bg-success-soft !py-1.5 !px-3"
             >
               Sổ Địa Chỉ
             </Button>
@@ -211,7 +244,7 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
                   <BookmarkAddOutlinedIcon className="!text-[0.95rem]" />
                 )
               }
-              className="!rounded-xl !text-xs !font-bold !capitalize !bg-emerald-700 hover:!bg-emerald-800 !text-white !py-1.5 !px-3 shadow-xs"
+              className="!rounded-xl !text-xs !font-bold !capitalize !bg-success hover:!bg-success !text-white !py-1.5 !px-3 shadow-xs"
             >
               {savingTo ? "Đang lưu..." : "Lưu địa chỉ"}
             </Button>
@@ -234,8 +267,8 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
             freeSolo
             options={PROVINCE_NAMES}
             value={form.toProvince || ""}
-            onChange={(event, newValue) => updateForm("toProvince", newValue || "")}
-            onInputChange={(event, newInputValue) => updateForm("toProvince", newInputValue)}
+            onChange={(event, newValue) => { updateForm("toProvince", newValue || ""); updateForm("toWard", ""); }}
+            onInputChange={(event, newInputValue) => { updateForm("toProvince", newInputValue); updateForm("toWard", ""); }}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -249,9 +282,29 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
           />
         </div>
 
+        <Autocomplete
+          options={toWards.wards.map((ward) => ward.name)}
+          value={form.toWard || null}
+          onChange={(event, newValue) => updateForm("toWard", newValue || "")}
+          loading={toWards.loading}
+          disabled={!provinceCodeOf(form.toProvince)}
+          noOptionsText={provinceCodeOf(form.toProvince) ? "Không có dữ liệu phường/xã" : "Chọn tỉnh/thành trước"}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              fullWidth
+              label="Phường / Xã"
+              placeholder="VD: Phường Đông Hải"
+              helperText={toWards.error || " "}
+              error={!!toWards.error}
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
+            />
+          )}
+        />
+
         <TextField
           fullWidth
-          label="Địa chỉ chi tiết (Đường, Phường/Xã, Quận/Huyện)"
+          label="Địa chỉ chi tiết (Số nhà, đường, khu vực)"
           name="toAddress"
           value={form.toAddress}
           onChange={(e) => updateForm("toAddress", e.target.value)}
@@ -259,6 +312,8 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
           required
           sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
         />
+
+        <CoordinatePicker label="B · Vị trí kho giao hàng" value={form.toPoint} onChange={(point) => updateForm("toPoint", point)} hint={toHint} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-1">
           <TextField
@@ -284,12 +339,12 @@ export default function Step2RouteInfo({ form, updateForm, onOpenAddressBook }) 
       </div>
 
       {/* Time Windows */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-          <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
+      <div className="bg-white rounded-xl border border-line/80 p-5 shadow-xs space-y-4">
+        <div className="flex items-center gap-2 border-b border-line pb-3">
+          <div className="w-8 h-8 rounded-xl bg-warning-soft text-warning flex items-center justify-center">
             <AccessTimeIcon className="!text-[1.1rem]" />
           </div>
-          <Typography className="!font-black text-slate-800 !text-sm">
+          <Typography className="!font-black text-ink !text-sm">
             Khung Thời Gian Vận Chuyển Dự Kiến
           </Typography>
         </div>

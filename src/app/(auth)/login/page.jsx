@@ -2,185 +2,105 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  Box, Grid, Typography, TextField, Button,
-  Checkbox, FormControlLabel, useTheme, CircularProgress
-} from "@mui/material";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import AuthShell from "@/components/auth/AuthShell";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
+
+const DASHBOARD_BY_ROLE = {
+  ADMIN: "/admin",
+  CARRIER: "/carrier/dashboard",
+  SHIPPER: "/shipper/dashboard",
+};
 
 export default function LoginPage() {
   const router = useRouter();
   const notify = useGlobalNotification();
-  const theme = useTheme();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Map role -> dashboard path
-  const getDashboardByRole = (role) => {
-    const roleMap = {
-      ADMIN: "/admin",
-      CARRIER: "/carrier/dashboard",
-      SHIPPER: "/shipper/dashboard",
-    };
-    return roleMap[role?.toUpperCase()] || "/";
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    if (loading) return;
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, password }),
+        body: JSON.stringify({ phone: phone.trim(), password }),
       });
       const data = await res.json();
       if (res.ok) {
-        // Đọc role từ response → redirect thẳng dashboard tương ứng
-        const role = data.data?.role || data.role;
-        router.push(getDashboardByRole(role));
+        const role = String(data.data?.role || data.role || "").toUpperCase();
+        if (role === "DRIVER") {
+          // Drivers work in the BackHaulBid app; the web portal has no driver area.
+          await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+          notify.warning("Tài khoản tài xế dùng ứng dụng BackHaulBid trên điện thoại. Cổng web dành cho chủ hàng, chủ xe và quản trị viên.");
+          return;
+        }
+        router.push(DASHBOARD_BY_ROLE[role] || "/");
         router.refresh();
       } else {
-        notify.error(data.message || "Sai số điện thoại hoặc mật khẩu.");
+        setError(data.message || "Sai số điện thoại hoặc mật khẩu.");
       }
     } catch {
-      notify.error("Lỗi kết nối tới server. Vui lòng thử lại.");
+      setError("Không kết nối được máy chủ. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", width: "100%" }}>
-      <Grid container sx={{ flex: 1 }}>
-        {/* Left section - Image/Branding */}
-        <Grid item xs={12} md={7} sx={{
-          display: { xs: "none", md: "flex" },
-          position: "relative",
-          overflow: "hidden"
-        }}>
-          <Box
-            component="img"
-            src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2070&auto=format&fit=crop"
-            alt="Logistics warehouse"
-            sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-          />
-          <Box sx={{
-            position: "absolute", inset: 0,
-            background: "linear-gradient(135deg, rgba(15,23,42,0.82) 0%, rgba(30,64,175,0.70) 100%)",
-          }} />
-          <Box sx={{
-            position: "relative", zIndex: 1, color: "white",
-            display: "flex", flexDirection: "column", justifyContent: "flex-end",
-            p: { md: 6, lg: 8, xl: 10 }, pb: { md: 8, lg: 10, xl: 12 },
-          }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 5 }}>
-              <Box sx={{
-                width: 42, height: 42, bgcolor: "white", borderRadius: 2.5,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <LocalShippingIcon sx={{ color: "#1e40af", fontSize: 22 }} />
-              </Box>
-              <Typography variant="h6" fontWeight={700} sx={{ letterSpacing: "-0.02em" }}>BackHaulBid</Typography>
-            </Box>
-            <Typography variant="h2" fontWeight={800} mb={3}
-              sx={{ lineHeight: 1.1, letterSpacing: "-0.03em", fontSize: { xs: "2.5rem", md: "3rem", lg: "3.75rem", xl: "4.5rem" } }}
-            >
-              Tối ưu vận tải,<br />Tối đa lợi nhuận.
-            </Typography>
-            <Typography variant="body1" sx={{
-              color: "rgba(255,255,255,0.85)", maxWidth: { xs: 440, xl: 560 },
-              fontWeight: 400, lineHeight: 1.6, fontSize: { xs: "1.05rem", lg: "1.15rem", xl: "1.25rem" },
-            }}>
-              Nền tảng B2B Logistics thông minh. Kết nối chủ hàng và nhà xe thông qua cơ chế đấu giá minh bạch, hiệu quả.
-            </Typography>
+    <AuthShell
+      title="Đăng nhập"
+      subtitle="Dành cho chủ hàng, chủ xe và quản trị viên."
+      footer={
+        <Typography variant="body2" sx={{ color: "text.secondary" }}>
+          Chưa có tài khoản?{" "}
+          <Box component={Link} href="/register" sx={{ color: "primary.main", fontWeight: 600 }}>
+            Tạo tài khoản
           </Box>
-        </Grid>
-
-        {/* Right section - Form */}
-        <Grid item xs={12} md={5} sx={{
-          display: "flex", alignItems: "center", justifyContent: "center",
-          p: { xs: 4, sm: 6, md: 6, lg: 8 }, bgcolor: "#ffffff"
-        }}>
-          <Box sx={{ width: "100%", maxWidth: 420 }}>
-            <Box sx={{ mb: 5 }}>
-              <Typography variant="h4" fontWeight={800} color="text.primary" gutterBottom sx={{ letterSpacing: "-0.02em" }}>
-                Đăng nhập
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                Chưa có tài khoản doanh nghiệp?{" "}
-                <Link href="/register" style={{ color: theme.palette.primary.main, fontWeight: 600, textDecoration: "none" }}>
-                  Đăng ký ngay
-                </Link>
-              </Typography>
-            </Box>
-
-            <form onSubmit={handleLogin}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-                <Box>
-                  <Typography variant="body2" fontWeight={600} mb={0.75} color="text.primary">Số điện thoại</Typography>
-                  <TextField
-                    fullWidth required
-                    placeholder="090 123 4567"
-                    variant="outlined"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: "10px", backgroundColor: "#f8fafc",
-                        "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.primary.light },
-                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.primary.main, borderWidth: 2 },
-                      },
-                    }}
-                  />
-                </Box>
-
-                <Box>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.75 }}>
-                    <Typography variant="body2" fontWeight={600} color="text.primary">Mật khẩu</Typography>
-                    <Link href="/forgot-password" style={{ color: theme.palette.primary.main, fontWeight: 600, textDecoration: "none", fontSize: "0.8rem" }}>
-                      Quên mật khẩu?
-                    </Link>
-                  </Box>
-                  <TextField
-                    fullWidth required type="password"
-                    placeholder="••••••••"
-                    variant="outlined"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: "10px", backgroundColor: "#f8fafc",
-                        "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.primary.light },
-                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.primary.main, borderWidth: 2 },
-                      },
-                    }}
-                  />
-                </Box>
-
-                <FormControlLabel
-                  control={<Checkbox color="primary" size="small" />}
-                  label={<Typography variant="body2" color="text.secondary">Ghi nhớ đăng nhập</Typography>}
-                />
-
-                <Button
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  fullWidth
-                  disabled={loading}
-                  sx={{ py: 1.5, fontSize: "0.95rem", borderRadius: "10px" }}
-                >
-                  {loading ? <CircularProgress size={22} color="inherit" /> : "Đăng nhập"}
-                </Button>
-              </Box>
-
-            </form>
+        </Typography>
+      }
+    >
+      <Box component="form" onSubmit={handleLogin} noValidate sx={{ display: "grid", gap: 2.5 }}>
+        {error && <Alert severity="error" role="alert">{error}</Alert>}
+        <TextField
+          label="Số điện thoại"
+          required
+          fullWidth
+          size="medium"
+          autoComplete="tel"
+          inputMode="tel"
+          value={phone}
+          onChange={(event) => setPhone(event.target.value)}
+        />
+        <TextField
+          label="Mật khẩu"
+          type="password"
+          required
+          fullWidth
+          size="medium"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: -1 }}>
+          <Box component={Link} href="/forgot-password" sx={{ color: "primary.main", fontWeight: 500, fontSize: "0.875rem" }}>
+            Quên mật khẩu?
           </Box>
-        </Grid>
-      </Grid>
-    </Box>
+        </Box>
+        <Button type="submit" variant="contained" size="large" fullWidth disabled={loading || !phone.trim() || !password}>
+          {loading ? <CircularProgress size={22} color="inherit" aria-label="Đang đăng nhập" /> : "Đăng nhập"}
+        </Button>
+      </Box>
+    </AuthShell>
   );
 }

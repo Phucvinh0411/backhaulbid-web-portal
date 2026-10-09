@@ -13,7 +13,9 @@ import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 
 import { ActionButton, AppCard, PageHeader } from "@/components/common";
 import BusinessVerificationPanel from "@/components/businessVerification/BusinessVerificationPanel";
+import CargoLiabilityPanel from "@/components/businessVerification/CargoLiabilityPanel";
 import EkycModal from "@/components/eKYC/EkycModal";
+import VerificationOverview from "@/components/eKYC/VerificationOverview";
 import { getRepresentativeVerificationStatus } from "@/services/representativeVerificationApi";
 
 const ROLE_COPY = {
@@ -33,9 +35,9 @@ const ROLE_COPY = {
 
 const EMPTY_EKYC = { status: "loading", fullName: "", failureReason: "" };
 
-function statusPresentation(status) {
+function statusPresentation(status, method) {
   if (status === "verified") {
-    return { label: "Đã xác thực", color: "success" };
+    return { label: method === "LOCAL_NFC_DEVELOPMENT" ? "Kiểm tra NFC hoàn tất" : method === "MANUAL_DOCUMENT_REVIEW" ? "Hồ sơ đã duyệt" : "Đã xác thực", color: "success" };
   }
   if (status === "pending") {
     return { label: "Đang xử lý", color: "warning" };
@@ -52,29 +54,29 @@ function StepStatus({ step, title, description, state }) {
 
   return (
     <Box
-      className={`rounded-2xl border p-4 transition-colors ${
+      className={`rounded-xl border p-4 transition-colors ${
         isDone
-          ? "border-emerald-200 bg-emerald-50/60"
+          ? "border-success-soft bg-success-soft/60"
           : isPending
-            ? "border-amber-200 bg-amber-50/60"
-            : "border-slate-200 bg-slate-50/70"
+            ? "border-warning-soft bg-warning-soft/60"
+            : "border-line bg-surface-sunken/70"
       }`}
     >
       <Box className="flex items-start gap-3">
         <Box
           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${
             isDone
-              ? "bg-emerald-500 text-white"
+              ? "bg-success text-white"
               : isPending
-                ? "bg-amber-500 text-white"
-                : "bg-slate-200 text-slate-500"
+                ? "bg-warning text-white"
+                : "bg-line text-ink-muted"
           }`}
         >
           {isDone ? <CheckCircleOutlinedIcon fontSize="small" /> : step}
         </Box>
         <Box className="min-w-0 flex-1">
-          <Typography className="!font-bold text-slate-800">{title}</Typography>
-          <Typography variant="body2" className="mt-1 text-slate-500">
+          <Typography className="!font-bold text-ink">{title}</Typography>
+          <Typography variant="body2" className="mt-1 text-ink-muted">
             {description}
           </Typography>
         </Box>
@@ -104,6 +106,7 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
                 : "unverified",
           fullName: data?.fullName || "",
           failureReason: data?.failureReason || "",
+          verificationMethod: data?.verificationMethod || "",
         });
       })
       .catch(() => {
@@ -115,7 +118,7 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
     };
   }, [verificationRefreshKey]);
 
-  const ekycStatus = statusPresentation(ekyc.status);
+  const ekycStatus = statusPresentation(ekyc.status, ekyc.verificationMethod);
   const ekycVerified = ekyc.status === "verified";
   const ekycPending = ekyc.status === "pending";
 
@@ -131,19 +134,19 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
       />
 
       <Box className="mt-6 space-y-6">
-        <AppCard showAccent={false} className="!rounded-3xl">
+        <AppCard showAccent={false} className="!rounded-xl">
           <Box className="p-5 sm:p-6">
             <Box className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <Box>
                 <Typography
                   variant="h6"
-                  className="flex items-center gap-2 !font-black text-[#1B4965]"
+                  className="flex items-center gap-2 !font-black text-[var(--color-brand)]"
                 >
                   <AssignmentIndOutlinedIcon />
                   Trạng thái hồ sơ xác thực
                 </Typography>
-                <Typography variant="body2" className="mt-1 text-slate-500">
-                  Dữ liệu doanh nghiệp chỉ xuất hiện sau khi tra cứu MST thành công. Không có dữ liệu mẫu trong hồ sơ chưa xác thực.
+                <Typography variant="body2" className="mt-1 text-ink-muted">
+                  Hoàn tất các bước xác thực để sử dụng chức năng đấu giá và ký hợp đồng.
                 </Typography>
               </Box>
               <Chip
@@ -161,7 +164,7 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
                   title="eKYC người đại diện"
                   description={
                     ekycVerified
-                      ? `Đã xác thực${ekyc.fullName ? `: ${ekyc.fullName}` : "."}`
+                      ? `${ekycStatus.label}${ekyc.fullName ? `: ${ekyc.fullName}` : "."}`
                       : ekycPending
                         ? "Hồ sơ đang được xử lý."
                         : "Cần xác thực CCCD và khuôn mặt trước."
@@ -195,22 +198,22 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
 
         <Grid container spacing={3} alignItems="stretch">
           <Grid item xs={12} lg={5}>
-            <AppCard showAccent={false} className="!rounded-3xl">
+            <AppCard showAccent={false} className="!rounded-xl">
               <Box className="p-5 sm:p-6">
                 <Typography
                   variant="h6"
-                  className="flex items-center gap-2 !font-black text-[#1B4965]"
+                  className="flex items-center gap-2 !font-black text-[var(--color-brand)]"
                 >
                   <SecurityOutlinedIcon />
                   eKYC người đại diện
                 </Typography>
-                <Typography variant="body2" className="mt-1 text-slate-500">
-                  Đây là nguồn duy nhất để xác định danh tính người đại diện. Thông tin không được tự điền trước khi eKYC thành công.
+                <Typography variant="body2" className="mt-1 text-ink-muted">
+                  Chuẩn bị CCCD và thực hiện xác thực khuôn mặt của người đại diện doanh nghiệp.
                 </Typography>
 
-                <Box className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                <Box className="mt-5 rounded-xl border border-line bg-surface-sunken/80 p-4">
                   <Box className="flex items-center justify-between gap-3">
-                    <Typography variant="body2" className="!font-bold text-slate-700">
+                    <Typography variant="body2" className="!font-bold text-ink">
                       Trạng thái hồ sơ
                     </Typography>
                     <Chip label={ekycStatus.label} color={ekycStatus.color} size="small" />
@@ -218,11 +221,11 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
 
                   {ekycVerified ? (
                     <Box className="mt-4 space-y-3">
-                      <Box className="rounded-xl border border-emerald-200 bg-white p-3">
-                        <Typography variant="caption" className="text-slate-500">
+                      <Box className="rounded-xl border border-success-soft bg-white p-3">
+                        <Typography variant="caption" className="text-ink-muted">
                           Họ và tên theo eKYC
                         </Typography>
-                        <Typography className="!font-bold text-slate-800">
+                        <Typography className="!font-bold text-ink">
                           {ekyc.fullName || "Đã xác thực thành công"}
                         </Typography>
                       </Box>
@@ -233,30 +236,26 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
                   ) : (
                     <Box className="mt-4">
                       <Alert severity={ekycPending ? "info" : "warning"} variant="outlined">
-                        {ekycPending
+                        {ekyc.failureReason || (ekycPending
                           ? "Hệ thống đang xử lý kết quả eKYC. Bạn chưa thể nộp hồ sơ doanh nghiệp."
-                          : "Chưa có thông tin định danh. Hãy bắt đầu eKYC để hệ thống lấy dữ liệu thật."}
+                          : "Hãy xác thực người đại diện trước khi nộp hồ sơ doanh nghiệp.")}
                       </Alert>
-                      {ekyc.failureReason ? (
-                        <Typography variant="body2" className="mt-2 text-rose-600">
-                          Lý do: {ekyc.failureReason}
-                        </Typography>
-                      ) : null}
-                      {!ekycPending ? (
+                      {(
                         <ActionButton
                           variant="primary"
                           size="md"
                           onClick={() => setOpenEkycModal(true)}
                           className="!mt-4"
                         >
-                          Xác thực người đại diện
+                          {ekycPending ? "Xác thực lại" : "Xác thực người đại diện"}
                         </ActionButton>
-                      ) : null}
+                      )}
                     </Box>
                   )}
                 </Box>
 
-                <Box className="mt-5 flex items-start gap-2 text-slate-500">
+                <VerificationOverview refreshKey={ekyc.status} verificationMethod={ekyc.verificationMethod} onRetry={() => setOpenEkycModal(true)} />
+                <Box className="mt-5 flex items-start gap-2 text-ink-muted">
                   <LockOutlinedIcon fontSize="small" className="mt-0.5" />
                   <Typography variant="caption">
                     Dữ liệu CCCD và khuôn mặt chỉ dùng để đối chiếu với thông tin đại diện trên MST.
@@ -267,14 +266,14 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
           </Grid>
 
           <Grid item xs={12} lg={7}>
-            <AppCard showAccent={false} className="!rounded-3xl">
+            <AppCard showAccent={false} className="!rounded-xl">
               <Box className="p-5 sm:p-6">
-                <Box className="mb-4 rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4">
-                  <Typography variant="body2" className="!font-bold text-[#1B4965]">
+                <Box className="mb-4 rounded-xl border border-info-soft bg-info-soft/60 p-4">
+                  <Typography variant="body2" className="!font-bold text-[var(--color-brand)]">
                     Bước 2 · Hồ sơ doanh nghiệp
                   </Typography>
-                  <Typography variant="body2" className="mt-1 text-slate-600">
-                    Tra cứu MST để tự điền thông tin, sau đó tải giấy tờ gửi admin duyệt.
+                  <Typography variant="body2" className="mt-1 text-ink-muted">
+                    Dữ liệu doanh nghiệp chỉ xuất hiện sau khi tra cứu MST thành công. Tải giấy tờ và gửi hồ sơ để được duyệt.
                   </Typography>
                 </Box>
 
@@ -287,7 +286,7 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
                 <Box
                   className={
                     !ekycVerified
-                      ? "pointer-events-none rounded-2xl bg-slate-50/40"
+                      ? "pointer-events-none rounded-xl bg-surface-sunken/40"
                       : ""
                   }
                 >
@@ -295,6 +294,12 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
                     refreshKey={verificationRefreshKey}
                   />
                 </Box>
+
+                {role === "carrier" && (
+                  <Box className="mt-6 border-t border-line pt-6">
+                    <CargoLiabilityPanel />
+                  </Box>
+                )}
               </Box>
             </AppCard>
           </Grid>

@@ -5,11 +5,8 @@ import Box from "@mui/material/Box";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
 import TextField from "@mui/material/TextField";
 import Grid from "@mui/material/Grid";
-import Chip from "@mui/material/Chip";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -19,7 +16,6 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Autocomplete from "@mui/material/Autocomplete";
 
 // Icons
-import PersonIcon from "@mui/icons-material/PersonOutlineOutlined";
 import BookIcon from "@mui/icons-material/ImportContactsOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/EditOutlined";
@@ -28,50 +24,22 @@ import CloseIcon from "@mui/icons-material/Close";
 
 import PageHeader from "@/components/common/PageHeader";
 import AppCard from "@/components/common/AppCard";
+import CoordinatePicker from "@/components/map/CoordinatePicker";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
-import EkycModal from "@/components/eKYC/EkycModal";
-import BusinessVerificationPanel from "@/components/businessVerification/BusinessVerificationPanel";
-import { getRepresentativeVerificationStatus } from "@/services/representativeVerificationApi";
 import { addressBookApi } from "@/services/addressBookApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { VIETNAM_PROVINCES } from "@/utils/provinces";
 
 const PROVINCE_NAMES = VIETNAM_PROVINCES.map((p) => p.name);
 
-export default function ProfileWalletScreen({ initialTab = 0 }) {
+/** Shipper address book. Representative eKYC and business verification live in Cài đặt tài khoản. */
+export default function ProfileWalletScreen() {
   const notify = useGlobalNotification();
-  const [activeTab, setActiveTab] = useState(initialTab);
   const [addresses, setAddresses] = useState([]);
   const [addressLoading, setAddressLoading] = useState(true);
   const [addressError, setAddressError] = useState("");
   const [addressSaving, setAddressSaving] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
-
-  const [representativeStatus, setRepresentativeStatus] = useState("loading");
-  const [openEkycModal, setOpenEkycModal] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-
-    getRepresentativeVerificationStatus()
-      .then((data) => {
-        if (!active) return;
-        setRepresentativeStatus(
-          data?.status === "VERIFIED"
-            ? "verified"
-            : data?.status === "PENDING"
-              ? "pending"
-              : "unverified"
-        );
-      })
-      .catch(() => {
-        if (active) setRepresentativeStatus("unverified");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const loadAddresses = useCallback(() => {
     setAddressLoading(true);
@@ -107,10 +75,6 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
     detail: "",
   });
 
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
-
   // --- Address Book Handlers ---
   const handleOpenAddressAdd = () => {
     setAddressEditMode(false);
@@ -133,6 +97,10 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
       contactPhone: addr.contactPhone,
       province: addr.province,
       detail: addr.detail,
+      latitude: addr.latitude ?? null,
+      longitude: addr.longitude ?? null,
+      coordinateSource: addr.coordinateSource ?? null,
+      coordinateConfirmedAt: addr.coordinateConfirmedAt ?? null,
     });
     setOpenAddressDialog(true);
   };
@@ -191,125 +159,28 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
 
   return (
     <Box className="w-full min-h-screen">
-      {/* Page Header */}
       <PageHeader
-        title="Tài Khoản & Thiết Lập"
-        subtitle="Quản lý thông tin doanh nghiệp, xác thực hồ sơ eKYC và sổ địa chỉ giao nhận."
+        title="Sổ địa chỉ kho"
+        subtitle="Kho lấy và giao hàng dùng lại khi tạo phiên. Ghim vị trí kho để bản đồ theo dõi vẽ được tuyến A → B."
         breadcrumbs={[
           { label: "Trang chủ", path: "/shipper/dashboard" },
-          { label: "Thiết lập tài khoản" },
+          { label: "Sổ địa chỉ kho" },
         ]}
       />
 
-      {/* Main Tabs Navigation */}
-      <Box className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-3xl p-3 shadow-[0_8px_32px_0_rgba(27,73,101,0.03)] mb-6">
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          variant="fullWidth"
-          sx={{
-            "& .MuiTabs-indicator": {
-              backgroundColor: "#1B4965",
-              height: 3,
-              borderRadius: 2,
-            },
-            "& .MuiTab-root": {
-              textTransform: "none",
-              fontWeight: 600,
-              fontSize: "0.92rem",
-              color: "#64748B",
-              minHeight: 48,
-              "&.Mui-selected": {
-                color: "#1B4965",
-                fontWeight: 700,
-              },
-            },
-          }}
-        >
-          <Tab icon={<PersonIcon className="!text-[1.2rem] mr-2" />} iconPosition="start" label="Hồ sơ & eKYC" />
-          <Tab icon={<BookIcon className="!text-[1.2rem] mr-2" />} iconPosition="start" label="Sổ địa chỉ" />
-        </Tabs>
-      </Box>
-
-      {/* TAB CONTENT 1: PROFILE & eKYC */}
-      {activeTab === 0 && (
-        <div className="space-y-6 animate-fade-in">
-          <AppCard
-            showAccent={false}
-            className="!rounded-3xl border border-slate-100"
-            sx={{
-              background: "rgba(255, 255, 255, 0.8)",
-              backdropFilter: "blur(20px)",
-              boxShadow: "0 8px 32px 0 rgba(27, 73, 101, 0.02)",
-            }}
-          >
-            <CardContent className="!p-6 sm:!p-8 space-y-6">
-              <div className="flex flex-col gap-4 rounded-2xl border border-sky-100 bg-sky-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <Typography variant="subtitle1" className="!font-bold text-[#1B4965]">
-                    eKYC người đại diện pháp luật
-                  </Typography>
-                  <Typography variant="body2" className="text-slate-500">
-                    Định danh CCCD và khuôn mặt cá nhân. Quy trình này độc lập với hồ sơ doanh nghiệp.
-                  </Typography>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Chip
-                    label={
-                      representativeStatus === "verified"
-                        ? "Đã xác thực"
-                        : representativeStatus === "pending"
-                          ? "Đang xử lý"
-                          : representativeStatus === "loading"
-                            ? "Đang kiểm tra"
-                            : "Chưa xác thực"
-                    }
-                    color={
-                      representativeStatus === "verified"
-                        ? "success"
-                        : representativeStatus === "pending"
-                          ? "warning"
-                          : "default"
-                    }
-                    size="small"
-                    className="!font-bold"
-                  />
-                  {representativeStatus !== "verified" && (
-                    <Button
-                      variant="contained"
-                      size="small"
-                      disabled={representativeStatus === "loading"}
-                      onClick={() => setOpenEkycModal(true)}
-                      className="!rounded-full !font-bold !normal-case"
-                      sx={{ backgroundColor: "#1B4965" }}
-                    >
-                      Xác thực ngay
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              <BusinessVerificationPanel />
-            </CardContent>
-          </AppCard>
-        </div>
-      )}
-
-      {/* TAB CONTENT 3: ADDRESS BOOK */}
-      {activeTab === 1 && (
         <div className="space-y-6 animate-fade-in">
           {/* Toolbar with Add Address Button */}
           <div className="flex justify-between items-center">
-            <Typography variant="body2" className="text-slate-400 font-semibold">
+            <Typography variant="body2" className="text-ink-subtle font-semibold">
               Danh sách địa điểm bến bãi thường dùng lấy / nhận hàng hóa
             </Typography>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleOpenAddressAdd}
-              className="!rounded-2xl !py-2.5 !px-5 !text-xs !font-bold !capitalize shadow-md"
+              className="!rounded-xl !py-2.5 !px-5 !text-xs !font-bold !capitalize shadow-md"
               sx={{
-                background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)",
+                background: "var(--color-brand)",
               }}
             >
               Thêm địa chỉ mới
@@ -318,20 +189,20 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
 
           {/* Grid list of addresses */}
           {addressLoading ? (
-            <Box className="flex min-h-40 items-center justify-center rounded-3xl border border-slate-100 bg-white/70">
-              <CircularProgress size={28} sx={{ color: "#1B4965" }} />
+            <Box className="flex min-h-40 items-center justify-center rounded-xl border border-line bg-white/70">
+              <CircularProgress size={28} sx={{ color: "var(--color-brand)" }} />
             </Box>
           ) : addressError ? (
-            <Box className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-3xl border border-rose-100 bg-rose-50/60 p-6 text-center">
-              <Typography className="!font-semibold text-rose-700">{addressError}</Typography>
+            <Box className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-xl border border-danger-soft bg-danger-soft/60 p-6 text-center">
+              <Typography className="!font-semibold text-danger">{addressError}</Typography>
               <Button variant="outlined" onClick={loadAddresses} className="!rounded-xl !font-bold !capitalize">
                 Thử tải lại
               </Button>
             </Box>
           ) : addresses.length === 0 ? (
-            <Box className="flex min-h-40 flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white/70 p-6 text-center">
-              <Typography className="!font-bold text-slate-700">Chưa có địa chỉ nào được lưu</Typography>
-              <Typography variant="body2" className="text-slate-500">
+            <Box className="flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-line bg-white/70 p-6 text-center">
+              <Typography className="!font-bold text-ink">Chưa có địa chỉ nào được lưu</Typography>
+              <Typography variant="body2" className="text-ink-muted">
                 Thêm địa chỉ kho hoặc điểm giao nhận để chọn nhanh khi tạo phiên đấu giá.
               </Typography>
             </Box>
@@ -341,33 +212,33 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
               <Grid item xs={12} md={6} lg={4} key={addr.id}>
                 <AppCard
                   showAccent={false}
-                  className="group hover:border-[#1B4965]/20 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300 border border-slate-100 !rounded-3xl relative overflow-hidden"
+                  className="group hover:border-[var(--color-brand)]/20 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300 border border-line !rounded-xl relative overflow-hidden"
                   sx={{
                     background: "rgba(255, 255, 255, 0.8)",
                     backdropFilter: "blur(20px)",
                   }}
                 >
                   {/* Decorative indicator line */}
-                  <Box className="absolute top-0 left-0 w-full h-1 bg-[#1B4965] opacity-20 group-hover:opacity-100 transition-opacity" />
+                  <Box className="absolute top-0 left-0 w-full h-1 bg-[var(--color-brand)] opacity-20 group-hover:opacity-100 transition-opacity" />
                   
                   <CardContent className="!p-5 space-y-3.5">
                     {/* Address title */}
                     <div className="flex items-center justify-between">
-                      <Typography className="!font-bold text-slate-700 text-sm truncate max-w-[200px]">
+                      <Typography className="!font-bold text-ink text-sm truncate max-w-[200px]">
                         {addr.label}
                       </Typography>
                       <div className="flex gap-0.5">
                         <IconButton
                           size="small"
                           onClick={() => handleOpenAddressEdit(addr)}
-                          className="text-slate-400 hover:text-[#1B4965]"
+                          className="text-ink-subtle hover:text-[var(--color-brand)]"
                         >
                           <EditIcon fontSize="small" />
                         </IconButton>
                         <IconButton
                           size="small"
                           onClick={() => handleAddressDelete(addr.id)}
-                          className="text-slate-400 hover:text-rose-500"
+                          className="text-ink-subtle hover:text-danger"
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
@@ -375,15 +246,15 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
                     </div>
 
                     {/* Detailed info */}
-                    <div className="space-y-1.5 text-xs text-slate-500 font-medium">
+                    <div className="space-y-1.5 text-xs text-ink-muted font-medium">
                       <div>
-                        <strong className="text-slate-400 font-semibold block text-[0.65rem] uppercase">Người liên hệ</strong>
-                        <span className="text-slate-700 font-semibold">{addr.contactName} ({addr.contactPhone})</span>
+                        <strong className="text-ink-subtle font-semibold block text-[0.65rem] uppercase">Người liên hệ</strong>
+                        <span className="text-ink font-semibold">{addr.contactName} ({addr.contactPhone})</span>
                       </div>
                       <div>
-                        <strong className="text-slate-400 font-semibold block text-[0.65rem] uppercase">Địa chỉ kho bãi</strong>
-                        <span className="text-slate-600 block truncate mt-0.5">{addr.detail}</span>
-                        <span className="text-slate-400 font-bold block">{addr.province}</span>
+                        <strong className="text-ink-subtle font-semibold block text-[0.65rem] uppercase">Địa chỉ kho bãi</strong>
+                        <span className="text-ink-muted block truncate mt-0.5">{addr.detail}</span>
+                        <span className="text-ink-subtle font-bold block">{addr.province}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -393,7 +264,6 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
             </Grid>
           )}
         </div>
-      )}
 
 
       {/* Address Edit/Add Dialog */}
@@ -404,25 +274,25 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
         fullWidth
         className="backdrop-blur-sm"
         PaperProps={{
-          className: "!rounded-3xl !p-2 shadow-2xl",
+          className: "!rounded-xl !p-2 shadow-2xl",
         }}
       >
-        <DialogTitle className="flex justify-between items-center !font-bold text-slate-800 !px-4 !py-3 border-b border-slate-100">
+        <DialogTitle className="flex justify-between items-center !font-bold text-ink !px-4 !py-3 border-b border-line">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold">
+            <div className="w-9 h-9 rounded-xl bg-info-soft text-info flex items-center justify-center font-bold">
               <BookIcon className="!text-[1.2rem]" />
             </div>
             <div>
-              <span className="block text-base font-extrabold text-slate-800">
+              <span className="block text-base font-extrabold text-ink">
                 {addressEditMode ? "Cập nhật địa chỉ kho bãi" : "Thêm địa chỉ kho bãi mới"}
               </span>
-              <span className="block text-xs text-slate-400 font-normal">
+              <span className="block text-xs text-ink-subtle font-normal">
                 Điền thông tin kho bãi để chọn nhanh khi tạo phiên đấu giá
               </span>
             </div>
           </div>
-          <IconButton size="small" onClick={() => setOpenAddressDialog(false)} className="!bg-slate-100 hover:!bg-slate-200">
-            <CloseIcon className="!text-[1rem] text-slate-600" />
+          <IconButton size="small" onClick={() => setOpenAddressDialog(false)} className="!bg-surface-sunken hover:!bg-line">
+            <CloseIcon className="!text-[1rem] text-ink-muted" />
           </IconButton>
         </DialogTitle>
         <DialogContent className="!pt-6 !pb-4 flex flex-col gap-6">
@@ -440,15 +310,15 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
             freeSolo
             options={PROVINCE_NAMES}
             value={addressForm.province || ""}
-            onChange={(event, newValue) => setAddressForm({ ...addressForm, province: newValue || "" })}
-            onInputChange={(event, newInputValue) => setAddressForm({ ...addressForm, province: newInputValue })}
+            onChange={(event, newValue) => setAddressForm((old) => ({ ...old, province: newValue || "", ...(old.province !== (newValue || "") ? { latitude: null, longitude: null, coordinateSource: null, coordinateConfirmedAt: null } : {}) }))}
+            onInputChange={(event, newInputValue) => setAddressForm((old) => ({ ...old, province: newInputValue, ...(old.province !== newInputValue ? { latitude: null, longitude: null, coordinateSource: null, coordinateConfirmedAt: null } : {}) }))}
             renderInput={(params) => (
               <TextField
                 {...params}
                 fullWidth
                 required
                 label="Tỉnh / Thành phố"
-                placeholder="VD: TP. Hồ Chí Minh / Hà Nội"
+                placeholder="VD: Hồ Chí Minh / Hà Nội"
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
               />
             )}
@@ -461,10 +331,12 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
             fullWidth
             required
             value={addressForm.detail}
-            onChange={(e) => setAddressForm({ ...addressForm, detail: e.target.value })}
+            onChange={(e) => setAddressForm({ ...addressForm, detail: e.target.value, latitude: null, longitude: null, coordinateSource: null, coordinateConfirmedAt: null })}
             placeholder="VD: Số 123 Đường Nguyễn Thị Minh Khai, Phường 6, Quận 3"
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
+
+          <CoordinatePicker label="Vị trí kho" value={addressForm} disabled={addressSaving} onChange={(point) => setAddressForm((old) => ({ ...old, ...(point || { latitude: null, longitude: null, coordinateSource: null, coordinateConfirmedAt: null }) }))} />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <TextField
@@ -487,11 +359,11 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
             />
           </div>
         </DialogContent>
-        <DialogActions className="!px-6 !py-4 flex justify-end gap-3 border-t border-slate-100">
+        <DialogActions className="!px-6 !py-4 flex justify-end gap-3 border-t border-line">
           <Button
             onClick={() => setOpenAddressDialog(false)}
             variant="text"
-            className="!text-slate-500 !font-bold !capitalize !rounded-xl"
+            className="!text-ink-muted !font-bold !capitalize !rounded-xl"
           >
             Đóng
           </Button>
@@ -501,7 +373,7 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
             disabled={addressSaving}
             className="!font-bold !capitalize !rounded-xl !px-6 !py-2.5 shadow-md"
             sx={{
-              background: "linear-gradient(135deg, #1B4965 0%, #0D2B3E 100%)",
+              background: "var(--color-brand)",
             }}
           >
             {addressSaving ? "Đang lưu..." : addressEditMode ? "Lưu lại" : "Thêm mới"}
@@ -514,11 +386,11 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
         onClose={() => setPendingDeleteId(null)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ className: "!rounded-3xl !p-2" }}
+        PaperProps={{ className: "!rounded-xl !p-2" }}
       >
-        <DialogTitle className="!font-bold text-slate-800">Xóa địa chỉ đã lưu?</DialogTitle>
+        <DialogTitle className="!font-bold text-ink">Xóa địa chỉ đã lưu?</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" className="text-slate-600">
+          <Typography variant="body2" className="text-ink-muted">
             Địa chỉ này sẽ bị xóa khỏi sổ địa chỉ dùng chung. Bạn có muốn tiếp tục không?
           </Typography>
         </DialogContent>
@@ -537,17 +409,6 @@ export default function ProfileWalletScreen({ initialTab = 0 }) {
         </DialogActions>
       </Dialog>
 
-      {/* Trigger eKYC Modal from Settings */}
-      {openEkycModal && (
-        <EkycModal 
-          open={openEkycModal} 
-          onClose={() => setOpenEkycModal(false)}
-          onComplete={() => {
-            setOpenEkycModal(false);
-            setRepresentativeStatus("verified");
-          }} 
-        />
-      )}
     </Box>
   );
 }
