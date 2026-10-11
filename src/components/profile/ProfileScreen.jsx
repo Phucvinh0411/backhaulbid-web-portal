@@ -143,9 +143,8 @@ function RepresentativePanel({ state, profile, retry }) {
         { label: "Số CCCD 12 số", value: value.citizenId, unavailable: "Chưa thu thập" },
         { label: "Ngày sinh", value: dateLabel(value.dateOfBirth), unavailable: "Chưa thu thập" },
         { label: "Giới tính", value: value.gender === "M" ? "Nam" : value.gender === "F" ? "Nữ" : value.gender, unavailable: "Chưa thu thập" },
-        { label: "Nơi ở", value: value.residenceAddress, unavailable: "Chưa thu thập" },
       ]} />
-      {(profile.unavailable.citizenId || profile.unavailable.residenceAddress) && <Box sx={{ mt: 2.5, p: 1.5, borderRadius: 1.5, bgcolor: "var(--color-surface-sunken)" }}><Typography sx={{ fontSize: 12, color: "text.secondary" }}>Backend hiện chưa cung cấp số CCCD đủ 12 số và nơi ở; các trường này không được suy ra từ MRZ hoặc địa chỉ doanh nghiệp.</Typography></Box>}
+      {profile.unavailable.citizenId && <Box sx={{ mt: 2.5, p: 1.5, borderRadius: 1.5, bgcolor: "var(--color-surface-sunken)" }}><Typography sx={{ fontSize: 12, color: "text.secondary" }}>Backend hiện chưa cung cấp số CCCD đủ 12 số; trường này không được suy ra từ MRZ.</Typography></Box>}
     </AppCard>
   );
 }

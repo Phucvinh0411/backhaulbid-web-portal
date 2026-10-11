@@ -34,11 +34,6 @@ const adminNavigation = [
         icon: PeopleIcon,
       },
       {
-        title: "Hồ sơ người đại diện",
-        path: "/admin/representative-verifications",
-        icon: FactCheckIcon,
-      },
-      {
         title: "Duyệt doanh nghiệp",
         path: "/admin/business-verifications",
         icon: FactCheckIcon,

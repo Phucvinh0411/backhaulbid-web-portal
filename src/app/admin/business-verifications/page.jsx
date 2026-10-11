@@ -68,6 +68,63 @@ function getRepresentativeMatchStatus(row) {
   return "UNKNOWN";
 }
 
+const EKYC_IMAGES = [
+  { part: "front", label: "Mặt trước CCCD" },
+  { part: "back", label: "Mặt sau CCCD" },
+  { part: "selfie", label: "Ảnh khuôn mặt" },
+];
+
+function formatIsoDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : "Chưa có";
+}
+
+function formatGender(value) {
+  return value === "M" ? "Nam" : value === "F" ? "Nữ" : "Chưa có";
+}
+
+/** Loads one eKYC image through the admin evidence endpoint; the image stays in memory for this admin session. */
+function EkycEvidenceThumb({ reportId, part, label }) {
+  const [src, setSrc] = useState(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    let objectUrl = null;
+    axiosClient
+      .get(`/api/v1/admin/representative-verifications/${reportId}/evidence/${part}`, {
+        responseType: "blob",
+      })
+      .then(({ data }) => {
+        if (!live) return;
+        objectUrl = URL.createObjectURL(data);
+        setSrc(objectUrl);
+      })
+      .catch(() => {
+        if (live) setFailed(true);
+      });
+    return () => {
+      live = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [reportId, part]);
+
+  return (
+    <Box className="flex flex-col items-center gap-1">
+      {src ? (
+        <img src={src} alt={label} className="h-28 w-full rounded-lg object-cover" />
+      ) : (
+        <Box className="flex h-28 w-full items-center justify-center rounded-lg bg-black/5 text-xs text-ink-muted">
+          {failed ? "Không tải được ảnh" : "Đang tải…"}
+        </Box>
+      )}
+      <Typography variant="caption" className="text-ink-muted">
+        {label}
+      </Typography>
+    </Box>
+  );
+}
+
 export default function AdminBusinessVerificationsPage() {
   const [status, setStatus] = useState("PENDING");
   const [rows, setRows] = useState([]);
@@ -336,6 +393,52 @@ export default function AdminBusinessVerificationsPage() {
               Nếu không trùng, admin cần kiểm tra giấy ủy quyền cùng giấy phép
               kinh doanh trước khi phê duyệt.
             </Typography>
+          </Box>
+
+          <Box className="rounded-xl border p-4">
+            <Typography variant="subtitle2" className="!font-bold">
+              eKYC của người đã xác thực trên hồ sơ này
+            </Typography>
+            {selected?.ekycRepresentative ? (
+              <>
+                <Typography variant="body2">
+                  Họ và tên: {selected.ekycRepresentative.fullName || "Chưa có"}
+                </Typography>
+                <Typography variant="body2">
+                  Ngày sinh: {formatIsoDate(selected.ekycRepresentative.dateOfBirth)}
+                </Typography>
+                <Typography variant="body2">
+                  Giới tính: {formatGender(selected.ekycRepresentative.gender)}
+                </Typography>
+                <Typography variant="body2">
+                  Số CCCD 12 số: {selected.ekycRepresentative.citizenId || "Chưa có"}
+                </Typography>
+                <Typography variant="body2">
+                  Kết quả eKYC: {selected.ekycRepresentative.status} ·{" "}
+                  {selected.ekycRepresentative.verificationMethod || "chưa có phương thức"}
+                </Typography>
+                {selected.ekycRepresentative.evidenceAvailable ? (
+                  <Box className="mt-3 grid grid-cols-3 gap-2">
+                    {EKYC_IMAGES.map(({ part, label }) => (
+                      <EkycEvidenceThumb
+                        key={part}
+                        reportId={selected.ekycRepresentative.reportId}
+                        part={part}
+                        label={label}
+                      />
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" className="mt-2 text-ink-muted">
+                    Ảnh eKYC đã hết thời hạn lưu.
+                  </Typography>
+                )}
+              </>
+            ) : (
+              <Typography variant="body2" className="text-ink-muted">
+                Chủ tài khoản chưa có hồ sơ eKYC.
+              </Typography>
+            )}
           </Box>
 
           <Box className="flex flex-wrap gap-2">

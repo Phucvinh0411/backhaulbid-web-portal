@@ -39,7 +39,6 @@ export function mapRepresentativeProfile(verificationInput, overviewInput) {
     citizenId: citizenId && /^\d{12}$/.test(citizenId) ? citizenId : null,
     dateOfBirth: mapOwnerField(overview.dateOfBirth),
     gender: mapOwnerField(overview.gender),
-    residenceAddress: mapOwnerField(overview.residenceAddress),
   };
 
   return {

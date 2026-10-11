@@ -47,7 +47,7 @@ export function VerificationDetails({ report, admin = false, reveal = false }) {
       <Typography variant="body2">{NFC_CHECK_LABELS[key] || key}: {NFC_CHECK_STATUS[check.status] || check.status}</Typography>
       <Typography variant="caption" color="text.secondary">{check.source} · {check.reasonCode}</Typography>
     </Box>)}
-    <Typography variant="body2">Phương thức: {report.verificationMethod === "MANUAL_DOCUMENT_REVIEW" ? "Duyệt hồ sơ bởi quản trị viên" : report.verificationMethod === "LOCAL_NFC_DEVELOPMENT" ? "Kiểm tra NFC theo chính sách phát triển" : "Kết quả tự động và báo cáo kiểm chứng"}</Typography>
+    <Typography variant="body2">Phương thức: {report.verificationMethod === "MANUAL_DOCUMENT_REVIEW" ? "Duyệt hồ sơ bởi quản trị viên" : report.verificationMethod === "NFC_AUTO" ? "Tự động chấp nhận sau khi đạt toàn bộ bước kiểm tra NFC" : report.verificationMethod === "LOCAL_NFC_DEVELOPMENT" ? "Kiểm tra NFC theo chính sách phát triển" : "Kết quả tự động và báo cáo kiểm chứng"}</Typography>
     {report.reviewReason && <Typography variant="body2">Lý do xử lý: {report.reviewReason}</Typography>}
     {report.evidenceAvailable ? <>
       <Typography variant="body2" color="text.secondary">Ảnh bằng chứng tự hết hạn. Chỉ người có quyền được xem.</Typography>
@@ -90,8 +90,8 @@ export default function VerificationOverview({ refreshKey = 0, fallback, onRetry
     {error && <Alert severity="error">{error}</Alert>}
     {summary?.status === "VERIFIED" && <OwnerIdentitySummary summary={summary} />}
     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-      {summary?.status === "VERIFIED" && ownerHasMaskedField(summary) && <Button variant="outlined" onClick={() => setReveal(true)}>Hiện ngày sinh</Button>}
-      {summary?.status === "VERIFIED" && reveal && <Button variant="outlined" onClick={() => setReveal(false)}>Ẩn ngày sinh</Button>}
+      {summary?.status === "VERIFIED" && ownerHasMaskedField(summary) && <Button variant="outlined" onClick={() => setReveal(true)}>Hiện thông tin cá nhân</Button>}
+      {summary?.status === "VERIFIED" && reveal && <Button variant="outlined" onClick={() => setReveal(false)}>Ẩn thông tin cá nhân</Button>}
       {status.action === "refresh" && <Button variant="outlined" onClick={() => setGeneration(v => v + 1)}>Cập nhật kết quả</Button>}
       {status.action === "retry" && onRetry && <Button variant="contained" onClick={onRetry}>Thực hiện lại</Button>}
     </Box>
