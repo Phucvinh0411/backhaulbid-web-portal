@@ -37,7 +37,7 @@ const EMPTY_EKYC = { status: "loading", fullName: "", failureReason: "" };
 
 function statusPresentation(status, method) {
   if (status === "verified") {
-    return { label: method === "LOCAL_NFC_DEVELOPMENT" ? "Kiểm tra NFC hoàn tất" : method === "MANUAL_DOCUMENT_REVIEW" ? "Hồ sơ đã duyệt" : "Đã xác thực", color: "success" };
+    return { label: (method === "LOCAL_NFC_DEVELOPMENT" || method === "NFC_AUTO") ? "Kiểm tra NFC hoàn tất" : method === "MANUAL_DOCUMENT_REVIEW" ? "Hồ sơ đã duyệt" : "Đã xác thực", color: "success" };
   }
   if (status === "pending") {
     return { label: "Đang xử lý", color: "warning" };

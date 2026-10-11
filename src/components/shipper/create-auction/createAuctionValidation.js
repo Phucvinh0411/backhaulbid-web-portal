@@ -1,5 +1,10 @@
 import { getParticipationFeeQuote } from "./mockData.js";
 import { coordinate } from "../../tracking/trackingPresentation.js";
+import {
+  CHECKLIST_NOTE,
+  everyDocumentClassified,
+  valueDocumentChecklist,
+} from "./valueDocumentChecklist.js";
 
 const requiredRouteFields = [
   "LocationName",
@@ -25,6 +30,16 @@ export const validateCreateAuctionForm = (form, now = new Date()) => {
     return "Trọng lượng phải lớn hơn 0.";
   }
   if (!hasValue(form.requiredVehicleType)) return "Vui lòng chọn loại xe yêu cầu.";
+  const documents = form.valueDocuments ?? [];
+  if (!everyDocumentClassified(documents)) return "Chọn loại cho từng chứng từ giá trị hàng.";
+  const checklist = valueDocumentChecklist({
+    requireCarrierCoverage: form.requireCarrierCoverage,
+    goodsValue: form.goodsValue,
+    documents,
+  });
+  if (!checklist.satisfied) {
+    return `Phiên yêu cầu nhà xe có bảo hiểm còn thiếu: ${checklist.missingItems.join("; ")}. ${CHECKLIST_NOTE}`;
+  }
   if (!hasCompleteLocation(form, "from")) {
     return "Vui lòng chọn đầy đủ điểm lấy hàng (tên kho, tỉnh/thành và địa chỉ).";
   }
@@ -92,8 +107,10 @@ export const mapFormToAuctionPayload = (form) => ({
   weight: Number(form.weight),
   volume: form.volume ? Number(form.volume) : undefined,
   goodsValue: form.goodsValue ? Number(form.goodsValue).toString() : undefined,
-  // Value documents are upload URLs from the private folder; the server keeps only their keys.
-  valueDocuments: form.valueDocuments?.length ? [...form.valueDocuments] : undefined,
+  // Value documents go as their private object key and the kind the shipper chose; no storage URL is sent.
+  valueDocuments: form.valueDocuments?.length
+    ? form.valueDocuments.map((document) => ({ key: document.key, kind: document.kind }))
+    : undefined,
   // Sent only when the shipper ticks the box; without it the payload is the same as before this requirement existed.
   ...(form.requireCarrierCoverage === true ? { requireCarrierCoverage: true } : {}),
   vehicleTypeRequired: form.requiredVehicleType,

@@ -66,3 +66,14 @@ export const selectWinner = (auctionId, bidId) =>
 
 export const flagAuction = (auctionId, payload) =>
   apiService.post(biddingPath(`/auctions/${auctionId}/fraud-flag`), payload);
+
+// The owner's value documents of an auction, with the carrier-coverage checklist. Only the auction's shipper and an
+// admin get it; the response never carries a storage key or URL.
+export const listAuctionValueDocuments = (auctionId) =>
+  apiService
+    .get(biddingPath(`/auctions/${auctionId}/value-documents`))
+    .then(unwrapApiData);
+
+// One value document, read as a blob with the signed-in session and never linked publicly.
+export const downloadAuctionValueDocument = (fileLink) =>
+  apiService.get(fileLink, undefined, { responseType: "blob" });

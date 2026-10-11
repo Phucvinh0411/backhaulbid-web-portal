@@ -3,6 +3,7 @@ export function nfcResultPresentation(report = {}) {
   if (report.status === 'REJECTED') return { title: 'Hồ sơ cần thực hiện lại', message: report.reviewReason || 'Xem lý do và thực hiện lại bước cần thiết.', tone: 'danger' };
   if (report.status === 'VERIFIED' && report.verificationMethod === 'MANUAL_DOCUMENT_REVIEW') return { title: 'Hồ sơ đã được duyệt', message: 'Phương thức: duyệt hồ sơ bởi quản trị viên.', tone: 'success' };
   if (report.status === 'VERIFIED' && report.verificationMethod === 'LOCAL_NFC_DEVELOPMENT') return { title: 'Đã hoàn tất kiểm tra NFC', message: 'Kết quả được ghi nhận theo chính sách thử nghiệm; đây chưa phải xác nhận của cơ quan cấp CCCD.', tone: 'success' };
+  if (report.status === 'VERIFIED' && report.verificationMethod === 'NFC_AUTO') return { title: 'Đã hoàn tất kiểm tra NFC', message: 'Hồ sơ đạt toàn bộ bước kiểm tra và được chấp nhận tự động. Chưa đối chiếu với nguồn cấp CCCD.', tone: 'success' };
   if (report.status === 'VERIFIED') return { title: 'Danh tính đã được xác minh', message: 'Xem phương thức và kết quả từng bước trong hồ sơ.', tone: 'success' };
   switch (report.captureConclusion || report.conclusion) {
     case 'COMPLETED': return { title: 'Đã hoàn tất kiểm tra eKYC', message: 'Các bước kiểm tra trên thiết bị đều đạt. Bạn có thể xem lại hồ sơ và mức kiểm chứng từng bước.', tone: 'success' };
@@ -28,6 +29,9 @@ const MISSING = 'Chưa có thông tin';
 export function ownerStatusPresentation(summary = {}, verificationMethod = summary.verificationMethod) {
   switch (summary.status) {
     case 'VERIFIED': {
+      if (verificationMethod === 'NFC_AUTO') {
+        return { title: 'Đã hoàn tất kiểm tra NFC', message: 'Hồ sơ đạt toàn bộ bước kiểm tra và được chấp nhận tự động. Chưa đối chiếu với nguồn cấp CCCD.', tone: 'success', action: null };
+      }
       return verificationMethod === 'LOCAL_NFC_DEVELOPMENT'
         ? { title: 'Đã hoàn tất kiểm tra NFC', message: 'Kết quả được ghi nhận theo chính sách thử nghiệm; đây chưa phải xác nhận của cơ quan cấp CCCD.', tone: 'success', action: null }
         : { title: 'Đã xác thực danh tính', message: '', tone: 'success', action: null };
@@ -63,7 +67,6 @@ export function ownerIdentityRows(summary = {}) {
     ['Số CCCD', text('citizenId')],
     ['Ngày sinh', text('dateOfBirth', formatIdentityDate)],
     ['Giới tính', text('gender', (value) => ({ M: 'Nam', F: 'Nữ' })[value])],
-    ['Nơi ở', text('residenceAddress')],
   ];
 }
 

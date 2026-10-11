@@ -29,6 +29,17 @@ export const contractApi = {
   markClaimReady: (claimId) => apiService.post(`/api/v1/claims/${claimId}/ready`, {}),
   // Evidence is private: fetched with the signed-in session as a blob, never linked publicly.
   downloadClaimEvidence: (fileLink) => apiService.get(fileLink, undefined, { responseType: "blob" }),
+  // Sharing hands a ready claim to the trip's carrier only. The carrier's receipt is recorded separately.
+  shareTripClaim: (claimId) => apiService.post(`/api/v1/claims/${claimId}/share`, {}),
+  listSharedClaims: () => apiService.get("/api/v1/claims/shared"),
+  acknowledgeSharedClaim: (claimId) => apiService.post(`/api/v1/claims/${claimId}/acknowledge`, {}),
+  // The claim pack is a ZIP read with the signed-in session; it is never a public link.
+  downloadClaimPackage: (claimId) =>
+    apiService.get(`/api/v1/claims/${claimId}/package`, undefined, { responseType: "blob" }),
+  // Goods-value documents of the trip: the shipper and admins only. The file is read as a blob, never linked publicly.
+  listTripCargoDocuments: (tripId) => apiService.get(`/api/v1/trips/${tripId}/cargo-documents`),
+  addTripCargoDocument: (tripId, payload) => apiService.post(`/api/v1/trips/${tripId}/cargo-documents`, payload),
+  downloadTripCargoDocument: (fileLink) => apiService.get(fileLink, undefined, { responseType: "blob" }),
   // Pickup handover: the driver records it in the app; the shipper confirms it. Zero or one record per trip.
   getTripHandover: (tripId) => apiService.get(`/api/v1/trips/${tripId}/handover`),
   confirmTripHandover: (tripId, payload) => apiService.post(`/api/v1/trips/${tripId}/handover/confirm`, payload),

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { tokens } from "@/theme/theme";
+import { fetchRoadPreview } from "@/services/roadPreviewApi";
 import {
   MapContainer,
   TileLayer,
@@ -137,6 +138,63 @@ function AutoFitBounds({ origin, dest, activeTarget }) {
   return null;
 }
 
+/**
+ * Road line between A and B. It draws the provider's road geometry once the backend has it; until then, or when no
+ * road route exists, it draws a dashed straight line and reports the state through onChange.
+ */
+function RoadLine({ from, to, onChange }) {
+  const [road, setRoad] = useState(null);
+
+  useEffect(() => {
+    let live = true;
+    let timer = null;
+    let attempts = 0;
+    setRoad(null);
+    onChange?.("Đang tính tuyến đường bộ…");
+
+    const load = () => {
+      fetchRoadPreview(from, to)
+        .then((data) => {
+          if (!live) return;
+          if (data?.status === "READY" && Array.isArray(data?.geometry?.coordinates)) {
+            setRoad(data.geometry.coordinates.map(([lng, lat]) => [lat, lng]));
+            const km = data.distanceMeters ? (data.distanceMeters / 1000).toFixed(1) : null;
+            onChange?.(km ? `Theo đường bộ khoảng ${km} km` : "Đã có tuyến đường bộ");
+            return;
+          }
+          if (data?.status === "PENDING" && attempts < 10) {
+            attempts += 1;
+            timer = window.setTimeout(load, 1200);
+            return;
+          }
+          onChange?.("Chưa có tuyến đường bộ, đang hiển thị đường thẳng");
+        })
+        .catch(() => {
+          if (live) onChange?.("Chưa có tuyến đường bộ, đang hiển thị đường thẳng");
+        });
+    };
+
+    load();
+    return () => {
+      live = false;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [from.lat, from.lng, to.lat, to.lng, onChange]);
+
+  if (road) {
+    return <Polyline positions={road} pathOptions={{ color: tokens.brand, weight: 5, opacity: 0.9 }} />;
+  }
+  return (
+    <Polyline
+      positions={[
+        [from.lat, from.lng],
+        [to.lat, to.lng],
+      ]}
+      pathOptions={{ color: tokens.brand, weight: 4, dashArray: "6, 8", opacity: 0.85 }}
+    />
+  );
+}
+
 export default function RoutePickerMap({
   origin,
   dest,
@@ -149,6 +207,7 @@ export default function RoutePickerMap({
   const hasDest =
     dest && Number.isFinite(Number(dest.lat)) && Number.isFinite(Number(dest.lng));
 
+  const [roadInfo, setRoadInfo] = useState(null);
   const originIcon = useMemo(() => createMarkerIcon("var(--color-success)", "A"), []);
   const destIcon = useMemo(() => createMarkerIcon("var(--color-warning)", "B"), []);
 
@@ -279,22 +338,34 @@ export default function RoutePickerMap({
           </Marker>
         )}
 
-        {/* Đường nối giữa A và B */}
+        {/* Tuyến đường bộ giữa A và B; đường thẳng chỉ là dự phòng khi chưa có tuyến */}
         {hasOrigin && hasDest && (
-          <Polyline
-            positions={[
-              [Number(origin.lat), Number(origin.lng)],
-              [Number(dest.lat), Number(dest.lng)],
-            ]}
-            pathOptions={{
-              color: tokens.brand,
-              weight: 4,
-              dashArray: "6, 8",
-              opacity: 0.85,
-            }}
+          <RoadLine
+            from={{ lat: Number(origin.lat), lng: Number(origin.lng) }}
+            to={{ lat: Number(dest.lat), lng: Number(dest.lng) }}
+            onChange={setRoadInfo}
           />
         )}
       </MapContainer>
+
+      {hasOrigin && hasDest && roadInfo && (
+        <div
+          style={{
+            position: "absolute",
+            left: 12,
+            bottom: 12,
+            zIndex: 500,
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-line)",
+            borderRadius: 8,
+            padding: "6px 10px",
+            fontSize: 12,
+            color: "var(--color-ink-muted)",
+          }}
+        >
+          {roadInfo}
+        </div>
+      )}
 
       {/* ─── Thanh điều khiển & Hướng dẫn phủ trên bản đồ (Floating Overlays) ─── */}
       <div
