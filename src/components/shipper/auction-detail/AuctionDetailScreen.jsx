@@ -18,6 +18,7 @@ import { mapCarrierProfile } from "@/services/carrierProfileMapper";
 import { AUCTION_TYPE_META, getAuctionPhase, getAuctionPhaseMeta, getAwardStatusMeta } from "@/lib/statusMeta";
 import { formatCountdown, formatDateTime, formatMoney, secondsUntil, shortId, toAmount } from "@/lib/format";
 import CarrierProfileModal from "./CarrierProfileModal";
+import AuctionValueDocumentsPanel from "./AuctionValueDocumentsPanel";
 
 // The shipper cannot join the realtime room, so an open auction is refreshed gently.
 const OPEN_REFRESH_MS = 30000;
@@ -329,6 +330,8 @@ export default function AuctionDetailScreen({ id }) {
         <Panel title="Thông tin lô hàng và điều kiện">
           <AuctionDetailContent auction={shipment} />
         </Panel>
+
+        <AuctionValueDocumentsPanel auctionId={shipment.id} requireCarrierCoverage={shipment.requireCarrierCoverage === true} />
       </Box>
 
       <ResponsiveDialog

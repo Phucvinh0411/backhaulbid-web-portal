@@ -15,17 +15,29 @@ import { useState } from "react";
 import { GOODS_CATEGORIES, VEHICLE_TYPES, formatDisplayNumber, parseDisplayNumber } from "../mockData";
 import { validateValueDocumentFiles } from "../valueDocumentValidation";
 import { uploadValueDocuments } from "../valueDocumentUpload";
+import {
+  CHECKLIST_NOTE,
+  SELECTABLE_VALUE_DOCUMENT_KINDS,
+  VALUE_DOCUMENT_KIND_LABEL,
+  valueDocumentChecklist,
+} from "../valueDocumentChecklist";
 import { CARGO_COVERAGE_CHECKBOX_LABEL } from "../../../../lib/cargoLiabilityPresentation";
 
 /**
- * Goods details of the auction. The optional value documents are uploaded as soon as they are picked, into the
- * private value-document folder; the form keeps their upload URLs and the server keeps only their keys.
+ * Goods details of the auction. Value documents are uploaded as soon as they are picked, into the private
+ * goods-value-docs folder. The form keeps each document's object key, name and the kind the shipper chose; no
+ * storage URL is kept. When carrier coverage is required, the checklist is shown here before publishing.
  */
 export default function Step1GoodsInfo({ form, updateForm, imageUploading, onImagesSelected, onRemoveImage }) {
   const [documentState, setDocumentState] = useState({ uploading: false, error: "" });
   const documents = form.valueDocuments ?? [];
+  const checklist = valueDocumentChecklist({
+    requireCarrierCoverage: form.requireCarrierCoverage,
+    goodsValue: form.goodsValue,
+    documents,
+  });
 
-  /** Checks the picked files, uploads them one batch at a time, and keeps the URLs in the form. */
+  /** Checks the picked files, uploads them, and adds them to the form with no kind yet. */
   const addValueDocuments = async (event) => {
     const picked = validateValueDocumentFiles(event.target.files, documents.length);
     event.target.value = "";
@@ -35,12 +47,20 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
     }
     setDocumentState({ uploading: true, error: "" });
     try {
-      const urls = await uploadValueDocuments(picked.files);
-      updateForm("valueDocuments", [...documents, ...urls]);
+      const added = await uploadValueDocuments(picked.files);
+      updateForm("valueDocuments", [...documents, ...added]);
       setDocumentState({ uploading: false, error: "" });
     } catch (error) {
       setDocumentState({ uploading: false, error: error?.message || "Chưa tải được chứng từ. Vui lòng thử lại." });
     }
+  };
+
+  const setDocumentKind = (index, kind) => {
+    updateForm("valueDocuments", documents.map((document, position) => (position === index ? { ...document, kind } : document)));
+  };
+
+  const removeDocument = (index) => {
+    updateForm("valueDocuments", documents.filter((_, position) => position !== index));
   };
 
   return (
@@ -124,41 +144,80 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
 
           <div className="md:col-span-2 rounded-xl border border-line bg-surface-sunken p-4 space-y-3">
             <div className="space-y-2">
-                <Typography className="!font-bold text-ink !text-sm">Chứng từ giá trị hàng (không bắt buộc)</Typography>
-                <Typography variant="caption" className="text-ink-muted">
-                  Hóa đơn hoặc biên lai · PDF hoặc ảnh · tối đa 5 tệp · 15 MB/tệp. Chứng từ được lưu riêng tư và dùng làm căn cứ khi có khiếu nại hàng hóa.
-                </Typography>
-                <div className="flex flex-wrap items-center gap-2">
-                  {documents.map((url, index) => (
-                    <span key={url} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-1 text-xs font-bold text-ink">
-                      Chứng từ {index + 1}
+              <Typography className="!font-bold text-ink !text-sm">
+                Chứng từ giá trị hàng{form.requireCarrierCoverage === true ? " (checklist bắt buộc)" : " (không bắt buộc)"}
+              </Typography>
+              <Typography variant="caption" className="text-ink-muted">
+                Hóa đơn, biên nhận, hợp đồng mua bán hoặc chứng từ thanh toán · PDF hoặc ảnh · tối đa 5 tệp · 15 MB/tệp.
+                Chứng từ được lưu riêng tư, không hiển thị công khai. Mỗi tệp cần chọn loại.
+              </Typography>
+
+              {documents.length === 0 ? (
+                <Typography variant="body2" className="text-ink-muted">Chưa có chứng từ giá trị hàng.</Typography>
+              ) : (
+                <div className="space-y-2">
+                  {documents.map((document, index) => (
+                    <div key={document.key} className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-white p-2">
+                      <span className="min-w-0 flex-1 truncate text-xs font-bold text-ink">
+                        {document.name || `Chứng từ ${index + 1}`}
+                      </span>
+                      <TextField
+                        select
+                        size="small"
+                        label="Loại chứng từ"
+                        value={document.kind || ""}
+                        onChange={(event) => setDocumentKind(index, event.target.value)}
+                        disabled={documentState.uploading}
+                        sx={{ minWidth: 200, "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+                      >
+                        {SELECTABLE_VALUE_DOCUMENT_KINDS.map((kind) => (
+                          <MenuItem key={kind} value={kind}>{VALUE_DOCUMENT_KIND_LABEL[kind]}</MenuItem>
+                        ))}
+                      </TextField>
                       <button
                         type="button"
-                        className="text-danger"
+                        className="text-xs font-bold text-danger"
                         disabled={documentState.uploading}
-                        onClick={() => updateForm("valueDocuments", documents.filter((_, position) => position !== index))}
+                        onClick={() => removeDocument(index)}
                       >
                         Xóa
                       </button>
-                    </span>
+                    </div>
                   ))}
                 </div>
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-line-strong px-4 py-2 text-sm font-bold text-ink hover:bg-surface">
-                  {documentState.uploading ? <CircularProgress size={18} /> : <CloudUploadIcon fontSize="small" />}
-                  {documentState.uploading ? "Đang tải chứng từ..." : "Thêm chứng từ"}
-                  <input
-                    type="file"
-                    accept="application/pdf,image/png,image/jpeg,image/webp,image/gif"
-                    multiple
-                    hidden
-                    disabled={documentState.uploading}
-                    onChange={addValueDocuments}
-                  />
-                </label>
-                {documentState.error && (
-                  <Typography variant="caption" role="alert" className="!text-danger">{documentState.error}</Typography>
-                )}
-              </div>
+              )}
+
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-line-strong px-4 py-2 text-sm font-bold text-ink hover:bg-surface">
+                {documentState.uploading ? <CircularProgress size={18} /> : <CloudUploadIcon fontSize="small" />}
+                {documentState.uploading ? "Đang tải chứng từ..." : "Thêm chứng từ"}
+                <input
+                  type="file"
+                  accept="application/pdf,image/png,image/jpeg,image/webp,image/gif"
+                  multiple
+                  hidden
+                  disabled={documentState.uploading}
+                  onChange={addValueDocuments}
+                />
+              </label>
+              {documentState.error && (
+                <Typography variant="caption" role="alert" className="!text-danger">{documentState.error}</Typography>
+              )}
+
+              {checklist.required && !checklist.satisfied && (
+                <div role="status" className="rounded-lg border border-line bg-white p-3 space-y-1">
+                  <Typography variant="caption" className="!font-bold text-ink block">Còn thiếu để đăng phiên:</Typography>
+                  {checklist.missingItems.map((item) => (
+                    <Typography key={item} variant="caption" className="block text-ink-muted">• {item}</Typography>
+                  ))}
+                  <Typography variant="caption" className="block text-ink-muted">{CHECKLIST_NOTE}</Typography>
+                </div>
+              )}
+              {checklist.required && checklist.satisfied && (
+                <Typography variant="caption" role="status" className="block text-ink-muted">
+                  Đã đủ checklist chuẩn bị của nền tảng. {CHECKLIST_NOTE}
+                </Typography>
+              )}
+            </div>
           </div>
 
           <div className="rounded-xl border border-dashed border-line-strong bg-surface-sunken p-4">
