@@ -179,9 +179,7 @@ function RoadLine({ from, to, onChange }) {
       live = false;
       if (timer) window.clearTimeout(timer);
     };
-    // Only the coordinates restart the lookup; a new onChange identity must not refetch the road.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [from.lat, from.lng, to.lat, to.lng]);
+  }, [from.lat, from.lng, to.lat, to.lng, onChange]);
 
   if (road) {
     return <Polyline positions={road} pathOptions={{ color: tokens.brand, weight: 5, opacity: 0.9 }} />;
