@@ -20,6 +20,7 @@ import TripMilestonesPanel from "./TripMilestonesPanel";
 import TripReviewPanel from "./TripReviewPanel";
 import TripHandoverPanel from "./TripHandoverPanel";
 import TripClaimPanel from "./TripClaimPanel";
+import CarrierSharedClaimsPanel from "./CarrierSharedClaimsPanel";
 import TripProgress from "./TripProgress";
 import JourneyTimeline from "./JourneyTimeline";
 import TripRouteEditor from "./TripRouteEditor";
@@ -166,6 +167,8 @@ export default function TripTrackingView({ tripId, role = "shipper", allowLateCa
       <TripMilestonesPanel trip={trip} milestones={milestones} canCreate={role === "carrier" && !closed} onChanged={loadTracking} />
 
       <TripHandoverPanel trip={trip} role={role} />
+
+      {role === "carrier" && <CarrierSharedClaimsPanel trip={trip} />}
 
       {role === "shipper" && <TripReviewPanel trip={trip} />}
 
