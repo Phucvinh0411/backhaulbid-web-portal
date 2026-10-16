@@ -1,8 +1,6 @@
 import { cargoLiabilityLabel } from "../lib/cargoLiabilityPresentation.js";
 
 const UNKNOWN = "Chưa cập nhật";
-// Metrics with no live API yet. Shown as "no data", never as a number.
-const NO_DATA = "Chưa có dữ liệu";
 
 const formatPayload = (value) =>
   value === null || value === undefined ? UNKNOWN : `${value} tấn`;
@@ -34,6 +32,11 @@ const toReview = (review) => ({
   createdAt: review.createdAt,
 });
 
+/** Review summary and public review fields only, for screens that show reviews without a full profile. */
+export function mapCarrierReviews({ reviewSummary = null, reviews = [] }) {
+  return { reviewSummary: normalizeReviewSummary(reviewSummary), reviews: (reviews || []).map(toReview) };
+}
+
 /**
  * Builds the carrier profile shown to a shipper choosing a winner. `reviewSummary` and `reviews` come from
  * the carrier-reviews API; pass null/[] when they did not load.
@@ -51,15 +54,10 @@ export function mapCarrierProfile({ company, vehicles = [], drivers = [], review
     verified,
     reviewSummary: normalizeReviewSummary(reviewSummary),
     reviews: (reviews || []).map(toReview),
-    completedTrips: NO_DATA,
-    onTimeRate: NO_DATA,
-    cancellationRate: NO_DATA,
     taxCode: company?.taxCode || UNKNOWN,
-    foundingYear: UNKNOWN,
     address: company?.address || UNKNOWN,
     hotline: company?.contactPhone || UNKNOWN,
     email: company?.contactEmail || UNKNOWN,
-    licenseNo: UNKNOWN,
     // Only an admin-verified, unexpired cargo-liability certificate reads as verified; nothing here says "đã bảo hiểm".
     insuranceAmount: cargoLiabilityLabel(company?.cargoLiabilityVerifiedUntil),
     cargoLiabilityVerified: Boolean(company?.cargoLiabilityVerifiedUntil),
@@ -68,19 +66,14 @@ export function mapCarrierProfile({ company, vehicles = [], drivers = [], review
       plate: vehicle.licensePlate || UNKNOWN,
       type: vehicle.vehicleType || UNKNOWN,
       brand: vehicle.bodyType || UNKNOWN,
-      dims: UNKNOWN,
-      volume: UNKNOWN,
       payload: formatPayload(vehicle.payloadCapacity),
-      gpsActive: false,
       status: vehicle.status || UNKNOWN,
     })),
     drivers: drivers.map((driver) => ({
       id: driver.id,
       name: driver.fullName || UNKNOWN,
-      birthYear: UNKNOWN,
       phone: driver.phone || UNKNOWN,
       license: driver.licenseNumber || UNKNOWN,
-      experience: UNKNOWN,
       safetyRecord: driver.status === "VERIFIED" ? "Đã xác thực" : "Chưa xác thực",
     })),
   };

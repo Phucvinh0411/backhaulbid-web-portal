@@ -82,7 +82,7 @@ export default function CarrierProfileModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 pt-3 border-t border-white/10 text-center text-xs">
+          <div className="grid grid-cols-1 gap-2 pt-3 border-t border-white/10 text-center text-xs">
             <div className="bg-white/5 p-2 rounded-xl border border-white/5">
               <span className="text-on-band-soft block text-[0.65rem]">Đánh giá chủ hàng</span>
               <strong className="text-warning text-xs font-bold flex items-center justify-center gap-0.5 mt-0.5">
@@ -95,24 +95,6 @@ export default function CarrierProfileModal({
                     <StarIcon className="!text-[0.85rem]" /> {(carrier.reviewSummary.averageRating ?? 0).toFixed(1)} ({carrier.reviewSummary.reviewCount})
                   </>
                 )}
-              </strong>
-            </div>
-            <div className="bg-white/5 p-2 rounded-xl border border-white/5">
-              <span className="text-on-band-soft block text-[0.65rem]">Chuyến hoàn thành</span>
-              <strong className="text-success text-xs font-bold mt-0.5 block">
-                {carrier.completedTrips}
-              </strong>
-            </div>
-            <div className="bg-white/5 p-2 rounded-xl border border-white/5">
-              <span className="text-on-band-soft block text-[0.65rem]">Đúng giờ</span>
-              <strong className="text-info text-sm font-bold mt-0.5 block">
-                {carrier.onTimeRate}
-              </strong>
-            </div>
-            <div className="bg-white/5 p-2 rounded-xl border border-white/5">
-              <span className="text-on-band-soft block text-[0.65rem]">Tỷ lệ hủy chuyến</span>
-              <strong className="text-success text-sm font-bold mt-0.5 block">
-                {carrier.cancellationRate}
               </strong>
             </div>
           </div>
@@ -202,19 +184,13 @@ export default function CarrierProfileModal({
                       </span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 border-t border-line/70 pt-2.5">
+                  <div className="grid grid-cols-2 gap-2 border-t border-line/70 pt-2.5">
                     <div className="bg-white p-2 rounded-xl border border-line">
                       <span className="text-ink-subtle block text-[0.65rem] font-medium flex items-center gap-1">
                         <AspectRatioIcon className="!text-[0.75rem] text-[var(--color-brand)]" /> Tải trọng:
                       </span>
                       <strong className="text-[var(--color-brand)] font-bold text-xs font-mono block mt-1">
                         {vehicle.payload || "Chưa cập nhật"}
-                      </strong>
-                    </div>
-                    <div className="bg-white p-2 rounded-xl border border-line">
-                      <span className="text-ink-subtle block text-[0.65rem] font-medium">Kích thước thùng:</span>
-                      <strong className="text-ink font-bold text-xs block mt-1">
-                        {vehicle.dims || "Chưa cập nhật"}
                       </strong>
                     </div>
                     <div className="bg-white p-2 rounded-xl border border-line">
@@ -252,7 +228,6 @@ export default function CarrierProfileModal({
                       <div>
                         <strong className="text-ink text-sm font-bold block">{driver.name || "Chưa cập nhật"}</strong>
                         <span className="text-[0.7rem] text-ink-muted block">
-                          {driver.birthYear && driver.birthYear !== "Chưa cập nhật" && <>Năm sinh: <strong className="text-ink">{driver.birthYear}</strong> • </>}
                           Bằng lái: <strong className="text-success">{driver.license || "Chưa cập nhật"}</strong>
                         </span>
                         <span className={`text-[0.65rem] font-semibold ${driver.safetyRecord === "Đã xác thực" ? "text-success" : "text-warning"}`}>

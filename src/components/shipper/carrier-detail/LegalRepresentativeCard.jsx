@@ -50,18 +50,10 @@ export default function LegalRepresentativeCard({ carrier }) {
       </div>
 
       {/* Grid of Legal Details */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs pt-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-2">
         <div className="bg-white p-3 rounded-xl border border-line/80">
           <span className="text-ink-subtle block text-[0.65rem] font-medium">Mã số thuế doanh nghiệp:</span>
           <strong className="text-ink font-mono font-bold text-xs block mt-1">{carrier.taxCode}</strong>
-        </div>
-        <div className="bg-white p-3 rounded-xl border border-line/80">
-          <span className="text-ink-subtle block text-[0.65rem] font-medium">Giấy phép kinh doanh vận tải:</span>
-          <strong className="text-ink font-bold text-xs block mt-1">{carrier.licenseNo}</strong>
-        </div>
-        <div className="bg-white p-3 rounded-xl border border-line/80">
-          <span className="text-ink-subtle block text-[0.65rem] font-medium">Năm thành lập:</span>
-          <strong className="text-ink font-bold text-xs block mt-1">Năm {carrier.foundingYear}</strong>
         </div>
         <div className="bg-white p-3 rounded-xl border border-line/80">
           <span className="text-ink-subtle block text-[0.65rem] font-medium">Bảo hiểm trách nhiệm hàng hóa:</span>
