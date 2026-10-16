@@ -187,7 +187,6 @@ function DomainContent({ role, topic, sources, retry }) {
   if (topic === "queues" && role === "admin") return <Grid container spacing={2}>
     <Grid item xs={12} md={6}><SourcePanel title="xác minh tài khoản" source={sources.accounts} retry={retry.accounts}>{(data) => <Metrics items={[
       { title: "Doanh nghiệp chờ duyệt", value: formatStatisticCount(data.currentVerificationQueues?.businessPending), subtitle: "Snapshot hiện tại", icon: BusinessOutlinedIcon, href: "/admin/business-verifications" },
-      { title: "Người đại diện chờ duyệt", value: formatStatisticCount(data.currentVerificationQueues?.representativePending), subtitle: "Snapshot hiện tại", icon: GroupsOutlinedIcon, href: "/admin/representative-verifications" },
     ]} />}</SourcePanel></Grid>
     <Grid item xs={12} md={6}><SourcePanel title="duyệt đội xe" source={sources.fleet} retry={retry.fleet}>{(data) => <Metrics items={[
       { title: "Phương tiện chờ duyệt", value: formatStatisticCount(data.vehicleByStatus?.PENDING), subtitle: "Snapshot hiện tại", icon: DirectionsCarOutlinedIcon, href: "/admin/fleet-verifications" },

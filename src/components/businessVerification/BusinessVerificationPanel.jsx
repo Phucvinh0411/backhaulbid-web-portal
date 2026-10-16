@@ -167,7 +167,9 @@ export default function BusinessVerificationPanel({
     [lookup?.legalRepresentative, representative.name]
   );
 
-  const requiresAuthorization = representativeComparison === "MISMATCH";
+  // The lookup provider returns no legal representative, so a match is never confirmed: the owner must then
+  // attach an authorization letter. Until the lookup succeeds there is nothing to compare against.
+  const requiresAuthorization = Boolean(lookup?.valid) && representativeComparison !== "MATCH";
   const representativeVerified = representative.status === "VERIFIED";
 
   const lookupTaxCode = useCallback(
