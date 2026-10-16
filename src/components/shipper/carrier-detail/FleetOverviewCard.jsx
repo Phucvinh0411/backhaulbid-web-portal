@@ -31,8 +31,6 @@ export default function FleetOverviewCard({ fleet = [] }) {
             <TableRow>
               <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3">Biển Số Xe (Biển Vàng)</TableCell>
               <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3">Loại Xe & Dòng Xe</TableCell>
-              <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3">Kích Thước Thùng (D x R x C)</TableCell>
-              <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3">Thể Tích</TableCell>
               <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3">Tải Trọng</TableCell>
               <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3 text-right">Trạng Thái</TableCell>
             </TableRow>
@@ -48,14 +46,6 @@ export default function FleetOverviewCard({ fleet = [] }) {
                 <TableCell className="!py-3">
                   <strong className="text-ink text-xs font-bold block">{v.type}</strong>
                   <span className="text-[0.68rem] text-ink-muted font-medium">{v.brand}</span>
-                </TableCell>
-                <TableCell className="!py-3">
-                  <span className="font-mono text-[var(--color-brand)] font-bold text-xs flex items-center gap-1">
-                     {v.dims}
-                  </span>
-                </TableCell>
-                <TableCell className="!py-3">
-                  <span className="text-ink font-semibold text-xs">{v.volume}</span>
                 </TableCell>
                 <TableCell className="!py-3">
                   <span className="text-ink font-extrabold text-xs">{v.payload}</span>

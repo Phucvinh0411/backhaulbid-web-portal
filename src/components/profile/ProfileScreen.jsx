@@ -132,12 +132,14 @@ function RepresentativePanel({ state, profile, retry }) {
   if (state === "loading") return <LoadingCard />;
   if (state === "error") return <ErrorCard message="Không thể tải trạng thái xác minh người đại diện." onRetry={retry} />;
   const pendingDetails = state === "partial-error";
+  const noReport = state === "no-report";
   const value = profile.fields;
   return (
     <AppCard component="section" sx={{ p: { xs: 2, sm: 3 } }}>
       <SectionHeading title="Người đại diện" status={profile.status} description={profile.statusReason} />
       {profile.status === "REJECTED" && profile.statusReason && <Alert severity="warning" sx={{ mb: 2 }}>{profile.statusReason}</Alert>}
       {pendingDetails && <Alert severity="info" sx={{ mb: 2 }}>Trạng thái hồ sơ đã tải; một số trường chi tiết hiện chưa lấy được.</Alert>}
+      {noReport && <Alert severity="info" sx={{ mb: 2 }}>Hồ sơ được đánh dấu đã xác minh nhưng không có báo cáo eKYC kèm theo, nên không có họ tên, số CCCD, ngày sinh và giới tính để hiển thị.</Alert>}
       <Description rows={[
         { label: "Họ và tên", value: value.fullName },
         { label: "Số CCCD 12 số", value: value.citizenId, unavailable: "Chưa thu thập" },
@@ -181,6 +183,9 @@ export default function ProfileScreen({ role }) {
         const status = mapped.status;
         if (representative.overview.state === "error" && status === "NOT_SUBMITTED") {
           setRepresentativeResult({ state: "ready", data: mapped });
+        } else if (representative.overview.state === "error" && representative.overview.error?.response?.status === 404 && status === "VERIFIED") {
+          // A status with no eKYC report behind it (for example seeded demo data): say so instead of a load error.
+          setRepresentativeResult({ state: "no-report", data: mapped });
         } else if (representative.overview.state === "error" && ["PENDING", "VERIFIED", "REJECTED"].includes(status)) {
           setRepresentativeResult({ state: "partial-error", data: mapped });
         } else {
