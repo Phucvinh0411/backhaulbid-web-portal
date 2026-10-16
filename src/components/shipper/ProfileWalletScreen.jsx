@@ -26,6 +26,7 @@ import PageHeader from "@/components/common/PageHeader";
 import AppCard from "@/components/common/AppCard";
 import CoordinatePicker from "@/components/map/CoordinatePicker";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
+import { useAddressHint } from "@/components/shipper/create-auction/useAddressHint";
 import { addressBookApi } from "@/services/addressBookApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { VIETNAM_PROVINCES } from "@/utils/provinces";
@@ -73,6 +74,11 @@ export default function ProfileWalletScreen() {
     contactPhone: "",
     province: "",
     detail: "",
+  });
+  // Search only while the dialog is open, so a closed dialog does not keep querying the map service.
+  const addressHint = useAddressHint({
+    detail: openAddressDialog ? addressForm.detail : "",
+    province: addressForm.province,
   });
 
   // --- Address Book Handlers ---
@@ -336,7 +342,7 @@ export default function ProfileWalletScreen() {
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
 
-          <CoordinatePicker label="Vị trí kho" value={addressForm} disabled={addressSaving} onChange={(point) => setAddressForm((old) => ({ ...old, ...(point || { latitude: null, longitude: null, coordinateSource: null, coordinateConfirmedAt: null }) }))} />
+          <CoordinatePicker label="Vị trí kho" value={addressForm} hint={addressHint} disabled={addressSaving} onChange={(point) => setAddressForm((old) => ({ ...old, ...(point || { latitude: null, longitude: null, coordinateSource: null, coordinateConfirmedAt: null }) }))} />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <TextField
