@@ -25,6 +25,7 @@ import Step1GoodsInfo from "./steps/Step1GoodsInfo";
 import Step2RouteInfo from "./steps/Step2RouteInfo";
 import Step3AuctionConfig from "./steps/Step3AuctionConfig";
 import { uploadAuctionImages } from "./auctionImageUpload";
+import { placeFromAddressBookEntry } from "./routePlace";
 import { identityApi } from "@/services/identityApi";
 import { notificationApi } from "@/services/notificationApi";
 
@@ -120,8 +121,9 @@ export default function CreateAuctionScreen() {
   const [addressTarget, setAddressTarget] = useState("FROM");
   const [imageUploading, setImageUploading] = useState(false);
 
+  // Address, province and pin live in one Place object, so they can never drift apart and need no manual resets.
   const updateForm = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value, ...((field === "fromAddress" || field === "fromProvince") && prev[field] !== value ? { fromPoint: null } : {}), ...((field === "toAddress" || field === "toProvince") && prev[field] !== value ? { toPoint: null } : {}) }));
+    setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleOpenAddressBook = (target) => {
@@ -133,12 +135,9 @@ export default function CreateAuctionScreen() {
     const prefix = addressTarget === "FROM" ? "from" : "to";
     setForm((prev) => ({
       ...prev,
-      [`${prefix}LocationName`]: address.label,
-      [`${prefix}Address`]: address.detail,
-      [`${prefix}Province`]: address.province,
+      [`${prefix}Place`]: placeFromAddressBookEntry(address),
       [`${prefix}ContactName`]: address.contactName,
       [`${prefix}ContactPhone`]: address.contactPhone,
-      [`${prefix}Point`]: address.latitude != null && address.longitude != null ? { latitude: address.latitude, longitude: address.longitude, coordinateSource: address.coordinateSource, coordinateConfirmedAt: address.coordinateConfirmedAt } : null,
     }));
     setAddressModalOpen(false);
   };

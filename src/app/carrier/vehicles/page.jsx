@@ -748,10 +748,18 @@ export default function VehiclesPage() {
                         <TableCell key={col.id}>
                           <Typography
                             variant="body2"
-                            className="text-ink"
+                            className="text-ink font-bold"
                           >
                             {v.type}
                           </Typography>
+                          {v.bodyType && (
+                            <Typography
+                              variant="caption"
+                              className="text-ink-muted block text-[0.72rem]"
+                            >
+                              {v.bodyType}
+                            </Typography>
+                          )}
                         </TableCell>
                       );
                     }

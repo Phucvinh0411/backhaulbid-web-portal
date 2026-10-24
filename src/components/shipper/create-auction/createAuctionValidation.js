@@ -1,16 +1,10 @@
 import { getParticipationFeeQuote } from "./mockData.js";
-import { coordinate } from "../../tracking/trackingPresentation.js";
+import { isCompletePlace, locationPayloadFromPlace } from "./routePlace.js";
 import {
   CHECKLIST_NOTE,
   everyDocumentClassified,
   valueDocumentChecklist,
 } from "./valueDocumentChecklist.js";
-
-const requiredRouteFields = [
-  "LocationName",
-  "Province",
-  "Address",
-];
 
 const hasValue = (value) => value !== undefined && value !== null && String(value).trim() !== "";
 
@@ -19,9 +13,6 @@ const toDate = (value) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 };
-
-const hasCompleteLocation = (form, prefix) =>
-  requiredRouteFields.every((field) => hasValue(form[`${prefix}${field}`]));
 
 export const validateCreateAuctionForm = (form, now = new Date()) => {
   if (!hasValue(form.goodsName)) return "Vui lòng nhập tên lô hàng.";
@@ -40,11 +31,11 @@ export const validateCreateAuctionForm = (form, now = new Date()) => {
   if (!checklist.satisfied) {
     return `Phiên yêu cầu nhà xe có bảo hiểm còn thiếu: ${checklist.missingItems.join("; ")}. ${CHECKLIST_NOTE}`;
   }
-  if (!hasCompleteLocation(form, "from")) {
-    return "Vui lòng chọn đầy đủ điểm lấy hàng (tên kho, tỉnh/thành và địa chỉ).";
+  if (!isCompletePlace(form.fromPlace)) {
+    return "Vui lòng chọn địa chỉ lấy hàng từ gợi ý hoặc trên bản đồ.";
   }
-  if (!hasCompleteLocation(form, "to")) {
-    return "Vui lòng chọn đầy đủ điểm giao hàng (tên kho, tỉnh/thành và địa chỉ).";
+  if (!isCompletePlace(form.toPlace)) {
+    return "Vui lòng chọn địa chỉ giao hàng từ gợi ý hoặc trên bản đồ.";
   }
   if (!Number.isFinite(Number(form.maxPrice)) || Number(form.maxPrice) <= 0) {
     return "Vui lòng nhập giá trần lớn hơn 0.";
@@ -93,14 +84,6 @@ const toIsoOrUndefined = (value) => {
   return date ? date.toISOString() : undefined;
 };
 
-const confirmedCoordinates = (point) => {
-  const position = coordinate(point);
-  return position ? { latitude: position[0], longitude: position[1], coordinateSource: "USER_CONFIRMED", coordinateConfirmedAt: point.coordinateConfirmedAt } : {};
-};
-
-// Street detail first, then the ward; empty parts are dropped.
-const joinAddress = (detail, ward) => [detail?.trim(), ward?.trim()].filter(Boolean).join(", ");
-
 export const mapFormToAuctionPayload = (form) => ({
   title: form.goodsName.trim(),
   goodsType: form.goodsCategory,
@@ -121,20 +104,14 @@ export const mapFormToAuctionPayload = (form) => ({
     height: form.vehicleHeight ? Number(form.vehicleHeight) : undefined,
   },
   pickupLocation: {
-    ...confirmedCoordinates(form.fromPoint),
-    locationName: form.fromLocationName?.trim() || "",
-    province: form.fromProvince?.trim() || "",
-    address: joinAddress(form.fromAddress, form.fromWard),
+    ...locationPayloadFromPlace(form.fromPlace),
     contactName: form.fromContactName?.trim() || undefined,
     contactPhone: form.fromContactPhone?.trim() || undefined,
     earliestTime: toIsoOrUndefined(form.earliestPickup),
     latestTime: toIsoOrUndefined(form.latestPickup),
   },
   deliveryLocation: {
-    ...confirmedCoordinates(form.toPoint),
-    locationName: form.toLocationName?.trim() || "",
-    province: form.toProvince?.trim() || "",
-    address: joinAddress(form.toAddress, form.toWard),
+    ...locationPayloadFromPlace(form.toPlace),
     contactName: form.toContactName?.trim() || undefined,
     contactPhone: form.toContactPhone?.trim() || undefined,
     earliestTime: toIsoOrUndefined(form.earliestDelivery),

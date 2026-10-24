@@ -82,14 +82,53 @@ export default function Header({ userInfo, role = "admin" }) {
     };
     fetchNotifications();
 
-    const socket = io(GATEWAY_URL, { path: "/notification-socket", transports: ["websocket"], withCredentials: true });
+    const socket = io(GATEWAY_URL, {
+      path: "/notification-socket",
+      transports: ["polling", "websocket"],
+      withCredentials: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
+    });
+
     // Server joins the room from the gateway-verified identity, not from this payload.
     socket.on("connect", () => socket.emit("identify", {}));
     socket.on("new_notification", (notif) => {
       notify.info(notif?.message || notif?.title || "Bạn có thông báo mới.", { title: "Thông báo mới" });
       fetchNotifications();
     });
-    return () => socket.disconnect();
+
+    socket.on("connect_error", async (err) => {
+      if (err?.message?.includes("401") || err?.message?.includes("Authentication") || err?.message?.includes("unauthorized")) {
+        socket.disconnect();
+        try {
+          const res = await fetch("/api/auth/refresh", { method: "POST" });
+          if (res.ok) {
+            socket.connect();
+          }
+        } catch {
+          // ignore refresh failure
+        }
+      }
+    });
+
+    // Cleanly close socket on bfcache navigation and restore on pageshow
+    const handlePageHide = () => {
+      socket.disconnect();
+    };
+    const handlePageShow = (event) => {
+      if (event.persisted) {
+        fetchNotifications();
+        socket.connect();
+      }
+    };
+    window.addEventListener("pagehide", handlePageHide);
+    window.addEventListener("pageshow", handlePageShow);
+
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+      window.removeEventListener("pageshow", handlePageShow);
+      socket.disconnect();
+    };
   }, [notify, role, userInfo?.accountId]);
 
   const markAllAsRead = async () => {

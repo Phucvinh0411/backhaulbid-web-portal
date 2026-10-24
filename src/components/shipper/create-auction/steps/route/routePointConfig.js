@@ -1,0 +1,46 @@
+// Everything that differs between the pickup (A) and delivery (B) cards. Tailwind classes are written out in full
+// so the build can see them.
+export const ROUTE_POINTS = {
+  FROM: {
+    target: "FROM",
+    badge: "A",
+    title: "Điểm Nhận Hàng (Pickup)",
+    subtitle: "Nơi nhà xe đến bốc hàng lên",
+    placeField: "fromPlace",
+    contactNameField: "fromContactName",
+    contactPhoneField: "fromContactPhone",
+    addressLabel: "Địa chỉ lấy hàng",
+    addressPlaceholder: "VD: KCN Yên Bình, Phổ Yên, Thái Nguyên",
+    mapTitle: "A · Chọn vị trí kho lấy hàng",
+    contactNameLabel: "Người liên hệ tại điểm nhận",
+    contactNamePlaceholder: "VD: Trần Thế Hải",
+    contactPhoneLabel: "Số điện thoại người giao",
+    contactPhonePlaceholder: "VD: 0912.345.678",
+    classes: {
+      badge: "bg-info",
+      outlinedButton: "!text-info !border-info-soft hover:!bg-info-soft",
+      containedButton: "!bg-info hover:!bg-info",
+    },
+  },
+  TO: {
+    target: "TO",
+    badge: "B",
+    title: "Điểm Giao Hàng (Delivery)",
+    subtitle: "Nơi nhà xe dỡ hàng bàn giao",
+    placeField: "toPlace",
+    contactNameField: "toContactName",
+    contactPhoneField: "toContactPhone",
+    addressLabel: "Địa chỉ giao hàng",
+    addressPlaceholder: "VD: Cảng Đình Vũ, Hải Phòng",
+    mapTitle: "B · Chọn vị trí kho giao hàng",
+    contactNameLabel: "Người nhận tại điểm giao",
+    contactNamePlaceholder: "VD: Phạm Hồng Minh",
+    contactPhoneLabel: "Số điện thoại người nhận",
+    contactPhonePlaceholder: "VD: 0904.445.555",
+    classes: {
+      badge: "bg-success",
+      outlinedButton: "!text-success !border-success-soft hover:!bg-success-soft",
+      containedButton: "!bg-success hover:!bg-success",
+    },
+  },
+};

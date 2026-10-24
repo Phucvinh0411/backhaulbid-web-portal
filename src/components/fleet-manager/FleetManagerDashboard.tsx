@@ -18,7 +18,15 @@ export interface MatchingEvent {
 export default function FleetManagerDashboard() {
   const notify = useGlobalNotification();
   const [currentAccount, setCurrentAccount] = useState<{ accountId?: string } | null>(null);
-  const [vehicles, setVehicles] = useState<Array<{ id?: string; plate?: string; licensePlate?: string }>>([]);
+  const [vehicles, setVehicles] = useState<Array<{
+    id?: string;
+    plate?: string;
+    licensePlate?: string;
+    type?: string;
+    vehicleType?: string;
+    capacity?: string;
+    payloadCapacity?: number;
+  }>>([]);
   const [loadError, setLoadError] = useState('');
 
   const currentCompanyId = currentAccount?.accountId;
@@ -199,7 +207,14 @@ export default function FleetManagerDashboard() {
                     {vehicles.map((vehicle) => {
                       const plate = vehicle.plate || vehicle.licensePlate;
                       if (!plate) return null;
-                      return <option key={vehicle.id || plate} value={plate}>{plate}</option>;
+                      const typeLabel = vehicle.type || vehicle.vehicleType || "";
+                      const cap = vehicle.capacity || (vehicle.payloadCapacity ? `${vehicle.payloadCapacity} tấn` : "");
+                      const desc = [typeLabel, cap].filter(Boolean).join(" · ");
+                      return (
+                        <option key={vehicle.id || plate} value={plate}>
+                          {plate} {desc ? `– ${desc}` : ""}
+                        </option>
+                      );
                     })}
                   </select>
                 </div>
