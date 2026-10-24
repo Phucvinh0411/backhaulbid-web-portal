@@ -11,6 +11,12 @@ const TECHNICAL_MESSAGE = /(exception|stack|\.java|\.ts|\.js|\bat\s+|must be|req
 
 function getRawMessage(error) {
   const payload = error?.response?.data;
+  if (Array.isArray(payload?.errors) && payload.errors.length > 0) {
+    const errorStrings = payload.errors
+      .map((e) => (typeof e === "string" ? e : e?.defaultMessage || e?.message))
+      .filter(Boolean);
+    if (errorStrings.length > 0) return errorStrings.join("; ");
+  }
   const message = payload?.error?.message
     || payload?.message
     || (typeof payload?.error === "string" ? payload.error : undefined)
@@ -59,6 +65,21 @@ function translateKnownMessage(message, status, code) {
   }
   if (status === 404 || /not found/i.test(normalized)) {
     return "Không tìm thấy dữ liệu cần xử lý. Vui lòng tải lại trang rồi thử lại.";
+  }
+  if (/contact phone is invalid/i.test(normalized)) {
+    return "Số điện thoại người liên hệ không hợp lệ (cần từ 8 đến 30 chữ số).";
+  }
+  if (/contact phone is required/i.test(normalized)) {
+    return "Vui lòng nhập số điện thoại người liên hệ.";
+  }
+  if (/contact name is required/i.test(normalized)) {
+    return "Vui lòng nhập tên người liên hệ.";
+  }
+  if (/address label is required/i.test(normalized)) {
+    return "Vui lòng nhập tên địa chỉ kho.";
+  }
+  if (/coordinates must be a complete pair/i.test(normalized)) {
+    return "Tọa độ vị trí kho không hợp lệ hoặc thiếu kinh độ/vĩ độ.";
   }
   if (/registrationStartTime must be before registrationEndTime/i.test(normalized)) {
     return "Thời điểm mở đăng ký phải trước thời điểm đóng đăng ký. Vui lòng kiểm tra lại khung thời gian.";

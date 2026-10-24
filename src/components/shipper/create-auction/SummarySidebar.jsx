@@ -5,21 +5,30 @@ import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import { KeyValueList, Panel, RouteLine, StatusBadge } from "@/components/ui";
 import { formatCurrency, getParticipationFeeQuote, getCreationFeeQuote, VEHICLE_TYPES } from "./mockData";
+import { useRoutePreview } from "./steps/route/useRoutePreview";
 
 export default function SummarySidebar({ form }) {
   const vehicleLabel = VEHICLE_TYPES.find((item) => item.value === form.requiredVehicleType)?.label;
   const hasPrice = Number(form.maxPrice) > 0;
   const size = [form.vehicleLength, form.vehicleWidth, form.vehicleHeight];
+  const { routeData, loading: routeLoading } = useRoutePreview(form.fromPlace, form.toPlace);
+  const distanceText = routeData?.distanceKm
+    ? `${routeData.distanceKm} km ${routeData.isRoad ? "(Đường bộ)" : "(Ước tính)"}`
+    : routeLoading
+    ? "Đang tính…"
+    : "Chưa chọn đủ 2 điểm";
+
   return (
     <Panel title="Kiểm tra phiên vận chuyển" sx={{ position: { md: "sticky" }, top: 24 }}>
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <Typography sx={{ fontWeight: 700, overflowWrap: "anywhere" }}>{form.goodsName || "Chưa đặt tên lô hàng"}</Typography>
         <StatusBadge tone="brand" label={form.auctionType === "SEALED" ? "Đấu giá kín" : "Đấu giá công khai"} />
-        <RouteLine compact from={form.fromLocationName || form.fromProvince || "Chưa chọn điểm lấy"} to={form.toLocationName || form.toProvince || "Chưa chọn điểm giao"} />
+        <RouteLine compact from={form.fromPlace?.locationName || "Chưa chọn điểm lấy"} to={form.toPlace?.locationName || "Chưa chọn điểm giao"} />
         <KeyValueList columns={1} items={[
           { label: "Loại hàng", value: form.goodsCategory || "Chưa chọn" },
           { label: "Khối lượng / thể tích", value: `${form.weight || "—"} tấn / ${form.volume || "—"} m³`, numeric: true },
           { label: "Phương tiện", value: vehicleLabel || "Chưa chọn" },
+          { label: "Cự ly vận chuyển dự kiến", value: distanceText, numeric: true },
           { label: "Kích thước thùng tối thiểu", value: size.every((value) => Number(value) > 0) ? size.map((value) => `${value} m`).join(" × ") : "Chưa nhập", numeric: true },
         ]} />
         <Divider />

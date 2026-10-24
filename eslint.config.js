@@ -41,6 +41,7 @@ export default [
         alert: 'readonly',
         confirm: 'readonly',
         URL: 'readonly',
+        URLSearchParams: 'readonly',
         localStorage: 'readonly',
         sessionStorage: 'readonly',
         fetch: 'readonly',
