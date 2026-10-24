@@ -40,7 +40,6 @@ export default function Step3AuctionConfig({ form, updateForm }) {
   // Fill the timeframe once when the shipper first reaches this step; after that every field is theirs to edit.
   useEffect(() => {
     if (AUCTION_TIME_FIELDS.every((field) => !form[field])) applySuggestedSchedule();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setDepositRequired = (checked) => {

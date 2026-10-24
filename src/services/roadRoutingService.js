@@ -40,7 +40,11 @@ const NO_BACKEND_ROAD = Symbol("NO_BACKEND_ROAD");
 async function fetchFromBackend(from, to, signal, maxAttempts = 10) {
   let attempts = 0;
   while (attempts < maxAttempts) {
-    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    if (signal?.aborted) {
+      const error = new Error("Aborted");
+      error.name = "AbortError";
+      throw error;
+    }
     const data = await fetchRoadPreview(from, to);
     if (data?.status === "READY" && Array.isArray(data?.geometry?.coordinates) && data.geometry.coordinates.length > 0) {
       // GeoJSON has [lng, lat], Leaflet expects [lat, lng]
