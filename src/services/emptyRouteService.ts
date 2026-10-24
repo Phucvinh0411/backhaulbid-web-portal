@@ -65,6 +65,13 @@ class EmptyRouteService {
   async getEmptyRoutesByCompany(): Promise<EmptyRoute[]> {
     return apiService.get<EmptyRoute[]>('/api/v1/empty-routes');
   }
+
+  /**
+   * Hủy chuyến xe rỗng đã khai báo.
+   */
+  async cancelEmptyRoute(id: string): Promise<void> {
+    return apiService.delete<void>(`/api/v1/empty-routes/${id}`);
+  }
 }
 
 export const emptyRouteService = new EmptyRouteService();

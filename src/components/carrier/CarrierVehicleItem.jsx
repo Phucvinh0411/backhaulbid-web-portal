@@ -110,6 +110,11 @@ export default function CarrierVehicleItem({ vehicle, onViewDetail }) {
               <Typography variant="body2" className="text-ink font-bold">
                 {vehicle.type}
               </Typography>
+              {vehicle.bodyType && (
+                <Typography variant="caption" className="text-ink-muted block text-[0.72rem]">
+                  {vehicle.bodyType}
+                </Typography>
+              )}
             </div>
           </div>
         </div>

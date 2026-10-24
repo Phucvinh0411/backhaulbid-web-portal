@@ -11,6 +11,7 @@ import {
   Grid,
   IconButton,
   Pagination,
+  Stack,
   ToggleButton,
   ToggleButtonGroup,
   Tooltip as MuiTooltip,
@@ -249,13 +250,25 @@ export default function CarrierDashboard() {
         title="Tổng quan"
         subtitle="Việc cần xử lý trước, sau đó là đội xe, phiên đang tham gia và chuyến."
         action={
-          <Button 
-            variant="contained" 
-            startIcon={<LocalShippingIcon />}
-            onClick={() => setEmptyRouteOpen(true)}
-          >
-            Khai báo xe rỗng
-          </Button>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Button
+              component={Link}
+              href="/carrier/empty-routes"
+              variant="outlined"
+              color="inherit"
+              sx={{ bgcolor: "background.paper", borderRadius: "10px", textTransform: "none", fontWeight: 600 }}
+            >
+              Lịch sử xe rỗng
+            </Button>
+            <Button 
+              variant="contained" 
+              startIcon={<LocalShippingIcon />}
+              onClick={() => setEmptyRouteOpen(true)}
+              sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 700 }}
+            >
+              Khai báo xe rỗng
+            </Button>
+          </Stack>
         }
       />
       <ActionInbox role="carrier" />

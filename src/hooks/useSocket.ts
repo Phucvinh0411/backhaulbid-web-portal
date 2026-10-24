@@ -25,13 +25,13 @@ export const useSocket = (options: UseSocketOptions = {}) => {
     // Connect through the api-gateway so JWT cookies are exchanged for
     // authenticated headers before the request reaches bidding-service.
     const instance = io(GATEWAY_URL, {
-      transports: ['websocket'],
+      transports: ['polling', 'websocket'],
       path: BIDDING_SOCKET_PATH,
       withCredentials: true,
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
+      reconnectionDelay: 2000,
     });
 
     socketRef.current = instance;
@@ -60,11 +60,35 @@ export const useSocket = (options: UseSocketOptions = {}) => {
       console.log('Socket disconnected:', reason);
     });
 
-    instance.on('connect_error', (err) => {
-      console.error('Socket connection error:', err.message);
+    instance.on('connect_error', async (err) => {
+      console.warn('Socket connection error:', err.message);
+      if (err?.message?.includes('401') || err?.message?.includes('Authentication') || err?.message?.includes('unauthorized')) {
+        instance.disconnect();
+        try {
+          const res = await fetch('/api/auth/refresh', { method: 'POST' });
+          if (res.ok) {
+            instance.connect();
+          }
+        } catch {
+          // ignore
+        }
+      }
     });
 
+    const handlePageHide = () => {
+      instance.disconnect();
+    };
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        instance.connect();
+      }
+    };
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('pageshow', handlePageShow);
+
     return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('pageshow', handlePageShow);
       instance.disconnect();
       socketRef.current = null;
       setSocket(null);

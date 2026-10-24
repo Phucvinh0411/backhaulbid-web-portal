@@ -72,7 +72,7 @@ const RADIUS_MARKS = [
   { value: 500, label: "500 km" },
 ];
 
-export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
+export default function EmptyRouteDialog({ open, onClose, onSuccess, vehicles = [] }) {
   const notify = useGlobalNotification();
   const [loading, setLoading]                   = useState(false);
   const [showMap, setShowMap]                   = useState(true);
@@ -290,6 +290,9 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
         `Khai báo chuyến xe rỗng thành công! Hệ thống đang quét tìm lô hàng phù hợp trong bán kính ${searchRadius} km.`
       );
       handleClose();
+      if (typeof onSuccess === "function") {
+        onSuccess();
+      }
     } catch (err) {
       notify.error(getApiErrorMessage(err, "Khai báo xe rỗng thất bại. Vui lòng kiểm tra lại."));
     } finally {
@@ -445,7 +448,7 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
                 );
                 setSelectedVehicle(v || null);
                 if (v) {
-                  const cap = v.capacity || v.payloadCapacity;
+                  const cap = v.capacityTons ?? v.capacity ?? v.payloadCapacity;
                   if (cap) setAvailableCapacity(String(cap).replace(/[^\d.]/g, ""));
                 }
               }}
@@ -464,13 +467,14 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
               {vehicles.map((v) => {
                 const isVerified = (v.verification || v.status) === "VERIFIED";
                 const plate = v.licensePlate || v.plate || "";
+                const typeLabel = v.vehicleTypeLabel || v.type || v.vehicleType;
+                const capacity = v.capacity || `${v.payloadCapacity} tấn`;
                 return (
-                  <MenuItem key={v.id || plate} value={v.licensePlate || v.plate || ""} disabled={!isVerified}>
+                  <MenuItem key={v.id || plate} value={plate} disabled={!isVerified}>
                     <span className="font-bold font-mono text-ink mr-2">{plate}</span>
-                    <span className="text-ink-muted text-sm mr-2">
-                      – {v.type || v.vehicleType}
-                      {(v.capacity || v.payloadCapacity) && ` · ${v.capacity || v.payloadCapacity}`}
-                    </span>
+                    <span className="text-brand font-bold text-sm mr-2">[{typeLabel}]</span>
+                    {v.bodyType && <span className="text-ink-muted text-xs mr-2">({v.bodyType})</span>}
+                    <span className="text-ink-subtle text-xs font-semibold mr-2">· {capacity}</span>
                     {!isVerified ? (
                       <span className="text-warning text-xs font-semibold">[Chờ duyệt]</span>
                     ) : (
@@ -512,6 +516,22 @@ export default function EmptyRouteDialog({ open, onClose, vehicles = [] }) {
               }}
             />
           </div>
+
+          {selectedVehicle && (
+            <div className="flex flex-wrap items-center gap-3 p-3 rounded-xl bg-surface-sunken border border-line text-xs">
+              <span className="font-bold text-brand flex items-center gap-1">
+                <LocalShippingIcon className="!text-sm text-brand" /> {selectedVehicle.vehicleTypeLabel || selectedVehicle.type}
+              </span>
+              {selectedVehicle.bodyType && (
+                <span className="text-ink-muted">
+                  · Quy cách thùng: <strong className="text-ink">{selectedVehicle.bodyType}</strong>
+                </span>
+              )}
+              <span className="text-ink-muted">
+                · Tải trọng thiết kế: <strong className="text-ink">{selectedVehicle.capacity || `${selectedVehicle.payloadCapacity} tấn`}</strong>
+              </span>
+            </div>
+          )}
         </div>
 
         {/* ══════════ KHỐI 2: LỘ TRÌNH ĐỊA CHỈ & BẢN ĐỒ KIỂU GRAB ══════════ */}

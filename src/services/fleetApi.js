@@ -1,6 +1,6 @@
 import { apiService } from "./apiService";
 
-const VEHICLE_TYPE_LABELS = {
+export const VEHICLE_TYPE_LABELS = {
   TRUCK_SMALL: "Xe tải nhỏ",
   TRUCK_MEDIUM: "Xe tải trung",
   TRUCK_HEAVY: "Xe tải nặng",
@@ -12,14 +12,22 @@ const VEHICLE_TYPE_LABELS = {
 export const getMyVehicles = async () => {
   const res = await apiService.get("/api/v1/vehicles/mine");
   const vehicles = res?.data || res;
-  return (Array.isArray(vehicles) ? vehicles : []).map((vehicle) => ({
-    ...vehicle,
-    plate: vehicle.licensePlate,
-    capacity: `${vehicle.payloadCapacity || 0} tấn`,
-    type: vehicle.bodyType || VEHICLE_TYPE_LABELS[vehicle.vehicleType] || vehicle.vehicleType,
-    verification: vehicle.status,
-    active: vehicle.status !== "INACTIVE",
-  }));
+  return (Array.isArray(vehicles) ? vehicles : []).map((vehicle) => {
+    const rawCap = Number(vehicle.payloadCapacity) || 0;
+    const capacityTons = rawCap >= 500 ? (rawCap / 1000).toFixed(1).replace(/\.0$/, "") : rawCap;
+    const typeLabel = VEHICLE_TYPE_LABELS[vehicle.vehicleType] || vehicle.vehicleType || "Chưa phân loại";
+    return {
+      ...vehicle,
+      plate: vehicle.licensePlate,
+      capacity: `${capacityTons} tấn`,
+      capacityTons: Number(capacityTons),
+      type: typeLabel,
+      vehicleTypeLabel: typeLabel,
+      bodyType: vehicle.bodyType || "",
+      verification: vehicle.status,
+      active: vehicle.status !== "INACTIVE",
+    };
+  });
 };
 
 export const createVehicle = (payload) => apiService.post("/api/v1/vehicles", payload);
