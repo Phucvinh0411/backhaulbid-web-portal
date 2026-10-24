@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -85,8 +85,8 @@ function MapInvalidator() {
 
     let resizeObserver = null;
     const container = map.getContainer();
-    if (typeof ResizeObserver !== "undefined" && container) {
-      resizeObserver = new ResizeObserver(() => invalidate());
+    if (typeof window !== "undefined" && window.ResizeObserver && container) {
+      resizeObserver = new window.ResizeObserver(() => invalidate());
       resizeObserver.observe(container);
     }
 

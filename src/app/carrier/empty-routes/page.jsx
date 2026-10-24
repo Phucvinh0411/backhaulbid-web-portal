@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -25,19 +25,15 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
-import Typography from "@mui/material/Typography";
 
 import {
-  Add as AddIcon,
   CancelOutlined as CancelIcon,
   CheckCircleOutline as CheckCircleIcon,
   Close as CloseIcon,
   DeleteOutline as DeleteOutlineIcon,
   DirectionsCar as DirectionsCarIcon,
   LocalShipping as LocalShippingIcon,
-  LocationOn as LocationOnIcon,
   Map as MapIcon,
-  NearMe as NearMeIcon,
   Radar as RadarIcon,
   Refresh as RefreshIcon,
   Scale as ScaleIcon,
@@ -46,9 +42,9 @@ import {
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 
-import { PageHeader, StatCard, ViewModeToggle, DetailDrawer } from "@/components/common";
+import { PageHeader, StatCard, ViewModeToggle } from "@/components/common";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
-import { ConfirmDialog, EmptyState, ErrorState, ListSkeleton, RouteLine } from "@/components/ui";
+import { ConfirmDialog, EmptyState, ErrorState, ListSkeleton } from "@/components/ui";
 import EmptyRouteDialog from "@/components/carrier/EmptyRouteDialog";
 import { emptyRouteService } from "@/services/emptyRouteService";
 import { getMyVehicles, VEHICLE_TYPE_LABELS } from "@/services/fleetApi";
