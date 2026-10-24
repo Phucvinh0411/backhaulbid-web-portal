@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
 import Switch from "@mui/material/Switch";
@@ -12,6 +14,8 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonthOutlined";
 import PaymentsIcon from "@mui/icons-material/PaymentsOutlined";
 import SecurityIcon from "@mui/icons-material/SecurityOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import ScheduleReminder from "./route/ScheduleReminder";
+import { AUCTION_TIME_FIELDS, suggestAuctionSchedule } from "../auctionSchedule";
 
 import {
   formatDisplayNumber,
@@ -24,6 +28,20 @@ export default function Step3AuctionConfig({ form, updateForm }) {
   const isDepositRequired = form.isDepositRequired ?? true;
   const isParticipationFeeRequired = true;
   const participationFeeQuote = getParticipationFeeQuote(form.maxPrice);
+
+  const [autoFilled, setAutoFilled] = useState(false);
+
+  const applySuggestedSchedule = () => {
+    const suggestion = suggestAuctionSchedule(form);
+    AUCTION_TIME_FIELDS.forEach((field) => updateForm(field, suggestion[field]));
+    setAutoFilled(true);
+  };
+
+  // Fill the timeframe once when the shipper first reaches this step; after that every field is theirs to edit.
+  useEffect(() => {
+    if (AUCTION_TIME_FIELDS.every((field) => !form[field])) applySuggestedSchedule();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setDepositRequired = (checked) => {
     updateForm("isDepositRequired", checked);
@@ -255,7 +273,21 @@ export default function Step3AuctionConfig({ form, updateForm }) {
           <Typography className="!font-black text-ink !text-sm">
             3. Khung Thời Gian Diễn Ra Phiên Đấu Giá
           </Typography>
+          <Button size="small" onClick={applySuggestedSchedule} sx={{ ml: "auto", textTransform: "none", fontWeight: 700 }}>
+            Gợi ý lại
+          </Button>
         </div>
+
+        {autoFilled && (
+          <p className="text-[0.72rem] text-ink-muted">
+            {form.earliestPickup || form.latestPickup
+              ? "Đã tự điền theo khung vận chuyển ở Bước 2."
+              : "Đã tự điền mặc định: đăng ký 1 ngày, đấu giá 2 giờ."}{" "}
+            Bạn có thể sửa từng mốc bên dưới.
+          </p>
+        )}
+
+        <ScheduleReminder form={form} step="auction" />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <TextField

@@ -1,6 +1,7 @@
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AccessTimeIcon from "@mui/icons-material/AccessTimeOutlined";
+import ScheduleReminder from "./ScheduleReminder";
 
 const INPUT_SX = { "& .MuiOutlinedInput-root": { borderRadius: "16px" } };
 
@@ -25,6 +26,8 @@ export default function TimeWindowCard({ form, updateForm }) {
         </div>
         <Typography className="!text-sm !font-black text-ink">Khung Thời Gian Vận Chuyển Dự Kiến</Typography>
       </div>
+
+      <ScheduleReminder form={form} step="shipping" />
 
       {WINDOW_ROWS.map((row) => (
         <div key={row[0].field} className="grid grid-cols-1 gap-4 md:grid-cols-2">
