@@ -58,6 +58,4 @@ export const contractApi = {
   listLocations: (tripId, config) => apiService.get(`/api/v1/trips/${tripId}/locations`, undefined, config),
   addLocation: (tripId, payload) => apiService.post(`/api/v1/trips/${tripId}/locations`, payload),
   latestLocation: (tripId) => apiService.get(`/api/v1/trips/${tripId}/locations/latest`),
-  listMilestones: (tripId, config) => apiService.get(`/api/v1/trips/${tripId}/milestones`, undefined, config),
-  createMilestone: (tripId, payload) => apiService.post(`/api/v1/trips/${tripId}/milestones`, payload),
 };

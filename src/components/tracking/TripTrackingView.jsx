@@ -11,12 +11,11 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { ErrorState, ForbiddenState, KeyValueList, ListSkeleton, Panel, ResponsiveDialog, StatusBadge } from "@/components/ui";
 import { contractApi } from "@/services/contractApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
-import { getTripCompletionSummary, getTripStatusMeta, isTripClosed } from "@/lib/statusMeta";
+import { getTripCompletionSummary, getTripStatusMeta } from "@/lib/statusMeta";
 import { formatDateTime, formatMoney, shortId } from "@/lib/format";
 import { toMediaViewUrl } from "@/lib/mediaUrl";
 import { GATEWAY_URL } from "@/config/clientConfig";
 import TripActions from "./TripActions";
-import TripMilestonesPanel from "./TripMilestonesPanel";
 import TripReviewPanel from "./TripReviewPanel";
 import TripHandoverPanel from "./TripHandoverPanel";
 import TripClaimPanel from "./TripClaimPanel";
@@ -24,8 +23,22 @@ import CarrierSharedClaimsPanel from "./CarrierSharedClaimsPanel";
 import TripProgress from "./TripProgress";
 import JourneyTimeline from "./JourneyTimeline";
 import TripRouteEditor from "./TripRouteEditor";
+import LiveTrackingCard from "./LiveTrackingCard";
 import useTripTracking from "./useTripTracking";
-import { buildGpsSegments, buildJourneyTimeline, coordinate, getFreshnessMeta, plannedRoute, routeStatusText, selectRouteAnchors, locationTime, latestTrackingLocation, locationSourceLabel } from "./trackingPresentation";
+import {
+  buildGpsSegments,
+  buildJourneyTimeline,
+  computeHeading,
+  computeSpeed,
+  coordinate,
+  getFreshnessMeta,
+  plannedRoute,
+  routeProgress,
+  routeStatusText,
+  selectRouteAnchors,
+  locationTime,
+  latestTrackingLocation,
+} from "./trackingPresentation";
 
 const mediaUrl = (url) => toMediaViewUrl(url, GATEWAY_URL);
 
@@ -40,16 +53,19 @@ const Map = dynamic(() => import("@/components/map/Map"), {
 
 /** Trip detail for shipper and carrier; available actions depend on `role`. */
 export default function TripTrackingView({ tripId, role = "shipper", allowLateCancellation = false }) {
-  const { trip, tracking, locations, historySampled, historyTotalPoints, events, proofs, milestones, delaySettlements, state, error, loadTracking } = useTripTracking(tripId);
+  const { trip, tracking, locations, historySampled, historyTotalPoints, events, proofs, delaySettlements, state, error, loadTracking } = useTripTracking(tripId);
   const [confirmLateCancel, setConfirmLateCancel] = useState(false);
   const [cancellingLateTrip, setCancellingLateTrip] = useState(false);
   const [lateCancelError, setLateCancelError] = useState("");
-  const closed = trip ? isTripClosed(trip.status) : false;
   const traceSegments = useMemo(() => buildGpsSegments(locations), [locations]);
   const latestLocation = latestTrackingLocation(tracking, locations);
-  const currentPos = coordinate(latestLocation) ? { ...latestLocation, timeLabel: formatDateTime(locationTime(latestLocation)) } : null;
+  const heading = useMemo(() => computeHeading(locations, latestLocation), [locations, latestLocation]);
+  const speedKmh = useMemo(() => computeSpeed(locations, latestLocation), [locations, latestLocation]);
+  const currentPos = coordinate(latestLocation)
+    ? { ...latestLocation, speedKmh, timeLabel: formatDateTime(locationTime(latestLocation)) }
+    : null;
   const freshness = getFreshnessMeta(tracking?.freshness);
-  const latestEvent = buildJourneyTimeline(events, milestones)[0];
+  const latestEvent = buildJourneyTimeline(events)[0];
   const anchors = selectRouteAnchors({ trip, tracking });
   const pickupPoint = anchors.pickup;
   const deliveryPoint = anchors.delivery;
@@ -62,8 +78,13 @@ export default function TripTrackingView({ tripId, role = "shipper", allowLateCa
     else if (anchors.routingStatus === "NO_ROUTE" || anchors.routingStatus === "REJECTED") setRoadRoute(null);
   }, [routeKey, anchors.geometry, anchors.routingStatus]);
   const routeGeometry = anchors.geometry || (roadRoute?.key === routeKey ? roadRoute.geometry : null);
-  const routeKind = plannedRoute(pickupPoint, deliveryPoint, routeGeometry).kind;
+  const planned = useMemo(() => plannedRoute(pickupPoint, deliveryPoint, routeGeometry), [pickupPoint, deliveryPoint, routeGeometry]);
+  const routeKind = planned.kind;
   const routeNote = routeStatusText(routeKind, anchors.routingStatus || (routeKind === "PENDING" ? "PENDING" : null));
+  const progress = useMemo(
+    () => routeProgress(planned.points, currentPos, traceSegments, anchors.routeMeta),
+    [planned.points, currentPos, traceSegments, anchors.routeMeta],
+  );
 
   const handleCancelLateTrip = async () => {
     if (cancellingLateTrip) return;
@@ -128,19 +149,44 @@ export default function TripTrackingView({ tripId, role = "shipper", allowLateCa
 
       <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 7fr) minmax(0, 5fr)" }, alignItems: "start" }}>
         <Box sx={{ minWidth: 0, display: "grid", gap: 2 }}>
-          <Panel title="Đường đi của chuyến" subtitle={locations.length ? `${locations.length} vị trí đã ghi nhận` : "Kho lấy, kho giao và vị trí xe"} padded={false} actions={role === "shipper" && trip.status === "WAITING_PICKUP" ? <TripRouteEditor trip={trip} onChanged={loadTracking} /> : null}>
-            <Box sx={{ height: { xs: 320, md: 420 } }}><Map tripId={trip.id} pickupPoint={pickupPoint} deliveryPoint={deliveryPoint} milestones={milestones} traceSegments={traceSegments} currentPos={currentPos} routeGeometry={routeGeometry} emptyHint={role === "shipper" && trip.status === "WAITING_PICKUP" ? "Bấm “Xác nhận vị trí kho” để ghim" : role === "shipper" ? "Vị trí kho chỉ ghim được trước khi lấy hàng" : "Chủ hàng cần ghim vị trí kho trước khi lấy hàng"} /></Box>
-            <Box sx={{ px: 2, py: 1.5, borderTop: "1px solid", borderColor: "divider", display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center" }}>
-              {routeKind === "ROAD" && <Box sx={{ display: "flex", gap: 0.75, alignItems: "center" }}><Box aria-hidden sx={{ width: 22, height: 5, bgcolor: "primary.main", borderRadius: 1 }} /><Typography variant="caption">Tuyến đường bộ dự kiến A → B</Typography></Box>}
+          <Panel title="Theo dõi vị trí thời gian thực" subtitle={locations.length ? `${locations.length} điểm tọa độ GPS đã ghi nhận` : "Vị trí xe và lộ trình di chuyển trực tiếp"} padded={false} actions={role === "shipper" && trip.status === "WAITING_PICKUP" ? <TripRouteEditor trip={trip} onChanged={loadTracking} /> : null}>
+            <Box sx={{ height: { xs: 340, md: 440 } }}>
+              <Map
+                tripId={trip.id}
+                pickupPoint={pickupPoint}
+                deliveryPoint={deliveryPoint}
+                traceSegments={traceSegments}
+                routePassed={progress.routePassed}
+                routeRemaining={progress.routeRemaining}
+                currentPos={currentPos}
+                heading={heading}
+                routeGeometry={routeGeometry}
+                emptyHint={role === "shipper" && trip.status === "WAITING_PICKUP" ? "Bấm “Xác nhận vị trí kho” để ghim" : role === "shipper" ? "Vị trí kho chỉ ghim được trước khi lấy hàng" : "Chủ hàng cần ghim vị trí kho trước khi lấy hàng"}
+              />
+            </Box>
+            <Box sx={{ px: 2, py: 1.25, borderTop: "1px solid", borderColor: "divider", display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+              {(traceSegments.length > 0 || progress.routePassed.length > 1) && (
+                <Box sx={{ display: "flex", gap: 0.75, alignItems: "center" }}>
+                  <Box aria-hidden sx={{ width: 22, height: 5, bgcolor: "info.main", borderRadius: 1 }} />
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>Đoạn đường xe đã đi</Typography>
+                </Box>
+              )}
+              {routeKind === "ROAD" && (
+                <Box sx={{ display: "flex", gap: 0.75, alignItems: "center" }}>
+                  <Box aria-hidden sx={{ width: 22, height: 0, borderTop: "3px dashed", borderColor: "text.secondary" }} />
+                  <Typography variant="caption">Quãng đường dự kiến còn lại (A → B)</Typography>
+                </Box>
+              )}
               {routeNote && <Typography variant="caption" role="status" sx={{ color: "text.secondary" }}>{routeNote}</Typography>}
-              {traceSegments.length > 0 && <Box sx={{ display: "flex", gap: 0.75, alignItems: "center" }}><Box aria-hidden sx={{ width: 22, height: 4, bgcolor: "info.main", borderRadius: 1 }} /><Typography variant="caption">Vệt GPS xe đã chạy</Typography></Box>}
-              {traceSegments.length > 0 && <Typography variant="caption" sx={{ color: "text.secondary" }}>Khoảng mất GPS được ngắt trên vệt.</Typography>}
-              {historySampled && <Typography variant="caption" sx={{ color: "text.secondary" }}>Đường đi được lấy mẫu từ {historyTotalPoints.toLocaleString("vi-VN")} điểm</Typography>}
             </Box>
-            <Box sx={{ px: 2, pb: 2 }}>
-              <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1 }}><StatusBadge size="sm" meta={freshness} />{latestLocation && <Typography variant="caption" className="tabular" sx={{ color: "text.secondary" }}>{locationSourceLabel(latestLocation.source)} · {formatDateTime(locationTime(latestLocation))}{latestLocation.accuracyMeters != null ? ` · sai số ${Math.round(latestLocation.accuracyMeters)} m` : ""}</Typography>}</Box>
-              <Typography variant="caption" sx={{ display: "block", mt: 0.75, color: "text.secondary" }}>{freshness.message}</Typography>
-            </Box>
+            <LiveTrackingCard
+              freshness={freshness}
+              latestLocation={latestLocation}
+              progress={progress}
+              speedKmh={speedKmh}
+              historySampled={historySampled}
+              historyTotalPoints={historyTotalPoints}
+            />
           </Panel>
           <Panel title="Lấy và giao hàng">
             <Box sx={{ display: "grid", gap: 2 }}>
@@ -151,7 +197,7 @@ export default function TripTrackingView({ tripId, role = "shipper", allowLateCa
             </Box>
           </Panel>
         </Box>
-        <JourneyTimeline events={events} milestones={milestones} />
+        <JourneyTimeline events={events} />
       </Box>
 
       {!((role === "shipper" && trip.status === "DELIVERED") || (role === "carrier" && trip.status === "WAITING_PICKUP")) && <TripActions trip={trip} role={role} proofs={proofs} onChanged={loadTracking} />}
@@ -163,8 +209,6 @@ export default function TripTrackingView({ tripId, role = "shipper", allowLateCa
       {delaySettlements.length > 0 && <Panel title="Xử lý giao trễ"><Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", md: "repeat(3,minmax(0,1fr))" } }}>{delaySettlements.map((settlement) => <Box key={settlement.id} sx={{ p: 1.5, border: "1px solid", borderColor: "divider", borderRadius: 2 }}>
         <Typography variant="body2" sx={{ fontWeight: 700 }}>Bậc {settlement.tier} · {settlement.cumulativePenaltyPercent}% cọc</Typography><StatusBadge size="sm" tone={settlement.overallStatus === "COMPLETED" ? "success" : "warning"} label={settlement.overallStatus === "COMPLETED" ? "Đã xử lý" : "Đang thử lại"} /><Typography variant="body2" className="tabular" sx={{ mt: 0.5 }}>Bồi thường {formatMoney(settlement.totalCompensationAmount)} · trừ {settlement.pointsDeducted} điểm</Typography>{settlement.lastError && <Typography variant="caption" sx={{ color: "error.main" }}>{settlement.lastError}</Typography>}
       </Box>)}</Box></Panel>}
-
-      <TripMilestonesPanel trip={trip} milestones={milestones} canCreate={role === "carrier" && !closed} onChanged={loadTracking} />
 
       <TripHandoverPanel trip={trip} role={role} />
 

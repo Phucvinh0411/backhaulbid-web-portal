@@ -9,8 +9,8 @@ import { toMediaViewUrl } from "@/lib/mediaUrl";
 import { GATEWAY_URL } from "@/config/clientConfig";
 import { buildJourneyTimeline } from "./trackingPresentation";
 
-export default function JourneyTimeline({ events, milestones }) {
-  const rows = buildJourneyTimeline(events, milestones);
+export default function JourneyTimeline({ events }) {
+  const rows = buildJourneyTimeline(events);
   return <Panel title="Hành trình giao hàng" subtitle="Các mốc được xác nhận trong chuyến" id="journey-timeline">
     {!rows.length ? <Typography variant="body2" sx={{ color: "text.secondary", py: 2 }}>Chưa có mốc được ghi nhận. Hành trình sẽ xuất hiện khi tài xế hoặc nhà xe xác nhận giao nhận.</Typography> : <Box component="ol" sx={{ m: 0, p: 0 }}>
       {rows.map((row, index) => {

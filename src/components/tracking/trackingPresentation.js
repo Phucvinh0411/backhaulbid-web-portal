@@ -38,12 +38,14 @@ export function selectRouteAnchors({ trip, tracking } = {}) {
   // Geometry is computed by the server from the tracking anchors, so it only belongs to that pair.
   const geometry = chosen.source === "tracking" && chosen.count === 2 ? tracking?.routeGeometry || null : null;
   const routingStatus = chosen.source === "tracking" ? tracking?.routingStatus || null : null;
+  const routeMeta = chosen.source === "tracking" ? tracking?.routeMeta || null : null;
   return {
     pickup: chosen.pickup,
     delivery: chosen.delivery,
     routeVersion: version,
     geometry,
     routingStatus,
+    routeMeta,
     missing: [!chosen.pickup && "pickup", !chosen.delivery && "delivery"].filter(Boolean),
   };
 }
@@ -82,12 +84,12 @@ export function routeStatusText(kind, routingStatus) {
 }
 
 export const locationTime = (point) => point?.capturedAt || point?.recordedAt;
-/** @typedef {"GPS" | "CHECK_IN" | "MANUAL"} TripLocationSource */
+/** @typedef {"GPS" | "MANUAL"} TripLocationSource */
 export function latestTrackingLocation(tracking, history = []) {
   // Explicit null removes a revoked driver's old marker; history is only a compatibility fallback.
   return tracking && Object.hasOwn(tracking, "latestLocation") ? tracking.latestLocation : history[history.length - 1] || null;
 }
-export const locationSourceLabel = (source) => ({ GPS: "GPS của tài xế", CHECK_IN: "GPS khi check-in", MANUAL: "Vị trí cập nhật thủ công" })[source] || "Vị trí đã ghi";
+export const locationSourceLabel = (source) => ({ GPS: "GPS trực tiếp của xe", MANUAL: "Vị trí cập nhật thủ công" })[source] || "Vị trí xe đã ghi";
 export function mergeSamplingMetadata(previous, history, observedCount = 0) {
   return { historySampled: Boolean(previous.historySampled || history.sampled), historyTotalPoints: Math.max(Number(previous.historyTotalPoints) || 0, Number(history.totalPoints) || 0, observedCount) };
 }
@@ -136,10 +138,127 @@ export function mergeTrackingHistory(previous, history, limit = 3000) {
   return { locations: sampleLocationHistory(points, limit), ...mergeSamplingMetadata(previous, { ...history, sampled: Boolean(history.sampled || points.length > limit) }, points.length) };
 }
 
-function distanceMeters(a, b) {
-  const rad = Math.PI / 180, dLat = (b[0] - a[0]) * rad, dLng = (b[1] - a[1]) * rad;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * rad) * Math.cos(b[0] * rad) * Math.sin(dLng / 2) ** 2;
+export function distanceMeters(a, b) {
+  const p1 = coordinate(a), p2 = coordinate(b);
+  if (!p1 || !p2) return 0;
+  const rad = Math.PI / 180, dLat = (p2[0] - p1[0]) * rad, dLng = (p2[1] - p1[1]) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(p1[0] * rad) * Math.cos(p2[0] * rad) * Math.sin(dLng / 2) ** 2;
   return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+export function computeHeading(locations = [], latest = null) {
+  if (latest?.heading != null && Number.isFinite(Number(latest.heading))) return Number(latest.heading);
+  const valid = locations.map((p) => coordinate(p)).filter(Boolean);
+  const target = coordinate(latest) || valid.at(-1);
+  if (!target || valid.length < 1) return null;
+  for (let i = valid.length - 1; i >= 0; i--) {
+    const prev = valid[i];
+    if (distanceMeters(prev, target) >= 3) {
+      const phi1 = (prev[0] * Math.PI) / 180;
+      const phi2 = (target[0] * Math.PI) / 180;
+      const dLambda = ((target[1] - prev[1]) * Math.PI) / 180;
+      const y = Math.sin(dLambda) * Math.cos(phi2);
+      const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLambda);
+      return Math.round((((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360);
+    }
+  }
+  return null;
+}
+
+export function computeSpeed(locations = [], latest = null) {
+  if (latest?.speedKmh != null && Number.isFinite(Number(latest.speedKmh))) return Number(latest.speedKmh);
+  const valid = locations.filter((p) => coordinate(p) && p.source === "GPS");
+  if (valid.length < 2) return null;
+  const last = valid.at(-1), prev = valid.at(-2);
+  const t1 = new Date(locationTime(prev)).getTime(), t2 = new Date(locationTime(last)).getTime();
+  if (!Number.isFinite(t1) || !Number.isFinite(t2) || t2 <= t1) return null;
+  const elapsedSec = (t2 - t1) / 1000;
+  if (elapsedSec < 0.5 || elapsedSec > 300) return null;
+  const speed = (distanceMeters(prev, last) / elapsedSec) * 3.6;
+  return speed <= 160 ? Math.round(speed * 10) / 10 : null;
+}
+
+/**
+ * Projects currentPoint onto routePoints (`[[lat, lng], ...]`), splits into passed/remaining,
+ * and computes traveled/remaining distance & ETA.
+ */
+export function routeProgress(routePoints = [], currentPoint = null, gpsSegments = [], routeMeta = null) {
+  let gpsTraveled = 0;
+  for (const seg of gpsSegments) {
+    for (let i = 1; i < seg.length; i++) {
+      gpsTraveled += distanceMeters(seg[i - 1], seg[i]);
+    }
+  }
+
+  const pts = Array.isArray(routePoints) ? routePoints.map(coordinate).filter(Boolean) : [];
+  if (pts.length < 2) {
+    return {
+      routePassed: [],
+      routeRemaining: [],
+      traveledMeters: Math.round(gpsTraveled),
+      remainingMeters: null,
+      totalMeters: null,
+      progressRatio: null,
+      etaSeconds: null,
+    };
+  }
+
+  const cumDist = [0];
+  for (let i = 1; i < pts.length; i++) {
+    cumDist.push(cumDist[i - 1] + distanceMeters(pts[i - 1], pts[i]));
+  }
+  const totalRouteMeters = cumDist.at(-1) || 0;
+  const cur = coordinate(currentPoint);
+
+  if (!cur) {
+    return {
+      routePassed: [],
+      routeRemaining: pts,
+      traveledMeters: Math.round(gpsTraveled),
+      remainingMeters: Math.round(totalRouteMeters),
+      totalMeters: Math.round(totalRouteMeters),
+      progressRatio: 0,
+      etaSeconds: totalRouteMeters > 0
+        ? Math.round(Number(routeMeta?.durationSeconds) > 0 ? Number(routeMeta.durationSeconds) : totalRouteMeters / 11.11)
+        : 0,
+    };
+  }
+
+  let bestIdx = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < pts.length; i++) {
+    const d = distanceMeters(pts[i], cur);
+    if (d < bestDist) {
+      bestDist = d;
+      bestIdx = i;
+    }
+  }
+
+  const passedAlongRoute = cumDist[bestIdx];
+  const remainingMeters = Math.max(0, totalRouteMeters - passedAlongRoute);
+  const traveledMeters = gpsTraveled > 0 ? gpsTraveled : passedAlongRoute;
+  const totalMeters = Math.max(totalRouteMeters, traveledMeters + remainingMeters);
+  const progressRatio = totalMeters > 0 ? Math.min(1, Math.max(0, 1 - remainingMeters / totalMeters)) : 0;
+
+  const baseDuration = Number(routeMeta?.durationSeconds);
+  const etaSeconds = remainingMeters <= 50
+    ? 0
+    : baseDuration > 0 && totalRouteMeters > 0
+      ? Math.round(baseDuration * (remainingMeters / totalRouteMeters))
+      : Math.round(remainingMeters / 11.11);
+
+  const routePassed = bestIdx > 0 ? [...pts.slice(0, bestIdx + 1), cur] : [];
+  const routeRemaining = [cur, ...pts.slice(bestIdx)];
+
+  return {
+    routePassed,
+    routeRemaining: routeRemaining.length >= 2 ? routeRemaining : pts.slice(bestIdx),
+    traveledMeters: Math.round(traveledMeters),
+    remainingMeters: Math.round(remainingMeters),
+    totalMeters: Math.round(totalMeters),
+    progressRatio,
+    etaSeconds,
+  };
 }
 
 /** Connect only observed GPS samples; a gap or implausible jump is never a driven route. */
@@ -161,20 +280,23 @@ export function buildGpsSegments(locations) {
   return result;
 }
 
-export function buildJourneyTimeline(events = [], milestones = []) {
-  const entries = events.map((event) => ({ ...event, key: `event-${event.id}`, title: JOURNEY_EVENT_LABELS[event.eventType] || "Cập nhật hành trình", time: event.recordedAt, incident: event.eventType === "INCIDENT_REPORTED" }));
-  for (const milestone of milestones) {
-    if (milestone.status !== "REACHED" || !milestone.reachedAt) continue;
-    entries.push({ key: `milestone-${milestone.id}`, title: `Check-in · ${milestone.milestoneName}`, time: milestone.reachedAt, note: milestone.note });
-  }
-  return entries.sort((a, b) => new Date(b.time) - new Date(a.time));
+export function buildJourneyTimeline(events = []) {
+  return events
+    .map((event) => ({
+      ...event,
+      key: `event-${event.id}`,
+      title: JOURNEY_EVENT_LABELS[event.eventType] || "Cập nhật hành trình",
+      time: event.recordedAt,
+      incident: event.eventType === "INCIDENT_REPORTED",
+    }))
+    .sort((a, b) => new Date(b.time) - new Date(a.time));
 }
 
 const FRESHNESS = {
-  NONE: { label: "Chưa có vị trí xe", tone: "neutral", message: "Vị trí xuất hiện khi tài xế bật chia sẻ hoặc check-in." },
-  FRESH: { label: "Vị trí vừa cập nhật", tone: "success", message: "Thời gian bên dưới là lúc ghi nhận vị trí xe." },
-  STALE: { label: "Vị trí chưa cập nhật", tone: "warning", message: "Đang hiển thị vị trí gần nhất; xe có thể đã di chuyển." },
-  LOST: { label: "Gián đoạn vị trí", tone: "warning", message: "Chưa nhận thêm GPS. Vệt đã ghi vẫn được giữ." },
-  STOPPED: { label: "Đã dừng chia sẻ", tone: "neutral", message: "Đây là vị trí cuối cùng của chuyến." },
+  NONE: { label: "Chưa có vị trí xe", tone: "neutral", message: "Vị trí xe sẽ xuất hiện tự động khi tài xế bắt đầu thực hiện chuyến." },
+  FRESH: { label: "Đang phát trực tiếp", tone: "success", message: "Vị trí xe và quãng đường di chuyển đang được cập nhật theo thời gian thực." },
+  STALE: { label: "Vị trí chưa cập nhật", tone: "warning", message: "Đang hiển thị vị trí gần nhất; xe có thể đã di chuyển tiếp." },
+  LOST: { label: "Gián đoạn tín hiệu GPS", tone: "warning", message: "Chưa nhận thêm GPS. Đoạn đường xe đã đi vẫn được giữ trên bản đồ." },
+  STOPPED: { label: "Đã dừng chia sẻ", tone: "neutral", message: "Đây là vị trí cuối cùng được ghi nhận của chuyến." },
 };
 export const getFreshnessMeta = (freshness) => FRESHNESS[freshness] || FRESHNESS.NONE;
