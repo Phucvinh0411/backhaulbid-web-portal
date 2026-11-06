@@ -62,9 +62,10 @@ function AnimatedVehicleMarker({ position, currentPos, heading }) {
       return undefined;
     }
     let frameId = null;
-    const t0 = performance.now();
+    let t0 = null;
     const duration = 800;
     const step = (now) => {
+      if (t0 === null) t0 = now;
       const progress = Math.min(1, (now - t0) / duration);
       const ease = 1 - Math.pow(1 - progress, 3);
       marker.setLatLng([start.lat + dLat * ease, start.lng + dLng * ease]);
