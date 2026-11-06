@@ -248,7 +248,7 @@ export default function ShopeeLocationPicker({
         const lng = pos.coords.longitude;
         reverseGeocode(lat, lng);
       },
-      (err) => {
+      () => {
         setLocating(false);
         setStatusMessage("Không lấy được vị trí GPS. Hãy nhập địa chỉ hoặc chạm vào bản đồ.");
       },
