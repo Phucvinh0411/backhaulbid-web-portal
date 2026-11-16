@@ -80,10 +80,14 @@ export default function EkycGuard({ children, role }) {
                 variant="h6"
                 className="!font-bold text-ink"
               >
-                Tài khoản chưa được xác thực
+                Tài khoản chưa xác thực eKYC
               </Typography>
               <Typography variant="body2" className="mt-2 text-ink-muted">
-                Theo quy định của hệ thống BackHaulBid, bạn bắt buộc phải hoàn tất định danh người đại diện pháp luật (eKYC) để sử dụng các tính năng giao dịch.
+                {role === "shipper"
+                  ? "Chủ hàng bắt buộc phải hoàn tất xác thực định danh người đại diện (eKYC) trước khi tạo phiên đấu giá."
+                  : role === "carrier"
+                    ? "Chủ xe bắt buộc phải hoàn tất xác thực định danh người đại diện (eKYC) trước khi đăng ký và tham gia đấu giá."
+                    : "Theo quy định của hệ thống BackHaulBid, bạn bắt buộc phải hoàn tất định danh người đại diện pháp luật (eKYC) để sử dụng các tính năng giao dịch."}
               </Typography>
               <ActionButton
                 variant="primary"
