@@ -13,6 +13,8 @@ import Typography from "@mui/material/Typography";
 import SearchIcon from "@mui/icons-material/Search";
 import { PageHeader, DetailDrawer } from "@/components/common";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/ui";
+import EkycGuard from "@/components/eKYC/EkycGuard";
+import EkycModal from "@/components/eKYC/EkycModal";
 import CarrierBiddingItem, { normalizeCarrierAuction } from "@/components/carrier/CarrierBiddingItem";
 import AuctionRegistrationDialog from "@/components/carrier/auction-detail/AuctionRegistrationDialog";
 import AuctionDetailContent from "@/components/carrier/auction-detail/AuctionDetailContent";
@@ -53,6 +55,7 @@ export default function CarrierAuctionsPage() {
   const [sort, setSort] = useState("deadline");
   const [detail, setDetail] = useState(null);
   const [registering, setRegistering] = useState(null);
+  const [ekycModalOpen, setEkycModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setState("loading");
@@ -119,17 +122,18 @@ export default function CarrierAuctionsPage() {
   const detailView = detail ? normalizeCarrierAuction(detail.auction, detail.access) : null;
 
   return (
-    <Box>
-      <PageHeader
-        title="Tìm phiên đấu giá"
-        subtitle="Đấu giá ngược: nhà xe đưa giá thấp hơn giá trần để nhận chuyến. Đăng ký và thanh toán trước hạn đóng đăng ký."
-        breadcrumbs={[{ label: "Trang chủ", path: "/carrier/dashboard" }, { label: "Tìm phiên" }]}
-        action={
-          <Button component={Link} href="/carrier/my-auctions" variant="outlined">
-            Phiên của tôi
-          </Button>
-        }
-      />
+    <EkycGuard role="carrier">
+      <Box>
+        <PageHeader
+          title="Tìm phiên đấu giá"
+          subtitle="Đấu giá ngược: nhà xe đưa giá thấp hơn giá trần để nhận chuyến. Đăng ký và thanh toán trước hạn đóng đăng ký."
+          breadcrumbs={[{ label: "Trang chủ", path: "/carrier/dashboard" }, { label: "Tìm phiên" }]}
+          action={
+            <Button component={Link} href="/carrier/my-auctions" variant="outlined">
+              Phiên của tôi
+            </Button>
+          }
+        />
 
       <Box role="tablist" aria-label="Phạm vi phiên" sx={{ display: "flex", gap: 1, mb: 1.5, overflowX: "auto", pb: 0.5 }}>
         {SCOPES.map((option) => (
@@ -213,6 +217,7 @@ export default function CarrierAuctionsPage() {
               access={access}
               onViewDetail={() => setDetail({ auction, access })}
               onRegister={() => setRegistering(auction)}
+              onVerifyEkyc={() => setEkycModalOpen(true)}
             />
           ))}
         </Box>
@@ -241,7 +246,19 @@ export default function CarrierAuctionsPage() {
           <AuctionDetailContent
             auction={detail.auction}
             footer={
-              detailView?.primary === "register" ? (
+              detailView?.primary === "verify_ekyc" ? (
+                <Button
+                  variant="contained"
+                  color="warning"
+                  fullWidth
+                  onClick={() => {
+                    setDetail(null);
+                    setEkycModalOpen(true);
+                  }}
+                >
+                  Xác thực eKYC để tham gia
+                </Button>
+              ) : detailView?.primary === "register" ? (
                 <Button
                   variant="contained"
                   fullWidth
@@ -262,6 +279,18 @@ export default function CarrierAuctionsPage() {
           />
         )}
       </DetailDrawer>
-    </Box>
+
+      {ekycModalOpen && (
+        <EkycModal
+          role="carrier"
+          onClose={() => setEkycModalOpen(false)}
+          onComplete={() => {
+            setEkycModalOpen(false);
+            void load();
+          }}
+        />
+      )}
+      </Box>
+    </EkycGuard>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -10,6 +11,7 @@ import { getAuctionAccess, retryRegistrationPayment } from "@/services/biddingAp
 import { getMyVehicles } from "@/services/fleetApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
+import EkycModal from "@/components/eKYC/EkycModal";
 import { KeyValueList, ListSkeleton, Panel } from "@/components/ui";
 import { formatCountdown, formatDateTime, formatMoney, secondsUntil, toAmount } from "@/lib/format";
 import AuctionRegistrationDialog from "./AuctionRegistrationDialog";
@@ -27,6 +29,7 @@ export default function CarrierRegistrationGate({ auctionId, auction, onAccessCh
   const [error, setError] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [ekycModalOpen, setEkycModalOpen] = useState(false);
   const [vehicles, setVehicles] = useState([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [vehiclesError, setVehiclesError] = useState("");
@@ -173,6 +176,22 @@ export default function CarrierRegistrationGate({ auctionId, auction, onAccessCh
           </Box>
         )}
 
+        {status === "EKYC_REQUIRED" && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <Alert severity="warning">
+              Tài khoản chủ xe chưa xác thực định danh người đại diện (eKYC). Bạn cần hoàn tất xác thực eKYC trước khi đăng ký và tham gia đấu giá.
+            </Alert>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
+              <Button variant="contained" color="warning" onClick={() => setEkycModalOpen(true)}>
+                Xác thực eKYC ngay
+              </Button>
+              <Button variant="outlined" component={Link} href="/carrier/settings">
+                Mở cài đặt hồ sơ
+              </Button>
+            </Box>
+          </Box>
+        )}
+
         {status === "REPUTATION_TOO_LOW" && (
           <Alert severity="warning">
             Điểm uy tín hiện tại {reputation || "chưa xác định"}. Điểm giảm khi vi phạm chính sách giao hàng trễ.
@@ -193,6 +212,17 @@ export default function CarrierRegistrationGate({ auctionId, auction, onAccessCh
         onClose={() => setDialogOpen(false)}
         onCompleted={loadAccess}
       />
+
+      {ekycModalOpen && (
+        <EkycModal
+          role="carrier"
+          onClose={() => setEkycModalOpen(false)}
+          onComplete={() => {
+            setEkycModalOpen(false);
+            void loadAccess();
+          }}
+        />
+      )}
     </>
   );
 }

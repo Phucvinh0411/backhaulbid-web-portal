@@ -15,6 +15,8 @@ export function normalizeCarrierAuction(auction, access) {
   if (access === undefined) return { ...base, note: "Đang kiểm tra trạng thái đăng ký của bạn...", primary: "view" };
 
   switch (accessStatus) {
+    case "EKYC_REQUIRED":
+      return { ...base, status: getAccessStatusMeta(accessStatus), note: "Cần xác thực eKYC người đại diện trước khi tham gia đấu giá", noteTone: "warning", primary: "verify_ekyc" };
     case "REGISTRATION_REQUIRED":
       return { ...base, note: "Đăng ký và thanh toán để được vào phòng", noteTone: "info", primary: "register" };
     case "PAYMENT_INCOMPLETE":
@@ -35,12 +37,22 @@ export function normalizeCarrierAuction(auction, access) {
   }
 }
 
-export default function CarrierBiddingItem({ auction, access, onViewDetail, onRegister, extraFacts }) {
+export default function CarrierBiddingItem({ auction, access, onViewDetail, onRegister, onVerifyEkyc, extraFacts }) {
   const view = normalizeCarrierAuction(auction, access);
   const roomHref = `/carrier/auctions/${encodeURIComponent(auction.id)}`;
 
   let primary = null;
-  if (view.primary === "register") {
+  if (view.primary === "verify_ekyc") {
+    primary = onVerifyEkyc ? (
+      <Button variant="contained" color="warning" onClick={() => onVerifyEkyc(auction)}>
+        Xác thực eKYC
+      </Button>
+    ) : (
+      <Button variant="contained" color="warning" component={Link} href="/carrier/settings">
+        Xác thực eKYC
+      </Button>
+    );
+  } else if (view.primary === "register") {
     primary = (
       <Button variant="contained" onClick={() => onRegister?.(auction)}>
         Đăng ký tham gia
