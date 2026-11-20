@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { listAuctions } from "@/services/biddingApi";
 import { contractApi } from "@/services/contractApi";
 import { unwrapListData } from "@/services/responseData";
@@ -75,7 +75,7 @@ const getContractBaseline = (contract, auctionsById) => {
 };
 
 export const useShipperDashboard = (timeFilter) => {
-  const [data, setData] = useState(initialDashboardData);
+  const [raw, setRaw] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -99,82 +99,9 @@ export const useShipperDashboard = (timeFilter) => {
 
         if (!active) return;
 
-        const now = Date.now();
-        const auctions = unwrapListData(auctionResponse).map(mapBackendToShipment);
-        const contracts = unwrapListData(contractResponse);
-        const auctionsById = new Map(auctions.map((auction) => [String(auction.id), auction]));
-        const openAuctions = auctions.filter((auction) =>
-          ["pending_bids", "active_bids"].includes(auction.status),
-        );
-
-        const endingAuctions = openAuctions
-          .filter((auction) => {
-            const end = getDate(auction.endTime);
-            return end ? end.getTime() > now : true;
-          })
-          .sort((left, right) => {
-            const leftEnd = getDate(left.endTime)?.getTime() ?? Number.MAX_SAFE_INTEGER;
-            const rightEnd = getDate(right.endTime)?.getTime() ?? Number.MAX_SAFE_INTEGER;
-            return leftEnd - rightEnd;
-          })
-          .slice(0, 3)
-          .map((auction) => {
-            const timeInfo = getTimeLeftLabel(auction.endTime);
-            return {
-              id: auction.id,
-              goodsType: auction.title || auction.goodsType,
-              route: `${auction.from.province} → ${auction.to.province}`,
-              maxPrice: auction.maxPrice,
-              currentLowest: auction.currentLowestBid || auction.maxPrice,
-              bidCount: auction.bidCount,
-              timeLeft: timeInfo.text,
-              isEnded: timeInfo.isEnded,
-            };
-          });
-
-        const inTransitContracts = contracts.filter((contract) =>
-          ["SIGNED", "ACTIVE"].includes(contract.status) ||
-          ["WAITING_PICKUP", "PICKED_UP", "IN_TRANSIT", "DELIVERED"].includes(contract.trip?.status),
-        );
-
-        const activeShipments = inTransitContracts.slice(0, 5).map((contract) => ({
-          id: contract.trip?.id || contract.tripId || contract.contractCode || contract.id,
-          goodsType: contract.trip?.cargoType || contract.cargoType || "Chuyến vận chuyển",
-          route: `${contract.trip?.pickupLocation || "Chưa cập nhật"} → ${contract.trip?.deliveryLocation || "Chưa cập nhật"}`,
-          driverName: contract.trip?.driverName || "Chưa cập nhật",
-          driverPlate: contract.trip?.vehiclePlate || "Chưa cập nhật",
-          progress: calculateTripProgress(contract.trip?.status),
-          status: contract.trip?.status || contract.status,
-        }));
-
-        let monthlySpend = 0;
-        let estimatedSavings = 0;
-        const spendDataMap = new Map();
-
-        contracts
-          .filter((contract) => ["SIGNED", "COMPLETED", "ACTIVE"].includes(contract.status))
-          .filter((contract) => isInTimeFilter(contract.createdAt || contract.trip?.createdAt, timeFilter))
-          .forEach((contract) => {
-            const amount = getContractAmount(contract);
-            const baseline = getContractBaseline(contract, auctionsById);
-            const savings = baseline > amount ? baseline - amount : 0;
-            const bucket = getChartBucket(contract.createdAt || contract.trip?.createdAt, timeFilter);
-            const current = spendDataMap.get(bucket) || { name: bucket, spend: 0, savings: 0 };
-            current.spend += amount;
-            current.savings += savings;
-            spendDataMap.set(bucket, current);
-            monthlySpend += amount;
-            estimatedSavings += savings;
-          });
-
-        setData({
-          activeAuctionsCount: openAuctions.length,
-          inTransitCount: inTransitContracts.length,
-          monthlySpend,
-          estimatedSavings,
-          spendData: Array.from(spendDataMap.values()),
-          activeShipments,
-          endingAuctions,
+        setRaw({
+          auctions: unwrapListData(auctionResponse).map(mapBackendToShipment),
+          contracts: unwrapListData(contractResponse),
         });
       } catch (err) {
         if (active) setError("Có lỗi xảy ra khi tải dữ liệu tổng quan.");
@@ -189,7 +116,88 @@ export const useShipperDashboard = (timeFilter) => {
     return () => {
       active = false;
     };
-  }, [timeFilter]);
+  }, []);
+
+  const data = useMemo(() => {
+    if (!raw) return initialDashboardData;
+    const { auctions, contracts } = raw;
+    const now = Date.now();
+    const auctionsById = new Map(auctions.map((auction) => [String(auction.id), auction]));
+    const openAuctions = auctions.filter((auction) =>
+      ["pending_bids", "active_bids"].includes(auction.status),
+    );
+
+    const endingAuctions = openAuctions
+      .filter((auction) => {
+        const end = getDate(auction.endTime);
+        return end ? end.getTime() > now : true;
+      })
+      .sort((left, right) => {
+        const leftEnd = getDate(left.endTime)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+        const rightEnd = getDate(right.endTime)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+        return leftEnd - rightEnd;
+      })
+      .slice(0, 3)
+      .map((auction) => {
+        const timeInfo = getTimeLeftLabel(auction.endTime);
+        return {
+          id: auction.id,
+          goodsType: auction.title || auction.goodsType,
+          route: `${auction.from.province} → ${auction.to.province}`,
+          maxPrice: auction.maxPrice,
+          currentLowest: auction.currentLowestBid || auction.maxPrice,
+          bidCount: auction.bidCount,
+          timeLeft: timeInfo.text,
+          isEnded: timeInfo.isEnded,
+        };
+      });
+
+    const inTransitContracts = contracts.filter(
+      (contract) =>
+        ["SIGNED", "ACTIVE"].includes(contract.status) ||
+        ["WAITING_PICKUP", "PICKED_UP", "IN_TRANSIT", "DELIVERED"].includes(contract.trip?.status),
+    );
+
+    const activeShipments = inTransitContracts.slice(0, 5).map((contract) => ({
+      id: contract.trip?.id || contract.tripId || contract.contractCode || contract.id,
+      goodsType: contract.trip?.cargoType || contract.cargoType || "Chuyến vận chuyển",
+      route: `${contract.trip?.pickupLocation || "Chưa cập nhật"} → ${contract.trip?.deliveryLocation || "Chưa cập nhật"}`,
+      driverName: contract.trip?.driverName || "Chưa cập nhật",
+      driverPlate: contract.trip?.vehiclePlate || "Chưa cập nhật",
+      progress: calculateTripProgress(contract.trip?.status),
+      status: contract.trip?.status || contract.status,
+    }));
+
+    let monthlySpend = 0;
+    let estimatedSavings = 0;
+    const spendDataMap = new Map();
+
+    contracts
+      .filter((contract) => ["SIGNED", "COMPLETED", "ACTIVE"].includes(contract.status))
+      .filter((contract) => isInTimeFilter(contract.createdAt || contract.trip?.createdAt, timeFilter))
+      .forEach((contract) => {
+        const amount = getContractAmount(contract);
+        const baseline = getContractBaseline(contract, auctionsById);
+        const savings = baseline > amount ? baseline - amount : 0;
+        const bucket = getChartBucket(contract.createdAt || contract.trip?.createdAt, timeFilter);
+        const current = spendDataMap.get(bucket) || { name: bucket, spend: 0, savings: 0 };
+        current.spend += amount;
+        current.savings += savings;
+        spendDataMap.set(bucket, current);
+        monthlySpend += amount;
+        estimatedSavings += savings;
+      });
+
+    return {
+      activeAuctionsCount: openAuctions.length,
+      inTransitCount: inTransitContracts.length,
+      monthlySpend,
+      estimatedSavings,
+      spendData: Array.from(spendDataMap.values()),
+      activeShipments,
+      endingAuctions,
+    };
+  }, [raw, timeFilter]);
 
   return { data, loading, error };
 };

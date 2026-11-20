@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { ConfirmDialog, EmptyState, ErrorState } from "@/components/ui";
+import { ConfirmDialog, EmptyState, ErrorState, ListSkeleton } from "@/components/ui";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
@@ -18,12 +18,10 @@ import DialogActions from "@mui/material/DialogActions";
 import Divider from "@mui/material/Divider";
 import TextField from "@mui/material/TextField";
 import Avatar from "@mui/material/Avatar";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import {
   Add as AddIcon,
   Person as PersonIcon,
   Settings as SettingsIcon,
-  FileUpload as FileUploadIcon,
   Edit as EditIcon,
 } from "@mui/icons-material";
 import Tabs from "@mui/material/Tabs";
@@ -42,7 +40,6 @@ import {
   getMyDrivers,
   updateDriver,
 } from "@/services/fleetApi";
-import { downloadCsvTemplate, parseSimpleCsv } from "@/services/csvImport";
 import { mediaApi } from "@/services/mediaApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
@@ -62,13 +59,8 @@ export default function DriversPage() {
   const [viewMode, setViewMode] = useState("CARD");
   const [openModal, setOpenModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
-  const [openImportModal, setOpenImportModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [importRows, setImportRows] = useState([]);
-  const [importFileName, setImportFileName] = useState("");
-  const [documentFiles, setDocumentFiles] = useState([]);
-  const [importStep, setImportStep] = useState(1);
   const [createStep, setCreateStep] = useState(1);
   const [licenseImage, setLicenseImage] = useState(null);
   const [editLicenseImage, setEditLicenseImage] = useState(null);
@@ -300,143 +292,6 @@ export default function DriversPage() {
     }
   };
 
-  const handleOpenImport = () => {
-    setImportRows([]);
-    setImportFileName("");
-    setDocumentFiles([]);
-    setImportStep(1);
-    setError("");
-    setOpenImportModal(true);
-  };
-  const handleCloseImport = () => {
-    if (!saving) setOpenImportModal(false);
-  };
-
-  const handleImportCsvFile = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    try {
-      const rows = parseSimpleCsv(await file.text()).map((row) => ({
-        fullName: row.fullName,
-        phone: row.phone,
-        licenseNumber: row.licenseNumber,
-        licenseImageFile:
-          row.licenseImageFile || row.licenseImage || row.licenseImageUrl || "",
-      }));
-      if (
-        rows.some((row) => !row.fullName || !row.phone || !row.licenseNumber)
-      ) {
-        throw new Error("Mỗi dòng phải có fullName, phone và licenseNumber");
-      }
-      setImportRows(rows);
-      setImportFileName(file.name);
-      setError("");
-    } catch (importError) {
-      setImportRows([]);
-      setImportFileName("");
-      setError(
-        getApiErrorMessage(
-          importError,
-          "Không thể đọc file CSV. Vui lòng kiểm tra đúng định dạng file mẫu.",
-        ),
-      );
-    }
-  };
-
-  const handleImportDocumentFiles = (event) => {
-    const files = Array.from(event.target.files || []);
-    event.target.value = "";
-    if (!files.length) return;
-    const invalidFile = files.find(
-      (file) =>
-        !/^image\/(jpeg|png)$|^application\/pdf$/.test(file.type) ||
-        file.size > 5 * 1024 * 1024,
-    );
-    if (invalidFile) {
-      setError(
-        `Tệp ${invalidFile.name} không hợp lệ. Chỉ nhận JPG, PNG hoặc PDF, tối đa 5MB mỗi tệp.`,
-      );
-      return;
-    }
-    setDocumentFiles(files);
-    setError("");
-  };
-
-  const findImportDocument = (name) =>
-    documentFiles.find(
-      (file) =>
-        file.name.toLowerCase() ===
-        String(name || "")
-          .trim()
-          .toLowerCase(),
-    );
-
-  const validateImportDocuments = () => {
-    const missing = importRows
-      .filter((row) => !findImportDocument(row.licenseImageFile))
-      .map((row) => row.fullName);
-    if (missing.length) {
-      setError(
-        `Chưa tìm thấy ảnh hoặc file GPLX của ${missing.slice(0, 2).join(" và ")}${missing.length > 2 ? " và các tài xế liên quan" : ""}. Kiểm tra lại tên file trong CSV.`,
-      );
-      return false;
-    }
-    return true;
-  };
-
-  const handleBulkImport = async () => {
-    if (importStep < 3) {
-      if (importStep === 1 && !importRows.length) {
-        setError("Vui lòng tải file CSV thông tin trước khi tiếp tục.");
-        return;
-      }
-      if (importStep === 2 && !validateImportDocuments()) return;
-      setError("");
-      setImportStep((current) => current + 1);
-      return;
-    }
-    setSaving(true);
-    setError("");
-    try {
-      for (const row of importRows) {
-        const licenseImageUrl = await mediaApi.uploadFile(
-          findImportDocument(row.licenseImageFile),
-          "drivers/license",
-        );
-        await createDriver({
-          fullName: row.fullName,
-          phone: row.phone,
-          licenseNumber: row.licenseNumber,
-          licenseImageUrl,
-        });
-      }
-      setSuccessMsg(
-        `Đã gửi ${importRows.length} hồ sơ tài xế để Admin xét duyệt.`,
-      );
-      await loadDrivers();
-      setOpenImportModal(false);
-      setImportRows([]);
-      setImportFileName("");
-      setDocumentFiles([]);
-      setImportStep(1);
-    } catch (importError) {
-      setError(
-        getApiErrorMessage(
-          importError,
-          "Không thể gửi danh sách tài xế. Vui lòng kiểm tra lại hồ sơ.",
-        ),
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleImportBack = () => {
-    setError("");
-    setImportStep((current) => Math.max(1, current - 1));
-  };
-
   const handleOpenDetails = (driver) => setSelectedDriver(driver);
   const handleCloseDetails = () => setSelectedDriver(null);
 
@@ -477,46 +332,21 @@ export default function DriversPage() {
   return (
     <Box className="animate-fade-in-up">
       <PageHeader
-        title="Quản lý Tài xế"
+        title="Quản lý tài xế"
         subtitle="Danh sách nhân sự lái xe và kiểm soát bằng lái"
         breadcrumbs={[
           { label: "Trang chủ", path: "/carrier/dashboard" },
-          { label: "Vận hành", path: "#" },
-          { label: "Tài xế", path: "/carrier/drivers" },
+          { label: "Vận hành" },
+          { label: "Tài xế" },
         ]}
         action={
-          <Box className="flex flex-wrap gap-2">
-            <Button
-              variant="outlined"
-              startIcon={<FileUploadIcon />}
-              onClick={handleOpenImport}
-              sx={{
-                borderColor: "var(--color-brand)",
-                color: "var(--color-brand)",
-                "&:hover": {
-                  backgroundColor: "rgba(27,73,101,0.05)",
-                  borderColor: "var(--color-brand-hover)",
-                },
-                borderRadius: "8px",
-                px: 2,
-              }}
-            >
-              Import hàng loạt
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleOpen}
-              sx={{
-                backgroundColor: "var(--color-brand)",
-                "&:hover": { backgroundColor: "var(--color-brand-hover)" },
-                borderRadius: "8px",
-                px: 3,
-              }}
-            >
-              Thêm tài xế mới
-            </Button>
-          </Box>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpen}
+          >
+            Thêm tài xế mới
+          </Button>
         }
       />
 
@@ -562,16 +392,9 @@ export default function DriversPage() {
         />}
       </Box>
 
-      {loading && (
-        <Box
-          role="status"
-          className="mb-4 rounded-lg border border-line bg-white px-4 py-3 text-sm text-ink-muted"
-        >
-          Đang tải dữ liệu tài xế...
-        </Box>
-      )}
+      {loading && <ListSkeleton rows={3} height={140} label="Đang tải dữ liệu tài xế..." />}
 
-      {loadErrorMessage && <ErrorState description={loadErrorMessage} onRetry={loadDrivers} />}
+      {!loading && loadErrorMessage && <ErrorState description={loadErrorMessage} onRetry={loadDrivers} />}
       {!loading && !loadErrorMessage && filteredDrivers.length === 0 && (
         <EmptyState
           title={filter === "ALL" ? "Chưa có tài xế" : "Không có tài xế trong nhóm này"}
@@ -580,7 +403,7 @@ export default function DriversPage() {
         />
       )}
 
-      {isMobile || viewMode === "CARD" ? (
+      {!loading && !loadErrorMessage && sortedDrivers.length > 0 && (isMobile || viewMode === "CARD" ? (
         <Grid container spacing={3}>
           {sortedDrivers.map((d) => (
             <Grid item xs={12} sm={6} md={4} key={d.id}>
@@ -728,7 +551,6 @@ export default function DriversPage() {
                         variant="text"
                         startIcon={<EditIcon />}
                         onClick={() => handleOpenEdit(d)}
-                        sx={{ borderRadius: "6px" }}
                       >
                         Sửa
                       </Button>
@@ -737,7 +559,6 @@ export default function DriversPage() {
                         variant="outlined"
                         startIcon={<SettingsIcon />}
                         onClick={() => handleOpenDetails(d)}
-                        sx={{ borderRadius: "6px" }}
                       >
                         Chi tiết
                       </Button>
@@ -748,7 +569,7 @@ export default function DriversPage() {
             </TableBody>
           </Table>
         </TableContainer>
-      )}
+      ))}
 
       {/* Modal Thêm tài xế mới */}
       <Dialog
@@ -756,7 +577,6 @@ export default function DriversPage() {
         onClose={handleClose}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: "12px" } }}
       >
         <DialogTitle sx={{ borderBottom: "1px solid var(--color-surface-sunken)", pb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--color-brand)" }}>
@@ -820,7 +640,6 @@ export default function DriversPage() {
               <TextField
                 fullWidth
                 size="small"
-                variant="outlined"
                 label="Họ và tên"
                 placeholder="VD: Nguyễn Văn A"
                 required
@@ -832,7 +651,6 @@ export default function DriversPage() {
               <TextField
                 fullWidth
                 size="small"
-                variant="outlined"
                 label="Số điện thoại"
                 placeholder="VD: 0901234567"
                 required
@@ -844,8 +662,7 @@ export default function DriversPage() {
               <TextField
                 fullWidth
                 size="small"
-                variant="outlined"
-                label="Số Giấy phép lái xe"
+                label="Số giấy phép lái xe"
                 placeholder="VD: 790123456789"
                 required
                 value={form.licenseNumber}
@@ -972,31 +789,17 @@ export default function DriversPage() {
           sx={{ px: 3, pb: 3, pt: 1.5, borderTop: "1px solid var(--color-surface-sunken)" }}
         >
           {createStep > 1 && (
-            <Button
-              onClick={handleCreateBack}
-              color="inherit"
-              sx={{ borderRadius: "8px", fontWeight: 600 }}
-            >
+            <Button onClick={handleCreateBack} color="inherit">
               Quay lại
             </Button>
           )}
-          <Button
-            onClick={handleClose}
-            color="inherit"
-            sx={{ borderRadius: "8px", fontWeight: 600 }}
-          >
+          <Button onClick={handleClose} color="inherit">
             Hủy bỏ
           </Button>
           <Button
             onClick={handleCreate}
             disabled={saving}
             variant="contained"
-            sx={{
-              borderRadius: "8px",
-              bgcolor: "var(--color-brand)",
-              fontWeight: 600,
-              "&:hover": { bgcolor: "var(--color-brand-hover)" },
-            }}
           >
             {saving
               ? "Đang gửi..."
@@ -1013,7 +816,6 @@ export default function DriversPage() {
         onClose={handleCloseEdit}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: "12px" } }}
       >
         <DialogTitle
           sx={{
@@ -1035,7 +837,6 @@ export default function DriversPage() {
           <TextField
             fullWidth
             size="small"
-            variant="outlined"
             label="Họ và tên"
             required
             value={editForm.fullName}
@@ -1046,7 +847,6 @@ export default function DriversPage() {
           <TextField
             fullWidth
             size="small"
-            variant="outlined"
             label="Số điện thoại"
             required
             value={editForm.phone}
@@ -1057,7 +857,6 @@ export default function DriversPage() {
           <TextField
             fullWidth
             size="small"
-            variant="outlined"
             label="Số Giấy phép lái xe"
             required
             value={editForm.licenseNumber}
@@ -1111,11 +910,7 @@ export default function DriversPage() {
         <DialogActions
           sx={{ px: 3, pb: 3, pt: 1.5, borderTop: "1px solid var(--color-surface-sunken)" }}
         >
-          <Button
-            onClick={handleCloseEdit}
-            color="inherit"
-            sx={{ borderRadius: "8px", fontWeight: 600 }}
-          >
+          <Button onClick={handleCloseEdit} color="inherit">
             Hủy bỏ
           </Button>
           <Button
@@ -1127,12 +922,6 @@ export default function DriversPage() {
               !editForm.licenseNumber
             }
             variant="contained"
-            sx={{
-              borderRadius: "8px",
-              bgcolor: "var(--color-brand)",
-              fontWeight: 600,
-              "&:hover": { bgcolor: "var(--color-brand-hover)" },
-            }}
           >
             {saving ? "Đang lưu..." : "Lưu thay đổi"}
           </Button>
@@ -1140,240 +929,6 @@ export default function DriversPage() {
       </Dialog>
 
       {/* Drawer Chi tiết Tài xế */}
-      <Dialog
-        open={openImportModal}
-        onClose={handleCloseImport}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: "12px" } }}
-      >
-        <DialogTitle className="border-b border-line pb-3">
-          <Typography variant="h6" className="font-bold text-[var(--color-brand)]">
-            Nhập hồ sơ tài xế
-          </Typography>
-          <Typography variant="body2" className="mt-1 text-ink-muted">
-            Gom thông tin và tài liệu theo từng bước để tránh nhầm file.
-          </Typography>
-        </DialogTitle>
-        <DialogContent className="pt-5">
-          <Box
-            className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-3"
-            aria-label="Tiến trình nhập hồ sơ"
-          >
-            {["Thông tin", "Hồ sơ", "Xác nhận"].map((label, index) => (
-              <Box
-                key={label}
-                className={`rounded-lg border px-3 py-2 text-center text-sm font-semibold ${importStep === index + 1 ? "border-[var(--color-brand)] bg-[var(--color-brand)] text-white" : importStep > index + 1 ? "border-success-soft bg-success-soft text-success" : "border-line bg-surface-sunken text-ink-muted"}`}
-              >
-                {index + 1}. {label}
-              </Box>
-            ))}
-          </Box>
-
-          {importStep === 1 && (
-            <Box className="space-y-4">
-              <Box className="rounded-lg border border-brand-soft bg-brand-soft px-4 py-3">
-                <Typography
-                  variant="subtitle2"
-                  className="font-bold text-[var(--color-brand)]"
-                >
-                  Bắt đầu bằng file thông tin
-                </Typography>
-                <Typography variant="body2" className="mt-1 text-ink-muted">
-                  Mỗi dòng CSV là một tài xế. Tên file GPLX ở cột cuối sẽ được
-                  đối chiếu ở bước tiếp theo.
-                </Typography>
-              </Box>
-              <Box className="flex flex-wrap items-center justify-between gap-3">
-                <Typography variant="body2" className="text-ink-muted">
-                  Định dạng: CSV, tối đa 500 dòng.
-                </Typography>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<FileDownloadIcon />}
-                  onClick={() =>
-                    downloadCsvTemplate(
-                      "drivers-template.csv",
-                      "fullName,phone,licenseNumber,licenseImageFile\nNguyen Van A,0901234567,B2,gplx001.jpg\n",
-                    )
-                  }
-                  sx={{ textTransform: "none", fontWeight: 600 }}
-                >
-                  Tải file mẫu
-                </Button>
-              </Box>
-              <Card
-                component="label"
-                htmlFor="driver-csv-input-v2"
-                variant="outlined"
-                className="cursor-pointer border-2 border-dashed bg-surface-sunken transition-colors hover:border-[var(--color-brand)]"
-              >
-                <input
-                  id="driver-csv-input-v2"
-                  hidden
-                  type="file"
-                  accept=".csv,text/csv"
-                  onChange={handleImportCsvFile}
-                />
-                <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
-                  <FileUploadIcon sx={{ fontSize: 42, color: "var(--color-brand)" }} />
-                  <Typography
-                    variant="subtitle1"
-                    className="font-semibold text-ink"
-                  >
-                    {importFileName || "Chọn file CSV thông tin"}
-                  </Typography>
-                  <Typography variant="caption" className="text-ink-muted">
-                    Bắt buộc có họ tên, số điện thoại, số GPLX và tên file GPLX.
-                  </Typography>
-                </CardContent>
-              </Card>
-              {importRows.length > 0 && (
-                <Box
-                  role="status"
-                  className="rounded-lg border border-success-soft bg-success-soft px-3 py-2 text-sm text-success"
-                >
-                  Đã đọc {importRows.length} dòng thông tin.
-                </Box>
-              )}
-            </Box>
-          )}
-
-          {importStep === 2 && (
-            <Box className="space-y-4">
-              <Box className="rounded-lg border border-brand-soft bg-brand-soft px-4 py-3">
-                <Typography
-                  variant="subtitle2"
-                  className="font-bold text-[var(--color-brand)]"
-                >
-                  Tải ảnh và tài liệu rời
-                </Typography>
-                <Typography variant="body2" className="mt-1 text-ink-muted">
-                  Không cần nén ZIP. Chọn các file JPG, PNG hoặc PDF có tên
-                  trùng với tên đã ghi trong CSV.
-                </Typography>
-              </Box>
-              <Card
-                component="label"
-                htmlFor="driver-documents-input-v2"
-                variant="outlined"
-                className="cursor-pointer border-2 border-dashed bg-surface-sunken transition-colors hover:border-[var(--color-brand)]"
-              >
-                <input
-                  id="driver-documents-input-v2"
-                  hidden
-                  multiple
-                  type="file"
-                  accept="image/jpeg,image/png,application/pdf"
-                  onChange={handleImportDocumentFiles}
-                />
-                <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
-                  <FileUploadIcon sx={{ fontSize: 42, color: "var(--color-brand)" }} />
-                  <Typography
-                    variant="subtitle1"
-                    className="font-semibold text-ink"
-                  >
-                    {documentFiles.length
-                      ? `Đã chọn ${documentFiles.length} file tài liệu`
-                      : "Chọn ảnh và file GPLX"}
-                  </Typography>
-                  <Typography variant="caption" className="text-ink-muted">
-                    Mỗi file tối đa 5MB. Hệ thống sẽ đối chiếu đủ file cho từng
-                    tài xế.
-                  </Typography>
-                </CardContent>
-              </Card>
-              {documentFiles.length > 0 && (
-                <Box className="grid max-h-40 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
-                  {documentFiles.map((file) => (
-                    <Box
-                      key={file.name}
-                      className="rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink"
-                    >
-                      <span className="font-medium">{file.name}</span>
-                      <span className="ml-2 text-xs text-ink-subtle">
-                        {(file.size / 1024 / 1024).toFixed(2)}MB
-                      </span>
-                    </Box>
-                  ))}
-                </Box>
-              )}
-            </Box>
-          )}
-
-          {importStep === 3 && (
-            <Box className="space-y-4">
-              <Box className="rounded-lg border border-line bg-surface-sunken px-4 py-3">
-                <Typography
-                  variant="subtitle2"
-                  className="font-bold text-ink"
-                >
-                  Kiểm tra trước khi gửi
-                </Typography>
-                <Typography variant="body2" className="mt-1 text-ink-muted">
-                  {importRows.length} tài xế sẽ được tạo ở trạng thái Chờ duyệt.
-                  Admin sẽ kiểm tra từng bộ hồ sơ.
-                </Typography>
-              </Box>
-              <Box className="max-h-60 space-y-2 overflow-y-auto">
-                {importRows.map((row) => (
-                  <Box
-                    key={row.fullName}
-                    className="grid grid-cols-1 gap-1 rounded-lg border border-line bg-white px-3 py-2 text-sm sm:grid-cols-2"
-                  >
-                    <Typography className="font-semibold text-[var(--color-brand)]">
-                      {row.fullName}
-                    </Typography>
-                    <Typography className="truncate text-ink-muted">
-                      GPLX: {row.licenseImageFile}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-              <Typography variant="caption" className="block text-ink-muted">
-                Sau khi gửi, hồ sơ sẽ xuất hiện trong danh sách Chờ duyệt của
-                bạn.
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions className="border-t border-line px-6 pb-5 pt-3">
-          {importStep > 1 && (
-            <Button
-              onClick={handleImportBack}
-              color="inherit"
-              sx={{ borderRadius: "8px", fontWeight: 600 }}
-            >
-              Quay lại
-            </Button>
-          )}
-          <Button
-            onClick={handleCloseImport}
-            color="inherit"
-            sx={{ borderRadius: "8px", fontWeight: 600 }}
-          >
-            Hủy bỏ
-          </Button>
-          <Button
-            onClick={handleBulkImport}
-            disabled={saving || (importStep === 1 && !importRows.length)}
-            variant="contained"
-            sx={{
-              borderRadius: "8px",
-              backgroundColor: "var(--color-brand)",
-              fontWeight: 600,
-            }}
-          >
-            {saving
-              ? "Đang gửi..."
-              : importStep === 3
-                ? "Gửi hồ sơ"
-                : "Tiếp tục"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
       <DetailDrawer
         open={!!selectedDriver}
         onClose={handleCloseDetails}
@@ -1456,11 +1011,6 @@ export default function DriversPage() {
                 startIcon={<EditIcon />}
                 variant="contained"
                 fullWidth
-                sx={{
-                  borderRadius: "8px",
-                  backgroundColor: "var(--color-brand)",
-                  fontWeight: 600,
-                }}
               >
                 Cập nhật thông tin tài xế
               </Button>
@@ -1469,7 +1019,6 @@ export default function DriversPage() {
                 color="error"
                 variant="outlined"
                 fullWidth
-                sx={{ borderRadius: "8px" }}
               >
                 Xóa tài xế
               </Button>

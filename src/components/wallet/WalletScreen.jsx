@@ -1,18 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import useAccountVerification from "@/hooks/useAccountVerification";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 import Grid from "@mui/material/Grid";
-import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -28,14 +24,13 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalanceOutlined";
-import CloseIcon from "@mui/icons-material/Close";
 import InfoIcon from "@mui/icons-material/InfoOutlined";
 import SearchIcon from "@mui/icons-material/SearchOutlined";
 import WalletIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 
 import AppCard from "@/components/common/AppCard";
 import PageHeader from "@/components/common/PageHeader";
-import { ErrorState, ListSkeleton } from "@/components/ui";
+import { ErrorState, ListSkeleton, ResponsiveDialog } from "@/components/ui";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { walletApi } from "@/services/walletApi";
@@ -90,6 +85,8 @@ function formatWalletInput(value) {
 export default function WalletScreen({ role = "shipper", standalone = true }) {
   const isShipper = role === "shipper";
   const { notify } = useGlobalNotification();
+  const verification = useAccountVerification(true);
+  const walletActionsLocked = !verification.loading && !verification.fullyVerified;
   const [balance, setBalance] = useState(0);
   const [frozenBalance, setFrozenBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
@@ -333,7 +330,7 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
     <Box className="w-full min-h-screen">
       {standalone && (
         <PageHeader
-          title={isShipper ? "Ví thanh toán & Ký quỹ" : "Ví thanh toán"}
+          title={isShipper ? "Ví thanh toán & ký quỹ" : "Ví thanh toán"}
           subtitle="Quản lý số dư, tiền tạm giữ và lịch sử giao dịch từ dữ liệu thật."
           breadcrumbs={[
             { label: "Trang chủ", path: isShipper ? "/shipper/dashboard" : "/carrier/dashboard" },
@@ -348,12 +345,12 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
           <Grid item xs={12} md={5}>
             <AppCard
               showAccent={false}
-              className="!rounded-xl h-full relative overflow-hidden"
+              className="h-full relative overflow-hidden"
               style={{ background: "var(--color-band)", border: "none" }}
             >
               <CardContent className="!p-8 flex flex-col justify-between h-full space-y-6 text-white">
                 <div className="space-y-1.5">
-                  <Typography className="!text-white/85 font-bold uppercase tracking-wider text-xs flex items-center gap-1.5">
+                  <Typography className="!text-white/85 font-medium text-xs flex items-center gap-1.5">
                     <WalletIcon className="!text-[1rem]" /> Số dư khả dụng
                   </Typography>
                   <Typography variant="h3" className="!font-bold tabular text-white">
@@ -364,10 +361,10 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
                   </Typography>
                 </div>
                 <div className="flex gap-3">
-                  <Button fullWidth variant="contained" onClick={() => handleOpenWalletAction("deposit")} disabled={walletLoading || Boolean(walletError)} className="!bg-white !text-[var(--color-brand)] hover:!bg-brand-soft !font-extrabold !py-3 !rounded-lg !capitalize">
+                  <Button fullWidth variant="contained" size="large" onClick={() => handleOpenWalletAction("deposit")} disabled={walletLoading || Boolean(walletError) || walletActionsLocked} className="!bg-white !text-[var(--color-brand)] hover:!bg-brand-soft">
                     Nạp tiền
                   </Button>
-                  <Button fullWidth variant="outlined" onClick={() => handleOpenWalletAction("withdraw")} disabled={walletLoading || Boolean(walletError)} className="!border-white/50 !text-white hover:!bg-white/10 !font-bold !py-3 !rounded-lg !capitalize">
+                  <Button fullWidth variant="outlined" size="large" onClick={() => handleOpenWalletAction("withdraw")} disabled={walletLoading || Boolean(walletError) || walletActionsLocked} className="!border-white/50 !text-white hover:!bg-white/10">
                     Rút tiền
                   </Button>
                 </div>
@@ -376,7 +373,7 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
           </Grid>
 
           <Grid item xs={12} md={7}>
-            <AppCard showAccent={false} className="!rounded-xl border border-line h-full bg-white/70 backdrop-blur-md">
+            <AppCard showAccent={false} className="border border-line h-full">
               <CardContent className="!p-6 flex flex-col justify-between h-full">
                 <div className="space-y-3">
                   <Typography variant="h6" className="!font-bold text-ink">Quản lý dòng tiền an toàn</Typography>
@@ -397,7 +394,7 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
           </Grid>
         </Grid>
 
-        <AppCard showAccent={false} className="!rounded-xl border border-line !shadow-[0_8px_32px_0_rgba(27,73,101,0.02)] overflow-hidden">
+        <AppCard showAccent={false} className="border border-line overflow-hidden">
           <Box className="p-6 border-b border-line">
             <Typography variant="h6" className="!font-bold text-ink mb-3">Yêu cầu rút tiền</Typography>
             {withdrawals.length === 0 ? <Typography variant="body2" className="text-ink-subtle">Chưa có yêu cầu rút tiền.</Typography> : <Box className="grid gap-2 md:grid-cols-2">{withdrawals.slice(0, 6).map((item) => <Box key={item.id} className="flex items-center justify-between rounded-xl border border-line p-3"><Box><Typography variant="body2" className="font-bold">{formatCurrency(item.amount)}</Typography><Typography variant="caption" className="text-ink-muted">{item.bankName} · {item.maskedBankAccountNumber}</Typography></Box><Chip size="small" label={item.status === "PENDING" ? "Đang chờ admin" : item.status === "APPROVED" ? "Đã duyệt" : "Từ chối"} color={item.status === "APPROVED" ? "success" : item.status === "REJECTED" ? "error" : "warning"} /></Box>)}</Box>}
@@ -500,7 +497,7 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
                       <Chip label={transaction.status === "success" ? "Thành công" : transaction.status === "pending" ? "Đang xử lý" : "Thất bại"} size="small" color={transaction.status === "success" ? "success" : transaction.status === "pending" ? "warning" : "error"} className="!font-bold !text-[0.68rem]" />
                     </TableCell>
                     <TableCell align="center" className="!border-line">
-                      <Button size="small" onClick={() => handleOpenTransactionDetail(transaction)} className="!font-bold !capitalize">Xem</Button>
+                      <Button size="small" onClick={() => handleOpenTransactionDetail(transaction)}>Xem</Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -523,12 +520,25 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
         </>}
       </div>
 
-      <Dialog open={openWalletDialog} onClose={() => setOpenWalletDialog(false)} maxWidth="xs" fullWidth PaperProps={{ className: "!rounded-xl !p-2" }}>
-        <DialogTitle className="flex justify-between items-center !font-bold text-ink">
-          {walletActionType === "deposit" ? "Nạp tiền qua SePay Sandbox" : "Yêu cầu rút tiền"}
-          <IconButton size="small" onClick={() => setOpenWalletDialog(false)} className="text-ink-subtle"><CloseIcon /></IconButton>
-        </DialogTitle>
-        <DialogContent className="space-y-4 !pt-2">
+      <ResponsiveDialog
+        open={openWalletDialog}
+        onClose={() => !walletActionLoading && setOpenWalletDialog(false)}
+        title={walletActionType === "deposit" ? "Nạp tiền qua SePay" : "Yêu cầu rút tiền"}
+        titleId="wallet-action-dialog-title"
+        maxWidth="xs"
+        busy={walletActionLoading}
+        actions={
+          <>
+            <Button onClick={() => setOpenWalletDialog(false)} variant="text" disabled={walletActionLoading}>
+              Hủy
+            </Button>
+            <Button onClick={handleWalletActionSubmit} disabled={!walletAmount || walletActionLoading} variant="contained">
+              {walletActionLoading ? <CircularProgress size={20} color="inherit" /> : walletActionType === "deposit" ? "Tạo đơn thanh toán" : "Gửi yêu cầu rút"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
           {walletActionType === "deposit" ? (
             <Alert severity="info">Sau khi tạo đơn, trang thanh toán SePay sẽ mở ở tab mới. Số dư cập nhật khi thanh toán được xác nhận.</Alert>
           ) : (
@@ -544,8 +554,11 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
             onChange={(event) => setWalletAmount(event.target.value.replace(/\D/g, ""))}
             disabled={walletActionLoading}
             helperText="Tự động phân tách hàng nghìn để dễ kiểm tra"
-            inputProps={{ "aria-label": walletActionType === "deposit" ? "Số tiền nạp bằng VND" : "Số tiền rút bằng VND" }}
-            InputProps={{ className: "!rounded-lg", startAdornment: <InputAdornment position="start">₫</InputAdornment> }}
+            inputProps={{
+              "aria-label": walletActionType === "deposit" ? "Số tiền nạp bằng VND" : "Số tiền rút bằng VND",
+              style: { fontVariantNumeric: "tabular-nums", fontWeight: 600 },
+            }}
+            InputProps={{ startAdornment: <InputAdornment position="start">₫</InputAdornment> }}
           />
           {walletActionType === "withdraw" && (
             <>
@@ -554,14 +567,8 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
               <TextField label="Tên chủ tài khoản" fullWidth value={accountHolderName} onChange={(event) => setAccountHolderName(event.target.value)} disabled={walletActionLoading} />
             </>
           )}
-        </DialogContent>
-        <DialogActions className="!px-6 !pb-4 flex justify-end gap-3">
-          <Button onClick={() => setOpenWalletDialog(false)} variant="text" className="!text-ink-muted !font-bold !capitalize !rounded-xl">Hủy</Button>
-          <Button onClick={handleWalletActionSubmit} disabled={!walletAmount || walletActionLoading} variant="contained" className="!font-bold !capitalize !rounded-xl !px-5 !text-white" sx={{ background: "var(--color-brand)", "&:hover": { background: "var(--color-brand-hover)" }, "&.Mui-disabled": { background: "var(--color-ink-subtle)", color: "var(--color-surface-sunken)" } }}>
-            {walletActionLoading ? <CircularProgress size={20} className="!text-white" /> : walletActionType === "deposit" ? "Tạo đơn thanh toán" : "Gửi yêu cầu rút"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </div>
+      </ResponsiveDialog>
 
       <WalletDetailDialog
         open={Boolean(selectedTransaction)}

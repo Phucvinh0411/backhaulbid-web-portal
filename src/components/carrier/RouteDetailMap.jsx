@@ -52,7 +52,7 @@ const createMarkerIcon = (colorHex, letter) => {
           <span style="
             transform: rotate(45deg);
             color: white;
-            font-weight: 900;
+            font-weight: 700;
             font-size: 13px;
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
           ">${letter}</span>
@@ -267,8 +267,7 @@ export default function RouteDetailMap({ origin, dest, searchRadius = 50 }) {
           top: "12px",
           left: "12px",
           zIndex: 1000,
-          backgroundColor: "rgba(255, 255, 255, 0.95)",
-          backdropFilter: "blur(6px)",
+          backgroundColor: "var(--color-surface)",
           padding: "6px 14px",
           borderRadius: "12px",
           border: "1px solid var(--color-line)",
@@ -282,13 +281,13 @@ export default function RouteDetailMap({ origin, dest, searchRadius = 50 }) {
       >
         {displayDistance && (
           <span style={{ color: "var(--color-brand)" }}>
-            📍 Lộ trình: <strong>~{displayDistance} km</strong>
+            Lộ trình: <strong>~{displayDistance} km</strong>
             {roadKm ? " (đường bộ)" : ""}
           </span>
         )}
         {searchRadius && (
           <span style={{ color: "var(--color-warning)" }}>
-            📡 Vùng quét: <strong>{searchRadius} km</strong>
+            Vùng quét: <strong>{searchRadius} km</strong>
           </span>
         )}
       </div>
@@ -333,8 +332,8 @@ export default function RouteDetailMap({ origin, dest, searchRadius = 50 }) {
           <Marker position={[Number(origin.lat), Number(origin.lng)]} icon={originIcon}>
             <Popup>
               <div style={{ padding: "4px", minWidth: "180px" }}>
-                <div style={{ fontWeight: 800, color: "#1B4965", fontSize: "13px" }}>
-                  📍 Điểm xe rỗng hàng (A)
+                <div style={{ fontWeight: 700, color: "#1B4965", fontSize: "13px" }}>
+                  Điểm xe rỗng hàng (A)
                 </div>
                 <div style={{ color: "var(--color-ink)", fontSize: "12px", marginTop: "4px", fontWeight: 600 }}>
                   {origin.label || "Vị trí khởi hành"}
@@ -352,8 +351,8 @@ export default function RouteDetailMap({ origin, dest, searchRadius = 50 }) {
           <Marker position={[Number(dest.lat), Number(dest.lng)]} icon={destIcon}>
             <Popup>
               <div style={{ padding: "4px", minWidth: "180px" }}>
-                <div style={{ fontWeight: 800, color: "#2E7D32", fontSize: "13px" }}>
-                  🏁 Điểm đến mong muốn (B)
+                <div style={{ fontWeight: 700, color: "#2E7D32", fontSize: "13px" }}>
+                  Điểm đến mong muốn (B)
                 </div>
                 <div style={{ color: "var(--color-ink)", fontSize: "12px", marginTop: "4px", fontWeight: 600 }}>
                   {dest.label || "Vị trí kết thúc"}

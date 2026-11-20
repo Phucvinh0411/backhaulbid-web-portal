@@ -9,7 +9,7 @@ class AuctionService {
    * @param params Query parameters (page, limit, status, etc.)
    */
   async getShipperAuctions(params = {}) {
-    return appApiService.get("/api/bidding/auctions", { params });
+    return appApiService.get("/api/bidding/auctions", params);
   }
 
   /**
@@ -24,7 +24,7 @@ class AuctionService {
    * Fetch bids for an auction
    */
   async listBids(id, params = {}) {
-    return appApiService.get(`/api/bidding/auctions/${id}/bids`, { params });
+    return appApiService.get(`/api/bidding/auctions/${id}/bids`, params);
   }
 
   /**
@@ -41,7 +41,7 @@ class AuctionService {
    * @param reason Reason for cancellation
    */
   async cancelAuction(id, reason) {
-    return appApiService.post(`/api/bidding/auctions/${id}/cancel`, { reason });
+    return appApiService.post(`/api/bidding/auctions/${id}/cancel`, reason ? { reason } : {});
   }
 }
 

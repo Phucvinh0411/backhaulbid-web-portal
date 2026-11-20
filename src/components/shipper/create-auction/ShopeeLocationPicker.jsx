@@ -308,17 +308,9 @@ export default function ShopeeLocationPicker({
             ),
           }}
           sx={{
-            "& .MuiOutlinedInput-root": {
-              borderRadius: "16px",
-              backgroundColor: "#ffffff",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-              "&:hover": {
-                borderColor: color,
-              },
-              "&.Mui-focused": {
-                borderColor: color,
-                boxShadow: `0 0 0 3px ${color}20`,
-              },
+            "& .MuiFilledInput-root": {
+              bgcolor: "var(--color-surface)",
+              boxShadow: "0 1px 2px rgba(15, 30, 46, 0.04)",
             },
           }}
         />
@@ -389,7 +381,7 @@ export default function ShopeeLocationPicker({
                   <MyLocationIcon className="!text-[1rem]" />
                 )
               }
-              className="!rounded-xl !text-xs !font-bold !capitalize !bg-white hover:!bg-surface-sunken !text-ink !shadow-md !border !border-line !px-3 !py-1.5 backdrop-blur-xs"
+              className="!bg-white hover:!bg-surface-sunken !text-ink !shadow-sm !border !border-line"
             >
               {locating ? "Đang định vị..." : "Vị trí của tôi"}
             </Button>
@@ -398,8 +390,8 @@ export default function ShopeeLocationPicker({
 
         {/* Tip overlay on bottom of map */}
         <div className="absolute bottom-2.5 left-3 right-3 z-10 pointer-events-none flex items-center justify-between">
-          <span className="bg-ink/80 text-white text-[0.7rem] font-medium px-2.5 py-1 rounded-lg backdrop-blur-xs shadow-xs">
-            💡 Chạm vào bản đồ hoặc kéo ghim để chỉnh đúng cổng kho
+          <span className="bg-ink/90 text-white text-[0.7rem] font-medium px-2.5 py-1 rounded-lg shadow-xs">
+            Chạm vào bản đồ hoặc kéo ghim để chỉnh đúng cổng kho
           </span>
         </div>
       </div>

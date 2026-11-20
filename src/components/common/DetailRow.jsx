@@ -7,7 +7,7 @@ export default function DetailRow({ label, value, valueColor = "text-ink", value
 
   return (
     <Box className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline py-2 border-b border-line last:border-0 gap-1 sm:gap-4">
-      <Typography variant="body2" className="text-ink-muted font-medium shrink-0 uppercase text-[0.7rem] tracking-wider">
+      <Typography variant="body2" className="text-xs font-medium text-ink-muted shrink-0">
         {label}
       </Typography>
       {React.isValidElement(value) ? (

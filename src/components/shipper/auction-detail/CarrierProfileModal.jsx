@@ -2,15 +2,9 @@
 
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import IconButton from "@mui/material/IconButton";
 import CircularProgress from "@mui/material/CircularProgress";
 import Link from "next/link";
 
-import CloseIcon from "@mui/icons-material/Close";
 import StarIcon from "@mui/icons-material/Star";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import LocalShippingIcon from "@mui/icons-material/LocalShippingOutlined";
@@ -19,6 +13,7 @@ import ShieldIcon from "@mui/icons-material/ShieldOutlined";
 import BusinessIcon from "@mui/icons-material/BusinessOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 import { formatDateTime } from "@/lib/format";
+import { ResponsiveDialog } from "@/components/ui";
 import AspectRatioIcon from "@mui/icons-material/AspectRatioOutlined";
 import BadgeIcon from "@mui/icons-material/BadgeOutlined";
 import PersonIcon from "@mui/icons-material/PersonOutlined";
@@ -34,40 +29,75 @@ export default function CarrierProfileModal({
   if (!carrier && !loading) return null;
 
   return (
-    <Dialog
+    <ResponsiveDialog
       open={open}
       onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      className="backdrop-blur-sm"
-      PaperProps={{
-        className: "!rounded-xl !p-2",
-      }}
-    >
-      <DialogTitle className="flex justify-between items-center !font-bold text-ink border-b border-line pb-3">
+      title={
         <div className="flex items-center gap-2">
           <BusinessIcon className="text-[var(--color-brand)]" />
-          <span>Hồ Sơ Năng Lực Chi Tiết Nhà Xe &amp; Phương Tiện</span>
-        </div>
-        <div className="flex items-center gap-2">
+          <span>Hồ sơ năng lực chi tiết nhà xe &amp; phương tiện</span>
           {loading && <CircularProgress size={16} className="!text-[var(--color-brand)]" />}
-          <IconButton size="small" onClick={onClose} className="text-ink-subtle">
-            <CloseIcon />
-          </IconButton>
         </div>
-      </DialogTitle>
-
-      <DialogContent className="!py-4 space-y-5">
+      }
+      titleId="carrier-profile-dialog-title"
+      maxWidth="md"
+      actions={
+        <div className="flex w-full flex-wrap items-center justify-between gap-2">
+          {carrier.hotline && carrier.hotline !== "Chưa cập nhật" ? (
+            <Button
+              variant="outlined"
+              color="success"
+              size="small"
+              href={`tel:${carrier.hotline}`}
+              startIcon={<PhoneIcon />}
+            >
+              Gọi hotline nhà xe
+            </Button>
+          ) : (
+            <span />
+          )}
+          <div className="flex flex-wrap gap-2">
+            {carrier.code && carrier.code !== "Chưa cập nhật" && (
+              <Button
+                component={Link}
+                href={`/shipper/carriers/${carrier.code}`}
+                variant="outlined"
+                size="small"
+                onClick={onClose}
+              >
+                Mở trang chi tiết riêng
+              </Button>
+            )}
+            <Button onClick={onClose} variant="text" size="small">
+              Đóng
+            </Button>
+            {shipmentStatus === "active_bids" && (
+              <Button
+                onClick={() => {
+                  onClose();
+                  onSelectCarrierAsWinner(carrier);
+                }}
+                variant="contained"
+                color="success"
+                size="small"
+              >
+                Chốt thầu nhà xe này
+              </Button>
+            )}
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-5">
         {/* Carrier Banner Card */}
         <div className="bg-ink text-white p-5 rounded-xl space-y-3 relative overflow-hidden shadow-md">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-success/10 rounded-full blur-3xl pointer-events-none" />
           <div className="flex items-start justify-between relative z-10">
             <div className="flex items-center gap-3.5">
-              <div className="w-14 h-14 rounded-xl bg-white/10 text-white flex items-center justify-center font-black text-xl border border-white/20 shadow-inner">
+              <div className="w-14 h-14 rounded-xl bg-white/10 text-white flex items-center justify-center font-bold text-xl border border-white/20 shadow-inner">
                 {carrier.avatar}
               </div>
               <div>
-                <Typography variant="h6" className="!font-extrabold !text-white !leading-snug">
+                <Typography variant="h6" className="!font-bold !text-white !leading-snug">
                   {carrier.carrierName}
                 </Typography>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -102,7 +132,7 @@ export default function CarrierProfileModal({
 
         {/* Đánh giá từ chủ hàng: tách khỏi điểm uy tín đấu giá, lấy từ chuyến đã hoàn tất */}
         <div className="space-y-2">
-          <Typography className="!text-xs font-black text-ink-muted uppercase tracking-wider flex items-center gap-1.5">
+          <Typography className="text-xs font-medium text-ink-muted flex items-center gap-1.5">
             <StarIcon className="!text-[0.95rem] text-warning" /> Đánh giá từ chủ hàng
           </Typography>
 
@@ -117,7 +147,7 @@ export default function CarrierProfileModal({
           ) : (
             <div className="bg-surface-sunken p-3.5 rounded-xl border border-line space-y-3 text-xs">
               <div className="flex items-baseline gap-2">
-                <strong className="text-ink text-2xl font-black tabular-nums">
+                <strong className="text-ink text-2xl font-bold tabular-nums">
                   {(carrier.reviewSummary.averageRating ?? 0).toFixed(1)}
                 </strong>
                 <span className="text-ink-muted">/ 5 · {carrier.reviewSummary.reviewCount} đánh giá</span>
@@ -159,8 +189,8 @@ export default function CarrierProfileModal({
 
         {/* 1. Đội xe đăng ký */}
         <div className="space-y-2">
-          <Typography className="!text-xs font-black text-ink-muted uppercase tracking-wider flex items-center gap-1.5">
-            <LocalShippingIcon className="!text-[0.95rem] text-[var(--color-brand)]" /> 1. Đội xe đăng ký tham gia
+          <Typography className="text-xs font-medium text-ink-muted flex items-center gap-1.5">
+            <LocalShippingIcon className="!text-[0.95rem] text-[var(--color-brand)]" /> Đội xe đăng ký tham gia
           </Typography>
 
           {carrier?.fleet?.length > 0 ? (
@@ -196,7 +226,7 @@ export default function CarrierProfileModal({
                     <div className="bg-white p-2 rounded-xl border border-line">
                       <span className="text-ink-subtle block text-[0.65rem] font-medium">Trạng thái:</span>
                       <strong className={`text-xs block mt-1 font-bold ${vehicle.status === "VERIFIED" ? "text-success" : "text-warning"}`}>
-                        {vehicle.status === "VERIFIED" ? "✅ Đã duyệt" : vehicle.status === "PENDING" ? "⏳ Chờ duyệt" : (vehicle.status || "Chưa cập nhật")}
+                        {vehicle.status === "VERIFIED" ? "Đã duyệt" : vehicle.status === "PENDING" ? "Chờ duyệt" : (vehicle.status || "Chưa cập nhật")}
                       </strong>
                     </div>
                   </div>
@@ -212,8 +242,8 @@ export default function CarrierProfileModal({
 
         {/* 2. Tài xế phụ trách */}
         <div className="space-y-2">
-          <Typography className="!text-xs font-black text-ink-muted uppercase tracking-wider flex items-center gap-1.5">
-            <PersonIcon className="!text-[0.95rem] text-success" /> 2. Tài xế đăng ký
+          <Typography className="text-xs font-medium text-ink-muted flex items-center gap-1.5">
+            <PersonIcon className="!text-[0.95rem] text-success" /> Tài xế đăng ký
           </Typography>
 
           {carrier?.drivers?.length > 0 ? (
@@ -257,8 +287,8 @@ export default function CarrierProfileModal({
 
         {/* 3. Pháp lý doanh nghiệp & Bảo hiểm */}
         <div className="space-y-2">
-          <Typography className="!text-xs font-black text-ink-muted uppercase tracking-wider flex items-center gap-1.5">
-            <ShieldIcon className="!text-[0.95rem] text-[var(--color-brand)]" /> 3. Pháp lý doanh nghiệp &amp; Liên hệ
+          <Typography className="text-xs font-medium text-ink-muted flex items-center gap-1.5">
+            <ShieldIcon className="!text-[0.95rem] text-[var(--color-brand)]" /> Pháp lý doanh nghiệp &amp; liên hệ
           </Typography>
 
           <div className="bg-surface-sunken p-3.5 rounded-xl border border-line text-xs space-y-2">
@@ -300,7 +330,7 @@ export default function CarrierProfileModal({
               <div>
                 <span className="font-bold text-ink block">Xác minh doanh nghiệp</span>
                 <span className={`font-semibold text-[0.65rem] ${carrier.verified ? "text-success" : "text-warning"}`}>
-                  {carrier.verified ? "🟢 Đã xác minh chính chủ" : "🟡 Chưa hoàn tất xác minh"}
+                  {carrier.verified ? "Đã xác minh chính chủ" : "Chưa hoàn tất xác minh"}
                 </span>
               </div>
             </div>
@@ -313,57 +343,7 @@ export default function CarrierProfileModal({
             </div>
           </div>
         </div>
-      </DialogContent>
-
-      <DialogActions className="!px-6 !pb-4 flex justify-between gap-3 border-t border-line pt-3">
-        {(carrier.hotline && carrier.hotline !== "Chưa cập nhật") ? (
-          <Button
-            variant="outlined"
-            href={`tel:${carrier.hotline}`}
-            startIcon={<PhoneIcon />}
-            className="!text-success !border-success-soft hover:!bg-success-soft !font-bold !capitalize !rounded-xl !text-xs"
-          >
-            Gọi hotline nhà xe
-          </Button>
-        ) : (
-          <span />
-        )}
-        <div className="flex gap-2">
-          {carrier.code && carrier.code !== "Chưa cập nhật" && (
-            <Button
-              component={Link}
-              href={`/shipper/carriers/${carrier.code}`}
-              variant="outlined"
-              onClick={onClose}
-              className="!text-[var(--color-brand)] !border-line-strong hover:!bg-surface-sunken !font-bold !capitalize !rounded-xl !text-xs"
-            >
-              Mở trang chi tiết riêng ↗
-            </Button>
-          )}
-          <Button
-            onClick={onClose}
-            variant="text"
-            className="!text-ink-muted !font-bold !capitalize !rounded-xl !text-xs"
-          >
-            Đóng
-          </Button>
-          {shipmentStatus === "active_bids" && (
-            <Button
-              onClick={() => {
-                onClose();
-                onSelectCarrierAsWinner(carrier);
-              }}
-              variant="contained"
-              className="!font-bold !capitalize !rounded-xl !px-4 !text-xs"
-              sx={{
-                background: "var(--color-success)",
-              }}
-            >
-              Chốt thầu nhà xe này
-            </Button>
-          )}
-        </div>
-      </DialogActions>
-    </Dialog>
+      </div>
+    </ResponsiveDialog>
   );
 }

@@ -3,10 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import BlockIcon from "@mui/icons-material/Block";
@@ -37,6 +33,7 @@ import {
   AdminToolbar,
 } from "@/components/admin/AdminUI";
 import { tokens } from "@/theme/theme";
+import { ResponsiveDialog } from "@/components/ui";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 const formatCurrency = (amount) =>
@@ -80,14 +77,14 @@ function LiveDot({ urgent = false }) {
 function ConnectionChip({ live }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.68rem] font-extrabold uppercase tracking-widest ${
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${
         live
           ? "border-success-soft bg-success-soft text-success"
           : "border-line-strong bg-surface-sunken text-ink-muted"
       }`}
     >
       {live ? <WifiOutlinedIcon className="!text-[0.85rem]" /> : <WifiOffOutlinedIcon className="!text-[0.85rem]" />}
-      {live ? "Realtime" : "Offline"}
+      {live ? "Trực tuyến" : "Ngoại tuyến"}
     </span>
   );
 }
@@ -132,7 +129,7 @@ function BidFeed({ bids, highlightLatest = false, dark = false }) {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className={`text-[0.62rem] font-bold uppercase tracking-widest ${dark ? "text-ink-subtle" : "text-ink-muted"}`}>
+      <div className={`text-xs font-medium ${dark ? "text-on-band-soft" : "text-ink-muted"}`}>
         Báo giá mới nhất
       </div>
       {latest.map((bid, index) => {
@@ -150,11 +147,11 @@ function BidFeed({ bids, highlightLatest = false, dark = false }) {
                   : "border-line bg-white text-ink-muted"
             }`}
           >
-            <span className={`font-mono text-[0.68rem] ${dark ? "text-ink-subtle" : "text-ink-subtle"}`}>{bid.time}</span>
+            <span className={`font-mono text-xs ${dark ? "text-on-band-soft" : "text-ink-subtle"}`}>{bid.time}</span>
             <span className="flex-1 truncate font-medium">
               {bid.carrierId ? `Nhà xe ${String(bid.carrierId).slice(0, 8)}` : "Nhà xe ẩn danh"}
             </span>
-            <span className={`font-mono font-extrabold ${dark ? "text-success" : "text-success"}`}>
+            <span className="font-mono font-bold text-success">
               {formatCurrency(bid.bid)}
             </span>
           </div>
@@ -176,7 +173,7 @@ function DarkActionButton({ children, tone = "emerald", disabled = false, onClic
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-[0.68rem] font-extrabold uppercase tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${toneClasses[tone]}`}
+      className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${toneClasses[tone]}`}
     >
       {children}
     </button>
@@ -194,7 +191,7 @@ function LightActionButton({ children, tone = "primary", disabled = false, onCli
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-[0.68rem] font-extrabold uppercase tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${toneClasses[tone]}`}
+      className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${toneClasses[tone]}`}
     >
       {children}
     </button>
@@ -215,11 +212,11 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
   if (!isOpen && !isPending) {
     const isCancelled = session.status === "CANCELLED";
     return (
-      <div className="relative overflow-hidden rounded-xl border border-line bg-white/70 shadow-sm opacity-80">
+      <div className="relative overflow-hidden rounded-xl border border-line bg-surface shadow-sm opacity-90">
         <div className="flex flex-col gap-3.5 p-5">
           <div className="flex items-center justify-between gap-3">
             <span
-              className={`rounded-full border px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest ${
+              className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${
                 isCancelled
                   ? "border-danger-soft bg-danger-soft text-danger"
                   : "border-info-soft bg-info-soft text-info"
@@ -227,10 +224,10 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
             >
               {isCancelled ? "Đã hủy" : "Hoàn thành"}
             </span>
-            <span className="font-mono text-[0.68rem] font-bold text-ink-subtle">{session.id}</span>
+            <span className="font-mono text-xs font-bold text-ink-subtle">{session.id}</span>
           </div>
           <div>
-            <Typography variant="subtitle1" className="!font-extrabold !text-ink">
+            <Typography variant="subtitle1" className="!font-bold !text-ink">
               {session.title}
             </Typography>
             <div className="mt-0.5 text-xs font-medium text-ink-muted">
@@ -238,10 +235,10 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
             </div>
           </div>
           <div className="flex items-center justify-between rounded-xl border border-line bg-surface-sunken px-3.5 py-2.5">
-            <span className="text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">
+            <span className="text-xs font-medium text-ink-muted">
               {session.winningBidAmount != null ? "Giá trúng thầu" : "Giá thấp nhất"}
             </span>
-            <span className="font-mono text-base font-black text-ink">
+            <span className="font-mono text-base font-bold text-ink tabular">
               {formatCurrency(session.winningBidAmount ?? session.currentBid)}
             </span>
           </div>
@@ -257,29 +254,29 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
 
   if (isPending) {
     return (
-      <div className="relative overflow-hidden rounded-xl border border-line bg-white/90 shadow-sm">
+      <div className="relative overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
         <div className="flex flex-col gap-4 p-5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="rounded-full border border-warning-soft bg-warning-soft px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest text-warning">
+              <span className="rounded-full border border-warning-soft bg-warning-soft px-2.5 py-0.5 text-xs font-bold text-warning">
                 Chờ mở
               </span>
               {sealed && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-line-strong bg-surface-sunken px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest text-ink-muted">
+                <span className="inline-flex items-center gap-1 rounded-full border border-line-strong bg-surface-sunken px-2.5 py-0.5 text-xs font-bold text-ink-muted">
                   <LockOutlinedIcon className="!text-[0.8rem]" /> Kín
                 </span>
               )}
             </div>
             <div className="text-right">
-              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">Mở thầu sau</div>
-              <div className="font-mono text-xl font-black tracking-widest text-ink">
+              <div className="text-xs font-medium text-ink-muted">Mở thầu sau</div>
+              <div className="font-mono text-xl font-bold text-ink tabular">
                 {formatCountdown(remainingMs)}
               </div>
             </div>
           </div>
           <div>
-            <div className="font-mono text-[0.68rem] font-bold uppercase tracking-widest text-ink-subtle">{session.id}</div>
-            <Typography variant="subtitle1" className="!font-extrabold !text-ink">
+            <div className="font-mono text-xs font-medium text-ink-muted">{session.id}</div>
+            <Typography variant="subtitle1" className="!font-bold !text-ink">
               {session.title}
             </Typography>
             <div className="mt-0.5 text-xs font-medium text-ink-muted">
@@ -288,12 +285,12 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl border border-line bg-surface-sunken px-3.5 py-2.5">
-              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">Giá khởi điểm</div>
-              <div className="mt-0.5 font-mono text-sm font-black text-ink">{formatCurrency(session.startPrice)}</div>
+              <div className="text-xs font-medium text-ink-muted">Giá khởi điểm</div>
+              <div className="mt-0.5 font-mono text-sm font-bold text-ink tabular">{formatCurrency(session.startPrice)}</div>
             </div>
             <div className="rounded-xl border border-line bg-surface-sunken px-3.5 py-2.5">
-              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">Mở thầu lúc</div>
-              <div className="mt-0.5 font-mono text-sm font-black text-ink">{formatDateTime(session.startTime)}</div>
+              <div className="text-xs font-medium text-ink-muted">Mở thầu lúc</div>
+              <div className="mt-0.5 font-mono text-sm font-bold text-ink tabular">{formatDateTime(session.startTime)}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -311,39 +308,35 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
 
   return (
     <div
-      className="relative overflow-hidden rounded-xl border shadow-md transition-all"
+      className="relative overflow-hidden rounded-xl border shadow-md transition-colors"
       style={{
         background: "var(--color-ink)",
         borderColor: urgent ? "rgba(248,113,113,0.45)" : "rgba(52,211,153,0.25)",
       }}
     >
-      <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-success/20 blur-3xl" />
-      {session.fraudFlag && (
-        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-danger/15 blur-3xl" />
-      )}
       <div className="relative z-10 flex flex-col gap-4 p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <LiveDot urgent={urgent} />
-            <span className="rounded-full border border-success/30 bg-success/60 px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest text-success">
+            <span className="rounded-full border border-success/30 bg-success/20 px-2.5 py-0.5 text-xs font-bold text-success">
               {sealed ? (
                 <span className="inline-flex items-center gap-1">
                   <LockOutlinedIcon className="!text-[0.8rem]" /> Đấu giá kín
                 </span>
               ) : (
-                "LIVE"
+                "Đang mở"
               )}
             </span>
             {session.fraudFlag && (
-              <span className="rounded-full border border-danger/40 bg-danger/60 px-2.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-widest text-danger">
+              <span className="rounded-full border border-danger/40 bg-danger/20 px-2.5 py-0.5 text-xs font-bold text-danger">
                 Cờ rà soát
               </span>
             )}
           </div>
           <div className="text-right">
-            <div className="text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">Đóng thầu sau</div>
+            <div className="text-xs font-medium text-on-band-soft">Đóng thầu sau</div>
             <div
-              className={`font-mono text-xl font-black tracking-widest ${
+              className={`font-mono text-xl font-bold tabular ${
                 urgent ? "animate-pulse text-danger" : "text-white"
               }`}
             >
@@ -353,8 +346,8 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
         </div>
 
         <div>
-          <div className="font-mono text-[0.68rem] font-bold uppercase tracking-widest text-ink-subtle">{session.id}</div>
-          <Typography variant="subtitle1" className="!font-extrabold !text-white">
+          <div className="font-mono text-xs font-medium text-on-band-soft">{session.id}</div>
+          <Typography variant="subtitle1" className="!font-bold !text-white">
             {session.title}
           </Typography>
           <div className="mt-0.5 text-xs font-medium text-on-band-soft">
@@ -365,32 +358,32 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
         <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-success/80">
+              <div className="text-xs font-medium text-on-band-soft">
                 Giá thấp nhất hiện tại
               </div>
-              <div className="mt-1 font-mono text-2xl font-black tracking-tight text-success">
+              <div className="mt-1 font-mono text-2xl font-bold tracking-tight text-success tabular">
                 {formatCurrency(session.currentBid)}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">Giá khởi điểm</div>
-              <div className="mt-1 font-mono text-sm font-bold text-on-band-soft">{formatCurrency(session.startPrice)}</div>
+              <div className="text-xs font-medium text-on-band-soft">Giá khởi điểm</div>
+              <div className="mt-1 font-mono text-sm font-bold text-on-band-soft tabular">{formatCurrency(session.startPrice)}</div>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-            <div className="flex items-center gap-1 text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">
+            <div className="flex items-center gap-1 text-xs font-medium text-on-band-soft">
               <GroupsOutlinedIcon className="!text-[0.8rem]" /> Nhà xe
             </div>
-            <div className="mt-0.5 font-mono text-base font-extrabold text-white">{session.activeBidders}</div>
+            <div className="mt-0.5 font-mono text-base font-bold text-white tabular">{session.activeBidders}</div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-            <div className="flex items-center gap-1 text-[0.62rem] font-bold uppercase tracking-widest text-ink-subtle">
+            <div className="flex items-center gap-1 text-xs font-medium text-on-band-soft">
               <GavelIcon className="!text-[0.8rem]" /> Lượt thầu
             </div>
-            <div className="mt-0.5 font-mono text-base font-extrabold text-white">{bids.length}</div>
+            <div className="mt-0.5 font-mono text-base font-bold text-white tabular">{bids.length}</div>
           </div>
         </div>
 
@@ -418,7 +411,7 @@ function InfoItem({ label, value, emphasize = false }) {
       <Typography variant="caption" sx={{ color: "var(--color-ink-muted)", display: "block" }}>
         {label}
       </Typography>
-      <Typography variant="body2" sx={{ color: emphasize ? "var(--color-success)" : "var(--color-ink)", fontWeight: 800, mt: 0.35 }}>
+      <Typography variant="body2" sx={{ color: emphasize ? "var(--color-success)" : "var(--color-ink)", fontWeight: 700, mt: 0.35 }}>
         {value}
       </Typography>
     </Box>
@@ -430,16 +423,43 @@ function SessionDetailDialog({ session, open, onClose, onFlag, onStop }) {
   const bids = session.bidHistory || [];
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ pb: 1 }}>
-        <Typography variant="h6" sx={{ fontWeight: 800 }}>
-          {session.title}
-        </Typography>
-        <Typography variant="caption" sx={{ color: "var(--color-ink-muted)", fontFamily: "monospace" }}>
-          {session.id} · {session.route}
-        </Typography>
-      </DialogTitle>
-      <DialogContent dividers>
+    <ResponsiveDialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      titleId="auction-session-detail-title"
+      title={
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            {session.title}
+          </Typography>
+          <Typography variant="caption" className="tabular" sx={{ color: "var(--color-ink-muted)", display: "block" }}>
+            {session.id} · {session.route}
+          </Typography>
+        </Box>
+      }
+      actions={
+        <>
+          <AdminSecondaryButton onClick={onClose}>Đóng</AdminSecondaryButton>
+          <AdminSecondaryButton
+            startIcon={<FlagOutlinedIcon />}
+            onClick={() => onFlag(session.id)}
+            disabled={session.fraudFlag}
+          >
+            {session.fraudFlag ? "Đã gắn cờ" : "Gắn cờ gian lận"}
+          </AdminSecondaryButton>
+          <AdminPrimaryButton
+            startIcon={<BlockIcon />}
+            onClick={() => onStop(session.id)}
+            disabled={session.status !== "OPEN"}
+            sx={{ bgcolor: "var(--color-danger)", "&:hover": { bgcolor: "var(--color-danger)" } }}
+          >
+            Dừng phiên khẩn cấp
+          </AdminPrimaryButton>
+        </>
+      }
+    >
+      <Box>
         {session.fraudFlag && (
           <Alert severity="warning" sx={{ mb: 2 }}>
             Phiên đang bị gắn cờ rà soát{session.fraudReason ? `: ${session.fraudReason}` : "."}
@@ -456,7 +476,7 @@ function SessionDetailDialog({ session, open, onClose, onFlag, onStop }) {
           <InfoItem label="Kết thúc" value={formatDateTime(session.endTime)} />
         </Box>
 
-        <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
           Diễn biến giá thầu
         </Typography>
         <Box sx={{ height: 220, border: "1px solid var(--color-line)", borderRadius: 2, bgcolor: "var(--color-surface)", p: 1 }}>
@@ -487,26 +507,8 @@ function SessionDetailDialog({ session, open, onClose, onFlag, onStop }) {
             </Box>
           )}
         </Box>
-      </DialogContent>
-      <DialogActions sx={{ p: 2, gap: 1 }}>
-        <AdminSecondaryButton onClick={onClose}>Đóng</AdminSecondaryButton>
-        <AdminSecondaryButton
-          startIcon={<FlagOutlinedIcon />}
-          onClick={() => onFlag(session.id)}
-          disabled={session.fraudFlag}
-        >
-          {session.fraudFlag ? "Đã gắn cờ" : "Gắn cờ gian lận"}
-        </AdminSecondaryButton>
-        <AdminPrimaryButton
-          startIcon={<BlockIcon />}
-          onClick={() => onStop(session.id)}
-          disabled={session.status !== "OPEN"}
-          sx={{ bgcolor: "var(--color-danger)", "&:hover": { bgcolor: "var(--color-danger)" } }}
-        >
-          Dừng phiên khẩn cấp
-        </AdminPrimaryButton>
-      </DialogActions>
-    </Dialog>
+      </Box>
+    </ResponsiveDialog>
   );
 }
 
@@ -514,7 +516,7 @@ function EmptyState({ filtered, query }) {
   return (
     <Box role="status" sx={{ py: 8, px: 3, textAlign: "center" }}>
       <InsightsOutlinedIcon sx={{ color: "var(--color-ink-subtle)", fontSize: 42, mb: 1 }} />
-      <Typography variant="h6" sx={{ color: "var(--color-ink)", fontWeight: 800 }}>
+      <Typography variant="h6" sx={{ color: "var(--color-ink)", fontWeight: 700 }}>
         {filtered ? "Không tìm thấy phiên phù hợp" : "Chưa có phiên đấu giá đang theo dõi"}
       </Typography>
       <Typography variant="body2" sx={{ color: "var(--color-ink-muted)", mt: 0.75, maxWidth: 520, mx: "auto" }}>
@@ -531,7 +533,7 @@ export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAu
   const [selectedId, setSelectedId] = useState("");
   const [detailOpen, setDetailOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const [stopDialogOpen, setStopDialogOpen] = useState(false);
   const [flagDialogOpen, setFlagDialogOpen] = useState(false);
   const [flagReason, setFlagReason] = useState("");
@@ -540,8 +542,16 @@ export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAu
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
+    const tick = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      setNow(Date.now());
+    };
+    const timer = setInterval(tick, 1000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, []);
 
   const selectedSession = sessions.find((session) => session.id === selectedId) || null;
@@ -549,7 +559,11 @@ export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAu
   const filteredSessions = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase("vi");
     return sessions.filter((session) => {
-      const matchesStatus = statusFilter === "ALL" || session.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "ALL" ||
+        (statusFilter === "ACTIVE"
+          ? session.status === "OPEN" || session.status === "PENDING"
+          : session.status === statusFilter);
       const matchesQuery =
         !query ||
         `${session.id} ${session.title} ${session.route} ${session.vehicleType}`
@@ -618,7 +632,7 @@ export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAu
       <Box className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <AdminMetricCard title="Tổng phiên theo dõi" value={sessions.length} helper="OPEN + PENDING" icon={GavelIcon} />
         <AdminMetricCard title="Đang mở" value={openCount} helper="Có thể nhận báo giá" icon={InsightsOutlinedIcon} tone="success" />
-        <AdminMetricCard title="Lượt báo giá" value={bidCount} helper={`${bidderCount} nhà xe đang tham gia`} icon={GroupsOutlinedIcon} tone="info" />
+        <AdminMetricCard title="Lượt báo giá" value={bidCount} helper={`${bidderCount} lượt tham gia theo phiên`} icon={GroupsOutlinedIcon} tone="info" />
         <AdminMetricCard title="Cần rà soát" value={flaggedCount} helper="Cờ gian lận" icon={FlagOutlinedIcon} tone={flaggedCount ? "danger" : "neutral"} />
       </Box>
 
@@ -637,6 +651,7 @@ export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAu
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
             options={[
+              { value: "ACTIVE", label: "Đang hoạt động" },
               { value: "ALL", label: "Tất cả trạng thái" },
               { value: "OPEN", label: "Đang mở" },
               { value: "PENDING", label: "Chờ mở" },
@@ -674,53 +689,65 @@ export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAu
         onStop={requestStop}
       />
 
-      <Dialog open={stopDialogOpen} onClose={() => !actionLoading && setStopDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Dừng phiên đấu giá?</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2">
-            Phiên {selectedSession?.id} sẽ chuyển sang trạng thái đã hủy và không nhận thêm đăng ký hoặc báo giá.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <AdminSecondaryButton onClick={() => setStopDialogOpen(false)} disabled={actionLoading}>
-            Hủy
-          </AdminSecondaryButton>
-          <AdminPrimaryButton
-            onClick={confirmStop}
-            disabled={actionLoading}
-            sx={{ bgcolor: "var(--color-danger)", "&:hover": { bgcolor: "var(--color-danger)" } }}
-          >
-            {actionLoading ? "Đang dừng..." : "Xác nhận dừng"}
-          </AdminPrimaryButton>
-        </DialogActions>
-      </Dialog>
+      <ResponsiveDialog
+        open={stopDialogOpen}
+        onClose={() => !actionLoading && setStopDialogOpen(false)}
+        title="Dừng phiên đấu giá?"
+        titleId="admin-stop-auction-title"
+        maxWidth="xs"
+        busy={actionLoading}
+        actions={
+          <>
+            <AdminSecondaryButton onClick={() => setStopDialogOpen(false)} disabled={actionLoading}>
+              Hủy
+            </AdminSecondaryButton>
+            <AdminPrimaryButton
+              onClick={confirmStop}
+              disabled={actionLoading}
+              sx={{ bgcolor: "var(--color-danger)", "&:hover": { bgcolor: "var(--color-danger)" } }}
+            >
+              {actionLoading ? "Đang dừng..." : "Xác nhận dừng"}
+            </AdminPrimaryButton>
+          </>
+        }
+      >
+        <Typography variant="body2">
+          Phiên {selectedSession?.id} sẽ chuyển sang trạng thái đã hủy và không nhận thêm đăng ký hoặc báo giá.
+        </Typography>
+      </ResponsiveDialog>
 
-      <Dialog open={flagDialogOpen} onClose={() => !actionLoading && setFlagDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Gắn cờ gian lận</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            Lưu lý do rà soát phiên {selectedSession?.id}.
-          </Typography>
-          <TextField
-            autoFocus
-            fullWidth
-            multiline
-            minRows={3}
-            label="Lý do"
-            value={flagReason}
-            onChange={(event) => setFlagReason(event.target.value)}
-            inputProps={{ maxLength: 500 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <AdminSecondaryButton onClick={() => setFlagDialogOpen(false)} disabled={actionLoading}>
-            Hủy
-          </AdminSecondaryButton>
-          <AdminPrimaryButton onClick={confirmFlag} disabled={actionLoading || !flagReason.trim()}>
-            {actionLoading ? "Đang lưu..." : "Gắn cờ"}
-          </AdminPrimaryButton>
-        </DialogActions>
-      </Dialog>
+      <ResponsiveDialog
+        open={flagDialogOpen}
+        onClose={() => !actionLoading && setFlagDialogOpen(false)}
+        title="Gắn cờ gian lận"
+        titleId="admin-flag-auction-title"
+        maxWidth="sm"
+        busy={actionLoading}
+        actions={
+          <>
+            <AdminSecondaryButton onClick={() => setFlagDialogOpen(false)} disabled={actionLoading}>
+              Hủy
+            </AdminSecondaryButton>
+            <AdminPrimaryButton onClick={confirmFlag} disabled={actionLoading || !flagReason.trim()}>
+              {actionLoading ? "Đang lưu..." : "Gắn cờ"}
+            </AdminPrimaryButton>
+          </>
+        }
+      >
+        <Typography variant="body2" sx={{ mb: 2 }}>
+          Lưu lý do rà soát phiên {selectedSession?.id}.
+        </Typography>
+        <TextField
+          autoFocus
+          fullWidth
+          multiline
+          minRows={3}
+          label="Lý do"
+          value={flagReason}
+          onChange={(event) => setFlagReason(event.target.value)}
+          inputProps={{ maxLength: 500 }}
+        />
+      </ResponsiveDialog>
     </>
   );
 }

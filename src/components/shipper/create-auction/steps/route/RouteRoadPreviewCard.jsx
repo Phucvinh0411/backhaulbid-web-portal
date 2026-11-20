@@ -51,11 +51,11 @@ export default function RouteRoadPreviewCard({ form }) {
             <AltRouteIcon className="!text-[1.2rem]" />
           </div>
           <div>
-            <Typography className="!text-sm !font-black text-ink">
-              Lộ Trình & Khoảng Cách Vận Chuyển
+            <Typography className="!text-sm !font-bold text-ink">
+              Lộ trình &amp; khoảng cách vận chuyển
             </Typography>
             <span className="text-[0.7rem] font-medium text-ink-subtle">
-              Tuyến đường bộ tối ưu giữa Điểm Lấy (A) và Điểm Giao (B)
+              Tuyến đường bộ tối ưu giữa điểm lấy (A) và điểm giao (B)
             </span>
           </div>
         </div>
@@ -65,7 +65,7 @@ export default function RouteRoadPreviewCard({ form }) {
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 shadow-xs">
               <StraightenIcon className="!text-[1.1rem] text-emerald-700" />
-              <span className="text-sm font-black text-emerald-800">
+              <span className="text-sm font-bold text-emerald-800 tabular">
                 {routeData.distanceKm} km
               </span>
               <span className="text-[0.7rem] font-bold text-emerald-600">
@@ -119,14 +119,14 @@ export default function RouteRoadPreviewCard({ form }) {
           {/* Quick Route Strip */}
           <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface-sunken/60 p-3 sm:flex-row sm:items-center sm:justify-between text-xs">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-info font-black text-white text-[0.7rem]">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-info font-bold text-white text-[0.7rem]">
                 A
               </span>
               <span className="truncate font-bold text-ink">
                 {fromPlace?.locationName || fromPlace?.province}
               </span>
               <ArrowForwardIcon className="!text-[0.9rem] text-ink-muted shrink-0" />
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-success font-black text-white text-[0.7rem]">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-success font-bold text-white text-[0.7rem]">
                 B
               </span>
               <span className="truncate font-bold text-ink">

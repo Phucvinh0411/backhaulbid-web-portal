@@ -16,11 +16,23 @@ export async function POST(request: Request) {
       body: JSON.stringify(body),
     });
 
+    const data = await res.json().catch(() => null);
+
     if (!res.ok) {
-        return NextResponse.json({ success: false, message: 'Sai thông tin đăng nhập' }, { status: 401 });
+      const rawMessage = String(data?.error?.message || data?.message || '').trim();
+      const hasVietnamese = /[À-ỹ]/u.test(rawMessage);
+      const status = res.status === 403 ? 403 : 401;
+      const message = hasVietnamese
+        ? rawMessage
+        : res.status === 403
+          ? 'Tài khoản đã bị khóa hoặc chưa được kích hoạt.'
+          : 'Sai thông tin đăng nhập';
+      return NextResponse.json({ success: false, message }, { status });
     }
 
-    const data = await res.json();
+    if (!data) {
+      return NextResponse.json({ success: false, message: 'Đăng nhập lỗi do phản hồi không hợp lệ' }, { status: 500 });
+    }
     // Payload trả về từ server có cấu trúc: { data: { accessToken: "...", refreshToken: "..." } } hoặc tương tự
     // Giả sử lấy trực tiếp data.accessToken và data.refreshToken
     const accessToken = data.accessToken || data.data?.accessToken;

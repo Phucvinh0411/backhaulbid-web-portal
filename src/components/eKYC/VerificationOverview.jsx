@@ -21,7 +21,7 @@ export function EvidenceImage({ path, title }) {
     {error ? <Typography color="text.secondary">Ảnh không còn sẵn sàng hoặc đã hết hạn.</Typography> : url ?
       /* Private authenticated blob; never place bearer credentials in an image URL. */
       /* eslint-disable-next-line @next/next/no-img-element */
-      <img src={url} alt={title} style={{ width: "100%", maxHeight: 260, objectFit: "contain" }} /> : <Typography>Đang tải ảnh…</Typography>}
+      <img src={url} alt={title} loading="lazy" decoding="async" style={{ width: "100%", maxHeight: 260, objectFit: "contain" }} /> : <Typography>Đang tải ảnh…</Typography>}
   </Box>;
 }
 

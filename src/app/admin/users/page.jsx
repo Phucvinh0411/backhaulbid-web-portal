@@ -16,7 +16,6 @@ import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
 import TableSortLabel from "@mui/material/TableSortLabel";
 import Typography from "@mui/material/Typography";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
   AdminDialog,
@@ -304,13 +303,6 @@ export default function AdminUsersPage() {
                       aria-label={`Xem ${row.displayName}`}
                     >
                       <VisibilityOutlinedIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      sx={{ color: "text.secondary", ml: 0.5 }}
-                      aria-label="Tùy chọn"
-                    >
-                      <MoreVertIcon fontSize="small" />
                     </IconButton>
                   </TableCell>
                 </TableRow>

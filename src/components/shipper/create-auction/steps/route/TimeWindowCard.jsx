@@ -3,8 +3,6 @@ import Typography from "@mui/material/Typography";
 import AccessTimeIcon from "@mui/icons-material/AccessTimeOutlined";
 import ScheduleReminder from "./ScheduleReminder";
 
-const INPUT_SX = { "& .MuiOutlinedInput-root": { borderRadius: "16px" } };
-
 const WINDOW_ROWS = [
   [
     { field: "earliestPickup", label: "Nhận hàng sớm nhất" },
@@ -24,7 +22,7 @@ export default function TimeWindowCard({ form, updateForm }) {
         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-warning-soft text-warning">
           <AccessTimeIcon className="!text-[1.1rem]" />
         </div>
-        <Typography className="!text-sm !font-black text-ink">Khung Thời Gian Vận Chuyển Dự Kiến</Typography>
+        <Typography className="!text-sm !font-bold text-ink">Khung thời gian vận chuyển dự kiến</Typography>
       </div>
 
       <ScheduleReminder form={form} step="shipping" />
@@ -41,7 +39,6 @@ export default function TimeWindowCard({ form, updateForm }) {
               value={form[field]}
               onChange={(event) => updateForm(field, event.target.value)}
               InputLabelProps={{ shrink: true }}
-              sx={INPUT_SX}
             />
           ))}
         </div>

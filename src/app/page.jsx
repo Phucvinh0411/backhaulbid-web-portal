@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import CircularProgress from "@mui/material/CircularProgress";
 import LandingPage from "../components/public/LandingPage";
 
 export default function Home() {
@@ -26,7 +27,7 @@ export default function Home() {
   if (isRedirecting) {
     return (
       <div className="min-h-screen bg-surface-sunken flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand" />
+        <CircularProgress size={32} aria-label="Đang chuyển hướng" />
       </div>
     );
   }

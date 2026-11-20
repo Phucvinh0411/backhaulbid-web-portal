@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
@@ -14,14 +15,19 @@ import SearchIcon from "@mui/icons-material/Search";
 import { PageHeader, DetailDrawer } from "@/components/common";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/ui";
 import EkycGuard from "@/components/eKYC/EkycGuard";
-import EkycModal from "@/components/eKYC/EkycModal";
+import { notifyAccountVerificationUpdated } from "@/hooks/useAccountVerification";
 import CarrierBiddingItem, { normalizeCarrierAuction } from "@/components/carrier/CarrierBiddingItem";
-import AuctionRegistrationDialog from "@/components/carrier/auction-detail/AuctionRegistrationDialog";
 import AuctionDetailContent from "@/components/carrier/auction-detail/AuctionDetailContent";
-import { getAuctionAccess, listAuctions } from "@/services/biddingApi";
+import { getBatchAuctionAccess, listAuctions } from "@/services/biddingApi";
 import { getMyVehicles } from "@/services/fleetApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { getPageMeta, unwrapListData } from "@/services/responseData";
+
+const EkycModal = dynamic(() => import("@/components/eKYC/EkycModal"), { ssr: false });
+const AuctionRegistrationDialog = dynamic(
+  () => import("@/components/carrier/auction-detail/AuctionRegistrationDialog"),
+  { ssr: false },
+);
 
 const PAGE_SIZE = 100;
 const SCOPES = [
@@ -39,7 +45,7 @@ const SORTS = [
 const text = (value) => String(value || "").toLocaleLowerCase("vi");
 const deadlineOf = (auction) => new Date(auction.status === "OPEN" ? auction.endTime : auction.registrationEndTime || auction.startTime).getTime() || Infinity;
 
-export default function CarrierAuctionsPage() {
+function CarrierAuctionsContent() {
   const router = useRouter();
   const [items, setItems] = useState([]);
   const [truncated, setTruncated] = useState(false);
@@ -69,12 +75,29 @@ export default function CarrierAuctionsPage() {
       const auctions = Array.from(new Map(responses.flatMap(unwrapListData).map((auction) => [auction.id, auction])).values());
       setItems(auctions.map((auction) => ({ auction, access: undefined })));
       setState("ready");
-      // Registration state per auction arrives progressively; cards render first.
-      auctions.forEach((auction) => {
-        getAuctionAccess(auction.id)
-          .catch(() => null)
-          .then((access) => setItems((current) => current.map((item) => (item.auction.id === auction.id ? { ...item, access } : item))));
-      });
+      const ids = auctions.map((auction) => auction.id).filter(Boolean);
+      if (ids.length > 0) {
+        const chunks = [];
+        for (let i = 0; i < ids.length; i += 200) {
+          chunks.push(ids.slice(i, i + 200));
+        }
+        Promise.all(chunks.map((chunk) => getBatchAuctionAccess(chunk).catch(() => null))).then((batches) => {
+          const merged = {};
+          let hasAny = false;
+          batches.forEach((batch) => {
+            if (batch && typeof batch === "object") {
+              hasAny = true;
+              Object.assign(merged, batch);
+            }
+          });
+          setItems((current) =>
+            current.map((item) => ({
+              ...item,
+              access: hasAny ? (merged[item.auction.id] ?? null) : null,
+            })),
+          );
+        });
+      }
     } catch (loadError) {
       setError(getApiErrorMessage(loadError, "Không thể tải danh sách phiên đấu giá."));
       setState("error");
@@ -122,9 +145,8 @@ export default function CarrierAuctionsPage() {
   const detailView = detail ? normalizeCarrierAuction(detail.auction, detail.access) : null;
 
   return (
-    <EkycGuard role="carrier">
-      <Box>
-        <PageHeader
+    <Box>
+      <PageHeader
           title="Tìm phiên đấu giá"
           subtitle="Đấu giá ngược: nhà xe đưa giá thấp hơn giá trần để nhận chuyến. Đăng ký và thanh toán trước hạn đóng đăng ký."
           breadcrumbs={[{ label: "Trang chủ", path: "/carrier/dashboard" }, { label: "Tìm phiên" }]}
@@ -223,18 +245,20 @@ export default function CarrierAuctionsPage() {
         </Box>
       )}
 
-      <AuctionRegistrationDialog
-        open={Boolean(registering)}
-        auction={registering}
-        vehicles={vehicles}
-        vehiclesLoading={vehiclesLoading}
-        vehiclesError={vehiclesError}
-        onClose={() => setRegistering(null)}
-        onCompleted={() => {
-          setRegistering(null);
-          router.push("/carrier/my-auctions");
-        }}
-      />
+      {Boolean(registering) && (
+        <AuctionRegistrationDialog
+          open={Boolean(registering)}
+          auction={registering}
+          vehicles={vehicles}
+          vehiclesLoading={vehiclesLoading}
+          vehiclesError={vehiclesError}
+          onClose={() => setRegistering(null)}
+          onCompleted={() => {
+            setRegistering(null);
+            router.push("/carrier/my-auctions");
+          }}
+        />
+      )}
 
       <DetailDrawer
         open={Boolean(detail)}
@@ -257,6 +281,14 @@ export default function CarrierAuctionsPage() {
                   }}
                 >
                   Xác thực eKYC để tham gia
+                </Button>
+              ) : detailView?.primary === "verify_business" ? (
+                <Button variant="contained" color="warning" fullWidth component={Link} href="/carrier/settings">
+                  Xác minh doanh nghiệp để tham gia
+                </Button>
+              ) : detailView?.primary === "verify_coverage" ? (
+                <Button variant="contained" color="warning" fullWidth component={Link} href="/carrier/settings">
+                  Cập nhật bảo hiểm hàng hóa
                 </Button>
               ) : detailView?.primary === "register" ? (
                 <Button
@@ -286,11 +318,19 @@ export default function CarrierAuctionsPage() {
           onClose={() => setEkycModalOpen(false)}
           onComplete={() => {
             setEkycModalOpen(false);
+            notifyAccountVerificationUpdated();
             void load();
           }}
         />
       )}
-      </Box>
+    </Box>
+  );
+}
+
+export default function CarrierAuctionsPage() {
+  return (
+    <EkycGuard role="carrier">
+      <CarrierAuctionsContent />
     </EkycGuard>
   );
 }

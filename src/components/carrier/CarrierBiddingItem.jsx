@@ -27,6 +27,10 @@ export function normalizeCarrierAuction(auction, access) {
       return { ...base, status: getAccessStatusMeta(accessStatus), note: "Phòng đang mở, có thể đặt giá", noteTone: "success", primary: "enter" };
     case "REPUTATION_TOO_LOW":
       return { ...base, note: "Điểm uy tín chưa đạt mức tối thiểu của phiên", noteTone: "warning", primary: "view" };
+    case "ACCOUNT_VERIFICATION_REQUIRED":
+      return { ...base, status: getAccessStatusMeta(accessStatus), note: "Cần hoàn tất xác minh doanh nghiệp để đăng ký tham gia", noteTone: "warning", primary: "verify_business" };
+    case "CARRIER_COVERAGE_REQUIRED":
+      return { ...base, status: getAccessStatusMeta(accessStatus), note: "Phiên yêu cầu bảo hiểm trách nhiệm hàng hóa còn hiệu lực", noteTone: "warning", primary: "verify_coverage" };
     case "REGISTRATION_CLOSED":
     case "REGISTRATION_CANCELLED":
     case "AUCTION_COMPLETED":
@@ -50,6 +54,18 @@ export default function CarrierBiddingItem({ auction, access, onViewDetail, onRe
     ) : (
       <Button variant="contained" color="warning" component={Link} href="/carrier/settings">
         Xác thực eKYC
+      </Button>
+    );
+  } else if (view.primary === "verify_business") {
+    primary = (
+      <Button variant="contained" color="warning" component={Link} href="/carrier/settings">
+        Xác minh doanh nghiệp
+      </Button>
+    );
+  } else if (view.primary === "verify_coverage") {
+    primary = (
+      <Button variant="contained" color="warning" component={Link} href="/carrier/settings">
+        Cập nhật bảo hiểm
       </Button>
     );
   } else if (view.primary === "register") {

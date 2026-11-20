@@ -4,6 +4,9 @@ const CODE_MESSAGES = {
   WALLET_404: "Không tìm thấy giao dịch hoặc đơn thanh toán. Vui lòng tải lại danh sách rồi thử lại.",
   WALLET_409: "Đơn nạp hoặc giao dịch ví đang ở trạng thái không thể tiếp tục. Vui lòng kiểm tra số dư và trạng thái đơn rồi thử lại.",
   WALLET_422: "Thông tin thanh toán chưa hợp lệ hoặc số tiền không khớp. Vui lòng kiểm tra lại trước khi thử lại.",
+  EKYC_REQUIRED: "Tài khoản chưa xác thực định danh người đại diện (eKYC). Vui lòng hoàn tất eKYC trước khi thực hiện thao tác này.",
+  ACCOUNT_VERIFICATION_REQUIRED: "Tài khoản chưa hoàn tất xác minh doanh nghiệp. Vui lòng gửi và chờ duyệt hồ sơ doanh nghiệp trước khi thực hiện thao tác này.",
+  CARRIER_COVERAGE_REQUIRED: "Phiên đấu giá yêu cầu bảo hiểm trách nhiệm hàng hóa còn hiệu lực. Vui lòng cập nhật và chờ duyệt chứng từ bảo hiểm tại cài đặt tài khoản.",
 };
 
 const SAFE_VIETNAMESE_MESSAGE = /[À-ỹ]/u;
@@ -60,6 +63,7 @@ function translateKnownMessage(message, status, code) {
   if (!normalized) return undefined;
   if (CODE_MESSAGES[code]) return CODE_MESSAGES[code];
   if (status === 401) return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi thử lại.";
+  if (SAFE_VIETNAMESE_MESSAGE.test(normalized) && !TECHNICAL_MESSAGE.test(normalized)) return normalized;
   if (status === 403 || /forbidden|do not have access|role required|permission/i.test(normalized)) {
     return "Tài khoản hiện tại không có quyền thực hiện thao tác này. Vui lòng kiểm tra đúng vai trò tài khoản.";
   }
@@ -104,13 +108,12 @@ function translateKnownMessage(message, status, code) {
   if (/unsupported|invalid.*(file|type|format)|file.*(large|size)/i.test(normalized)) {
     return "Tệp tải lên chưa đúng định dạng hoặc quá dung lượng. Vui lòng chọn tệp được hỗ trợ rồi thử lại.";
   }
-  if (SAFE_VIETNAMESE_MESSAGE.test(normalized) && !TECHNICAL_MESSAGE.test(normalized)) return normalized;
   return undefined;
 }
 
 export function getApiErrorMessage(error, fallback = "Không thể thực hiện yêu cầu.") {
   const payload = error?.response?.data;
-  const code = payload?.error?.code;
+  const code = payload?.code || payload?.error?.code;
   const status = error?.response?.status || payload?.error?.details?.status;
   const message = translateKnownMessage(getRawMessage(error), status, code);
   return message || fallback;

@@ -296,7 +296,7 @@ export default function AdminWalletsPage() {
                     <TableCell>{formatDate(item.createdAt)}</TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "var(--color-ink)" }}>{item.accountHolderName || "---"}</TableCell>
                     <TableCell>{item.bankName || "---"}</TableCell>
-                    <TableCell sx={{ fontFamily: "monospace", fontWeight: 700, color: "var(--color-brand)" }}>
+                    <TableCell className="tabular" sx={{ fontWeight: 700, color: "var(--color-brand)" }}>
                       {item.maskedBankAccountNumber || "---"}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 700, color: "var(--color-ink)" }}>{formatCurrency(item.amount)}</TableCell>
@@ -372,19 +372,19 @@ export default function AdminWalletsPage() {
                 </TableRow>
               ) : topUps.map((item) => (
                 <TableRow key={item.invoiceNumber} hover>
-                  <TableCell sx={{ fontFamily: "monospace" }}>{item.invoiceNumber}</TableCell>
+                  <TableCell className="tabular">{item.invoiceNumber}</TableCell>
                   <TableCell>
                     {item.accountId ? (
-                      <Button size="small" onClick={() => handleOpenWalletDetail(item.accountId)} className="!font-bold !capitalize">
+                      <Button size="small" onClick={() => handleOpenWalletDetail(item.accountId)}>
                         Xem ví
                       </Button>
                     ) : "---"}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>{formatCurrency(item.amount)}</TableCell>
+                  <TableCell className="tabular" sx={{ fontWeight: 700 }}>{formatCurrency(item.amount)}</TableCell>
                   <TableCell><AdminStatusChip label={item.status} tone={item.status === "PAID" ? "success" : item.status === "FAILED" ? "danger" : "warning"} /></TableCell>
-                  <TableCell>{formatDate(item.updatedAt || item.createdAt)}</TableCell>
+                  <TableCell className="tabular">{formatDate(item.updatedAt || item.createdAt)}</TableCell>
                   <TableCell align="right">
-                    <Button size="small" onClick={() => handleOpenTopUpDetail(item)} className="!font-bold !capitalize">Xem đơn</Button>
+                    <Button size="small" onClick={() => handleOpenTopUpDetail(item)}>Xem đơn</Button>
                   </TableCell>
                 </TableRow>
               ))}

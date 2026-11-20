@@ -26,8 +26,7 @@ import Step2RouteInfo from "./steps/Step2RouteInfo";
 import Step3AuctionConfig from "./steps/Step3AuctionConfig";
 import { uploadAuctionImages } from "./auctionImageUpload";
 import { placeFromAddressBookEntry } from "./routePlace";
-import { identityApi } from "@/services/identityApi";
-import { notificationApi } from "@/services/notificationApi";
+import useAccountVerification from "@/hooks/useAccountVerification";
 
 
 /* Legacy inline mapping/validation retained temporarily while the tested pure
@@ -117,6 +116,8 @@ export default function CreateAuctionScreen() {
   const [activeStep, setActiveStep] = useState(0);
   const [form, setForm] = useState(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const verification = useAccountVerification(true);
+  const verificationLocked = !verification.loading && !verification.fullyVerified;
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [addressTarget, setAddressTarget] = useState("FROM");
   const [imageUploading, setImageUploading] = useState(false);
@@ -172,6 +173,7 @@ export default function CreateAuctionScreen() {
   };
 
   const handleNext = () => {
+    if (verificationLocked) return;
     if (activeStep < 2) {
       setActiveStep((prev) => prev + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -193,6 +195,10 @@ export default function CreateAuctionScreen() {
   };
 
   const handleSubmit = async () => {
+    if (verificationLocked) {
+      showToast("Tài khoản cần hoàn tất xác thực eKYC và xác thực doanh nghiệp trước khi tạo phiên đấu giá.", "warning");
+      return;
+    }
     if (submittingRef.current) return;
     const validationError = validateCreateAuctionForm(form);
     if (validationError) {
@@ -223,26 +229,6 @@ export default function CreateAuctionScreen() {
         throw new Error("The auction service did not return an auction ID.");
       }
 
-      // Gửi thông báo đến notification-service cho cả Shipper và Carrier
-      try {
-        const userAccount = await identityApi.getCurrentAccount();
-        const userId =
-          userAccount?.companyId || userAccount?.id || userAccount?.accountId;
-        if (userId) {
-          // 1. Thông báo cho Shipper
-          await notificationApi.createNotification({
-            userId: String(userId),
-            title: "Tạo phiên đấu giá thành công",
-            message: `Lô hàng "${form.goodsName || "Mới"}" đã tạo phiên đấu giá thành công trên hệ thống.`,
-            referenceId: String(newAuctionId),
-            type: "AUCTION_CREATED",
-          });
-        }
-
-      } catch (notifErr) {
-        console.warn("Không thể gửi thông báo tới Notification Service:", notifErr);
-      }
-
       showToast(
         "Tạo phiên đấu giá thành công! Đang chuyển hướng...",
         "success",
@@ -264,7 +250,7 @@ export default function CreateAuctionScreen() {
   return (
     <Box className="w-full min-h-screen pb-12">
       <PageHeader
-        title="Tạo Phiên Đấu Giá Vận Tải Mới"
+        title="Tạo phiên đấu giá vận tải mới"
         subtitle="Thiết lập thông tin lô hàng, hành trình và cấu hình phiên đấu giá."
         breadcrumbs={[
           { label: "Trang chủ", path: "/shipper/dashboard" },
@@ -273,47 +259,49 @@ export default function CreateAuctionScreen() {
         ]}
       />
 
-      <StepNavigationHeader
-        activeStep={activeStep}
-        setActiveStep={setActiveStep}
-      />
+      <Box sx={verificationLocked ? { opacity: 0.55, pointerEvents: "none" } : undefined} aria-disabled={verificationLocked || undefined}>
+        <StepNavigationHeader
+          activeStep={activeStep}
+          setActiveStep={verificationLocked ? () => {} : setActiveStep}
+        />
 
-      <Grid container spacing={3} alignItems="flex-start">
-        <Grid item xs={12} md={7} lg={8}>
-          {activeStep === 0 && (
-            <Step1GoodsInfo
-              form={form}
-              updateForm={updateForm}
-              imageUploading={imageUploading}
-              onImagesSelected={handleImagesSelected}
-              onRemoveImage={handleRemoveImage}
-            />
-          )}
-          {activeStep === 1 && (
-            <Step2RouteInfo
-              form={form}
-              updateForm={updateForm}
-              onOpenAddressBook={handleOpenAddressBook}
-            />
-          )}
-          {activeStep === 2 && (
-            <Step3AuctionConfig form={form} updateForm={updateForm} />
-          )}
+        <Grid container spacing={3} alignItems="flex-start">
+          <Grid item xs={12} md={7} lg={8}>
+            {activeStep === 0 && (
+              <Step1GoodsInfo
+                form={form}
+                updateForm={updateForm}
+                imageUploading={imageUploading}
+                onImagesSelected={handleImagesSelected}
+                onRemoveImage={handleRemoveImage}
+              />
+            )}
+            {activeStep === 1 && (
+              <Step2RouteInfo
+                form={form}
+                updateForm={updateForm}
+                onOpenAddressBook={handleOpenAddressBook}
+              />
+            )}
+            {activeStep === 2 && (
+              <Step3AuctionConfig form={form} updateForm={updateForm} />
+            )}
 
 
+          </Grid>
+
+          <Grid item xs={12} md={5} lg={4}>
+            <SummarySidebar form={form} />
+          </Grid>
         </Grid>
-
-        <Grid item xs={12} md={5} lg={4}>
-          <SummarySidebar form={form} />
-        </Grid>
-      </Grid>
-      <Box sx={{ mt: 3 }}><StickyActionBar hint={activeStep === 2 ? "Kiểm tra thông tin và mức phí trước khi tạo phiên." : `Bước ${activeStep + 1} / 3`}>
+      </Box>
+      <Box sx={{ mt: 3 }}><StickyActionBar hint={verificationLocked ? "Hoàn tất xác thực tài khoản để tạo phiên đấu giá." : activeStep === 2 ? "Kiểm tra thông tin và mức phí trước khi tạo phiên." : `Bước ${activeStep + 1} / 3`}>
             <Button
               variant="outlined"
+              size="large"
               onClick={handleBack}
-              disabled={activeStep === 0 || isSubmitting}
+              disabled={verificationLocked || activeStep === 0 || isSubmitting}
               startIcon={<ArrowBackIcon />}
-              className="!rounded-xl !py-3 !px-5 !font-bold !capitalize"
             >
               Quay lại
             </Button>
@@ -321,28 +309,21 @@ export default function CreateAuctionScreen() {
             {activeStep < 2 ? (
               <Button
                 variant="contained"
-                disabled={isSubmitting || imageUploading}
+                size="large"
+                disabled={verificationLocked || isSubmitting || imageUploading}
                 onClick={handleNext}
                 endIcon={<ArrowForwardIcon />}
-                className="!rounded-xl !py-3 !px-6 !font-bold !capitalize"
               >
                 Tiếp theo
               </Button>
             ) : (
               <Button
                 variant="contained"
+                size="large"
+                color="success"
                 onClick={handleSubmit}
-                disabled={isSubmitting || imageUploading}
+                disabled={isSubmitting || imageUploading || verificationLocked}
                 startIcon={<CheckCircleIcon />}
-                className="!rounded-xl !py-3 !px-7 !font-bold !capitalize !text-white"
-                sx={{
-                  background:
-                    "var(--color-success)",
-                  "&:hover": {
-                    background:
-                      "var(--color-success)",
-                  },
-                }}
               >
                 {isSubmitting ? "Đang khởi tạo..." : "Xác nhận và xuất phiên"}
               </Button>

@@ -45,10 +45,11 @@ export default function AddressPickerField({
         />
         <Button
           variant="outlined"
+          size="large"
           onClick={() => setMapOpen(true)}
           disabled={disabled}
           startIcon={<MapIcon />}
-          className="!h-14 !shrink-0 !rounded-2xl !px-4 !font-bold !normal-case"
+          className="!shrink-0"
         >
           Chọn trên bản đồ
         </Button>

@@ -1,12 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Box from "@mui/material/Box";
-import Alert from "@mui/material/Alert";
-import CircularProgress from "@mui/material/CircularProgress";
 import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
@@ -44,6 +41,8 @@ import DescriptionIcon from "@mui/icons-material/DescriptionOutlined";
 import ClearIcon from "@mui/icons-material/ClearOutlined";
 
 import PageHeader from "@/components/common/PageHeader";
+import StatCard from "@/components/common/StatCard";
+import { ErrorState, ListSkeleton } from "@/components/ui";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { auctionService } from "@/services/auctionService";
 import { mapBackendToShipment } from "@/services/shipperAuctionMapper";
@@ -71,39 +70,34 @@ export default function BiddingHistoryListScreen() {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  useEffect(() => {
-    let active = true;
+  const loadHistory = useCallback(async () => {
     setLoading(true);
-    auctionService.getShipperAuctions()
-      .then((response) => {
-        if (!active) return;
-        const auctionsData = Array.isArray(response)
-          ? response
-          : (response?.data?.data || response?.data?.content || response?.content || response?.data || []);
-        setShipments(auctionsData.map(mapBackendToShipment));
-      })
-      .catch(() => {
-        if (active) {
-          const message = "Không thể tải lịch sử đấu giá.";
-          setLoadError(message);
-          notify.error(message);
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
+    setLoadError("");
+    try {
+      const response = await auctionService.getShipperAuctions();
+      const auctionsData = Array.isArray(response)
+        ? response
+        : (response?.data?.data || response?.data?.content || response?.content || response?.data || []);
+      setShipments(auctionsData.map(mapBackendToShipment));
+    } catch {
+      const message = "Không thể tải lịch sử đấu giá.";
+      setLoadError(message);
+      notify.error(message);
+    } finally {
+      setLoading(false);
+    }
   }, [notify]);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
 
   const [columnsList, setColumnsList] = useState([
     { id: "id", label: "Mã lô hàng", align: "left" },
-    { id: "goodsType", label: "Hàng hóa & Quy cách", align: "left" },
+    { id: "goodsType", label: "Hàng hóa & quy cách", align: "left" },
     { id: "route", label: "Lộ trình vận chuyển", align: "left" },
     { id: "maxPrice", label: "Giá trần", align: "right" },
-    { id: "finalPrice", label: "Giá chốt / Thấp nhất", align: "right" },
+    { id: "finalPrice", label: "Giá chốt / thấp nhất", align: "right" },
     { id: "bidCount", label: "Lượt thầu", align: "center" },
     { id: "status", label: "Trạng thái", align: "center", sortable: false },
     { id: "actions", label: "Thao tác", align: "center", sortable: false },
@@ -268,7 +262,7 @@ export default function BiddingHistoryListScreen() {
     <Box className="w-full min-h-screen pb-12 animate-fade-in-up">
       {/* Page Header */}
       <PageHeader
-        title="Lịch Sử Phiên Đấu Giá Ngược"
+        title="Lịch sử phiên đấu giá ngược"
         subtitle="Theo dõi, lọc và quản lý toàn bộ các lô hàng đã hoặc đang tiến hành đấu giá ngược."
         breadcrumbs={[
           { label: "Trang chủ", path: "/shipper/dashboard" },
@@ -276,97 +270,49 @@ export default function BiddingHistoryListScreen() {
         ]}
       />
 
-      {loadError && <Alert severity="error" className="!mb-4">{loadError}</Alert>}
-      {loading && (
-        <div className="mb-6 flex items-center gap-3 rounded-xl bg-white p-5 text-ink-muted shadow-sm" role="status">
-          <CircularProgress size={22} />
-          Đang tải lịch sử đấu giá...
-        </div>
-      )}
+      {loadError && <Box className="mb-4"><ErrorState description={loadError} onRetry={loadHistory} /></Box>}
 
       {/* KPI Cards Overview */}
       <Grid container spacing={3} className="!mb-6">
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="!rounded-xl border border-line/80 bg-white/80 shadow-[0_4px_20px_rgba(27,73,101,0.02)] backdrop-blur-md">
-            <CardContent className="!p-5 flex items-center justify-between">
-              <div>
-                <Typography variant="caption" className="text-ink-subtle font-bold block uppercase tracking-wider">
-                  Tổng phiên đấu giá
-                </Typography>
-                <Typography variant="h4" className="!font-extrabold text-ink !mt-1">
-                  {kpis.total}
-                </Typography>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-brand-soft flex items-center justify-center text-[var(--color-brand)] border border-brand-soft/50">
-                <GavelIcon />
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Tổng phiên đấu giá"
+            value={kpis.total}
+            icon={GavelIcon}
+            color="var(--color-brand)"
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="!rounded-xl border border-line/80 bg-white/80 shadow-[0_4px_20px_rgba(27,73,101,0.02)] backdrop-blur-md">
-            <CardContent className="!p-5 flex items-center justify-between">
-              <div>
-                <Typography variant="caption" className="text-ink-subtle font-bold block uppercase tracking-wider">
-                  Đang hoạt động
-                </Typography>
-                <Typography variant="h4" className="!font-extrabold text-warning !mt-1">
-                  {kpis.active}
-                </Typography>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-warning-soft flex items-center justify-center text-warning border border-warning-soft/50">
-                <AccessTimeIcon />
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Đang hoạt động"
+            value={kpis.active}
+            icon={AccessTimeIcon}
+            color="var(--color-warning)"
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="!rounded-xl border border-line/80 bg-white/80 shadow-[0_4px_20px_rgba(27,73,101,0.02)] backdrop-blur-md">
-            <CardContent className="!p-5 flex items-center justify-between">
-              <div>
-                <Typography variant="caption" className="text-ink-subtle font-bold block uppercase tracking-wider">
-                  Giao thành công
-                </Typography>
-                <Typography variant="h4" className="!font-extrabold text-success !mt-1">
-                  {kpis.completed}
-                </Typography>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-success-soft flex items-center justify-center text-success border border-success-soft/50">
-                <CheckCircleIcon />
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Giao thành công"
+            value={kpis.completed}
+            icon={CheckCircleIcon}
+            color="var(--color-success)"
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="!rounded-xl border border-success-soft/30 bg-success/5 shadow-[0_4px_20px_rgba(16,185,129,0.04)]">
-            <CardContent className="!p-5 flex items-center justify-between">
-              <div>
-                <Typography variant="caption" className="text-success font-bold block uppercase tracking-wider">
-                  Tiết kiệm tích lũy
-                </Typography>
-                <Typography variant="h4" className="!font-black text-success !mt-1">
-                  {formatCurrency(kpis.totalSavings)}
-                </Typography>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center text-success border border-success/20">
-                <MonetizationOnIcon />
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Tiết kiệm tích lũy"
+            value={formatCurrency(kpis.totalSavings)}
+            icon={MonetizationOnIcon}
+            color="var(--color-success)"
+          />
         </Grid>
       </Grid>
 
       {/* Main Container Card containing Filters and Table */}
-      <Card 
-        className="!rounded-xl border border-line !shadow-[0_8px_32px_0_rgba(27,73,101,0.02)] overflow-hidden"
-        sx={{
-          background: "rgba(255, 255, 255, 0.8)",
-          backdropFilter: "blur(20px)",
-        }}
-      >
+      <Card className="border border-line bg-white overflow-hidden">
         {/* Status Tabs */}
         <Box className="border-b border-line bg-surface-sunken/50 px-6">
           <Tabs
@@ -410,7 +356,6 @@ export default function BiddingHistoryListScreen() {
             {/* Search Box */}
             <TextField
               placeholder="Tìm kiếm mã, mặt hàng, địa điểm..."
-              size="small"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full md:w-80"
@@ -422,47 +367,24 @@ export default function BiddingHistoryListScreen() {
                 ),
                 endAdornment: searchTerm && (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setSearchTerm("")}>
+                    <IconButton size="small" aria-label="Xóa từ khóa tìm kiếm" onClick={() => setSearchTerm("")}>
                       <ClearIcon fontSize="small" />
                     </IconButton>
                   </InputAdornment>
                 ),
-                className: "!rounded-xl bg-surface-sunken/50 hover:bg-surface-sunken focus-within:bg-white transition-all",
-              }}
-              sx={{
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "rgba(27,73,101,0.08)",
-                },
-                "& :hover .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "rgba(27,73,101,0.15)",
-                },
-                "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "var(--color-brand)",
-                },
               }}
             />
 
             {/* Filter Group */}
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
               {/* Origin Filter */}
-              <FormControl size="small" className="min-w-[130px] flex-1 md:flex-initial">
-                <InputLabel id="origin-select-label" className="!font-semibold !text-ink-muted !text-sm">Điểm xuất phát</InputLabel>
+              <FormControl className="min-w-[150px] flex-1 md:flex-initial">
+                <InputLabel id="origin-select-label">Điểm xuất phát</InputLabel>
                 <Select
                   labelId="origin-select-label"
                   value={originFilter}
                   label="Điểm xuất phát"
                   onChange={(e) => setOriginFilter(e.target.value)}
-                  className="!rounded-xl"
-                  sx={{
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "rgba(27,73,101,0.08)",
-                    },
-                    "& .MuiSelect-select": {
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                      color: "var(--color-ink-muted)",
-                    }
-                  }}
                 >
                   <MenuItem value="all">Tất cả tỉnh</MenuItem>
                   {originProvinces.map((prov) => (
@@ -474,24 +396,13 @@ export default function BiddingHistoryListScreen() {
               </FormControl>
 
               {/* Destination Filter */}
-              <FormControl size="small" className="min-w-[130px] flex-1 md:flex-initial">
-                <InputLabel id="dest-select-label" className="!font-semibold !text-ink-muted !text-sm">Điểm giao hàng</InputLabel>
+              <FormControl className="min-w-[150px] flex-1 md:flex-initial">
+                <InputLabel id="dest-select-label">Điểm giao hàng</InputLabel>
                 <Select
                   labelId="dest-select-label"
                   value={destFilter}
                   label="Điểm giao hàng"
                   onChange={(e) => setDestFilter(e.target.value)}
-                  className="!rounded-xl"
-                  sx={{
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "rgba(27,73,101,0.08)",
-                    },
-                    "& .MuiSelect-select": {
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                      color: "var(--color-ink-muted)",
-                    }
-                  }}
                 >
                   <MenuItem value="all">Tất cả tỉnh</MenuItem>
                   {destProvinces.map((prov) => (
@@ -510,7 +421,7 @@ export default function BiddingHistoryListScreen() {
                   size="small"
                   onClick={handleResetFilters}
                   startIcon={<FilterListIcon />}
-                  className="!text-ink-muted !font-bold !capitalize"
+                  className="!text-ink-muted"
                 >
                   Xóa lọc
                 </Button>
@@ -554,8 +465,8 @@ export default function BiddingHistoryListScreen() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={columnsList.length} align="center" className="!py-16 !border-line">
-                    <CircularProgress size={40} sx={{ color: "var(--color-brand)" }} />
+                  <TableCell colSpan={columnsList.length} className="!p-6 !border-line">
+                    <ListSkeleton rows={4} height={64} label="Đang tải lịch sử đấu giá..." />
                   </TableCell>
                 </TableRow>
               ) : 
@@ -663,7 +574,7 @@ export default function BiddingHistoryListScreen() {
                                 label={statusInfo.label}
                                 size="small"
                                 color={statusInfo.color}
-                                className="!font-extrabold !text-[0.68rem] rounded-md px-1.5"
+                                className="!font-bold !text-[0.68rem] rounded-md px-1.5"
                               />
                             </TableCell>
                           );
@@ -672,7 +583,7 @@ export default function BiddingHistoryListScreen() {
                           return (
                             <TableCell key={col.id} align="center" className="!border-line">
                               <div className="flex justify-center items-center gap-1.5">
-                                <Tooltip title="Xem thầu & Chi tiết">
+                                <Tooltip title="Xem thầu & chi tiết">
                                   <IconButton
                                     component={Link}
                                     href={`/shipper/bidding/history?id=${shipment.id}`}
@@ -735,20 +646,14 @@ export default function BiddingHistoryListScreen() {
                   setRowsPerPage(Number(e.target.value));
                   setPage(1);
                 }}
-                size="small"
-                variant="outlined"
                 sx={{
-                  height: 28,
                   fontSize: "0.75rem",
                   fontWeight: 600,
                   color: "var(--color-ink-muted)",
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(27,73,101,0.08)",
-                  },
                   "& .MuiSelect-select": {
-                    py: 0.5,
-                    px: 1,
-                  }
+                    py: 0.75,
+                    px: 1.5,
+                  },
                 }}
               >
                 <MenuItem value={5}>5 phiên</MenuItem>

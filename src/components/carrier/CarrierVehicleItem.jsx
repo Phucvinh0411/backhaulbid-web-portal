@@ -93,7 +93,7 @@ export default function CarrierVehicleItem({ vehicle, onViewDetail }) {
           <div className="flex items-start gap-3">
             <SpeedIcon className="text-ink-subtle !text-[1.1rem] mt-0.5" />
             <div className="min-w-0">
-              <Typography className="!text-[0.68rem] !font-bold text-ink-muted uppercase tracking-wider leading-none mb-0.5">
+              <Typography className="text-xs font-medium text-ink-muted leading-none mb-0.5">
                 Tải trọng
               </Typography>
               <Typography variant="body2" className="text-ink font-bold">
@@ -104,7 +104,7 @@ export default function CarrierVehicleItem({ vehicle, onViewDetail }) {
           <div className="flex items-start gap-3">
             <BuildCircleIcon className="text-ink-subtle !text-[1.1rem] mt-0.5" />
             <div className="min-w-0">
-              <Typography className="!text-[0.68rem] !font-bold text-ink-muted uppercase tracking-wider leading-none mb-0.5">
+              <Typography className="text-xs font-medium text-ink-muted leading-none mb-0.5">
                 Loại xe
               </Typography>
               <Typography variant="body2" className="text-ink font-bold">
@@ -130,14 +130,12 @@ export default function CarrierVehicleItem({ vehicle, onViewDetail }) {
       </CardContent>
 
       <div className="flex justify-end p-4 pt-3 border-t border-line gap-3">
-        <Button 
-          size="small" 
-          variant="text" 
-          color="primary" 
-          startIcon={<SettingsIcon />} 
+        <Button
+          size="small"
+          variant="text"
+          color="primary"
+          startIcon={<SettingsIcon />}
           onClick={() => onViewDetail && onViewDetail(vehicle)}
-          className="!text-[var(--color-brand)] !font-bold !text-[0.8rem] !capitalize !rounded-xl"
-          sx={{ "&:hover": { backgroundColor: "rgba(27, 73, 101, 0.05)" } }}
         >
           Chi tiết
         </Button>

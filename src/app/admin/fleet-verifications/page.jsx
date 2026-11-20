@@ -161,12 +161,12 @@ export default function FleetVerificationsPage() {
             <Tab
               value="vehicles"
               label="Phương tiện"
-              sx={{ textTransform: "none", fontWeight: 800 }}
+              sx={{ textTransform: "none", fontWeight: 700 }}
             />
             <Tab
               value="drivers"
               label="Tài xế"
-              sx={{ textTransform: "none", fontWeight: 800 }}
+              sx={{ textTransform: "none", fontWeight: 700 }}
             />
           </Tabs>
         </Box>
@@ -200,7 +200,7 @@ export default function FleetVerificationsPage() {
                   ].map((label) => (
                     <TableCell
                       key={label}
-                      sx={{ fontWeight: 800, color: "text.secondary" }}
+                      sx={{ fontWeight: 700, color: "text.secondary" }}
                       align={label === "Thao tác" ? "right" : "left"}
                     >
                       {label}
@@ -293,7 +293,7 @@ export default function FleetVerificationsPage() {
         maxWidth="sm"
       >
         <DialogTitle
-          sx={{ borderBottom: "1px solid var(--color-line)", fontWeight: 800 }}
+          sx={{ borderBottom: "1px solid var(--color-line)", fontWeight: 700 }}
         >
           Hồ sơ {tab === "vehicles" ? "phương tiện" : "tài xế"}
         </DialogTitle>
@@ -426,7 +426,7 @@ export default function FleetVerificationsPage() {
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle sx={{ fontWeight: 800 }}>
+        <DialogTitle sx={{ fontWeight: 700 }}>
           {reviewing?.decision === "APPROVE" ? "Duyệt hồ sơ" : "Từ chối hồ sơ"}
         </DialogTitle>
         <DialogContent>

@@ -15,6 +15,8 @@ export const SHARED_ENV_FILE = defaultCandidates.find((candidate) => fs.existsSy
 export const FRONTEND_ENV_KEYS = Object.freeze([
   "NEXT_PUBLIC_GATEWAY_URL",
   "NEXT_PUBLIC_BIDDING_SOCKET_PATH",
+  "GOOGLE_CLIENT_ID",
+  "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
 ]);
 
 /** Removes dotenv quoting and inline comments from one environment value. */

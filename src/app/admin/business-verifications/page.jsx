@@ -31,10 +31,7 @@ import {
   AdminToolbar,
 } from "@/components/admin/AdminUI";
 import { axiosClient } from "@/configs/axiosClient";
-import {
-  BUSINESS_VERIFICATION_PATH,
-  businessVerificationDocumentPath,
-} from "@/components/businessVerification/businessVerificationApi";
+import { BUSINESS_VERIFICATION_PATH } from "@/components/businessVerification/businessVerificationApi";
 
 const STATUS_OPTIONS = [
   { value: "PENDING", label: "Đang chờ duyệt" },
@@ -112,7 +109,9 @@ function EkycEvidenceThumb({ reportId, part, label }) {
   return (
     <Box className="flex flex-col items-center gap-1">
       {src ? (
-        <img src={src} alt={label} className="h-28 w-full rounded-lg object-cover" />
+        /* Private authenticated blob; never place bearer credentials in an image URL. */
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img src={src} alt={label} loading="lazy" decoding="async" className="h-28 w-full rounded-lg object-cover" />
       ) : (
         <Box className="flex h-28 w-full items-center justify-center rounded-lg bg-black/5 text-xs text-ink-muted">
           {failed ? "Không tải được ảnh" : "Đang tải…"}
@@ -189,30 +188,25 @@ export default function AdminBusinessVerificationsPage() {
   };
 
   const downloadDocument = async (documentType = "businessLicense") => {
-    const s3Url = documentType === "authorizationLetter"
-      ? selected?.authorizationLetterUrl
-      : selected?.businessLicenseUrl;
-    if (!/^https:\/\//i.test(s3Url || "")) {
-      setErrorMessage("Tài liệu S3 không có URL hợp lệ.");
-      return;
-    }
-    window.open(s3Url, "_blank", "noopener,noreferrer");
-    if (s3Url) return;
-
+    if (!selected?.id) return;
+    setErrorMessage("");
     try {
       const { data } = await axiosClient.get(
-        businessVerificationDocumentPath(selected.id, documentType),
+        `/api/v1/business-verifications/${encodeURIComponent(selected.id)}/documents/${encodeURIComponent(documentType)}`,
         { responseType: "blob" }
       );
       const objectUrl = URL.createObjectURL(data);
-      const anchor = document.createElement("a");
-      anchor.href = objectUrl;
-      anchor.download =
-        documentType === "authorizationLetter"
-          ? selected.authorizationLetterFilename || "giay-uy-quyen"
-          : selected.businessLicenseFilename || "giay-phep-doanh-nghiep";
-      anchor.click();
-      URL.revokeObjectURL(objectUrl);
+      const opened = window.open(objectUrl, "_blank");
+      if (!opened) {
+        const anchor = document.createElement("a");
+        anchor.href = objectUrl;
+        anchor.download =
+          documentType === "authorizationLetter"
+            ? selected.authorizationLetterFilename || "giay-uy-quyen"
+            : selected.businessLicenseFilename || "giay-phep-doanh-nghiep";
+        anchor.click();
+      }
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (error) {
       setErrorMessage(
         error.response?.data?.message || "Không thể tải tài liệu doanh nghiệp."

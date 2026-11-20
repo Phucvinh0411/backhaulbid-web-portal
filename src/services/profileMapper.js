@@ -7,6 +7,8 @@ export function mapProfileAccount(input) {
     name: text(account.fullName) ?? text(account.companyName) ?? text(account.phone) ?? "Tài khoản",
     phone: text(account.phone),
     email: text(account.email),
+    emailVerified: Boolean(account.emailVerified),
+    authProvider: text(account.authProvider) ?? "LOCAL",
     role: text(account.role),
     avatarUrl: text(account.avatarUrl),
   };

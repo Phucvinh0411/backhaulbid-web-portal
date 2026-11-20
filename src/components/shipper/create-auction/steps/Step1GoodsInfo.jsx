@@ -71,8 +71,8 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
           <div className="w-8 h-8 rounded-xl bg-info-soft text-info flex items-center justify-center">
             <InventoryIcon className="!text-[1.1rem]" />
           </div>
-          <Typography className="!font-black text-ink !text-sm">
-            1. Thông Tin Lô Hàng
+          <Typography className="!font-bold text-ink !text-sm">
+            1. Thông tin lô hàng
           </Typography>
         </div>
 
@@ -84,7 +84,6 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
             onChange={(e) => updateForm("goodsName", e.target.value)}
             placeholder="VD: Linh kiện điện tử Samsung"
             required
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
 
           <TextField
@@ -93,7 +92,6 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
             label="Phân loại hàng hóa"
             name="goodsCategory" value={form.goodsCategory}
             onChange={(e) => updateForm("goodsCategory", e.target.value)}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           >
             {GOODS_CATEGORIES.map((cat) => (
               <MenuItem key={cat} value={cat}>
@@ -106,14 +104,13 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <TextField
             fullWidth
-            label="Tổng trọng lượng (Tấn)"
+            label="Tổng trọng lượng (tấn)"
             type="number"
             name="weight" value={form.weight}
             onChange={(e) => updateForm("weight", Number(e.target.value))}
             InputProps={{
               endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-ink-subtle">tấn</span></InputAdornment>,
             }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
 
           <TextField
@@ -125,7 +122,6 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
             InputProps={{
               endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-ink-subtle">m³</span></InputAdornment>,
             }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
 
           <TextField
@@ -139,7 +135,7 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
             InputProps={{
               endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-ink-muted">đ</span></InputAdornment>,
             }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" }, "& input": { fontFamily: "monospace", fontWeight: 700 } }}
+            sx={{ "& input": { fontVariantNumeric: "tabular-nums", fontWeight: 700 } }}
           />
 
           <div className="md:col-span-2 rounded-xl border border-line bg-surface-sunken p-4 space-y-3">
@@ -163,12 +159,11 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
                       </span>
                       <TextField
                         select
-                        size="small"
                         label="Loại chứng từ"
                         value={document.kind || ""}
                         onChange={(event) => setDocumentKind(index, event.target.value)}
                         disabled={documentState.uploading}
-                        sx={{ minWidth: 200, "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+                        sx={{ minWidth: 200 }}
                       >
                         {SELECTABLE_VALUE_DOCUMENT_KINDS.map((kind) => (
                           <MenuItem key={kind} value={kind}>{VALUE_DOCUMENT_KIND_LABEL[kind]}</MenuItem>
@@ -223,7 +218,7 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
           <div className="rounded-xl border border-dashed border-line-strong bg-surface-sunken p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <Typography className="!font-black text-ink !text-sm">Ảnh hàng hóa</Typography>
+                <Typography className="!font-bold text-ink !text-sm">Ảnh hàng hóa</Typography>
                 <Typography variant="caption" className="text-ink-muted">
                   JPEG, PNG hoặc WebP · tối đa 5 ảnh · 10 MB/ảnh
                 </Typography>
@@ -275,8 +270,8 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
           <div className="w-8 h-8 rounded-xl bg-success-soft text-success flex items-center justify-center">
             <LocalShippingIcon className="!text-[1.1rem]" />
           </div>
-          <Typography className="!font-black text-ink !text-sm">
-            2. Yêu Cầu Phương Tiện Vận Chuyển
+          <Typography className="!font-bold text-ink !text-sm">
+            2. Yêu cầu phương tiện vận chuyển
           </Typography>
         </div>
 
@@ -287,7 +282,6 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
             label="Loại xe yêu cầu"
             name="requiredVehicleType" value={form.requiredVehicleType}
             onChange={(e) => updateForm("requiredVehicleType", e.target.value)}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           >
             {VEHICLE_TYPES.map((v) => (
               <MenuItem key={v.value} value={v.value}>
@@ -298,11 +292,10 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
 
           <TextField
             fullWidth
-            label="Nhiệt độ bảo quản (Nếu có)"
+            label="Nhiệt độ bảo quản (nếu có)"
             name="requiredTemp" value={form.requiredTemp}
             onChange={(e) => updateForm("requiredTemp", e.target.value)}
-            placeholder="VD: -18 °C (cho hàng lạnh) hoặc Bỏ trống"
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
+            placeholder="VD: -18 °C (cho hàng lạnh) hoặc bỏ trống"
           />
         </div>
 
@@ -314,21 +307,18 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
               type="number"
               name="vehicleLength" value={form.vehicleLength}
               onChange={(e) => updateForm("vehicleLength", Number(e.target.value))}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
             />
             <TextField
               label="Chiều rộng (m)"
               type="number"
               name="vehicleWidth" value={form.vehicleWidth}
               onChange={(e) => updateForm("vehicleWidth", Number(e.target.value))}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
             />
             <TextField
               label="Chiều cao (m)"
               type="number"
               name="vehicleHeight" value={form.vehicleHeight}
               onChange={(e) => updateForm("vehicleHeight", Number(e.target.value))}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
             />
           </div>
         </div>
@@ -337,11 +327,10 @@ export default function Step1GoodsInfo({ form, updateForm, imageUploading, onIma
           fullWidth
           multiline
           rows={3}
-          label="Mô tả hàng hóa & Yêu cầu bốc xếp / bảo quản"
+          label="Mô tả hàng hóa & yêu cầu bốc xếp / bảo quản"
           name="description" value={form.description}
           onChange={(e) => updateForm("description", e.target.value)}
           placeholder="Yêu cầu chằng buộc kỹ, chống va đập, bảo quản khô ráo..."
-          sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
         />
 
         <div className="rounded-xl border border-line bg-surface-sunken p-4 space-y-1">

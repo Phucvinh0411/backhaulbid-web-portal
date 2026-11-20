@@ -7,14 +7,10 @@ export const businessVerificationLookupPath = (taxCode) =>
 export const businessVerificationDocumentPath = (
   verificationId,
   documentType = "businessLicense"
-) => {
-  const basePath = `${BUSINESS_VERIFICATION_PATH}/${encodeURIComponent(
+) =>
+  `${BUSINESS_VERIFICATION_PATH}/${encodeURIComponent(
     verificationId
-  )}/document`;
-  return documentType === "businessLicense"
-    ? basePath
-    : `${basePath}?type=${encodeURIComponent(documentType)}`;
-};
+  )}/documents/${encodeURIComponent(documentType)}`;
 
 const ALLOWED_LICENSE_TYPES = new Set([
   "application/pdf",

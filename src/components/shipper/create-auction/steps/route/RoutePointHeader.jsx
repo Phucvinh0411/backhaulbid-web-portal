@@ -10,11 +10,11 @@ export default function RoutePointHeader({ config, saving, onOpenAddressBook, on
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
       <div className="flex items-center gap-2.5">
-        <span className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-black text-white shadow-xs ${classes.badge}`}>
+        <span className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold text-white shadow-xs ${classes.badge}`}>
           {badge}
         </span>
         <div>
-          <Typography className="!text-sm !font-black text-ink">{title}</Typography>
+          <Typography className="!text-sm !font-bold text-ink">{title}</Typography>
           <span className="text-[0.7rem] font-medium text-ink-subtle">{subtitle}</span>
         </div>
       </div>
@@ -25,9 +25,9 @@ export default function RoutePointHeader({ config, saving, onOpenAddressBook, on
           variant="outlined"
           onClick={onOpenAddressBook}
           startIcon={<ImportContactsIcon className="!text-[0.9rem]" />}
-          className={`!rounded-xl !px-3 !py-1.5 !text-xs !font-bold !capitalize ${classes.outlinedButton}`}
+          className={classes.outlinedButton}
         >
-          Sổ Địa Chỉ
+          Sổ địa chỉ
         </Button>
         <Button
           size="small"
@@ -35,7 +35,7 @@ export default function RoutePointHeader({ config, saving, onOpenAddressBook, on
           onClick={onSave}
           disabled={saving}
           startIcon={saving ? <CircularProgress size={13} color="inherit" /> : <BookmarkAddOutlinedIcon className="!text-[0.95rem]" />}
-          className={`!rounded-xl !px-3 !py-1.5 !text-xs !font-bold !capitalize !text-white shadow-xs ${classes.containedButton}`}
+          className={`!text-white ${classes.containedButton}`}
         >
           {saving ? "Đang lưu..." : "Lưu địa chỉ"}
         </Button>

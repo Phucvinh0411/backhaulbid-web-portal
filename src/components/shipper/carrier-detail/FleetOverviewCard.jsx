@@ -19,7 +19,7 @@ export default function FleetOverviewCard({ fleet = [] }) {
         <div className="flex items-center gap-2">
           <LocalShippingIcon className="text-[var(--color-brand)]" />
           <Typography variant="h6" className="!font-bold text-ink !text-base">
-            2. Bảng Thống Kê Đội Xe Vận Tải ({fleet.length} Phương tiện)
+            Đội xe vận tải ({fleet.length} phương tiện)
           </Typography>
         </div>
       </div>
@@ -29,17 +29,17 @@ export default function FleetOverviewCard({ fleet = [] }) {
         <Table size="small">
           <TableHead className="bg-surface-sunken">
             <TableRow>
-              <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3">Biển Số Xe (Biển Vàng)</TableCell>
-              <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3">Loại Xe & Dòng Xe</TableCell>
-              <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3">Tải Trọng</TableCell>
-              <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3 text-right">Trạng Thái</TableCell>
+              <TableCell className="!font-bold !text-ink-muted !text-xs !py-3">Biển số xe</TableCell>
+              <TableCell className="!font-bold !text-ink-muted !text-xs !py-3">Loại xe &amp; dòng xe</TableCell>
+              <TableCell className="!font-bold !text-ink-muted !text-xs !py-3">Tải trọng</TableCell>
+              <TableCell className="!font-bold !text-ink-muted !text-xs !py-3 text-right">Trạng thái</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {fleet.map((v) => (
               <TableRow key={v.id} className="hover:bg-surface-sunken/70 transition-colors">
                 <TableCell className="!py-3">
-                  <span className="bg-warning-soft text-warning font-mono font-black text-xs px-2.5 py-1 rounded border border-warning-soft inline-block shadow-2xs">
+                  <span className="bg-warning-soft text-warning font-mono font-bold text-xs px-2.5 py-1 rounded border border-warning-soft inline-block shadow-2xs">
                     {v.plate}
                   </span>
                 </TableCell>
@@ -48,7 +48,7 @@ export default function FleetOverviewCard({ fleet = [] }) {
                   <span className="text-[0.68rem] text-ink-muted font-medium">{v.brand}</span>
                 </TableCell>
                 <TableCell className="!py-3">
-                  <span className="text-ink font-extrabold text-xs">{v.payload}</span>
+                  <span className="text-ink font-bold text-xs">{v.payload}</span>
                 </TableCell>
                 
                 <TableCell className="!py-3 text-right">

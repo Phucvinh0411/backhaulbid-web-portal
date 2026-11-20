@@ -12,9 +12,10 @@ import Typography from "@mui/material/Typography";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
 import AuthShell from "@/components/auth/AuthShell";
+import GoogleSignInSection from "@/components/auth/GoogleSignInSection";
 import { GATEWAY_URL } from "@/config/clientConfig";
 
-// identity-service RegisterRequest: phone (9–11 digits), optional email, password 8–72 bytes, role.
+// identity-service RegisterRequest: phone (9–11 digits), required email, password 8–72 bytes, role.
 const ROLES = [
   { value: "SHIPPER", label: "Chủ hàng", hint: "Đăng lô hàng và chọn nhà xe qua đấu giá.", Icon: Inventory2OutlinedIcon },
   { value: "CARRIER", label: "Chủ xe", hint: "Tìm hàng cho xe chiều về và đặt giá.", Icon: LocalShippingOutlinedIcon },
@@ -23,7 +24,8 @@ const ROLES = [
 function validate({ phone, email, password }) {
   const errors = {};
   if (!/^[0-9]{9,11}$/.test(phone.trim())) errors.phone = "Số điện thoại gồm 9–11 chữ số.";
-  if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.email = "Email chưa đúng định dạng.";
+  if (!email.trim()) errors.email = "Vui lòng nhập email.";
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.email = "Email chưa đúng định dạng.";
   if (password.length < 8) errors.password = "Mật khẩu ít nhất 8 ký tự.";
   return errors;
 }
@@ -51,7 +53,7 @@ export default function RegisterPage() {
       const res = await fetch(`${GATEWAY_URL}/api/v1/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: form.phone.trim(), password: form.password, email: form.email.trim() || undefined, role: form.role }),
+        body: JSON.stringify({ phone: form.phone.trim(), password: form.password, email: form.email.trim(), role: form.role }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) router.push("/login");
@@ -108,14 +110,15 @@ export default function RegisterPage() {
         </Box>
         <TextField label="Số điện thoại" required fullWidth size="medium" autoComplete="tel" inputMode="numeric"
           value={form.phone} onChange={set("phone")} error={Boolean(errors.phone)} helperText={errors.phone} />
-        <TextField label="Email (không bắt buộc)" type="email" fullWidth size="medium" autoComplete="email"
-          value={form.email} onChange={set("email")} error={Boolean(errors.email)} helperText={errors.email} />
+        <TextField label="Email" type="email" required fullWidth size="medium" autoComplete="email"
+          value={form.email} onChange={set("email")} error={Boolean(errors.email)} helperText={errors.email || "Dùng để nhận mã OTP ký hợp đồng."} />
         <TextField label="Mật khẩu" type="password" required fullWidth size="medium" autoComplete="new-password"
           value={form.password} onChange={set("password")} error={Boolean(errors.password)} helperText={errors.password || "Ít nhất 8 ký tự."} />
         <Button type="submit" variant="contained" size="large" fullWidth disabled={loading}>
           {loading ? <CircularProgress size={22} color="inherit" aria-label="Đang tạo tài khoản" /> : "Tạo tài khoản"}
         </Button>
       </Box>
+      <GoogleSignInSection mode="register" />
     </AuthShell>
   );
 }

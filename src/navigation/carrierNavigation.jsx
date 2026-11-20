@@ -43,7 +43,7 @@ const carrierNavigation = [
         children: [
           { title: "Phương tiện", path: "/carrier/vehicles" },
           { title: "Tài xế", path: "/carrier/drivers" },
-          { title: "Xe rỗng chiều", path: "/carrier/empty-routes" },
+          { title: "Tuyến xe rỗng", path: "/carrier/empty-routes" },
         ],
       },
     ],

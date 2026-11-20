@@ -28,6 +28,7 @@ import { homePathByRole } from "@/navigation/navigation";
 import BrandMark from "./BrandMark";
 import { getNotificationDestination } from "@/lib/notificationRouting";
 import { toMediaViewUrl } from "@/lib/mediaUrl";
+import { clearCurrentAccountCache } from "@/hooks/useCurrentAccount";
 
 export default function Header({ userInfo, role = "admin" }) {
   const router = useRouter();
@@ -46,6 +47,8 @@ export default function Header({ userInfo, role = "admin" }) {
     setLoggingOut(true);
     try {
       await appApiService.post("/api/auth/logout");
+      clearCurrentAccountCache();
+      window.google?.accounts?.id?.disableAutoSelect();
       window.localStorage.removeItem("userRole");
       window.localStorage.removeItem("isEkycVerified");
       router.replace("/login");

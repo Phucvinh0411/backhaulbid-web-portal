@@ -19,7 +19,7 @@ const createShopeePin = (letter = "A", color = "#1B4965") =>
           </defs>
           <path d="M17 0C7.61 0 0 7.61 0 17C0 29.75 17 44 17 44C17 44 34 29.75 34 17C34 7.61 26.39 0 17 0Z" fill="${color}" filter="url(#shadow-${letter})"/>
           <circle cx="17" cy="16" r="9.5" fill="#FFFFFF"/>
-          <text x="17" y="20.5" font-size="12" font-weight="900" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle" fill="${color}">${letter}</text>
+          <text x="17" y="20.5" font-size="12" font-weight="700" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle" fill="${color}">${letter}</text>
         </svg>
         <div style="width:12px;height:4px;background:rgba(0,0,0,0.25);border-radius:50%;position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);"></div>
       </div>

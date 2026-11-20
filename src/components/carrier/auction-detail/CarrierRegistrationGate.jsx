@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
@@ -11,10 +12,12 @@ import { getAuctionAccess, retryRegistrationPayment } from "@/services/biddingAp
 import { getMyVehicles } from "@/services/fleetApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
-import EkycModal from "@/components/eKYC/EkycModal";
+import { notifyAccountVerificationUpdated } from "@/hooks/useAccountVerification";
 import { KeyValueList, ListSkeleton, Panel } from "@/components/ui";
 import { formatCountdown, formatDateTime, formatMoney, secondsUntil, toAmount } from "@/lib/format";
-import AuctionRegistrationDialog from "./AuctionRegistrationDialog";
+
+const EkycModal = dynamic(() => import("@/components/eKYC/EkycModal"), { ssr: false });
+const AuctionRegistrationDialog = dynamic(() => import("./AuctionRegistrationDialog"), { ssr: false });
 
 // Access only changes on the server at fixed moments (payment, room opening), so a
 // slow refresh while waiting is enough; terminal states stop refreshing.
@@ -56,14 +59,25 @@ export default function CarrierRegistrationGate({ auctionId, auction, onAccessCh
   const status = access?.accessStatus;
   useEffect(() => {
     if (!status || TERMINAL.has(status)) return undefined;
-    const interval = window.setInterval(loadAccess, WAITING_REFRESH_MS);
+    const interval = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      void loadAccess();
+    }, WAITING_REFRESH_MS);
     return () => window.clearInterval(interval);
   }, [loadAccess, status]);
 
   useEffect(() => {
     if (status !== "WAITING_FOR_START") return undefined;
-    const interval = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(interval);
+    const tick = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      setNow(Date.now());
+    };
+    const interval = window.setInterval(tick, 1000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, [status]);
 
   // When the local countdown reaches the start time, ask the server instead of assuming the room opened.
@@ -179,7 +193,7 @@ export default function CarrierRegistrationGate({ auctionId, auction, onAccessCh
         {status === "EKYC_REQUIRED" && (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
             <Alert severity="warning">
-              Tài khoản chủ xe chưa xác thực định danh người đại diện (eKYC). Bạn cần hoàn tất xác thực eKYC trước khi đăng ký và tham gia đấu giá.
+              Tài khoản chủ xe chưa xác thực định danh người đại diện (eKYC). Bạn cần hoàn tất xác thực eKYC và doanh nghiệp trước khi đăng ký và tham gia đấu giá.
             </Alert>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
               <Button variant="contained" color="warning" onClick={() => setEkycModalOpen(true)}>
@@ -192,6 +206,30 @@ export default function CarrierRegistrationGate({ auctionId, auction, onAccessCh
           </Box>
         )}
 
+        {status === "ACCOUNT_VERIFICATION_REQUIRED" && (
+          <Alert
+            severity="warning"
+            action={
+              <Button component={Link} href="/carrier/settings" color="inherit" size="small" sx={{ fontWeight: 700, whiteSpace: "nowrap" }}>
+                Xác minh ngay
+              </Button>
+            }
+          >
+            Tài khoản cần hoàn tất xác minh doanh nghiệp trước khi đăng ký và tham gia đấu giá.
+          </Alert>
+        )}
+        {status === "CARRIER_COVERAGE_REQUIRED" && (
+          <Alert
+            severity="warning"
+            action={
+              <Button component={Link} href="/carrier/settings" color="inherit" size="small" sx={{ fontWeight: 700, whiteSpace: "nowrap" }}>
+                Cập nhật bảo hiểm
+              </Button>
+            }
+          >
+            Phiên đấu giá này yêu cầu nhà xe có bảo hiểm trách nhiệm hàng hóa còn hiệu lực đã được xét duyệt. Vui lòng cập nhật chứng từ tại mục Cài đặt tài khoản.
+          </Alert>
+        )}
         {status === "REPUTATION_TOO_LOW" && (
           <Alert severity="warning">
             Điểm uy tín hiện tại {reputation || "chưa xác định"}. Điểm giảm khi vi phạm chính sách giao hàng trễ.
@@ -203,15 +241,17 @@ export default function CarrierRegistrationGate({ auctionId, auction, onAccessCh
         {status === "AUCTION_CANCELLED" && <Typography variant="body2">Phiên đã bị hủy.</Typography>}
       </Panel>
 
-      <AuctionRegistrationDialog
-        open={dialogOpen}
-        auction={auction}
-        vehicles={vehicles}
-        vehiclesLoading={vehiclesLoading}
-        vehiclesError={vehiclesError}
-        onClose={() => setDialogOpen(false)}
-        onCompleted={loadAccess}
-      />
+      {dialogOpen && (
+        <AuctionRegistrationDialog
+          open={dialogOpen}
+          auction={auction}
+          vehicles={vehicles}
+          vehiclesLoading={vehiclesLoading}
+          vehiclesError={vehiclesError}
+          onClose={() => setDialogOpen(false)}
+          onCompleted={loadAccess}
+        />
+      )}
 
       {ekycModalOpen && (
         <EkycModal
@@ -219,6 +259,7 @@ export default function CarrierRegistrationGate({ auctionId, auction, onAccessCh
           onClose={() => setEkycModalOpen(false)}
           onComplete={() => {
             setEkycModalOpen(false);
+            notifyAccountVerificationUpdated();
             void loadAccess();
           }}
         />

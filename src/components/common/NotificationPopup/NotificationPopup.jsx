@@ -125,8 +125,9 @@ function NotificationPopupItem({
           }}
           sx={{
             color: "var(--color-ink-subtle)",
-            width: 28,
-            height: 28,
+            width: 32,
+            height: 32,
+            "@media (pointer: coarse)": { width: 44, height: 44 },
             flexShrink: 0,
             "&:hover": { color: "var(--color-ink-muted)", backgroundColor: "var(--color-surface-sunken)" },
           }}
@@ -144,7 +145,7 @@ function NotificationPopupItem({
           backgroundColor: "var(--color-surface-sunken)",
           "& .MuiLinearProgress-bar": {
             backgroundColor: tone.bar,
-            transition: "width 0.1s linear",
+            transition: "transform 0.1s linear",
           },
         }}
       />

@@ -175,7 +175,7 @@ export default function PaymentSettingsPage() {
                     <Typography variant="caption" sx={{ color: "text.secondary", display: "block", lineHeight: 1.2 }}>
                       Tổng số dư ký quỹ đảm bảo
                     </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: "text.primary" }}>
+                    <Typography variant="h6" className="tabular" sx={{ fontWeight: 700, color: "text.primary" }}>
                       {walletSummary?.deposits == null ? "Chưa có dữ liệu" : new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(Number(walletSummary.deposits))}
                     </Typography>
                   </Box>
@@ -190,7 +190,7 @@ export default function PaymentSettingsPage() {
                     <Typography variant="caption" sx={{ color: "text.secondary", display: "block", lineHeight: 1.2 }}>
                       Doanh thu hoa hồng tạm giữ
                     </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: "success.main" }}>
+                    <Typography variant="h6" className="tabular" sx={{ fontWeight: 700, color: "success.main" }}>
                       {walletSummary?.auctionFees == null ? "Chưa có dữ liệu" : new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(Number(walletSummary.auctionFees))}
                     </Typography>
                   </Box>

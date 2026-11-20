@@ -56,11 +56,9 @@ export default function SelectedPlaceCard({ place, onEditOnMap, onProvinceChange
             renderInput={(params) => (
               <TextField
                 {...params}
-                size="small"
                 required
                 label="Tỉnh / Thành phố"
                 helperText="Không đọc được tỉnh/thành từ địa chỉ này, vui lòng chọn."
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
               />
             )}
           />

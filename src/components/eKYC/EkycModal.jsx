@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Alert from "@mui/material/Alert";
-import Dialog from "@mui/material/Dialog";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
+import { ActionButton } from "@/components/common";
+import { ResponsiveDialog } from "@/components/ui";
 import NfcEkycModal from "./NfcEkycModal";
 import { apiService } from "@/services/apiService";
 
@@ -70,13 +69,21 @@ export default function EkycModal({ open = true, onClose, onComplete }) {
       : "Không thể kết nối để kiểm tra xác thực NFC. Hãy thử tải lại trang.";
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Xác thực người đại diện bằng NFC</DialogTitle>
-      <DialogContent>
-        <Alert severity={capability === "checking" ? "info" : "error"}>
-          {message}
-        </Alert>
-      </DialogContent>
-    </Dialog>
+    <ResponsiveDialog
+      open={open}
+      onClose={onClose}
+      title="Xác thực người đại diện bằng NFC"
+      titleId="ekyc-capability-dialog-title"
+      maxWidth="sm"
+      actions={
+        <ActionButton variant="secondary" onClick={onClose}>
+          Đóng
+        </ActionButton>
+      }
+    >
+      <Alert severity={capability === "checking" ? "info" : "error"}>
+        {message}
+      </Alert>
+    </ResponsiveDialog>
   );
 }

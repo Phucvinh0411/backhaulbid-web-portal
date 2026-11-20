@@ -24,7 +24,7 @@ function createVehicleRadarPin(heading) {
   const rotationStyle = hasHeading ? `transform:rotate(${Number(heading)}deg);transition:transform 0.35s ease-out;` : "";
   const innerGlyph = hasHeading
     ? `<span style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:13px solid white;transform:translateY(-1px);"></span>`
-    : `<span style="font-size:17px;line-height:1;">🚚</span>`;
+    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>`;
   return L.divIcon({
     className: "trip-map-vehicle-radar",
     html: `<div style="position:relative;width:48px;height:48px;display:grid;place-items:center;">
@@ -210,7 +210,7 @@ export default function Map({
       }
     `}</style>
     {current && (
-      <Box sx={{ position: "absolute", left: 12, top: 12, zIndex: 1000, bgcolor: "rgba(255,255,255,0.95)", backdropFilter: "blur(4px)", px: 1.5, py: 0.75, borderRadius: 2, border: "1px solid", borderColor: "divider", boxShadow: "0 2px 10px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", gap: 1 }}>
+      <Box sx={{ position: "absolute", left: 12, top: 12, zIndex: 1000, bgcolor: "background.paper", px: 1.5, py: 0.75, borderRadius: 2, border: "1px solid", borderColor: "divider", boxShadow: "0 2px 10px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", gap: 1 }}>
         <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "success.main", boxShadow: "0 0 0 3px rgba(34,197,94,0.3)" }} />
         <Typography variant="caption" sx={{ fontWeight: 700, color: "text.primary" }}>
           Theo dõi trực tiếp (Realtime)

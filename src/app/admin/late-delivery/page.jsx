@@ -36,7 +36,7 @@ export default function AdminLateDeliveryPage() {
     <Box className="p-4 md:p-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Typography variant="h4" className="!font-black">Xử lý chuyến giao trễ</Typography>
+          <Typography variant="h4" className="!font-bold">Xử lý chuyến giao trễ</Typography>
           <Typography className="!mt-1 text-ink-muted">Xem các bậc trễ, tiền bồi thường, điểm uy tín và trạng thái xử lý của mọi chuyến.</Typography>
         </div>
         <Button variant="outlined" onClick={load} disabled={loading}>Làm mới</Button>

@@ -7,23 +7,18 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Grid from "@mui/material/Grid";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import IconButton from "@mui/material/IconButton";
-import CircularProgress from "@mui/material/CircularProgress";
 import Autocomplete from "@mui/material/Autocomplete";
+import IconButton from "@mui/material/IconButton";
 
 // Icons
 import BookIcon from "@mui/icons-material/ImportContactsOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
-import CloseIcon from "@mui/icons-material/Close";
 
 import PageHeader from "@/components/common/PageHeader";
 import AppCard from "@/components/common/AppCard";
+import { ErrorState, ListSkeleton, ResponsiveDialog } from "@/components/ui";
 import CoordinatePicker from "@/components/map/CoordinatePicker";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { useAddressHint } from "@/components/shipper/create-auction/useAddressHint";
@@ -184,10 +179,6 @@ export default function ProfileWalletScreen() {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleOpenAddressAdd}
-              className="!rounded-xl !py-2.5 !px-5 !text-xs !font-bold !capitalize shadow-md"
-              sx={{
-                background: "var(--color-brand)",
-              }}
             >
               Thêm địa chỉ mới
             </Button>
@@ -195,18 +186,11 @@ export default function ProfileWalletScreen() {
 
           {/* Grid list of addresses */}
           {addressLoading ? (
-            <Box className="flex min-h-40 items-center justify-center rounded-xl border border-line bg-white/70">
-              <CircularProgress size={28} sx={{ color: "var(--color-brand)" }} />
-            </Box>
+            <ListSkeleton rows={3} height={140} label="Đang tải sổ địa chỉ..." />
           ) : addressError ? (
-            <Box className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-xl border border-danger-soft bg-danger-soft/60 p-6 text-center">
-              <Typography className="!font-semibold text-danger">{addressError}</Typography>
-              <Button variant="outlined" onClick={loadAddresses} className="!rounded-xl !font-bold !capitalize">
-                Thử tải lại
-              </Button>
-            </Box>
+            <ErrorState description={addressError} onRetry={loadAddresses} />
           ) : addresses.length === 0 ? (
-            <Box className="flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-line bg-white/70 p-6 text-center">
+            <Box className="flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-line bg-white p-6 text-center">
               <Typography className="!font-bold text-ink">Chưa có địa chỉ nào được lưu</Typography>
               <Typography variant="body2" className="text-ink-muted">
                 Thêm địa chỉ kho hoặc điểm giao nhận để chọn nhanh khi tạo phiên đấu giá.
@@ -218,15 +202,8 @@ export default function ProfileWalletScreen() {
               <Grid item xs={12} md={6} lg={4} key={addr.id}>
                 <AppCard
                   showAccent={false}
-                  className="group hover:border-[var(--color-brand)]/20 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300 border border-line !rounded-xl relative overflow-hidden"
-                  sx={{
-                    background: "rgba(255, 255, 255, 0.8)",
-                    backdropFilter: "blur(20px)",
-                  }}
+                  className="group hover:border-[var(--color-brand)]/30 transition-colors border border-line relative overflow-hidden"
                 >
-                  {/* Decorative indicator line */}
-                  <Box className="absolute top-0 left-0 w-full h-1 bg-[var(--color-brand)] opacity-20 group-hover:opacity-100 transition-opacity" />
-                  
                   <CardContent className="!p-5 space-y-3.5">
                     {/* Address title */}
                     <div className="flex items-center justify-between">
@@ -236,6 +213,7 @@ export default function ProfileWalletScreen() {
                       <div className="flex gap-0.5">
                         <IconButton
                           size="small"
+                          aria-label={`Chỉnh sửa địa chỉ ${addr.label}`}
                           onClick={() => handleOpenAddressEdit(addr)}
                           className="text-ink-subtle hover:text-[var(--color-brand)]"
                         >
@@ -243,6 +221,7 @@ export default function ProfileWalletScreen() {
                         </IconButton>
                         <IconButton
                           size="small"
+                          aria-label={`Xóa địa chỉ ${addr.label}`}
                           onClick={() => handleAddressDelete(addr.id)}
                           className="text-ink-subtle hover:text-danger"
                         >
@@ -254,11 +233,11 @@ export default function ProfileWalletScreen() {
                     {/* Detailed info */}
                     <div className="space-y-1.5 text-xs text-ink-muted font-medium">
                       <div>
-                        <strong className="text-ink-subtle font-semibold block text-[0.65rem] uppercase">Người liên hệ</strong>
+                        <span className="text-xs font-medium text-ink-muted block">Người liên hệ</span>
                         <span className="text-ink font-semibold">{addr.contactName} ({addr.contactPhone})</span>
                       </div>
                       <div>
-                        <strong className="text-ink-subtle font-semibold block text-[0.65rem] uppercase">Địa chỉ kho bãi</strong>
+                        <span className="text-xs font-medium text-ink-muted block">Địa chỉ kho bãi</span>
                         <span className="text-ink-muted block truncate mt-0.5">{addr.detail}</span>
                         <span className="text-ink-subtle font-bold block">{addr.province}</span>
                       </div>
@@ -273,23 +252,16 @@ export default function ProfileWalletScreen() {
 
 
       {/* Address Edit/Add Dialog */}
-      <Dialog
+      <ResponsiveDialog
         open={openAddressDialog}
-        onClose={() => setOpenAddressDialog(false)}
-        maxWidth="sm"
-        fullWidth
-        className="backdrop-blur-sm"
-        PaperProps={{
-          className: "!rounded-xl !p-2 shadow-2xl",
-        }}
-      >
-        <DialogTitle className="flex justify-between items-center !font-bold text-ink !px-4 !py-3 border-b border-line">
+        onClose={() => !addressSaving && setOpenAddressDialog(false)}
+        title={
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-info-soft text-info flex items-center justify-center font-bold">
+            <div className="w-9 h-9 rounded-lg bg-info-soft text-info flex items-center justify-center font-bold">
               <BookIcon className="!text-[1.2rem]" />
             </div>
             <div>
-              <span className="block text-base font-extrabold text-ink">
+              <span className="block text-base font-bold text-ink">
                 {addressEditMode ? "Cập nhật địa chỉ kho bãi" : "Thêm địa chỉ kho bãi mới"}
               </span>
               <span className="block text-xs text-ink-subtle font-normal">
@@ -297,11 +269,30 @@ export default function ProfileWalletScreen() {
               </span>
             </div>
           </div>
-          <IconButton size="small" onClick={() => setOpenAddressDialog(false)} className="!bg-surface-sunken hover:!bg-line">
-            <CloseIcon className="!text-[1rem] text-ink-muted" />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent className="!pt-6 !pb-4 flex flex-col gap-6">
+        }
+        titleId="address-book-edit-dialog-title"
+        maxWidth="sm"
+        busy={addressSaving}
+        actions={
+          <>
+            <Button
+              onClick={() => setOpenAddressDialog(false)}
+              variant="text"
+              disabled={addressSaving}
+            >
+              Đóng
+            </Button>
+            <Button
+              onClick={handleAddressSubmit}
+              variant="contained"
+              disabled={addressSaving}
+            >
+              {addressSaving ? "Đang lưu..." : addressEditMode ? "Lưu lại" : "Thêm mới"}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-5">
           <TextField
             label="Tên gợi nhớ kho (Ví dụ: Kho Tổng Đông Anh)"
             fullWidth
@@ -309,7 +300,6 @@ export default function ProfileWalletScreen() {
             value={addressForm.label}
             onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
             placeholder="VD: Kho hàng Tân Bình / Nhà máy 2"
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
 
           <Autocomplete
@@ -325,7 +315,6 @@ export default function ProfileWalletScreen() {
                 required
                 label="Tỉnh / Thành phố"
                 placeholder="VD: Hồ Chí Minh / Hà Nội"
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
               />
             )}
           />
@@ -339,12 +328,11 @@ export default function ProfileWalletScreen() {
             value={addressForm.detail}
             onChange={(e) => setAddressForm({ ...addressForm, detail: e.target.value, latitude: null, longitude: null, coordinateSource: null, coordinateConfirmedAt: null })}
             placeholder="VD: Số 123 Đường Nguyễn Thị Minh Khai, Phường 6, Quận 3"
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
 
           <CoordinatePicker label="Vị trí kho" value={addressForm} hint={addressHint} disabled={addressSaving} onChange={(point) => setAddressForm((old) => ({ ...old, ...(point || { latitude: null, longitude: null, coordinateSource: null, coordinateConfirmedAt: null }) }))} />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <TextField
               label="Họ tên người liên hệ"
               fullWidth
@@ -352,7 +340,6 @@ export default function ProfileWalletScreen() {
               value={addressForm.contactName}
               onChange={(e) => setAddressForm({ ...addressForm, contactName: e.target.value })}
               placeholder="VD: Nguyễn Văn A"
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
             />
             <TextField
               label="Số điện thoại liên hệ"
@@ -361,59 +348,36 @@ export default function ProfileWalletScreen() {
               value={addressForm.contactPhone}
               onChange={(e) => setAddressForm({ ...addressForm, contactPhone: e.target.value })}
               placeholder="VD: 0912345678"
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
             />
           </div>
-        </DialogContent>
-        <DialogActions className="!px-6 !py-4 flex justify-end gap-3 border-t border-line">
-          <Button
-            onClick={() => setOpenAddressDialog(false)}
-            variant="text"
-            className="!text-ink-muted !font-bold !capitalize !rounded-xl"
-          >
-            Đóng
-          </Button>
-          <Button
-            onClick={handleAddressSubmit}
-            variant="contained"
-            disabled={addressSaving}
-            className="!font-bold !capitalize !rounded-xl !px-6 !py-2.5 shadow-md"
-            sx={{
-              background: "var(--color-brand)",
-            }}
-          >
-            {addressSaving ? "Đang lưu..." : addressEditMode ? "Lưu lại" : "Thêm mới"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </div>
+      </ResponsiveDialog>
 
-      <Dialog
+      <ResponsiveDialog
         open={Boolean(pendingDeleteId)}
         onClose={() => setPendingDeleteId(null)}
+        title="Xóa địa chỉ đã lưu?"
+        titleId="address-book-delete-dialog-title"
         maxWidth="xs"
-        fullWidth
-        PaperProps={{ className: "!rounded-xl !p-2" }}
+        actions={
+          <>
+            <Button onClick={() => setPendingDeleteId(null)} variant="text">
+              Hủy
+            </Button>
+            <Button
+              onClick={handleConfirmAddressDelete}
+              variant="contained"
+              color="error"
+            >
+              Xóa địa chỉ
+            </Button>
+          </>
+        }
       >
-        <DialogTitle className="!font-bold text-ink">Xóa địa chỉ đã lưu?</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" className="text-ink-muted">
-            Địa chỉ này sẽ bị xóa khỏi sổ địa chỉ dùng chung. Bạn có muốn tiếp tục không?
-          </Typography>
-        </DialogContent>
-        <DialogActions className="!px-6 !pb-4">
-          <Button onClick={() => setPendingDeleteId(null)} className="!rounded-xl !font-bold !capitalize">
-            Hủy
-          </Button>
-          <Button
-            onClick={handleConfirmAddressDelete}
-            variant="contained"
-            color="error"
-            className="!rounded-xl !font-bold !capitalize"
-          >
-            Xóa địa chỉ
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <Typography variant="body2" className="text-ink-muted">
+          Địa chỉ này sẽ bị xóa khỏi sổ địa chỉ dùng chung. Bạn có muốn tiếp tục không?
+        </Typography>
+      </ResponsiveDialog>
 
     </Box>
   );

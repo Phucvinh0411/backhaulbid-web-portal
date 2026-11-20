@@ -44,7 +44,7 @@ const createMarkerIcon = (colorHex, letter) => {
           <span style="
             transform: rotate(45deg);
             color: var(--color-surface);
-            font-weight: 900;
+            font-weight: 700;
             font-size: 13px;
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
           ">${letter}</span>
@@ -289,8 +289,8 @@ export default function RoutePickerMap({
           >
             <Popup>
               <div style={{ padding: "4px", minWidth: "160px" }}>
-                <div style={{ fontWeight: 800, color: "var(--color-success)", fontSize: "13px" }}>
-                  📍 Điểm xuất phát (A)
+                <div style={{ fontWeight: 700, color: "var(--color-success)", fontSize: "13px" }}>
+                  Điểm xuất phát (A)
                 </div>
                 <div style={{ color: "var(--color-ink-muted)", fontSize: "12px", marginTop: "4px" }}>
                   {origin.label || "Vị trí đã ghim"}
@@ -324,8 +324,8 @@ export default function RoutePickerMap({
           >
             <Popup>
               <div style={{ padding: "4px", minWidth: "160px" }}>
-                <div style={{ fontWeight: 800, color: "var(--color-warning)", fontSize: "13px" }}>
-                  🏁 Điểm đến mong muốn (B)
+                <div style={{ fontWeight: 700, color: "var(--color-warning)", fontSize: "13px" }}>
+                  Điểm đến mong muốn (B)
                 </div>
                 <div style={{ color: "var(--color-ink-muted)", fontSize: "12px", marginTop: "4px" }}>
                   {dest.label || "Vị trí đã ghim"}
@@ -386,7 +386,7 @@ export default function RoutePickerMap({
             padding: "6px 12px",
             borderRadius: "10px",
             fontSize: "12px",
-            fontWeight: 800,
+            fontWeight: 700,
             border: "none",
             cursor: "pointer",
             display: "flex",
@@ -398,8 +398,7 @@ export default function RoutePickerMap({
             color: activeTarget === "ORIGIN" ? "var(--color-surface)" : "var(--color-success)",
           }}
         >
-          <span>📍</span>
-          <span>Ghim Điểm đi (A)</span>
+          <span>Ghim điểm đi (A)</span>
         </button>
 
         <button
@@ -409,7 +408,7 @@ export default function RoutePickerMap({
             padding: "6px 12px",
             borderRadius: "10px",
             fontSize: "12px",
-            fontWeight: 800,
+            fontWeight: 700,
             border: "none",
             cursor: "pointer",
             display: "flex",
@@ -421,8 +420,7 @@ export default function RoutePickerMap({
             color: activeTarget === "DESTINATION" ? "var(--color-surface)" : "var(--color-warning)",
           }}
         >
-          <span>🏁</span>
-          <span>Ghim Điểm đến (B)</span>
+          <span>Ghim điểm đến (B)</span>
         </button>
       </div>
 
@@ -446,7 +444,7 @@ export default function RoutePickerMap({
               backgroundColor: "rgba(15, 23, 42, 0.88)",
               color: "var(--color-surface)",
               fontSize: "12px",
-              fontWeight: 800,
+              fontWeight: 700,
               padding: "5px 12px",
               borderRadius: "10px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
@@ -474,7 +472,7 @@ export default function RoutePickerMap({
             border: "1px solid var(--color-line)",
           }}
         >
-          👉 Nhấp bản đồ hoặc kéo ghim để chọn vị trí {activeTarget === "ORIGIN" ? "Điểm đi (A)" : "Điểm đến (B)"}
+          Nhấp bản đồ hoặc kéo ghim để chọn vị trí {activeTarget === "ORIGIN" ? "điểm đi (A)" : "điểm đến (B)"}
         </div>
       </div>
     </div>

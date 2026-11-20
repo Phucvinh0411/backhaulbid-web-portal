@@ -22,6 +22,16 @@ export const getAuctionAccess = (auctionId) =>
     .get(biddingPath(`/auctions/${auctionId}/registrations/access`))
     .then(unwrapApiData);
 
+export const getBatchAuctionAccess = (auctionIds = []) => {
+  const ids = auctionIds.map((id) => String(id || "").trim()).filter(Boolean);
+  if (ids.length === 0) return Promise.resolve({});
+  return apiService
+    .get(biddingPath("/my-registrations/access"), {
+      auctionIds: ids.join(","),
+    })
+    .then(unwrapApiData);
+};
+
 export const listMyRegistrations = (params) =>
   apiService.get(biddingPath("/my-registrations"), params);
 

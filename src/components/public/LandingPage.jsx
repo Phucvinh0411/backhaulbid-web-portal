@@ -58,7 +58,7 @@ export default function LandingPage() {
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-pill focus:bg-surface focus:px-4 focus:py-2">
         Bỏ qua đến nội dung
       </a>
-      <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-line bg-surface">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-4 px-4 py-3 md:px-8">
           <Link href="/" aria-label="BackHaulBid, trang chủ">
             <BrandMark />

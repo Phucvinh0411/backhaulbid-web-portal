@@ -37,7 +37,7 @@ const createPointIcon = (colorHex, letter) => {
           align-items: center;
           justify-content: center;
           color: #ffffff;
-          font-weight: 900;
+          font-weight: 700;
           font-size: 13px;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         ">
@@ -161,7 +161,7 @@ export default function RouteRoadMap({
           <Marker position={fromCoord} icon={ICON_A}>
             <Popup>
               <div className="p-1">
-                <span className="text-xs font-black text-sky-600 uppercase block">Điểm Lấy Hàng (A)</span>
+                <span className="text-xs font-bold text-sky-600 block">Điểm lấy hàng (A)</span>
                 <p className="text-sm font-bold text-slate-800">{fromLabel || "Điểm A"}</p>
               </div>
             </Popup>
@@ -173,7 +173,7 @@ export default function RouteRoadMap({
           <Marker position={toCoord} icon={ICON_B}>
             <Popup>
               <div className="p-1">
-                <span className="text-xs font-black text-emerald-600 uppercase block">Điểm Giao Hàng (B)</span>
+                <span className="text-xs font-bold text-emerald-600 block">Điểm giao hàng (B)</span>
                 <p className="text-sm font-bold text-slate-800">{toLabel || "Điểm B"}</p>
               </div>
             </Popup>

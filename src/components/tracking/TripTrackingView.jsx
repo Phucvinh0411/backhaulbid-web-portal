@@ -113,11 +113,11 @@ export default function TripTrackingView({ tripId, role = "shipper", allowLateCa
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {error && <Alert severity="warning">Không làm mới được dữ liệu: {error}</Alert>}
 
-      <Panel sx={{ borderTop: "3px solid", borderTopColor: trip.status === "CANCELLED" ? "error.main" : "primary.main" }}>
+      <Panel>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2, flexWrap: "wrap", mb: 2.5 }}>
           <Box sx={{ minWidth: 0 }}>
-            <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>THEO DÕI CHUYẾN · #{shortId(trip.id)}</Typography>
-            <Typography component="h2" sx={{ mt: 0.5, fontSize: { xs: "1.35rem", md: "1.75rem" }, fontWeight: 750, color: trip.status === "CANCELLED" ? "error.main" : "primary.main" }}>{statusMeta.label}</Typography>
+            <Typography className="text-xs font-medium text-ink-muted">Theo dõi chuyến · #{shortId(trip.id)}</Typography>
+            <Typography component="h2" sx={{ mt: 0.5, fontSize: { xs: "1.35rem", md: "1.75rem" }, fontWeight: 700, color: trip.status === "CANCELLED" ? "error.main" : "primary.main" }}>{statusMeta.label}</Typography>
             <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
               {latestEvent ? `${latestEvent.title} · ${formatDateTime(latestEvent.time)}` : "Chờ mốc giao nhận đầu tiên"}
             </Typography>

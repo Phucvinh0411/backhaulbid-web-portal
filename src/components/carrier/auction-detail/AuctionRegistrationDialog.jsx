@@ -63,6 +63,17 @@ const createIdempotencyKey = () => {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
 
+const VEHICLE_STATUS_LABELS = {
+  VERIFIED: "Đã xác minh",
+  PENDING: "Chờ duyệt",
+  REJECTED: "Bị từ chối",
+  INACTIVE: "Ngừng hoạt động",
+  BLOCKED: "Tạm khóa",
+};
+
+const isVehicleVerified = (vehicle) =>
+  (vehicle?.status || vehicle?.verification) === "VERIFIED";
+
 export default function AuctionRegistrationDialog({
   open,
   auction,
@@ -95,6 +106,11 @@ export default function AuctionRegistrationDialog({
     };
   }, [auction]);
 
+  const verifiedVehicles = useMemo(
+    () => vehicles.filter(isVehicleVerified),
+    [vehicles],
+  );
+
   const selectedVehicle = vehicles.find(
     (vehicle) => vehicle.id === selectedVehicleId,
   );
@@ -110,7 +126,7 @@ export default function AuctionRegistrationDialog({
   }, [auction?.id, open]);
 
   const handleConfirm = async () => {
-    if (!selectedVehicleId || !acknowledged) return;
+    if (!selectedVehicleId || !selectedVehicle || !isVehicleVerified(selectedVehicle) || !acknowledged) return;
 
     setSubmitting(true);
     setError("");
@@ -204,7 +220,7 @@ export default function AuctionRegistrationDialog({
             </Box>
             <Typography
               variant="h5"
-              className="!mt-5 !font-extrabold !text-ink"
+              className="!mt-5 !font-bold !text-ink"
             >
               Đăng ký thành công
             </Typography>
@@ -232,7 +248,8 @@ export default function AuctionRegistrationDialog({
             <Button
               onClick={onClose}
               variant="contained"
-              className="!mt-7 !rounded-lg !bg-[var(--color-brand)] !px-7 !py-2.5 !font-bold"
+              size="large"
+              className="!mt-7"
             >
               Đã hiểu
             </Button>
@@ -247,7 +264,7 @@ export default function AuctionRegistrationDialog({
                 <Box>
                   <Typography
                     variant="subtitle1"
-                    className="!font-extrabold !text-ink"
+                    className="!font-bold !text-ink"
                   >
                     Thông tin đăng ký
                   </Typography>
@@ -267,7 +284,7 @@ export default function AuctionRegistrationDialog({
                   </Box>
                   <Typography
                     variant="body2"
-                    className="!mt-2 !font-extrabold !text-ink"
+                    className="!mt-2 !font-bold !text-ink"
                   >
                     {auction.origin || auction.from?.name || "Điểm lấy hàng"}
                   </Typography>
@@ -287,7 +304,7 @@ export default function AuctionRegistrationDialog({
                   </Box>
                   <Typography
                     variant="body2"
-                    className="!mt-2 !font-extrabold !text-ink"
+                    className="!mt-2 !font-bold !text-ink"
                   >
                     {formatDate(
                       auction.registrationEndTime || auction.regEndTime,
@@ -301,17 +318,17 @@ export default function AuctionRegistrationDialog({
 
               <Typography
                 variant="subtitle2"
-                className="!mb-2 !font-extrabold !text-ink"
+                className="!mb-2 !font-bold !text-ink"
               >
                 Phương tiện thực hiện chuyến hàng
               </Typography>
               {vehiclesError && (
-                <Alert severity="error" className="!mb-3 !rounded-xl">
+                <Alert severity="error" className="!mb-3">
                   {vehiclesError}
                 </Alert>
               )}
-              {!vehiclesLoading && !vehiclesError && vehicles.length === 0 && (
-                <Alert severity="warning" className="!rounded-xl">
+              {!vehiclesLoading && !vehiclesError && verifiedVehicles.length === 0 && (
+                <Alert severity="warning" className="!mb-3">
                   Chưa có phương tiện đã được xác minh để tham gia. Hãy hoàn tất
                   kiểm duyệt xe trong mục Phương tiện trước.
                 </Alert>
@@ -325,23 +342,32 @@ export default function AuctionRegistrationDialog({
               <Box className="space-y-2">
                 {!vehiclesLoading &&
                   vehicles.map((vehicle) => {
-                    const selected = vehicle.id === selectedVehicleId;
+                    const verified = isVehicleVerified(vehicle);
+                    const selected = verified && vehicle.id === selectedVehicleId;
+                    const statusCode = vehicle.status || vehicle.verification;
                     return (
                       <ButtonBase
                         key={vehicle.id}
-                        onClick={() => setSelectedVehicleId(vehicle.id)}
+                        disabled={!verified}
+                        onClick={() => verified && setSelectedVehicleId(vehicle.id)}
                         className="!block !w-full !rounded-xl !text-left"
                         sx={{
                           border: "1px solid",
                           borderColor: selected ? "var(--color-brand)" : "var(--color-line)",
                           backgroundColor: selected
                             ? "rgba(27, 73, 101, 0.05)"
-                            : "var(--color-surface)",
+                            : verified
+                              ? "var(--color-surface)"
+                              : "var(--color-surface-sunken)",
+                          opacity: verified ? 1 : 0.65,
+                          cursor: verified ? "pointer" : "not-allowed",
                           transition: "all 160ms ease",
-                          "&:hover": {
-                            borderColor: "var(--color-brand)",
-                            backgroundColor: "rgba(27, 73, 101, 0.035)",
-                          },
+                          "&:hover": verified
+                            ? {
+                                borderColor: "var(--color-brand)",
+                                backgroundColor: "rgba(27, 73, 101, 0.035)",
+                              }
+                            : undefined,
                         }}
                       >
                         <Box className="flex items-center gap-3 px-3.5 py-3">
@@ -353,7 +379,7 @@ export default function AuctionRegistrationDialog({
                           <Box className="min-w-0 flex-1">
                             <Typography
                               variant="body2"
-                              className="!font-extrabold !text-ink"
+                              className="!font-bold !text-ink"
                             >
                               {vehicle.plate}
                             </Typography>
@@ -364,20 +390,26 @@ export default function AuctionRegistrationDialog({
                               {vehicle.capacity} · {vehicle.type}
                             </Typography>
                           </Box>
-                          {selected && (
+                          {selected ? (
                             <Chip
                               label="Đã chọn"
                               size="small"
                               className="!font-bold !text-[var(--color-brand)]"
                             />
-                          )}
+                          ) : !verified ? (
+                            <Chip
+                              label={VEHICLE_STATUS_LABELS[statusCode] || "Chưa xác minh"}
+                              size="small"
+                              color={statusCode === "PENDING" ? "warning" : "default"}
+                            />
+                          ) : null}
                         </Box>
                       </ButtonBase>
                     );
                   })}
               </Box>
               {!vehiclesLoading &&
-                vehicles.length > 0 &&
+                verifiedVehicles.length > 0 &&
                 !selectedVehicleId && (
                   <Typography
                     variant="caption"
@@ -431,15 +463,12 @@ export default function AuctionRegistrationDialog({
             </Box>
 
             <Box className="border-t border-line bg-surface-sunken/70 px-6 py-6 lg:border-l lg:border-t-0 sm:px-7">
-              <Typography
-                variant="overline"
-                className="!font-bold !tracking-[0.14em] !text-ink-subtle"
-              >
-                TÓM TẮT THANH TOÁN
+              <Typography className="text-xs font-medium text-ink-muted">
+                Tóm tắt thanh toán
               </Typography>
               <Typography
                 variant="h6"
-                className="!mt-1 !font-extrabold !text-ink"
+                className="!mt-1 !font-bold !text-ink"
               >
                 Khoản cần xử lý
               </Typography>
@@ -451,7 +480,7 @@ export default function AuctionRegistrationDialog({
                     <Box>
                       <Typography
                         variant="body2"
-                        className="!font-extrabold !text-ink"
+                        className="!font-bold !text-ink"
                       >
                         Phí tham gia
                       </Typography>
@@ -462,7 +491,7 @@ export default function AuctionRegistrationDialog({
                   </Box>
                   <Typography
                     variant="body2"
-                    className="!font-extrabold !text-ink"
+                    className="!font-bold !text-ink tabular"
                   >
                     {formatCurrency(paymentSummary.fee)}
                   </Typography>
@@ -480,7 +509,7 @@ export default function AuctionRegistrationDialog({
                     <Box>
                       <Typography
                         variant="body2"
-                        className="!font-extrabold !text-ink"
+                        className="!font-bold !text-ink"
                       >
                         Tiền đặt cọc
                       </Typography>
@@ -493,7 +522,7 @@ export default function AuctionRegistrationDialog({
                   </Box>
                   <Typography
                     variant="body2"
-                    className={`!font-extrabold ${paymentSummary.depositRequired ? "!text-warning" : "!text-ink-subtle"}`}
+                    className={`!font-bold tabular ${paymentSummary.depositRequired ? "!text-warning" : "!text-ink-subtle"}`}
                   >
                     {paymentSummary.depositRequired
                       ? formatCurrency(paymentSummary.deposit)
@@ -504,13 +533,13 @@ export default function AuctionRegistrationDialog({
                 <Box className="flex items-end justify-between gap-4">
                   <Typography
                     variant="body2"
-                    className="!font-extrabold !text-ink"
+                    className="!font-bold !text-ink"
                   >
                     Tổng xử lý
                   </Typography>
                   <Typography
                     variant="h6"
-                    className="!font-black !text-[var(--color-brand)]"
+                    className="!font-bold !text-[var(--color-brand)] tabular"
                   >
                     {formatCurrency(paymentSummary.total)}
                   </Typography>
@@ -537,7 +566,7 @@ export default function AuctionRegistrationDialog({
               {error && (
                 <Alert
                   severity="error"
-                  className="!mt-4 !rounded-xl"
+                  className="!mt-4"
                   onClose={() => setError("")}
                 >
                   {error}
@@ -547,13 +576,16 @@ export default function AuctionRegistrationDialog({
               <Button
                 fullWidth
                 variant="contained"
+                size="large"
                 onClick={handleConfirm}
                 disabled={
                   !selectedVehicleId ||
+                  !selectedVehicle ||
+                  !isVehicleVerified(selectedVehicle) ||
                   !acknowledged ||
                   submitting ||
                   vehiclesLoading ||
-                  vehicles.length === 0 ||
+                  verifiedVehicles.length === 0 ||
                   Boolean(vehiclesError)
                 }
                 startIcon={
@@ -563,17 +595,7 @@ export default function AuctionRegistrationDialog({
                     <PaymentsOutlinedIcon />
                   )
                 }
-                className="!mt-5 !rounded-lg !py-3 !font-extrabold"
-                sx={{
-                  backgroundColor: "var(--color-brand)",
-                  color: "var(--color-surface)",
-                  "&:hover": { backgroundColor: "var(--color-brand-hover)" },
-                  "&.Mui-disabled": {
-                    backgroundColor: "var(--color-line-strong)",
-                    color: "var(--color-ink-muted)",
-                    opacity: 1,
-                  },
-                }}
+                className="!mt-5"
               >
                 {submitLabel}
               </Button>

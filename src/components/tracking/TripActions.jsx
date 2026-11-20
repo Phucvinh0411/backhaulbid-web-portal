@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
@@ -14,7 +15,8 @@ import { contractApi } from "@/services/contractApi";
 import { mediaApi } from "@/services/mediaApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { getExecutorJourneySteps, isTripClosed } from "@/lib/statusMeta";
-import AssignDriverDialog from "./AssignDriverDialog";
+
+const AssignDriverDialog = dynamic(() => import("./AssignDriverDialog"), { ssr: false });
 
 const MAX_PROOF_BYTES = 10 * 1024 * 1024;
 
@@ -315,8 +317,8 @@ export default function TripActions({ trip, role, proofs = [], onChanged }) {
         <>
           <ProofDialog open={dialog === "proof"} trip={trip} onClose={() => setDialog(null)} onDone={done} />
           <IncidentDialog open={dialog === "incident"} trip={trip} onClose={() => setDialog(null)} onDone={done} />
-          <AssignDriverDialog open={dialog === "assign"} trip={trip} onClose={() => { setDialog(null); void onChanged?.(); }} />
-          <AssignDriverDialog open={dialog === "reissue"} mode="reissue" trip={trip} onClose={() => { setDialog(null); void onChanged?.(); }} />
+          {dialog === "assign" && <AssignDriverDialog open trip={trip} onClose={() => { setDialog(null); void onChanged?.(); }} />}
+          {dialog === "reissue" && <AssignDriverDialog open mode="reissue" trip={trip} onClose={() => { setDialog(null); void onChanged?.(); }} />}
         </>
       )}
       {role === "shipper" && (

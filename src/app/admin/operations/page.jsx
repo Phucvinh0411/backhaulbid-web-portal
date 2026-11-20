@@ -24,27 +24,29 @@ const mapAuction = async (auction) => {
   let bids = [];
   let bidError = "";
 
-  try {
-    const bidsResponse = await listBids(auction.id, {
-      page: 1,
-      pageSize: 100,
-      sortOrder: "asc",
-    });
+  if (auction.status === "OPEN" || auction.status === "COMPLETED") {
+    try {
+      const bidsResponse = await listBids(auction.id, {
+        page: 1,
+        pageSize: 100,
+        sortOrder: "asc",
+      });
 
-    bids = unwrapListData(bidsResponse).map((bid) => ({
-      id: bid.id,
-      time: bid.bidTime
-        ? new Date(bid.bidTime).toLocaleTimeString("vi-VN", {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          })
-        : "--:--",
-      bid: Number(bid.bidAmount),
-      carrierId: bid.carrierId,
-    }));
-  } catch (error) {
-    bidError = getErrorMessage(error, "Không thể tải lịch sử báo giá cho phiên này.");
+      bids = unwrapListData(bidsResponse).map((bid) => ({
+        id: bid.id,
+        time: bid.bidTime
+          ? new Date(bid.bidTime).toLocaleTimeString("vi-VN", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })
+          : "--:--",
+        bid: Number(bid.bidAmount),
+        carrierId: bid.carrierId,
+      }));
+    } catch (error) {
+      bidError = getErrorMessage(error, "Không thể tải lịch sử báo giá cho phiên này.");
+    }
   }
 
   const amounts = bids.map((item) => item.bid).filter(Number.isFinite);
@@ -194,7 +196,7 @@ export default function AdminOperationsPage() {
             placeItems: "center",
             border: "1px solid var(--color-line)",
             borderRadius: 3,
-            bgcolor: "rgba(255,255,255,0.72)",
+            bgcolor: "var(--color-surface)",
           }}
         >
           <Box sx={{ display: "grid", justifyItems: "center", gap: 1.5 }}>

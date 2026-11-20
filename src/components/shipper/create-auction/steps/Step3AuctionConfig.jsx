@@ -58,8 +58,8 @@ export default function Step3AuctionConfig({ form, updateForm }) {
           <div className="w-8 h-8 rounded-xl bg-brand-soft text-brand flex items-center justify-center">
             <GavelIcon className="!text-[1.1rem]" />
           </div>
-          <Typography className="!font-black text-ink !text-sm">
-            1. Chọn Hình Thức Đấu Giá
+          <Typography className="!font-bold text-ink !text-sm">
+            1. Chọn hình thức đấu giá
           </Typography>
         </div>
 
@@ -78,7 +78,7 @@ export default function Step3AuctionConfig({ form, updateForm }) {
                 <div className="w-8 h-8 rounded-xl bg-info-soft text-info flex items-center justify-center">
                   <PublicIcon className="!text-[1.1rem]" />
                 </div>
-                <span className="font-black text-ink text-sm">Đấu Giá Công Khai (Open Bid)</span>
+                <span className="font-bold text-ink text-sm">Đấu giá công khai</span>
               </div>
               <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${!isSealed ? "border-info bg-info" : "border-line-strong"}`}>
                 {!isSealed && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
@@ -89,7 +89,7 @@ export default function Step3AuctionConfig({ form, updateForm }) {
               Giá thầu được <strong>công khai theo thời gian thực</strong>. Các nhà xe thấy giá nhau và liên tục điều chỉnh giảm giá. Hệ thống tự động chọn nhà xe có giá thấp nhất khi hết giờ.
             </p>
 
-            <span className="text-[0.65rem] font-extrabold text-info bg-info-soft px-2.5 py-1 rounded-lg w-fit">
+            <span className="text-[0.65rem] font-bold text-info bg-info-soft px-2.5 py-1 rounded-lg w-fit">
               Phù hợp với hàng bách hóa, nông sản, vận tải phổ thông
             </span>
           </div>
@@ -108,7 +108,7 @@ export default function Step3AuctionConfig({ form, updateForm }) {
                 <div className="w-8 h-8 rounded-xl bg-warning-soft text-warning flex items-center justify-center">
                   <LockIcon className="!text-[1.1rem]" />
                 </div>
-                <span className="font-black text-ink text-sm">Đấu Giá Kín (Sealed Bid)</span>
+                <span className="font-bold text-ink text-sm">Đấu giá kín</span>
               </div>
               <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSealed ? "border-warning bg-warning" : "border-line-strong"}`}>
                 {isSealed && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
@@ -119,7 +119,7 @@ export default function Step3AuctionConfig({ form, updateForm }) {
               Giá thầu <strong>bảo mật tuyệt đối</strong> giữa các nhà xe. Mỗi nhà xe chỉ biết giá của mình. Sau khi đóng phiên, chủ hàng xem danh sách xếp hạng và chủ động chọn người thắng thầu.
             </p>
 
-            <span className="text-[0.65rem] font-extrabold text-warning bg-warning-soft px-2.5 py-1 rounded-lg w-fit">
+            <span className="text-[0.65rem] font-bold text-warning bg-warning-soft px-2.5 py-1 rounded-lg w-fit">
               Phù hợp với linh kiện cao cấp, hàng đông lạnh, siêu trường
             </span>
           </div>
@@ -130,10 +130,10 @@ export default function Step3AuctionConfig({ form, updateForm }) {
       <div className="bg-white rounded-xl border border-line/80 p-5 shadow-xs space-y-4">
         <div className="flex items-center gap-2 border-b border-line pb-3">
           <div className="w-8 h-8 rounded-xl bg-success-soft text-success flex items-center justify-center">
-            <span className="font-black text-sm">$</span>
+            <span className="font-bold text-sm">₫</span>
           </div>
-          <Typography className="!font-black text-ink !text-sm">
-            2. Cấu Hình Tài Chính & Tiền Cọc
+          <Typography className="!font-bold text-ink !text-sm">
+            2. Cấu hình tài chính &amp; tiền cọc
           </Typography>
         </div>
 
@@ -158,7 +158,7 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             InputProps={{
               endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-ink-muted">đ</span></InputAdornment>,
             }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" }, "& input": { fontFamily: "monospace", fontWeight: 700, fontSize: "1rem" } }}
+            sx={{ "& input": { fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: "1rem" } }}
           />
 
           <TextField
@@ -173,7 +173,7 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             InputProps={{
               endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-ink-muted">đ</span></InputAdornment>,
             }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" }, "& input": { fontFamily: "monospace", fontWeight: 700 } }}
+            sx={{ "& input": { fontVariantNumeric: "tabular-nums", fontWeight: 700 } }}
           />
         </div>
 
@@ -185,7 +185,7 @@ export default function Step3AuctionConfig({ form, updateForm }) {
                   <PaymentsIcon className="!text-[1.1rem]" />
                 </span>
                 <div>
-                  <p className="text-sm font-black text-ink">Phí tham gia</p>
+                  <p className="text-sm font-bold text-ink">Phí tham gia</p>
                   <p className="text-[0.7rem] text-ink-muted leading-relaxed mt-0.5">Phí dịch vụ, thu một lần khi nhà xe đăng ký.</p>
                 </div>
               </div>
@@ -197,15 +197,15 @@ export default function Step3AuctionConfig({ form, updateForm }) {
                 type="text"
                 inputMode="numeric"
                 value={formatDisplayNumber(participationFeeQuote.amount)}
-                helperText={`Auto-calculated from max price (${participationFeeQuote.tier})`}
+                helperText={`Tự động tính theo giá trần (${participationFeeQuote.tier})`}
                 InputProps={{
                   readOnly: true,
                   endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-ink-muted">đ</span></InputAdornment>,
                 }}
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "14px", backgroundColor: "white" }, "& input": { fontFamily: "monospace", fontWeight: 700 } }}
+                sx={{ "& .MuiFilledInput-root": { bgcolor: "var(--color-surface)" }, "& input": { fontVariantNumeric: "tabular-nums", fontWeight: 700 } }}
               />
             ) : (
-              <p className="text-xs font-semibold text-ink-muted bg-white/70 border border-line rounded-xl px-3 py-2.5">Miễn phí tham gia phiên đấu giá.</p>
+              <p className="text-xs font-semibold text-ink-muted bg-surface border border-line rounded-xl px-3 py-2.5">Miễn phí tham gia phiên đấu giá.</p>
             )}
           </div>
 
@@ -216,7 +216,7 @@ export default function Step3AuctionConfig({ form, updateForm }) {
                   <SecurityIcon className="!text-[1.1rem]" />
                 </span>
                 <div>
-                  <p className="text-sm font-black text-ink">Tiền đặt cọc</p>
+                  <p className="text-sm font-bold text-ink">Tiền đặt cọc</p>
                   <p className="text-[0.7rem] text-ink-muted leading-relaxed mt-0.5">Khóa tạm trong ví, hoàn lại theo điều kiện phiên.</p>
                 </div>
               </div>
@@ -238,10 +238,10 @@ export default function Step3AuctionConfig({ form, updateForm }) {
                 InputProps={{
                   endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-ink-muted">đ</span></InputAdornment>,
                 }}
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "14px", backgroundColor: "white" }, "& input": { fontFamily: "monospace", fontWeight: 700 } }}
+                sx={{ "& .MuiFilledInput-root": { bgcolor: "var(--color-surface)" }, "& input": { fontVariantNumeric: "tabular-nums", fontWeight: 700 } }}
               />
             ) : (
-              <p className="text-xs font-semibold text-ink-muted bg-white/70 border border-line rounded-xl px-3 py-2.5">Không yêu cầu nhà xe đặt cọc.</p>
+              <p className="text-xs font-semibold text-ink-muted bg-surface border border-line rounded-xl px-3 py-2.5">Không yêu cầu nhà xe đặt cọc.</p>
             )}
           </div>
         </div>
@@ -254,7 +254,6 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             name="maxBids" value={form.maxBids}
             onChange={(e) => updateForm("maxBids", Number(e.target.value))}
             helperText="Lần / nhà xe"
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
           <div className="rounded-xl border border-line bg-surface-sunken/70 px-4 py-3 flex items-start gap-2.5">
             <InfoOutlinedIcon className="!text-[1.1rem] text-ink-subtle mt-0.5" />
@@ -269,10 +268,10 @@ export default function Step3AuctionConfig({ form, updateForm }) {
           <div className="w-8 h-8 rounded-xl bg-info-soft text-info flex items-center justify-center">
             <CalendarMonthIcon className="!text-[1.1rem]" />
           </div>
-          <Typography className="!font-black text-ink !text-sm">
-            3. Khung Thời Gian Diễn Ra Phiên Đấu Giá
+          <Typography className="!font-bold text-ink !text-sm">
+            3. Khung thời gian diễn ra phiên đấu giá
           </Typography>
-          <Button size="small" onClick={applySuggestedSchedule} sx={{ ml: "auto", textTransform: "none", fontWeight: 700 }}>
+          <Button size="small" onClick={applySuggestedSchedule} sx={{ ml: "auto" }}>
             Gợi ý lại
           </Button>
         </div>
@@ -297,7 +296,6 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             onChange={(e) => updateForm("regStartTime", e.target.value)}
             max={form.regEndTime || undefined}
             InputLabelProps={{ shrink: true }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
 
           <TextField
@@ -308,7 +306,6 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             onChange={(e) => updateForm("regEndTime", e.target.value)}
             min={form.regStartTime || undefined}
             InputLabelProps={{ shrink: true }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
         </div>
 
@@ -320,17 +317,15 @@ export default function Step3AuctionConfig({ form, updateForm }) {
             name="startTime" value={form.startTime}
             onChange={(e) => updateForm("startTime", e.target.value)}
             InputLabelProps={{ shrink: true }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
 
           <TextField
             fullWidth
             type="datetime-local"
-            label="Kết thúc đấu giá (Đóng thầu)"
+            label="Kết thúc đấu giá (đóng thầu)"
             name="endTime" value={form.endTime}
             onChange={(e) => updateForm("endTime", e.target.value)}
             InputLabelProps={{ shrink: true }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "16px" } }}
           />
         </div>
       </div>

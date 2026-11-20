@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
@@ -13,9 +13,12 @@ import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 
 import { ActionButton, AppCard, PageHeader } from "@/components/common";
 import BusinessVerificationPanel from "@/components/businessVerification/BusinessVerificationPanel";
+import { BUSINESS_VERIFICATION_STATUS_PATH } from "@/components/businessVerification/businessVerificationApi";
 import CargoLiabilityPanel from "@/components/businessVerification/CargoLiabilityPanel";
 import EkycModal from "@/components/eKYC/EkycModal";
 import VerificationOverview from "@/components/eKYC/VerificationOverview";
+import { notifyAccountVerificationUpdated } from "@/hooks/useAccountVerification";
+import { apiService } from "@/services/apiService";
 import { getRepresentativeVerificationStatus } from "@/services/representativeVerificationApi";
 
 const ROLE_COPY = {
@@ -64,7 +67,7 @@ function StepStatus({ step, title, description, state }) {
     >
       <Box className="flex items-start gap-3">
         <Box
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
             isDone
               ? "bg-success text-white"
               : isPending
@@ -88,6 +91,12 @@ function StepStatus({ step, title, description, state }) {
 export default function AccountSettingsScreen({ role = "carrier" }) {
   const config = ROLE_COPY[role] || ROLE_COPY.carrier;
   const [ekyc, setEkyc] = useState(EMPTY_EKYC);
+  const [businessVerification, setBusinessVerification] = useState({
+    status: "LOADING",
+    taxCode: "",
+    companyName: "",
+    lookupValid: false,
+  });
   const [openEkycModal, setOpenEkycModal] = useState(false);
   const [verificationRefreshKey, setVerificationRefreshKey] = useState(0);
 
@@ -113,14 +122,68 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
         if (active) setEkyc({ ...EMPTY_EKYC, status: "unverified" });
       });
 
+    apiService
+      .get(BUSINESS_VERIFICATION_STATUS_PATH, undefined, { skipGlobalNotification: true })
+      .then((data) => {
+        if (!active) return;
+        setBusinessVerification((prev) => ({
+          ...prev,
+          status: data?.status ?? data?.verificationStatus ?? "NOT_SUBMITTED",
+          taxCode: data?.taxCode || prev.taxCode || "",
+          companyName: data?.companyName || prev.companyName || "",
+        }));
+      })
+      .catch(() => {
+        if (active) {
+          setBusinessVerification((prev) => ({
+            ...prev,
+            status: "NOT_SUBMITTED",
+          }));
+        }
+      });
+
     return () => {
       active = false;
     };
   }, [verificationRefreshKey]);
 
+  const handleBusinessStatusChange = useCallback(({ verification, lookupValid, companyName }) => {
+    setBusinessVerification((prev) => ({
+      status: verification?.status ?? verification?.verificationStatus ?? prev.status,
+      taxCode: verification?.taxCode || prev.taxCode || "",
+      companyName: companyName || prev.companyName || "",
+      lookupValid: Boolean(lookupValid),
+    }));
+  }, []);
+
   const ekycStatus = statusPresentation(ekyc.status, ekyc.verificationMethod);
   const ekycVerified = ekyc.status === "verified";
   const ekycPending = ekyc.status === "pending";
+
+  const businessStatusUpper = String(businessVerification.status || "NOT_SUBMITTED").toUpperCase();
+  const businessVerified = businessStatusUpper === "VERIFIED" || businessStatusUpper === "APPROVED";
+  const businessPending = businessStatusUpper === "PENDING" || businessStatusUpper === "PENDING_ADMIN_REVIEW";
+  const businessRejected = businessStatusUpper === "REJECTED";
+  const hasTaxLookup =
+    businessVerified ||
+    businessPending ||
+    Boolean(businessVerification.taxCode) ||
+    Boolean(businessVerification.lookupValid);
+
+  const summaryChip =
+    ekyc.status === "loading" || businessStatusUpper === "LOADING"
+      ? { label: "Đang kiểm tra", color: "default" }
+      : ekycVerified && businessVerified
+        ? { label: "Đã xác thực đầy đủ", color: "success" }
+        : businessRejected
+          ? { label: "Cần bổ sung hồ sơ DN", color: "error" }
+          : ekycVerified && businessPending
+            ? { label: "Chờ duyệt doanh nghiệp", color: "warning" }
+            : ekycVerified
+              ? { label: "Chưa xác minh doanh nghiệp", color: "warning" }
+              : ekycPending
+                ? { label: "Đang xử lý eKYC", color: "warning" }
+                : { label: "Chưa xác thực", color: "default" };
 
   return (
     <Box className="animate-fade-in-up">
@@ -140,7 +203,7 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
               <Box>
                 <Typography
                   variant="h6"
-                  className="flex items-center gap-2 !font-black text-[var(--color-brand)]"
+                  className="flex items-center gap-2 !font-bold text-[var(--color-brand)]"
                 >
                   <AssignmentIndOutlinedIcon />
                   Trạng thái hồ sơ xác thực
@@ -150,8 +213,8 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
                 </Typography>
               </Box>
               <Chip
-                label={ekycStatus.label}
-                color={ekycStatus.color}
+                label={summaryChip.label}
+                color={summaryChip.color}
                 size="small"
                 className="w-fit !font-bold"
               />
@@ -177,19 +240,31 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
                   step="2"
                   title="Tra cứu mã số thuế"
                   description={
-                    ekycVerified
-                      ? "Nhập MST để hệ thống tự điền dữ liệu doanh nghiệp."
-                      : "Sẽ mở sau khi eKYC người đại diện hoàn tất."
+                    ekycVerified && hasTaxLookup
+                      ? businessVerification.companyName
+                        ? `Đã xác nhận MST: ${businessVerification.companyName}.`
+                        : "Đã tra cứu thông tin mã số thuế doanh nghiệp."
+                      : ekycVerified
+                        ? "Nhập MST để hệ thống tự điền dữ liệu doanh nghiệp."
+                        : "Sẽ mở sau khi eKYC người đại diện hoàn tất."
                   }
-                  state="idle"
+                  state={ekycVerified && hasTaxLookup ? "done" : ekycVerified ? "pending" : "idle"}
                 />
               </Grid>
               <Grid item xs={12} md={4}>
                 <StepStatus
                   step="3"
                   title="Admin xét duyệt"
-                  description="Kiểm tra giấy phép kinh doanh và giấy ủy quyền nếu cần."
-                  state="idle"
+                  description={
+                    businessVerified
+                      ? "Hồ sơ doanh nghiệp đã được quản trị viên phê duyệt."
+                      : businessPending
+                        ? "Hồ sơ đã gửi, đang chờ quản trị viên xét duyệt."
+                        : businessRejected
+                          ? "Hồ sơ bị từ chối, vui lòng bổ sung và gửi lại."
+                          : "Kiểm tra giấy phép kinh doanh và giấy ủy quyền nếu cần."
+                  }
+                  state={businessVerified ? "done" : businessPending || businessRejected ? "pending" : "idle"}
                 />
               </Grid>
             </Grid>
@@ -202,7 +277,7 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
               <Box className="p-5 sm:p-6">
                 <Typography
                   variant="h6"
-                  className="flex items-center gap-2 !font-black text-[var(--color-brand)]"
+                  className="flex items-center gap-2 !font-bold text-[var(--color-brand)]"
                 >
                   <SecurityOutlinedIcon />
                   eKYC người đại diện
@@ -292,6 +367,7 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
                 >
                   <BusinessVerificationPanel
                     refreshKey={verificationRefreshKey}
+                    onStatusChange={handleBusinessStatusChange}
                   />
                 </Box>
 
@@ -313,6 +389,7 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
           onComplete={() => {
             setOpenEkycModal(false);
             setVerificationRefreshKey((current) => current + 1);
+            notifyAccountVerificationUpdated();
           }}
         />
       )}

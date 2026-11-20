@@ -10,6 +10,8 @@ import Grid from "@mui/material/Grid";
 import NotificationsActiveOutlinedIcon from "@mui/icons-material/NotificationsActiveOutlined";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import SmartphoneOutlinedIcon from "@mui/icons-material/SmartphoneOutlined";
+import SignalCellularAltIcon from "@mui/icons-material/SignalCellularAlt";
+import BatteryFullIcon from "@mui/icons-material/BatteryFull";
 
 import {
   AdminPageHeader,
@@ -96,7 +98,7 @@ export default function NotificationSettingsPage() {
                     border: "1px solid",
                     borderColor: "divider",
                     borderRadius: 3,
-                    bgcolor: "rgba(255, 255, 255, 0.5)",
+                    bgcolor: "var(--color-surface)",
                   }}
                 >
                   <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
@@ -122,7 +124,7 @@ export default function NotificationSettingsPage() {
                     border: "1px solid",
                     borderColor: "divider",
                     borderRadius: 3,
-                    bgcolor: "rgba(255, 255, 255, 0.5)",
+                    bgcolor: "var(--color-surface)",
                   }}
                 >
                   <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
@@ -148,7 +150,7 @@ export default function NotificationSettingsPage() {
                     border: "1px solid",
                     borderColor: "divider",
                     borderRadius: 3,
-                    bgcolor: "rgba(255, 255, 255, 0.5)",
+                    bgcolor: "var(--color-surface)",
                   }}
                 >
                   <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
@@ -191,25 +193,25 @@ export default function NotificationSettingsPage() {
                   <Box sx={{ width: 60, height: 16, bgcolor: "var(--color-brand-hover)", borderBottomLeftRadius: 10, borderBottomRightRadius: 10, position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", zIndex: 10 }} />
 
                   {/* Status Bar */}
-                  <Box sx={{ display: "flex", justifyContent: "space-between", px: 2, pt: 1.5, pb: 0.5, color: "rgba(255,255,255,0.7)", fontSize: "0.62rem" }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2, pt: 1.5, pb: 0.5, color: "rgba(255,255,255,0.7)", fontSize: "0.62rem" }}>
                     <Typography sx={{ fontSize: "inherit", fontWeight: 700 }}>09:41</Typography>
-                    <Box sx={{ display: "flex", gap: 0.5 }}>
-                      <span>📶</span>
-                      <span>🔋</span>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <SignalCellularAltIcon sx={{ fontSize: 12 }} aria-hidden />
+                      <BatteryFullIcon sx={{ fontSize: 12 }} aria-hidden />
                     </Box>
                   </Box>
 
                   {/* Screen Content */}
                   <Box sx={{ flex: 1, p: 1.5, display: "flex", flexDirection: "column", gap: 1.5, bgcolor: "var(--color-band)" }}>
                     <Typography sx={{ color: "rgba(255,255,255,0.6)", fontSize: "0.62rem", textAlign: "center", mt: 1 }}>
-                      HÔM NAY
+                      Hôm nay
                     </Typography>
 
                     {/* Push preview box */}
                     {push && (
                       <Box sx={{ bgcolor: "rgba(255,255,255,0.92)", borderRadius: 2.5, p: 1.5, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
                         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-                          <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, color: "text.primary" }}>
+                          <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, color: "text.primary" }}>
                             BackHaulBid
                           </Typography>
                           <Typography sx={{ fontSize: "0.58rem", color: "text.secondary" }}>
@@ -217,7 +219,7 @@ export default function NotificationSettingsPage() {
                           </Typography>
                         </Box>
                         <Typography sx={{ fontSize: "0.68rem", color: "text.secondary", fontWeight: 600, lineHeight: 1.3 }}>
-                          🔥 Đối tác vừa cập nhật giá thầu mới cho lô hàng LH-9041 của bạn!
+                          Đối tác vừa cập nhật giá thầu mới cho lô hàng LH-9041 của bạn.
                         </Typography>
                       </Box>
                     )}
@@ -226,7 +228,7 @@ export default function NotificationSettingsPage() {
                     {sms && (
                       <Box sx={{ bgcolor: "rgba(255,255,255,0.92)", borderRadius: 2.5, p: 1.5, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
                         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-                          <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, color: "text.primary" }}>
+                          <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, color: "text.primary" }}>
                             Tin nhắn (SMS)
                           </Typography>
                           <Typography sx={{ fontSize: "0.58rem", color: "text.secondary" }}>

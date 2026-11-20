@@ -49,8 +49,16 @@ export default function LiveTrackingCard({
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
-    return () => window.clearInterval(timer);
+    const tick = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      setNowMs(Date.now());
+    };
+    const timer = window.setInterval(tick, 1000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, []);
 
   const observedAt = locationTime(latestLocation);
@@ -90,10 +98,12 @@ export default function LiveTrackingCard({
           <Box
             sx={{
               height: "100%",
-              width: `${ratioPercent}%`,
+              width: "100%",
               bgcolor: "info.main",
               borderRadius: 999,
-              transition: "width 0.6s ease-out",
+              transformOrigin: "left center",
+              transform: `scaleX(${Math.max(0, Math.min(100, ratioPercent)) / 100})`,
+              transition: "transform 0.6s ease-out",
             }}
           />
         </Box>

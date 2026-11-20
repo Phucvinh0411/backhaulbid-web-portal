@@ -1,33 +1,65 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Sidebar, { SIDEBAR_WIDTH } from "./Sidebar";
 import Header from "./Header";
 import Footer from "./Footer";
 import MobileBottomNav from "./MobileBottomNav";
 import { navigationByRole, mobileNavigationByRole } from "@/navigation/navigation";
+import useAccountVerification, { AccountVerificationProvider } from "@/hooks/useAccountVerification";
 
 const ROLE_LABELS = { SHIPPER: "Chủ hàng", CARRIER: "Chủ xe", ADMIN: "Quản trị viên", DRIVER: "Tài xế" };
+const VERIFICATION_BANNER_BY_ROLE = {
+  shipper: "Tài khoản chưa hoàn tất xác thực eKYC và doanh nghiệp. Bạn chưa thể tạo phiên đấu giá, nạp/rút tiền hoặc ký hợp đồng.",
+  carrier: "Tài khoản chưa hoàn tất xác thực eKYC và doanh nghiệp. Bạn chưa thể tham gia đấu giá, đăng ký tuyến xe rỗng, nạp/rút tiền hoặc ký hợp đồng.",
+};
+const LOCKED_PATHS_BY_ROLE = {
+  shipper: new Set(["/shipper/bidding/create"]),
+  carrier: new Set(["/carrier/auctions"]),
+};
+const BANNER_SUPPRESSED_EXACT = new Set([
+  "/shipper/settings",
+  "/carrier/settings",
+  "/ekyc",
+  "/shipper/bidding/create",
+]);
 
 export default function DashboardLayout({ children, role, userInfo }) {
+  const pathname = usePathname();
   const navigation = navigationByRole[role] || navigationByRole.shipper;
   const mobileNavigation = mobileNavigationByRole[role] || [];
   const [mobileOpen, setMobileOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(userInfo);
+  const requiresVerification = role === "carrier" || role === "shipper";
+  const verification = useAccountVerification(requiresVerification);
+  const verificationLocked = requiresVerification && !verification.loading && !verification.fullyVerified;
+  const lockedPaths = verificationLocked ? LOCKED_PATHS_BY_ROLE[role] || new Set() : new Set();
+  const verificationBannerText = VERIFICATION_BANNER_BY_ROLE[role] || VERIFICATION_BANNER_BY_ROLE.carrier;
+  const suppressVerificationBanner =
+    BANNER_SUPPRESSED_EXACT.has(pathname) || pathname?.startsWith("/carrier/auctions");
 
   useEffect(() => {
-    const refreshUser = () => fetch("/api/auth/me", { cache: "no-store" })
-      .then((res) => {
+    const refreshUser = async () => {
+      try {
+        let res = await fetch("/api/auth/me", { cache: "no-store" });
+        if (res.status === 401) {
+          const refreshRes = await fetch("/api/auth/refresh", { method: "POST" }).catch(() => null);
+          if (refreshRes?.ok) {
+            res = await fetch("/api/auth/me", { cache: "no-store" });
+          }
+        }
         if (res.status === 401 || res.status === 403 || res.status === 404) {
           if (typeof window !== "undefined" && window.location.pathname !== "/login") {
             window.location.href = "/login";
           }
-          throw new Error("Unauthorized or user profile not found");
+          return;
         }
-        return res.json();
-      })
-      .then((resData) => {
+        const resData = await res.json();
         if (!resData || !resData.success) {
           if (typeof window !== "undefined" && window.location.pathname !== "/login") {
             window.location.href = "/login";
@@ -50,12 +82,12 @@ export default function DashboardLayout({ children, role, userInfo }) {
             companyId: u.companyId,
           });
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Could not fetch user profile:", err);
-      });
+      }
+    };
 
-    refreshUser();
+    void refreshUser();
     window.addEventListener("account-profile-updated", refreshUser);
     return () => window.removeEventListener("account-profile-updated", refreshUser);
   }, [role]);
@@ -71,6 +103,7 @@ export default function DashboardLayout({ children, role, userInfo }) {
         onClose={() => setMobileOpen(false)}
         navigation={navigation}
         role={role}
+        lockedPaths={lockedPaths}
       />
 
       <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", ml: { md: `${SIDEBAR_WIDTH}px` } }}>
@@ -83,7 +116,28 @@ export default function DashboardLayout({ children, role, userInfo }) {
           className="with-bottom-nav"
           sx={{ flex: 1, width: "100%", maxWidth: 1440, mx: "auto", px: { xs: 2, md: 3 }, pt: { xs: 2, md: 3 }, outline: "none" }}
         >
-          {children}
+          <AccountVerificationProvider value={verification}>
+            {verificationLocked && !suppressVerificationBanner && (
+              <Alert
+                severity="warning"
+                className="!mb-4"
+                action={
+                  <Button
+                    component={Link}
+                    href={`/${role}/settings`}
+                    color="inherit"
+                    size="small"
+                    className="!whitespace-nowrap"
+                  >
+                    Xác thực ngay
+                  </Button>
+                }
+              >
+                {verificationBannerText}
+              </Alert>
+            )}
+            {children}
+          </AccountVerificationProvider>
         </Box>
 
         <Box sx={{ display: { xs: "none", md: "block" }, px: 3, pb: 2, maxWidth: 1440, width: "100%", mx: "auto" }}>
@@ -91,7 +145,7 @@ export default function DashboardLayout({ children, role, userInfo }) {
         </Box>
       </Box>
 
-      <MobileBottomNav items={mobileNavigation} onOpenMore={() => setMobileOpen(true)} />
+      <MobileBottomNav items={mobileNavigation} lockedPaths={lockedPaths} onOpenMore={() => setMobileOpen(true)} />
     </Box>
   );
 }

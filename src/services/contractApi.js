@@ -3,7 +3,8 @@ import { apiService } from "./apiService";
 export const contractApi = {
   listMine: (params) => apiService.get("/api/v1/contracts/mine", params),
   get: (contractId) => apiService.get(`/api/v1/contracts/${contractId}`),
-  sign: (contractId) => apiService.patch(`/api/v1/contracts/${contractId}/sign`),
+  requestSignOtp: (contractId, config) => apiService.post(`/api/v1/contracts/${contractId}/sign/otp`, {}, config),
+  sign: (contractId, payload, config) => apiService.patch(`/api/v1/contracts/${contractId}/sign`, payload, config),
   listTrips: (params, config) => apiService.get("/api/v1/trips/mine", params, config),
   getTrip: (tripId, config) => apiService.get(`/api/v1/trips/${tripId}`, undefined, config),
   getTracking: (tripId, config) => apiService.get(`/api/v1/trips/${tripId}/tracking`, undefined, config),

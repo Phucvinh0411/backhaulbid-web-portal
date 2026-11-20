@@ -15,12 +15,15 @@ import IconButton from "@mui/material/IconButton";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import CloseIcon from "@mui/icons-material/Close";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import Tooltip from "@mui/material/Tooltip";
 import { homePathByRole, isPathActive } from "@/navigation/navigation";
 import BrandMark from "./BrandMark";
 
 export const SIDEBAR_WIDTH = 264;
+const LOCK_REASON = "Hoàn tất xác thực eKYC và doanh nghiệp để mở khóa";
 
-function NavContent({ navigation, pathname, onNavigate, role, onClose, showClose }) {
+function NavContent({ navigation, pathname, onNavigate, role, onClose, showClose, lockedPaths }) {
   const [openMenus, setOpenMenus] = useState({});
 
   useEffect(() => {
@@ -62,51 +65,63 @@ function NavContent({ navigation, pathname, onNavigate, role, onClose, showClose
                 const active = Boolean(itemActive(item));
                 const hasChildren = Boolean(item.children?.length);
                 const isOpen = Boolean(openMenus[item.path]);
+                const itemLocked = !hasChildren && lockedPaths?.has?.(item.path);
+                const parentButton = (
+                  <ListItemButton
+                    component={hasChildren || itemLocked ? "button" : Link}
+                    href={hasChildren || itemLocked ? undefined : item.path}
+                    disabled={itemLocked}
+                    onClick={itemLocked ? undefined : hasChildren ? () => setOpenMenus((prev) => ({ ...prev, [item.path]: !prev[item.path] })) : onNavigate}
+                    aria-expanded={hasChildren ? isOpen : undefined}
+                    aria-current={!hasChildren && !itemLocked && active ? "page" : undefined}
+                    selected={!hasChildren && !itemLocked && active}
+                    sx={{
+                      width: "100%",
+                      borderRadius: 2,
+                      minHeight: 44,
+                      px: 1.5,
+                      mb: 0.25,
+                      color: active ? "primary.main" : "text.primary",
+                      // DESIGN.md: active row = soft navy fill + 3 px navy bar on the left.
+                      "&.Mui-selected": { bgcolor: "var(--color-brand-soft)", boxShadow: "inset 3px 0 0 var(--color-brand)", "&:hover": { bgcolor: "var(--color-brand-soft)" } },
+                    }}
+                  >
+                    {Icon && (
+                      <ListItemIcon sx={{ minWidth: 34, color: active ? "primary.main" : "text.secondary" }}>
+                        <Icon fontSize="small" />
+                      </ListItemIcon>
+                    )}
+                    <ListItemText primary={item.title} primaryTypographyProps={{ fontSize: "0.9375rem", fontWeight: active ? 600 : 500 }} />
+                    {itemLocked && <LockOutlinedIcon sx={{ fontSize: 16, color: "text.disabled", ml: 0.5 }} aria-hidden />}
+                    {hasChildren && (isOpen ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />)}
+                  </ListItemButton>
+                );
                 return (
                   <Box component="li" key={item.path} sx={{ listStyle: "none" }}>
-                    <ListItemButton
-                      component={hasChildren ? "button" : Link}
-                      href={hasChildren ? undefined : item.path}
-                      onClick={hasChildren ? () => setOpenMenus((prev) => ({ ...prev, [item.path]: !prev[item.path] })) : onNavigate}
-                      aria-expanded={hasChildren ? isOpen : undefined}
-                      aria-current={!hasChildren && active ? "page" : undefined}
-                      selected={!hasChildren && active}
-                      sx={{
-                        width: "100%",
-                        borderRadius: 2,
-                        minHeight: 44,
-                        px: 1.5,
-                        mb: 0.25,
-                        color: active ? "primary.main" : "text.primary",
-                        // DESIGN.md: active row = soft navy fill + 3 px navy bar on the left.
-                        "&.Mui-selected": { bgcolor: "var(--color-brand-soft)", boxShadow: "inset 3px 0 0 var(--color-brand)", "&:hover": { bgcolor: "var(--color-brand-soft)" } },
-                      }}
-                    >
-                      {Icon && (
-                        <ListItemIcon sx={{ minWidth: 34, color: active ? "primary.main" : "text.secondary" }}>
-                          <Icon fontSize="small" />
-                        </ListItemIcon>
-                      )}
-                      <ListItemText primary={item.title} primaryTypographyProps={{ fontSize: "0.9375rem", fontWeight: active ? 600 : 500 }} />
-                      {hasChildren && (isOpen ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />)}
-                    </ListItemButton>
+                    {itemLocked ? <Tooltip title={LOCK_REASON} placement="right"><span>{parentButton}</span></Tooltip> : parentButton}
                     {hasChildren && (
                       <Collapse in={isOpen} timeout="auto" unmountOnExit>
                         <List disablePadding sx={{ pl: 4.25, mb: 0.5 }}>
                           {item.children.map((child) => {
-                            const childActive = isPathActive(pathname, child.path, { exact: child.exact });
+                            const childLocked = lockedPaths?.has?.(child.path);
+                            const childActive = !childLocked && isPathActive(pathname, child.path, { exact: child.exact });
+                            const childButton = (
+                              <ListItemButton
+                                component={childLocked ? "button" : Link}
+                                href={childLocked ? undefined : child.path}
+                                disabled={childLocked}
+                                onClick={childLocked ? undefined : onNavigate}
+                                selected={childActive}
+                                aria-current={childActive ? "page" : undefined}
+                                sx={{ borderRadius: 2, minHeight: 40, px: 1.5, "&.Mui-selected": { bgcolor: "var(--color-brand-soft)", color: "primary.main", boxShadow: "inset 3px 0 0 var(--color-brand)" } }}
+                              >
+                                <ListItemText primary={child.title} primaryTypographyProps={{ fontSize: "0.875rem", fontWeight: childActive ? 600 : 500 }} />
+                                {childLocked && <LockOutlinedIcon sx={{ fontSize: 15, color: "text.disabled", ml: 0.5 }} aria-hidden />}
+                              </ListItemButton>
+                            );
                             return (
                               <Box component="li" key={child.path} sx={{ listStyle: "none" }}>
-                                <ListItemButton
-                                  component={Link}
-                                  href={child.path}
-                                  onClick={onNavigate}
-                                  selected={childActive}
-                                  aria-current={childActive ? "page" : undefined}
-                                  sx={{ borderRadius: 2, minHeight: 40, px: 1.5, "&.Mui-selected": { bgcolor: "var(--color-brand-soft)", color: "primary.main", boxShadow: "inset 3px 0 0 var(--color-brand)" } }}
-                                >
-                                  <ListItemText primary={child.title} primaryTypographyProps={{ fontSize: "0.875rem", fontWeight: childActive ? 600 : 500 }} />
-                                </ListItemButton>
+                                {childLocked ? <Tooltip title={LOCK_REASON} placement="right"><span>{childButton}</span></Tooltip> : childButton}
                               </Box>
                             );
                           })}
@@ -126,7 +141,7 @@ function NavContent({ navigation, pathname, onNavigate, role, onClose, showClose
 }
 
 /** Permanent sidebar from md up; on phones the same content opens as a drawer from "Thêm". */
-export default function Sidebar({ open, onClose, navigation = [], role }) {
+export default function Sidebar({ open, onClose, navigation = [], role, lockedPaths }) {
   const pathname = usePathname();
 
   return (
@@ -145,7 +160,7 @@ export default function Sidebar({ open, onClose, navigation = [], role }) {
           zIndex: 1050,
         }}
       >
-        <NavContent navigation={navigation} pathname={pathname} role={role} />
+        <NavContent navigation={navigation} pathname={pathname} role={role} lockedPaths={lockedPaths} />
       </Box>
       <Drawer
         anchor="left"
@@ -155,7 +170,7 @@ export default function Sidebar({ open, onClose, navigation = [], role }) {
         sx={{ display: { xs: "block", md: "none" } }}
         PaperProps={{ sx: { width: "min(320px, 88vw)" } }}
       >
-        <NavContent navigation={navigation} pathname={pathname} onNavigate={onClose} onClose={onClose} showClose role={role} />
+        <NavContent navigation={navigation} pathname={pathname} onNavigate={onClose} onClose={onClose} showClose role={role} lockedPaths={lockedPaths} />
       </Drawer>
     </>
   );

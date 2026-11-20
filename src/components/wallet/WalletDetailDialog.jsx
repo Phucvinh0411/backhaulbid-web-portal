@@ -3,11 +3,8 @@
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 import Typography from "@mui/material/Typography";
+import { ResponsiveDialog } from "@/components/ui";
 
 export function WalletDetailRow({ label, value }) {
   return (
@@ -20,18 +17,21 @@ export function WalletDetailRow({ label, value }) {
 
 export default function WalletDetailDialog({ open, onClose, title, loading, children }) {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ className: "!rounded-xl !p-2" }}>
-      <DialogTitle className="!font-bold text-ink">{title}</DialogTitle>
-      <DialogContent className="!pt-2">
-        {loading ? (
-          <Box className="flex min-h-32 items-center justify-center">
-            <CircularProgress aria-label="Đang tải chi tiết" />
-          </Box>
-        ) : children}
-      </DialogContent>
-      <DialogActions className="!px-6 !pb-4">
-        <Button onClick={onClose} variant="text" className="!font-bold !capitalize !rounded-xl">Đóng</Button>
-      </DialogActions>
-    </Dialog>
+    <ResponsiveDialog
+      open={open}
+      onClose={onClose}
+      title={title}
+      titleId="wallet-detail-dialog-title"
+      maxWidth="sm"
+      actions={
+        <Button onClick={onClose} variant="text">Đóng</Button>
+      }
+    >
+      {loading ? (
+        <Box className="flex min-h-32 items-center justify-center">
+          <CircularProgress aria-label="Đang tải chi tiết" />
+        </Box>
+      ) : children}
+    </ResponsiveDialog>
   );
 }

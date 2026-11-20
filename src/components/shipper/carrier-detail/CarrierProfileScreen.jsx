@@ -90,7 +90,7 @@ export default function CarrierProfileScreen({ carrierId }) {
         />
         <Box className="flex min-h-48 flex-col items-center justify-center gap-4 rounded-xl border border-danger-soft bg-danger-soft/60 p-6 text-center">
           <Typography className="!font-semibold text-danger">{loadError || "Không tìm thấy hồ sơ nhà xe."}</Typography>
-          <Button onClick={() => router.back()} variant="outlined" className="!rounded-xl !font-bold !capitalize">
+          <Button onClick={() => router.back()} variant="outlined">
             Quay lại danh sách
           </Button>
         </Box>

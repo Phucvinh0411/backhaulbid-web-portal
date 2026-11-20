@@ -25,6 +25,7 @@ import {
   validateBusinessLicense,
 } from "./businessVerificationApi";
 import { mediaApi } from "../../services/mediaApi";
+import { notifyAccountVerificationUpdated } from "@/hooks/useAccountVerification";
 
 const STATUS_PRESENTATION = {
   NOT_STARTED: { label: "Chưa bắt đầu", color: "default" },
@@ -103,6 +104,7 @@ export default function BusinessVerificationPanel({
   onRequireEkyc,
   compact = false,
   refreshKey = 0,
+  onStatusChange,
 }) {
   const [verification, setVerification] = useState({ status: "LOADING" });
   const [representative, setRepresentative] = useState({
@@ -171,6 +173,15 @@ export default function BusinessVerificationPanel({
   // attach an authorization letter. Until the lookup succeeds there is nothing to compare against.
   const requiresAuthorization = Boolean(lookup?.valid) && representativeComparison !== "MATCH";
   const representativeVerified = representative.status === "VERIFIED";
+
+  useEffect(() => {
+    if (verification.status === "LOADING") return;
+    onStatusChange?.({
+      verification,
+      lookupValid: Boolean(lookup?.valid),
+      companyName: lookup?.companyName || verification?.companyName || "",
+    });
+  }, [lookup?.companyName, lookup?.valid, onStatusChange, verification]);
 
   const lookupTaxCode = useCallback(
     async (value, { silent = false } = {}) => {
@@ -291,6 +302,7 @@ export default function BusinessVerificationPanel({
       setLicense(null);
       setAuthorizationLetter(null);
       setMessage("Hồ sơ đã được gửi và đang chờ Ban quản trị xét duyệt.");
+      notifyAccountVerificationUpdated();
     } catch (error) {
       setMessage(
         getErrorMessage(error, "Không thể gửi hồ sơ doanh nghiệp.")

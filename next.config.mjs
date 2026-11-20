@@ -6,6 +6,7 @@ const nextConfig = {
   // Next otherwise spawns a worker per CPU and the build daemon can be OOM-killed.
   experimental: {
     cpus: 1,
+    optimizePackageImports: ["@mui/material", "@mui/icons-material", "recharts"],
   },
 };
 

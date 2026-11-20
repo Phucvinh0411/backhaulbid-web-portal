@@ -53,7 +53,7 @@ function Metric({ label, value, icon: Icon }) {
         <Typography sx={{ color: "text.secondary", fontSize: 13 }}>{label}</Typography>
         <Icon sx={{ color: "primary.main", fontSize: 20, flexShrink: 0 }} />
       </Box>
-      <Typography className="tabular" sx={{ mt: 1, fontSize: 24, fontWeight: 750 }}>{value}</Typography>
+      <Typography className="tabular" sx={{ mt: 1, fontSize: 24, fontWeight: 700 }}>{value}</Typography>
     </AppCard>
   );
 }

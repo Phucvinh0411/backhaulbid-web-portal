@@ -73,7 +73,7 @@ export function AdminMetricCard({ title, value, helper, icon: Icon, tone = "prim
             <Typography variant="body2" sx={{ color: adminColors.muted, fontWeight: 700 }}>
               {title}
             </Typography>
-            <Typography variant="h4" sx={{ color: adminColors.text, fontWeight: 800, mt: 0.75, letterSpacing: 0 }}>
+            <Typography variant="h4" className="tabular" sx={{ color: adminColors.text, fontWeight: 700, mt: 0.75, letterSpacing: 0 }}>
               {value}
             </Typography>
             {helper && (
@@ -134,7 +134,7 @@ export function AdminSectionCard({ children, title, subtitle, action, sx }) {
         >
           <Box>
             {title && (
-              <Typography variant="h6" sx={{ color: adminColors.text, fontWeight: 800, fontSize: "1rem" }}>
+              <Typography variant="h6" sx={{ color: adminColors.text, fontWeight: 700, fontSize: "1rem" }}>
                 {title}
               </Typography>
             )}
@@ -159,7 +159,7 @@ export function AdminToolbar({ title, subtitle, children }) {
         px: 2.5,
         py: 2,
         borderBottom: `1px solid ${adminColors.border}`,
-        bgcolor: "rgba(248, 250, 252, 0.72)",
+        bgcolor: "var(--color-surface-sunken)",
         display: "flex",
         alignItems: { xs: "stretch", md: "center" },
         justifyContent: "space-between",
@@ -168,7 +168,7 @@ export function AdminToolbar({ title, subtitle, children }) {
       }}
     >
       <Box>
-        <Typography variant="h6" sx={{ color: adminColors.text, fontWeight: 800, fontSize: "1rem" }}>
+        <Typography variant="h6" sx={{ color: adminColors.text, fontWeight: 700, fontSize: "1rem" }}>
           {title}
         </Typography>
         {subtitle && (
@@ -199,7 +199,7 @@ export function AdminStatusChip({ label, tone = "neutral", icon }) {
         color: colors.color,
         border: `1px solid ${colors.border}`,
         borderRadius: 1.5,
-        fontWeight: 800,
+        fontWeight: 700,
         fontSize: "0.72rem",
         height: 26,
         "& .MuiChip-icon": {
@@ -214,15 +214,15 @@ export function AdminStatusChip({ label, tone = "neutral", icon }) {
 export function AdminSearchField({ value, onChange, placeholder = "Tìm kiếm..." }) {
   return (
     <TextField
-      size="small"
       value={value}
       onChange={onChange}
       placeholder={placeholder}
       sx={{
         minWidth: { xs: "100%", sm: 280 },
-        bgcolor: "var(--color-surface)",
-        borderRadius: 2,
-        "& .MuiOutlinedInput-root": { borderRadius: 2 },
+        "& .MuiFilledInput-root": {
+          bgcolor: "var(--color-surface)",
+          border: "1px solid var(--color-line)",
+        },
       }}
       InputProps={{
         startAdornment: (
@@ -239,14 +239,14 @@ export function AdminSelectField({ value, onChange, options, minWidth = 160 }) {
   return (
     <TextField
       select
-      size="small"
       value={value}
       onChange={onChange}
       sx={{
         minWidth: { xs: "100%", sm: minWidth },
-        bgcolor: "var(--color-surface)",
-        borderRadius: 2,
-        "& .MuiOutlinedInput-root": { borderRadius: 2 },
+        "& .MuiFilledInput-root": {
+          bgcolor: "var(--color-surface)",
+          border: "1px solid var(--color-line)",
+        },
       }}
     >
       {options.map((option) => (
@@ -264,10 +264,7 @@ export function AdminPrimaryButton({ children, sx, ...props }) {
       variant="contained"
       disableElevation
       sx={{
-        borderRadius: 2,
         bgcolor: adminColors.primary,
-        fontWeight: 800,
-        px: 2.25,
         "&:hover": { bgcolor: adminColors.primaryDark },
         ...sx,
       }}
@@ -283,12 +280,9 @@ export function AdminSecondaryButton({ children, sx, ...props }) {
     <Button
       variant="outlined"
       sx={{
-        borderRadius: 2,
         borderColor: "var(--color-line-strong)",
         color: adminColors.text,
         bgcolor: "var(--color-surface)",
-        fontWeight: 800,
-        px: 2.25,
         "&:hover": {
           borderColor: adminColors.primary,
           bgcolor: "var(--color-surface-sunken)",
@@ -330,7 +324,6 @@ export function AdminDialog({ children, PaperProps, ...props }) {
       PaperProps={{
         ...PaperProps,
         sx: {
-          borderRadius: 3,
           border: `1px solid ${adminColors.border}`,
           ...PaperProps?.sx,
         },

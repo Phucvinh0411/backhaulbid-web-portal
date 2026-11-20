@@ -22,6 +22,10 @@ export async function updateAccountAvatar(avatarUrl) {
   return unwrap(await apiService.patch("/api/v1/accounts/me/avatar", { avatarUrl }, QUIET));
 }
 
+export async function updateAccountEmail(email) {
+  return unwrap(await apiService.patch("/api/v1/accounts/me/email", { email }, QUIET));
+}
+
 export async function loadBusinessProfile() {
   return settled(apiService.get("/api/v1/business-verifications/me", undefined, QUIET));
 }

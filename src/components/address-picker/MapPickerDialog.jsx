@@ -6,15 +6,8 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
-import IconButton from "@mui/material/IconButton";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
-import CloseIcon from "@mui/icons-material/Close";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
+import { ResponsiveDialog } from "@/components/ui";
 import AddressSearchInput from "./AddressSearchInput";
 import ResolvedPlacePanel from "./ResolvedPlacePanel";
 import { isAbortError } from "./nominatimClient";
@@ -35,8 +28,6 @@ const PointPickerMap = dynamic(() => import("@/components/map/PointPickerMap"), 
  * Nothing reaches the form until the user confirms. Mount it only while open so it starts from initialPlace.
  */
 export default function MapPickerDialog({ open, onClose, onConfirm, initialPlace = null, title = "Chọn vị trí trên bản đồ" }) {
-  const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const resolve = useReverseGeocode();
   const { locate, locating, error: locateError } = useGeolocation();
   const [draft, setDraft] = useState({ place: initialPlace, status: initialPlace ? "ready" : "idle" });
@@ -62,15 +53,26 @@ export default function MapPickerDialog({ open, onClose, onConfirm, initialPlace
   const canConfirm = draft.status === "ready" && Boolean(draft.place?.address);
 
   return (
-    <Dialog open={open} onClose={onClose} fullScreen={fullScreen} maxWidth="md" fullWidth PaperProps={{ className: "!rounded-xl" }}>
-      <DialogTitle className="!flex items-center justify-between gap-3 !pb-2">
-        <span className="text-base font-extrabold text-ink">{title}</span>
-        <IconButton onClick={onClose} size="small" aria-label="Đóng" className="!bg-surface-sunken hover:!bg-line">
-          <CloseIcon className="!text-[1rem] text-ink-muted" />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent className="space-y-3 !pt-2">
+    <ResponsiveDialog
+      open={open}
+      onClose={onClose}
+      title={title}
+      titleId="map-picker-dialog-title"
+      maxWidth="md"
+      actions={
+        <>
+          <Button onClick={onClose} variant="text">Huỷ</Button>
+          <Button
+            variant="contained"
+            disabled={!canConfirm}
+            onClick={() => onConfirm(draft.place)}
+          >
+            Xác nhận vị trí
+          </Button>
+        </>
+      }
+    >
+      <Box className="space-y-3">
         <AddressSearchInput
           value={draft.status === "ready" ? draft.place : null}
           onSelect={selectSuggestion}
@@ -86,7 +88,7 @@ export default function MapPickerDialog({ open, onClose, onConfirm, initialPlace
             onClick={pinCurrentPosition}
             disabled={locating}
             startIcon={locating ? <CircularProgress size={14} color="inherit" /> : <MyLocationIcon />}
-            className="!absolute !bottom-3 !right-3 !z-[2] !rounded-xl !bg-white !font-bold !normal-case !text-ink shadow-md hover:!bg-surface-sunken"
+            className="!absolute !bottom-3 !right-3 !z-[2] !bg-white !text-ink shadow-sm hover:!bg-surface-sunken"
           >
             {locating ? "Đang lấy vị trí…" : "Vị trí của tôi"}
           </Button>
@@ -94,19 +96,7 @@ export default function MapPickerDialog({ open, onClose, onConfirm, initialPlace
 
         {locateError && <Alert severity="warning">{locateError}</Alert>}
         <ResolvedPlacePanel place={draft.place} status={draft.status} />
-      </DialogContent>
-
-      <DialogActions className="!px-6 !pb-4">
-        <Button onClick={onClose} className="!rounded-xl !font-bold !normal-case">Huỷ</Button>
-        <Button
-          variant="contained"
-          disabled={!canConfirm}
-          onClick={() => onConfirm(draft.place)}
-          className="!rounded-xl !px-5 !font-bold !normal-case"
-        >
-          Xác nhận vị trí
-        </Button>
-      </DialogActions>
-    </Dialog>
+      </Box>
+    </ResponsiveDialog>
   );
 }

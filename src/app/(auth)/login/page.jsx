@@ -9,7 +9,9 @@ import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AuthShell from "@/components/auth/AuthShell";
+import GoogleSignInSection from "@/components/auth/GoogleSignInSection";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
+import { clearCurrentAccountCache } from "@/hooks/useCurrentAccount";
 
 const DASHBOARD_BY_ROLE = {
   ADMIN: "/admin",
@@ -38,10 +40,12 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        clearCurrentAccountCache();
         const role = String(data.data?.role || data.role || "").toUpperCase();
         if (role === "DRIVER") {
           // Drivers work in the BackHaulBid app; the web portal has no driver area.
           await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+          clearCurrentAccountCache();
           notify.warning("Tài khoản tài xế dùng ứng dụng BackHaulBid trên điện thoại. Cổng web dành cho chủ hàng, chủ xe và quản trị viên.");
           return;
         }
@@ -101,6 +105,7 @@ export default function LoginPage() {
           {loading ? <CircularProgress size={22} color="inherit" aria-label="Đang đăng nhập" /> : "Đăng nhập"}
         </Button>
       </Box>
+      <GoogleSignInSection mode="login" />
     </AuthShell>
   );
 }

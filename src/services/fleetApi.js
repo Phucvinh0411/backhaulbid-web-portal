@@ -32,8 +32,6 @@ export const getMyVehicles = async () => {
 
 export const createVehicle = (payload) => apiService.post("/api/v1/vehicles", payload);
 
-export const createVehiclesBulk = (payload) => apiService.post("/api/v1/vehicles/bulk", payload);
-
 export const updateVehicle = (vehicleId, payload) =>
   apiService.patch(`/api/v1/vehicles/${vehicleId}`, payload);
 
@@ -53,8 +51,6 @@ export const getMyDrivers = async () => {
 };
 
 export const createDriver = (payload) => apiService.post("/api/v1/drivers", payload);
-
-export const createDriversBulk = (payload) => apiService.post("/api/v1/drivers/bulk", payload);
 
 export const updateDriver = (driverId, payload) =>
   apiService.patch(`/api/v1/drivers/${driverId}`, payload);

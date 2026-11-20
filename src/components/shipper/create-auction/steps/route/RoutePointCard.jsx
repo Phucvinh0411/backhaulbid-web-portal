@@ -2,8 +2,6 @@ import TextField from "@mui/material/TextField";
 import AddressPickerField from "@/components/address-picker";
 import RoutePointHeader from "./RoutePointHeader";
 
-const INPUT_SX = { "& .MuiOutlinedInput-root": { borderRadius: "16px" } };
-
 /** One route point (A or B): address picker plus on-site contact. Field names come from config. */
 export default function RoutePointCard({ config, form, updateForm, saving, onOpenAddressBook, onSave }) {
   const place = form[config.placeField];
@@ -36,7 +34,6 @@ export default function RoutePointCard({ config, form, updateForm, saving, onOpe
           value={contactName}
           onChange={(event) => updateForm(config.contactNameField, event.target.value)}
           placeholder={config.contactNamePlaceholder}
-          sx={INPUT_SX}
         />
         <TextField
           fullWidth
@@ -46,7 +43,6 @@ export default function RoutePointCard({ config, form, updateForm, saving, onOpe
           onChange={(event) => updateForm(config.contactPhoneField, event.target.value)}
           placeholder={config.contactPhonePlaceholder}
           inputProps={{ inputMode: "tel" }}
-          sx={INPUT_SX}
         />
       </div>
     </section>

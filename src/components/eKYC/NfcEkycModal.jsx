@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { Box, Dialog, DialogContent, DialogTitle, TextField, Typography } from "@mui/material";
+import { Alert, Box, TextField, Typography } from "@mui/material";
 import { ActionButton } from "@/components/common";
+import { ResponsiveDialog } from "@/components/ui";
 import { apiService } from "@/services/apiService";
 import VerificationOverview from "./VerificationOverview";
 
@@ -100,32 +101,92 @@ export default function NfcEkycModal({ open = true, onClose, onComplete }) {
   /** Starts a new pairing session after the previous one expires or is cancelled. */
   const restartSession = () => setGeneration((value) => value + 1);
 
-  return <Dialog open={open} onClose={close} maxWidth="sm" fullWidth>
-    <DialogTitle>Xác thực người đại diện bằng NFC</DialogTitle>
-    <DialogContent>
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, py: 1 }}>
-        <Typography>Mở BackHaulBid trên điện thoại Android có NFC, đăng nhập cùng tài khoản rồi chọn “Quét QR xác thực người đại diện”.</Typography>
-        <Typography variant="body2" color="text.secondary">Kết quả cập nhật theo từng bước kiểm tra. Sau khi hoàn tất, bạn có thể xem lại thông tin và ảnh hồ sơ.</Typography>
-        {error && <Typography role="alert" color="error">{error}</Typography>}
-        {busy && !session && <Typography role="status">Đang tạo phiên xác thực…</Typography>}
-        {qr && session?.state === "CREATED" && <Box sx={{ alignSelf: "center", maxWidth: "100%" }}>
-          {/* Local rendering; pairing credentials are never sent to a third-party QR service. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qr} width={256} height={256} style={{ maxWidth: "100%", height: "auto" }} alt="Mã QR ghép đôi phiên xác thực" />
-        </Box>}
-        {session && !END.includes(session.state) && <Typography variant="body2" color="text.secondary">Phiên còn {Math.floor(remaining / 60)} phút {remaining % 60} giây.</Typography>}
-        {session?.state === "PAIRED" && <>
-          <Typography>Nhập mã 6 số đang hiện trên điện thoại của bạn để cho phép xác thực.</Typography>
-          <TextField label="Mã xác nhận trên điện thoại" value={code} onChange={updateConfirmationCode}
-            inputProps={{ inputMode: "numeric", maxLength: 6, autoComplete: "off" }} />
-          <ActionButton variant="primary" onClick={approve} disabled={busy || code.length !== 6}>Cho phép điện thoại này</ActionButton>
-        </>}
-        {["APPROVED", "CAPTURING"].includes(session?.state) && <Typography role="status">Tiếp tục chụp giấy tờ, đọc chip và thực hiện hướng dẫn khuôn mặt trên điện thoại.</Typography>}
-        {session?.state === "SUBMITTED" && <VerificationOverview refreshKey={session.sessionId} fallback={{ captureConclusion: session.captureConclusion }} />}
-        {["CANCELLED", "EXPIRED"].includes(session?.state) && <Typography>Phiên đã kết thúc. Tạo mã mới để xác thực lại.</Typography>}
-        {(!session && !busy || ["CANCELLED", "EXPIRED"].includes(session?.state)) && <ActionButton variant="primary" onClick={restartSession}>Tạo mã mới</ActionButton>}
-        <ActionButton variant="secondary" onClick={close}>{session?.state === "SUBMITTED" ? "Đóng" : "Hủy xác thực"}</ActionButton>
+  return (
+    <ResponsiveDialog
+      open={open}
+      onClose={close}
+      title="Xác thực người đại diện bằng NFC"
+      titleId="nfc-ekyc-dialog-title"
+      maxWidth="sm"
+      busy={busy}
+      actions={
+        <>
+          <ActionButton variant="secondary" onClick={close}>
+            {session?.state === "SUBMITTED" ? "Đóng" : "Hủy xác thực"}
+          </ActionButton>
+          {((!session && !busy) || ["CANCELLED", "EXPIRED"].includes(session?.state)) && (
+            <ActionButton variant="primary" onClick={restartSession}>
+              Tạo mã mới
+            </ActionButton>
+          )}
+          {session?.state === "PAIRED" && (
+            <ActionButton variant="primary" onClick={approve} disabled={busy || code.length !== 6}>
+              Cho phép điện thoại này
+            </ActionButton>
+          )}
+        </>
+      }
+    >
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Typography variant="body2">
+          Mở BackHaulBid trên điện thoại Android có NFC, đăng nhập cùng tài khoản rồi chọn “Quét QR xác thực người đại diện”.
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Kết quả cập nhật theo từng bước kiểm tra. Sau khi hoàn tất, bạn có thể xem lại thông tin và ảnh hồ sơ.
+        </Typography>
+        {error && <Alert severity="error" role="alert">{error}</Alert>}
+        {busy && !session && <Alert severity="info" role="status">Đang tạo phiên xác thực…</Alert>}
+        {qr && session?.state === "CREATED" && (
+          <Box sx={{ alignSelf: "center", p: 2, borderRadius: 2, border: "1px solid", borderColor: "divider", bgcolor: "background.paper", maxWidth: "100%" }}>
+            {/* Local rendering; pairing credentials are never sent to a third-party QR service. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={qr} width={256} height={256} style={{ maxWidth: "100%", height: "auto", display: "block" }} alt="Mã QR ghép đôi phiên xác thực" />
+          </Box>
+        )}
+        {session && !END.includes(session.state) && (
+          <Typography variant="body2" color="text.secondary" className="tabular">
+            Phiên còn {Math.floor(remaining / 60)} phút {remaining % 60} giây.
+          </Typography>
+        )}
+        {session?.state === "PAIRED" && (
+          <Box sx={{ p: 2, borderRadius: 2, border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5 }}>
+              Nhập mã 6 số đang hiện trên điện thoại của bạn để cho phép xác thực.
+            </Typography>
+            <TextField
+              fullWidth
+              label="Mã xác nhận trên điện thoại (6 số)"
+              placeholder="000000"
+              value={code}
+              onChange={updateConfirmationCode}
+              helperText="Nhập đủ 6 chữ số hiển thị trên ứng dụng di động."
+              inputProps={{
+                inputMode: "numeric",
+                maxLength: 6,
+                autoComplete: "one-time-code",
+                style: {
+                  textAlign: "center",
+                  fontSize: "1.25rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.35em",
+                  fontVariantNumeric: "tabular-nums",
+                },
+              }}
+            />
+          </Box>
+        )}
+        {["APPROVED", "CAPTURING"].includes(session?.state) && (
+          <Alert severity="info" role="status">
+            Tiếp tục chụp giấy tờ, đọc chip và thực hiện hướng dẫn khuôn mặt trên điện thoại.
+          </Alert>
+        )}
+        {session?.state === "SUBMITTED" && (
+          <VerificationOverview refreshKey={session.sessionId} fallback={{ captureConclusion: session.captureConclusion }} />
+        )}
+        {["CANCELLED", "EXPIRED"].includes(session?.state) && (
+          <Alert severity="warning">Phiên đã kết thúc. Tạo mã mới để xác thực lại.</Alert>
+        )}
       </Box>
-    </DialogContent>
-  </Dialog>;
+    </ResponsiveDialog>
+  );
 }

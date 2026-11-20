@@ -17,8 +17,6 @@ const NO_OPTIONS_TEXT = {
   ready: "",
 };
 
-const INPUT_SX = { "& .MuiOutlinedInput-root": { borderRadius: "16px" } };
-
 /**
  * Single text box with address suggestions. Only a picked suggestion becomes the value: typing after a pick clears it,
  * so the form never holds text that does not match its province and pin.
@@ -91,7 +89,6 @@ export default function AddressSearchInput({
           error={error}
           helperText={helperText}
           autoFocus={autoFocus}
-          sx={INPUT_SX}
           InputProps={{
             ...params.InputProps,
             startAdornment: (

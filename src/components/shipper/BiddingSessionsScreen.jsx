@@ -24,6 +24,8 @@ import { cancelAuction, listAuctions } from "@/services/biddingApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { getPageMeta, unwrapListData } from "@/services/responseData";
 import { getAuctionPhaseMeta, getAwardStatusMeta, getShipperNextStep } from "@/lib/statusMeta";
+import useAccountVerification from "@/hooks/useAccountVerification";
+import Tooltip from "@mui/material/Tooltip";
 
 const PAGE_SIZE = 100;
 const MAX_PAGES = 10;
@@ -51,6 +53,8 @@ async function loadAllShipperAuctions(status) {
 
 export default function BiddingSessionsScreen() {
   const { notify } = useGlobalNotification();
+  const verification = useAccountVerification(true);
+  const verificationLocked = !verification.loading && !verification.fullyVerified;
   const [tab, setTab] = useState("");
   const [items, setItems] = useState([]);
   const [complete, setComplete] = useState(true);
@@ -133,9 +137,19 @@ export default function BiddingSessionsScreen() {
         subtitle="Theo dõi giá nhà xe đưa ra, chọn người thắng với đấu giá kín và ký hợp đồng sau khi trao thầu."
         breadcrumbs={[{ label: "Trang chủ", path: "/shipper/dashboard" }, { label: "Phiên đấu giá" }]}
         action={
-          <Button component={Link} href="/shipper/bidding/create" variant="contained" startIcon={<AddIcon />}>
-            Tạo phiên mới
-          </Button>
+          <Tooltip title={verificationLocked ? "Hoàn tất xác thực eKYC và doanh nghiệp để tạo phiên" : ""}>
+            <span>
+              <Button
+                component={verificationLocked ? "button" : Link}
+                href={verificationLocked ? undefined : "/shipper/bidding/create"}
+                disabled={verificationLocked}
+                variant="contained"
+                startIcon={<AddIcon />}
+              >
+                Tạo phiên mới
+              </Button>
+            </span>
+          </Tooltip>
         }
       />
 
@@ -196,7 +210,22 @@ export default function BiddingSessionsScreen() {
         <EmptyState
           title={items.length ? "Không có phiên khớp bộ lọc" : "Chưa có phiên đấu giá"}
           description={items.length ? "Thử bỏ bớt điều kiện." : "Tạo phiên để nhà xe đưa giá vận chuyển cho lô hàng của bạn."}
-          action={!items.length && <Button component={Link} href="/shipper/bidding/create" variant="contained">Tạo phiên</Button>}
+          action={
+            !items.length && (
+              <Tooltip title={verificationLocked ? "Hoàn tất xác thực eKYC và doanh nghiệp để tạo phiên" : ""}>
+                <span>
+                  <Button
+                    component={verificationLocked ? "button" : Link}
+                    href={verificationLocked ? undefined : "/shipper/bidding/create"}
+                    disabled={verificationLocked}
+                    variant="contained"
+                  >
+                    Tạo phiên
+                  </Button>
+                </span>
+              </Tooltip>
+            )
+          }
         />
       )}
 

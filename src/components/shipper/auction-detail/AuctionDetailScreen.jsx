@@ -116,11 +116,20 @@ export default function AuctionDetailScreen({ id }) {
 
   useEffect(() => {
     if (phase !== "OPEN" && phase !== "CLOSING") return undefined;
-    const tick = window.setInterval(() => setNow(Date.now()), 1000);
-    const refresh = window.setInterval(() => void load({ quiet: true }), OPEN_REFRESH_MS);
+    const tickNow = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      setNow(Date.now());
+    };
+    const tick = window.setInterval(tickNow, 1000);
+    const refresh = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      void load({ quiet: true });
+    }, OPEN_REFRESH_MS);
+    document.addEventListener("visibilitychange", tickNow);
     return () => {
       window.clearInterval(tick);
       window.clearInterval(refresh);
+      document.removeEventListener("visibilitychange", tickNow);
     };
   }, [load, phase]);
 

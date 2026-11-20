@@ -12,6 +12,7 @@ import IconButton from "@mui/material/IconButton";
 import Skeleton from "@mui/material/Skeleton";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
@@ -21,7 +22,7 @@ import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import VerifiedOutlinedIcon from "@mui/icons-material/VerifiedOutlined";
 import PageHeader from "@/components/common/PageHeader";
 import { getApiErrorMessage } from "@/services/errorMessage";
-import { loadAccountProfile, loadBusinessProfile, loadRepresentativeProfile, updateAccountAvatar } from "@/services/profileApi";
+import { loadAccountProfile, loadBusinessProfile, loadRepresentativeProfile, updateAccountAvatar, updateAccountEmail } from "@/services/profileApi";
 import { mediaApi } from "@/services/mediaApi";
 import { GATEWAY_URL } from "@/config/clientConfig";
 import { toMediaViewUrl } from "@/lib/mediaUrl";
@@ -30,7 +31,7 @@ import { mapBusinessProfile, mapProfileAccount, mapRepresentativeProfile } from 
 
 const ROLE = {
   shipper: { label: "Chủ hàng", dashboard: "/shipper/dashboard", verify: "/shipper/settings", secondary: "/shipper/fleet/routes", secondaryLabel: "Sổ địa chỉ kho" },
-  carrier: { label: "Chủ xe", dashboard: "/carrier/dashboard", verify: "/carrier/settings", secondary: "/carrier/fleet", secondaryLabel: "Quản lý đội xe" },
+  carrier: { label: "Chủ xe", dashboard: "/carrier/dashboard", verify: "/carrier/settings", secondary: "/carrier/vehicles", secondaryLabel: "Quản lý đội xe" },
   admin: { label: "Quản trị viên", dashboard: "/admin" },
 };
 const STATUS = {
@@ -87,18 +88,88 @@ function ErrorCard({ message, onRetry }) {
   return <Alert severity="error" action={<Button color="inherit" size="small" startIcon={<RefreshOutlinedIcon />} onClick={onRetry}>Thử lại</Button>}>{message}</Alert>;
 }
 
-function AccountPanel({ accountState, account, role, onRetry }) {
+function AccountPanel({ accountState, account, role, onRetry, onEmailUpdated }) {
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [emailFeedback, setEmailFeedback] = useState(null);
+
   if (accountState === "loading") return <LoadingCard />;
   if (accountState === "error") return <ErrorCard message="Không thể tải thông tin tài khoản." onRetry={onRetry} />;
+  const isGoogleLinked = account.authProvider === "GOOGLE";
+
+  const handleSaveEmail = async (event) => {
+    event.preventDefault();
+    const trimmed = emailInput.trim();
+    if (!trimmed) {
+      setEmailFeedback({ severity: "error", message: "Vui lòng nhập địa chỉ email." });
+      return;
+    }
+    setSavingEmail(true);
+    setEmailFeedback(null);
+    try {
+      const updated = await updateAccountEmail(trimmed);
+      onEmailUpdated?.(updated);
+      setEditingEmail(false);
+      setEmailFeedback({ severity: "success", message: "Đã cập nhật email nhận OTP ký hợp đồng." });
+    } catch (error) {
+      setEmailFeedback({ severity: "error", message: getApiErrorMessage(error, "Không thể cập nhật email.") });
+    } finally {
+      setSavingEmail(false);
+    }
+  };
+
   return (
     <AppCard component="section" sx={{ p: { xs: 2, sm: 3 } }}>
-      <SectionHeading title="Thông tin tài khoản" />
+      <SectionHeading
+        title="Thông tin tài khoản"
+        action={!isGoogleLinked && !editingEmail ? (
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => {
+              setEmailInput(account.email || "");
+              setEmailFeedback(null);
+              setEditingEmail(true);
+            }}
+          >
+            {account.email ? "Đổi email" : "Thêm email"}
+          </Button>
+        ) : undefined}
+      />
+      {!account.email && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Tài khoản chưa có email. Hãy thêm email để nhận mã OTP khi ký hợp đồng điện tử.
+        </Alert>
+      )}
+      {emailFeedback && <Alert severity={emailFeedback.severity} sx={{ mb: 2 }}>{emailFeedback.message}</Alert>}
       <Description rows={[
         { label: "Họ và tên", value: account.name !== "Tài khoản" ? account.name : null },
         { label: "Số điện thoại", value: account.phone },
         { label: "Email", value: account.email },
         { label: "Vai trò", value: roleLabel[account.role] || role.label },
       ]} />
+      {editingEmail && (
+        <Box component="form" onSubmit={handleSaveEmail} sx={{ mt: 2.5, pt: 2, borderTop: "1px solid", borderColor: "divider", display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "flex-start" }}>
+          <TextField
+            label="Email nhận OTP ký hợp đồng"
+            type="email"
+            size="small"
+            value={emailInput}
+            onChange={(event) => setEmailInput(event.target.value)}
+            sx={{ minWidth: { xs: "100%", sm: 280 }, flex: 1 }}
+            disabled={savingEmail}
+          />
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button type="submit" variant="contained" disabled={savingEmail}>
+              {savingEmail ? "Đang lưu..." : "Lưu email"}
+            </Button>
+            <Button variant="text" disabled={savingEmail} onClick={() => setEditingEmail(false)}>
+              Hủy
+            </Button>
+          </Box>
+        </Box>
+      )}
     </AppCard>
   );
 }
@@ -273,7 +344,20 @@ export default function ProfileScreen({ role }) {
         {role === "carrier" && <Tab label="Năng lực nhà xe" />}
       </Tabs>}
 
-      {tabName === "account" && <AccountPanel accountState={accountResult.state} account={account} role={config} onRetry={retryAll} />}
+      {tabName === "account" && (
+        <AccountPanel
+          accountState={accountResult.state}
+          account={account}
+          role={config}
+          onRetry={retryAll}
+          onEmailUpdated={(updated) => {
+            setAccountResult((previous) => previous.data
+              ? { ...previous, data: { ...previous.data, email: updated?.email ?? previous.data.email, emailVerified: updated?.emailVerified ?? false } }
+              : previous);
+            window.dispatchEvent(new Event("account-profile-updated"));
+          }}
+        />
+      )}
       {tabName === "business" && <BusinessPanel state={businessResult.state} business={businessResult.data || mapBusinessProfile(null)} retry={retryBusiness} />}
       {tabName === "representative" && <RepresentativePanel state={representativeResult.state} profile={representative} retry={retryAll} />}
       {tabName === "capability" && <CarrierCapabilityPanel accountId={account?.id} />}

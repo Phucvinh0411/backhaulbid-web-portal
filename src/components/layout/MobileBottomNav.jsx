@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Box from "@mui/material/Box";
 import ButtonBase from "@mui/material/ButtonBase";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import MenuIcon from "@mui/icons-material/MenuRounded";
 import { isPathActive } from "@/navigation/navigation";
 
@@ -31,7 +32,7 @@ const itemSx = (active) => ({
  * Role-specific bottom navigation for phones and small tablets (< md).
  * Four task destinations plus "Thêm", which opens the full navigation drawer.
  */
-export default function MobileBottomNav({ items = [], onOpenMore }) {
+export default function MobileBottomNav({ items = [], lockedPaths, onOpenMore }) {
   const pathname = usePathname();
   if (!items.length) return null;
 
@@ -56,9 +57,15 @@ export default function MobileBottomNav({ items = [], onOpenMore }) {
       {items.map((item) => {
         const Icon = item.icon;
         const active = isPathActive(pathname, item.path, { exact: item.exact, match: item.match });
+        const locked = Boolean(lockedPaths?.has?.(item.path));
         return (
           <Box key={item.path} component={Link} href={item.path} aria-current={active ? "page" : undefined} sx={itemSx(active)}>
-            {Icon && <Icon aria-hidden sx={{ fontSize: 24 }} />}
+            {Icon && (
+              <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.25 }}>
+                <Icon aria-hidden sx={{ fontSize: 24 }} />
+                {locked && <LockOutlinedIcon aria-hidden sx={{ fontSize: 12, color: "text.disabled" }} />}
+              </Box>
+            )}
             <Box component="span" sx={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", px: 0.5 }}>
               {item.title}
             </Box>

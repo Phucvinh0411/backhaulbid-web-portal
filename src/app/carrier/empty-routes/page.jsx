@@ -7,10 +7,6 @@ import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 import Divider from "@mui/material/Divider";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
@@ -44,11 +40,13 @@ import {
 
 import { PageHeader, StatCard, ViewModeToggle } from "@/components/common";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
-import { ConfirmDialog, EmptyState, ErrorState, ListSkeleton } from "@/components/ui";
-import EmptyRouteDialog from "@/components/carrier/EmptyRouteDialog";
+import { ConfirmDialog, EmptyState, ErrorState, ListSkeleton, ResponsiveDialog } from "@/components/ui";
 import { emptyRouteService } from "@/services/emptyRouteService";
 import { getMyVehicles, VEHICLE_TYPE_LABELS } from "@/services/fleetApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
+import useAccountVerification from "@/hooks/useAccountVerification";
+
+const EmptyRouteDialog = dynamic(() => import("@/components/carrier/EmptyRouteDialog"), { ssr: false });
 
 const RouteDetailMap = dynamic(() => import("@/components/carrier/RouteDetailMap"), {
   ssr: false,
@@ -124,6 +122,8 @@ export default function EmptyRoutesHistoryPage() {
   const [viewMode, setViewMode] = useState("CARD");
 
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const verification = useAccountVerification(true);
+  const verificationLocked = !verification.loading && !verification.fullyVerified;
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [confirmCancelRoute, setConfirmCancelRoute] = useState(null);
   const [cancelling, setCancelling] = useState(false);
@@ -214,12 +214,12 @@ export default function EmptyRoutesHistoryPage() {
     <Box className="w-full flex flex-col gap-5">
       {/* ── Tiêu đề & Hành động ── */}
       <PageHeader
-        title="Lịch sử chuyến xe rỗng chiều"
-        subtitle="Quản lý các chuyến xe rỗng đã khai báo, theo dõi radar kết nối hàng hai chiều và điều phối phương tiện."
+        title="Quản lý tuyến xe rỗng"
+        subtitle="Quản lý các tuyến xe rỗng đã khai báo, theo dõi radar kết nối hàng hai chiều và điều phối phương tiện."
         breadcrumbs={[
           { label: "Trang chủ", path: "/carrier/dashboard" },
           { label: "Đội xe", path: "/carrier/vehicles" },
-          { label: "Xe rỗng chiều" },
+          { label: "Tuyến xe rỗng" },
         ]}
         action={
           <Stack direction="row" spacing={1.5} alignItems="center">
@@ -229,7 +229,7 @@ export default function EmptyRoutesHistoryPage() {
               startIcon={<RefreshIcon />}
               onClick={loadData}
               disabled={loading}
-              sx={{ bgcolor: "background.paper", borderRadius: "10px", textTransform: "none", fontWeight: 600 }}
+              sx={{ bgcolor: "background.paper" }}
             >
               Làm mới
             </Button>
@@ -237,16 +237,9 @@ export default function EmptyRoutesHistoryPage() {
               variant="contained"
               startIcon={<LocalShippingIcon />}
               onClick={() => setOpenCreateDialog(true)}
-              sx={{
-                borderRadius: "10px",
-                textTransform: "none",
-                fontWeight: 700,
-                px: 2.5,
-                bgcolor: "var(--color-brand)",
-                "&:hover": { bgcolor: "var(--color-brand)" },
-              }}
+              disabled={verificationLocked}
             >
-              + Khai báo xe rỗng
+              Khai báo xe rỗng
             </Button>
           </Stack>
         }
@@ -297,7 +290,7 @@ export default function EmptyRoutesHistoryPage() {
         elevation={0}
         sx={{
           p: 2,
-          borderRadius: "16px",
+          borderRadius: 3,
           border: "1px solid var(--color-line)",
           bgcolor: "background.paper",
           display: "flex",
@@ -329,7 +322,6 @@ export default function EmptyRoutesHistoryPage() {
                 sx={{
                   fontWeight: active ? 700 : 500,
                   fontSize: "0.825rem",
-                  borderRadius: "8px",
                   cursor: "pointer",
                 }}
               />
@@ -340,7 +332,6 @@ export default function EmptyRoutesHistoryPage() {
         {/* Ô tìm kiếm & Toggle View */}
         <Stack direction="row" spacing={1.5} alignItems="center">
           <TextField
-            size="small"
             placeholder="Tìm theo biển số, điểm đi, điểm đến..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -352,21 +343,15 @@ export default function EmptyRoutesHistoryPage() {
               ),
               endAdornment: searchQuery ? (
                 <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearchQuery("")} edge="end">
+                  <IconButton size="small" aria-label="Xóa từ khóa" onClick={() => setSearchQuery("")} edge="end">
                     <CloseIcon fontSize="small" />
                   </IconButton>
                 </InputAdornment>
               ) : null,
             }}
-            sx={{
-              minWidth: { xs: "100%", md: 280 },
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "10px",
-                bgcolor: "var(--color-surface-sunken)",
-              },
-            }}
+            sx={{ minWidth: { xs: "100%", md: 280 } }}
           />
-          <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+          <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
         </Stack>
       </Paper>
 
@@ -388,9 +373,9 @@ export default function EmptyRoutesHistoryPage() {
               variant="contained"
               startIcon={<LocalShippingIcon />}
               onClick={() => setOpenCreateDialog(true)}
-              sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 700 }}
+              disabled={verificationLocked}
             >
-              + Khai báo ngay
+              Khai báo ngay
             </Button>
           }
         />
@@ -426,7 +411,7 @@ export default function EmptyRoutesHistoryPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-black text-lg text-ink tracking-tight bg-surface-sunken px-2.5 py-0.5 rounded-lg border border-line">
+                          <span className="font-mono font-bold text-lg text-ink tracking-tight bg-surface-sunken px-2.5 py-0.5 rounded-lg border border-line">
                             {route.truckId}
                           </span>
                           <span className="text-xs font-bold text-brand bg-brand-soft px-2 py-0.5 rounded-md">
@@ -449,7 +434,7 @@ export default function EmptyRoutesHistoryPage() {
                           A
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-ink-muted uppercase">Điểm xe rỗng hàng</p>
+                          <p className="text-xs font-medium text-ink-muted">Điểm xe rỗng hàng</p>
                           <p className="text-sm font-semibold text-ink line-clamp-2">{route.origin || "Chưa rõ điểm đi"}</p>
                           <p className="text-xs text-ink-subtle mt-0.5 flex items-center gap-1">
                             <TimerIcon className="!text-xs text-brand" /> {formatDateTime(route.expectedEmptyTime)}
@@ -464,7 +449,7 @@ export default function EmptyRoutesHistoryPage() {
                           B
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-ink-muted uppercase">Điểm đến mong muốn</p>
+                          <p className="text-xs font-medium text-ink-muted">Điểm đến mong muốn</p>
                           <p className="text-sm font-semibold text-ink line-clamp-2">{route.destination || "Chưa rõ điểm đến"}</p>
                           {route.expectedArrivalTime && (
                             <p className="text-xs text-ink-subtle mt-0.5 flex items-center gap-1">
@@ -502,15 +487,9 @@ export default function EmptyRoutesHistoryPage() {
                         color="inherit"
                         startIcon={<VisibilityIcon fontSize="small" />}
                         onClick={() => setSelectedRoute(route)}
-                        sx={{
-                          textTransform: "none",
-                          fontWeight: 600,
-                          borderRadius: "8px",
-                          fontSize: "0.8rem",
-                          flex: 1,
-                        }}
+                        sx={{ flex: 1 }}
                       >
-                        Chi tiết & Bản đồ
+                        Chi tiết &amp; Bản đồ
                       </Button>
 
                       {isPending && (
@@ -619,7 +598,6 @@ export default function EmptyRoutesHistoryPage() {
                           variant="outlined"
                           color="inherit"
                           onClick={() => setSelectedRoute(route)}
-                          sx={{ textTransform: "none", borderRadius: "8px", fontSize: "0.78rem" }}
                         >
                           Chi tiết
                         </Button>
@@ -643,42 +621,61 @@ export default function EmptyRoutesHistoryPage() {
         </TableContainer>
       )}
 
-      {/* ── MODAL KHAI BÁO XE RỖNG CHIỀU ── */}
-      <EmptyRouteDialog
-        open={openCreateDialog}
-        onClose={() => setOpenCreateDialog(false)}
-        onSuccess={loadData}
-        vehicles={vehicles}
-      />
+      {/* ── MODAL KHAI BÁO TUYẾN XE RỖNG ── */}
+      {openCreateDialog && (
+        <EmptyRouteDialog
+          open={openCreateDialog}
+          onClose={() => setOpenCreateDialog(false)}
+          onSuccess={loadData}
+          vehicles={vehicles}
+        />
+      )}
 
       {/* ── DIALOG XEM CHI TIẾT & BẢN ĐỒ LỘ TRÌNH ── */}
       {selectedRoute && (
-        <Dialog
+        <ResponsiveDialog
           open={Boolean(selectedRoute)}
           onClose={() => setSelectedRoute(null)}
           maxWidth="md"
-          fullWidth
-          TransitionProps={{ unmountOnExit: true }}
-          PaperProps={{
-            sx: { borderRadius: "20px", overflow: "hidden" },
-          }}
-        >
-          <DialogTitle sx={{ bgcolor: "var(--color-brand)", color: "white", p: 2.5 }}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <LocalShippingIcon />
-                <div>
-                  <h3 className="font-bold text-base">Chi tiết chuyến xe rỗng chiều</h3>
-                  <p className="text-xs text-white/80 font-mono">Biển số: {selectedRoute.truckId}</p>
-                </div>
+          titleId="empty-route-detail-dialog-title"
+          title={
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-lg bg-brand-soft text-[var(--color-brand)] flex items-center justify-center">
+                <LocalShippingIcon fontSize="small" />
               </div>
-              <IconButton size="small" onClick={() => setSelectedRoute(null)} sx={{ color: "white" }}>
-                <CloseIcon />
-              </IconButton>
+              <div>
+                <div className="font-bold text-base text-ink">Chi tiết tuyến xe rỗng</div>
+                <div className="text-xs text-ink-muted font-mono font-normal">Biển số: {selectedRoute.truckId}</div>
+              </div>
             </div>
-          </DialogTitle>
-
-          <DialogContent dividers sx={{ p: 3, display: "flex", flexDirection: "column", gap: 3 }}>
+          }
+          actions={
+            <>
+              <Button
+                variant="outlined"
+                color="inherit"
+                onClick={() => setSelectedRoute(null)}
+              >
+                Đóng
+              </Button>
+              {selectedRoute.status === "PENDING" && (
+                <Button
+                  variant="contained"
+                  color="error"
+                  startIcon={<DeleteOutlineIcon />}
+                  onClick={() => {
+                    const r = selectedRoute;
+                    setSelectedRoute(null);
+                    setConfirmCancelRoute(r);
+                  }}
+                >
+                  Hủy chuyến này
+                </Button>
+              )}
+            </>
+          }
+        >
+          <div className="flex flex-col gap-3">
             {/* Tóm tắt thông số */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="bg-surface-sunken p-3 rounded-xl border border-line">
@@ -710,7 +707,7 @@ export default function EmptyRoutesHistoryPage() {
                   A
                 </span>
                 <div>
-                  <p className="text-xs font-bold text-ink-muted uppercase">Điểm xe rỗng hàng (Khởi hành)</p>
+                  <p className="text-xs font-medium text-ink-muted">Điểm xe rỗng hàng (Khởi hành)</p>
                   <p className="text-sm font-bold text-ink">{selectedRoute.origin}</p>
                   <p className="text-xs text-ink-subtle mt-0.5">
                     Thời gian xe rỗng: <strong>{formatDateTime(selectedRoute.expectedEmptyTime)}</strong>
@@ -730,7 +727,7 @@ export default function EmptyRoutesHistoryPage() {
                   B
                 </span>
                 <div>
-                  <p className="text-xs font-bold text-ink-muted uppercase">Điểm đến mong muốn</p>
+                  <p className="text-xs font-medium text-ink-muted">Điểm đến mong muốn</p>
                   <p className="text-sm font-bold text-ink">{selectedRoute.destination}</p>
                   {selectedRoute.expectedArrivalTime && (
                     <p className="text-xs text-ink-subtle mt-0.5">
@@ -749,9 +746,9 @@ export default function EmptyRoutesHistoryPage() {
             {/* Bản đồ định vị lộ trình nếu có GPS */}
             {(selectedRoute.latitude != null || selectedRoute.destLatitude != null) ? (
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase text-ink-muted">
+                <div className="flex items-center gap-2 text-xs font-medium text-ink-muted">
                   <MapIcon className="!text-sm text-brand" />
-                  <span>Bản đồ lộ trình & Bán kính quét</span>
+                  <span>Bản đồ lộ trình &amp; bán kính quét</span>
                 </div>
                 <div className="w-full rounded-xl overflow-hidden shadow-xs">
                   <RouteDetailMap
@@ -783,34 +780,8 @@ export default function EmptyRoutesHistoryPage() {
                 <p>Chuyến xe này chưa được cập nhật tọa độ GPS để hiển thị trên bản đồ.</p>
               </div>
             )}
-          </DialogContent>
-
-          <DialogActions sx={{ p: 2.5, bgcolor: "var(--color-surface-sunken)" }}>
-            <Button
-              variant="outlined"
-              color="inherit"
-              onClick={() => setSelectedRoute(null)}
-              sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 600 }}
-            >
-              Đóng
-            </Button>
-            {selectedRoute.status === "PENDING" && (
-              <Button
-                variant="contained"
-                color="error"
-                startIcon={<DeleteOutlineIcon />}
-                onClick={() => {
-                  const r = selectedRoute;
-                  setSelectedRoute(null);
-                  setConfirmCancelRoute(r);
-                }}
-                sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 700 }}
-              >
-                Hủy chuyến này
-              </Button>
-            )}
-          </DialogActions>
-        </Dialog>
+          </div>
+        </ResponsiveDialog>
       )}
 
       {/* ── DIALOG XÁC NHẬN HỦY CHUYẾN ── */}

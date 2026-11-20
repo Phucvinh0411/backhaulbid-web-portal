@@ -51,6 +51,8 @@ export const AUCTION_TYPE_META = Object.freeze({
 /** Carrier access to an auction (auction-registration accessStatus). */
 export const ACCESS_STATUS_META = Object.freeze({
   EKYC_REQUIRED: { label: "Chưa xác thực eKYC", tone: "warning", icon: "error" },
+  ACCOUNT_VERIFICATION_REQUIRED: { label: "Chưa xác minh doanh nghiệp", tone: "warning", icon: "error" },
+  CARRIER_COVERAGE_REQUIRED: { label: "Thiếu bảo hiểm hàng hóa", tone: "warning", icon: "error" },
   REGISTRATION_REQUIRED: { label: "Chưa đăng ký", tone: "info", icon: "how_to_reg" },
   REGISTRATION_CLOSED: { label: "Hết hạn đăng ký", tone: "neutral", icon: "close" },
   REPUTATION_TOO_LOW: { label: "Chưa đủ điểm uy tín", tone: "warning", icon: "error" },

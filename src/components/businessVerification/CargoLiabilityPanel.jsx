@@ -82,7 +82,7 @@ export default function CargoLiabilityPanel() {
   return (
     <Box className="space-y-4">
       <Box>
-        <Typography variant="subtitle1" className="flex items-center gap-2 !font-black">
+        <Typography variant="subtitle1" className="flex items-center gap-2 !font-bold">
           <ShieldIcon fontSize="small" />
           Bảo hiểm trách nhiệm hàng hóa
         </Typography>

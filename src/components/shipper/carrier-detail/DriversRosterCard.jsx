@@ -31,11 +31,11 @@ export default function DriversRosterCard({ drivers = [] }) {
         <div className="flex items-center gap-2">
           <PersonIcon className="text-success" />
           <Typography variant="h6" className="!font-bold text-ink !text-base">
-            3. Bảng Thống Kê Đội Ngũ Tài Xế Phụ Trách ({drivers.length} Tài xế)
+            Đội ngũ tài xế phụ trách ({drivers.length} tài xế)
           </Typography>
         </div>
-        <span className="text-[0.68rem] font-bold px-3 py-1 rounded-full bg-success-soft text-success border border-success-soft">
-          Đủ Điều Kiện Bằng Lái FC / C
+        <span className="text-xs font-bold px-3 py-1 rounded-full bg-success-soft text-success border border-success-soft">
+          Đủ điều kiện bằng lái FC / C
         </span>
       </div>
 
@@ -44,10 +44,10 @@ export default function DriversRosterCard({ drivers = [] }) {
         <Table size="small">
           <TableHead className="bg-surface-sunken">
             <TableRow>
-              <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3">Họ & Tên Tài Xế</TableCell>
-              <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3">Hạng Bằng Lái</TableCell>
-              <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3">Hồ Sơ An Toàn</TableCell>
-              <TableCell className="!font-extrabold !text-ink-muted !text-xs !py-3 text-right">Số Điện Thoại Trực Tiếp</TableCell>
+              <TableCell className="!font-bold !text-ink-muted !text-xs !py-3">Họ &amp; tên tài xế</TableCell>
+              <TableCell className="!font-bold !text-ink-muted !text-xs !py-3">Hạng bằng lái</TableCell>
+              <TableCell className="!font-bold !text-ink-muted !text-xs !py-3">Hồ sơ an toàn</TableCell>
+              <TableCell className="!font-bold !text-ink-muted !text-xs !py-3 text-right">Số điện thoại trực tiếp</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -59,7 +59,7 @@ export default function DriversRosterCard({ drivers = [] }) {
                       <Avatar
                         src={d.avatarUrl}
                         alt={d.name}
-                        className="!w-9 !h-9 !text-xs !font-black bg-[var(--color-brand)] !text-white shadow-sm"
+                        className="!w-9 !h-9 !text-xs !font-bold bg-[var(--color-brand)] !text-white shadow-sm"
                       >
                         {getDriverInitials(d.name)}
                       </Avatar>
@@ -70,12 +70,12 @@ export default function DriversRosterCard({ drivers = [] }) {
                   </div>
                 </TableCell>
                 <TableCell className="!py-3">
-                  <span className="bg-success-soft text-success font-extrabold text-[0.68rem] px-2.5 py-0.5 rounded border border-success-soft inline-block">
+                  <span className="bg-success-soft text-success font-bold text-xs px-2.5 py-0.5 rounded border border-success-soft inline-block">
                     {d.license}
                   </span>
                 </TableCell>
                 <TableCell className="!py-3">
-                  <span className={`${d.safetyRecord === "Đã xác thực" ? "text-success" : "text-warning"} font-extrabold text-xs inline-flex items-center gap-1`}>
+                  <span className={`${d.safetyRecord === "Đã xác thực" ? "text-success" : "text-warning"} font-bold text-xs inline-flex items-center gap-1`}>
                     {d.safetyRecord === "Đã xác thực" && <CheckCircleIcon className="!text-[0.8rem]" />} {d.safetyRecord}
                   </span>
                 </TableCell>

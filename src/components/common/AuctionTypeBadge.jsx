@@ -15,7 +15,7 @@ export default function AuctionTypeBadge({
 
   return (
     <span
-      className={`inline-flex items-center font-extrabold rounded-full border whitespace-nowrap shrink-0 transition-colors ${
+      className={`inline-flex items-center font-bold rounded-full border whitespace-nowrap shrink-0 transition-colors ${
         sizeClasses[size] || sizeClasses.md
       } ${
         isSealed
