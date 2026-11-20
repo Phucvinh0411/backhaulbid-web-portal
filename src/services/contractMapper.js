@@ -1,3 +1,6 @@
+import { mapTrip } from "./mappers/tripMapper.js";
+import { toId, toIsoString, toNumber, unwrapData, unwrapList } from "./mappers/primitives.js";
+
 function formatCurrency(value) {
   const amount = Number(value);
 
@@ -46,10 +49,57 @@ function mapStatus(status, tripStatus) {
   return "PENDING_SIGNATURE";
 }
 
+function mapSignature(signature) {
+  if (!signature || typeof signature !== "object") return null;
+  return {
+    accountId: signature.accountId ?? null,
+    role: signature.role ?? null,
+    signedAt: toIsoString(signature.signedAt),
+  };
+}
+
+/**
+ * Normalizes a raw ContractResponse DTO at the API boundary (`contractApi.js`).
+ * Preserves backend statuses and nested trip/signatures while guaranteeing numeric prices
+ * and clean arrays so dashboards, action inboxes, and role-specific presenters share one model.
+ */
+export function normalizeContract(response) {
+  const raw = unwrapData(response);
+  if (!raw || typeof raw !== "object") return null;
+
+  const trip = raw.trip ? mapTrip(raw.trip) : null;
+  const signatures = Array.isArray(raw.signatures)
+    ? raw.signatures.map(mapSignature).filter(Boolean)
+    : [];
+
+  return {
+    id: toId(raw),
+    tripId: raw.tripId ?? trip?.id ?? null,
+    shipperId: raw.shipperId ?? null,
+    carrierId: raw.carrierId ?? null,
+    contractCode: raw.contractCode ?? null,
+    pdfUrl: raw.pdfUrl ?? "",
+    pdfHashSha256: raw.pdfHashSha256 ?? null,
+    status: raw.status ?? "DRAFT",
+    signingDeadlineAt: toIsoString(raw.signingDeadlineAt),
+    createdAt: toIsoString(raw.createdAt),
+    updatedAt: toIsoString(raw.updatedAt),
+    trip,
+    signatures,
+    agreedPrice: toNumber(trip?.agreedPrice ?? raw.agreedPrice, 0),
+    auctionId: trip?.auctionId ?? raw.auctionId ?? null,
+  };
+}
+
+export function normalizeContracts(response) {
+  return unwrapList(response).map(normalizeContract).filter(Boolean);
+}
+
 export function mapContractResponse(response = {}, role = "carrier") {
-  const trip = response.trip || {};
+  const normalized = normalizeContract(response) || {};
+  const trip = normalized.trip || {};
   const isShipper = role === "shipper";
-  const signatures = Array.isArray(response.signatures) ? response.signatures : [];
+  const signatures = Array.isArray(normalized.signatures) ? normalized.signatures : [];
   const carrierSigned = signatures.some(
     (signature) => signature.role === "CARRIER" && signature.signedAt,
   );
@@ -59,31 +109,32 @@ export function mapContractResponse(response = {}, role = "carrier") {
   );
 
   return {
-    backendId: response.id,
-    id: response.contractCode || response.id || "Chưa có mã hợp đồng",
-    tripId: response.tripId || trip.id || null,
+    backendId: normalized.id,
+    id: normalized.contractCode || normalized.id || "Chưa có mã hợp đồng",
+    tripId: normalized.tripId || trip.id || null,
     auctionId: trip.auctionId || "Chưa có mã phiên",
     origin: trip.pickupLocation || "Chưa cập nhật điểm nhận",
     destination: trip.deliveryLocation || "Chưa cập nhật điểm giao",
     pickupAddress: trip.pickupLocation || "",
     deliveryAddress: trip.deliveryLocation || "",
     cargoType: "Chưa cập nhật thông tin hàng hóa",
+    agreedPrice: normalized.agreedPrice,
     value: formatCurrency(trip.agreedPrice),
-    date: formatDate(response.createdAt || trip.createdAt),
-    status: mapStatus(response.status, trip.status),
-    signingDeadlineAt: response.signingDeadlineAt || null,
+    date: formatDate(normalized.createdAt || trip.createdAt),
+    status: mapStatus(normalized.status, trip.status),
+    signingDeadlineAt: normalized.signingDeadlineAt || null,
     canSign:
       !actorSigned && (!isShipper || carrierSigned) &&
-      response.status !== "EXPIRED" && response.status !== "CANCELLED",
+      normalized.status !== "EXPIRED" && normalized.status !== "CANCELLED",
     pendingMessage: isShipper && !carrierSigned
       ? "Chưa ký được: cần chờ nhà xe ký trước."
       : actorSigned
         ? "Bạn đã ký. Đang chờ đối tác ký."
         : "Bạn được mời ký hợp đồng.",
-    shipperName: getPartnerLabel(response.shipperId, "chủ hàng"),
-    carrierName: getPartnerLabel(response.carrierId, "nhà xe"),
-    partnerId: isShipper ? response.carrierId : response.shipperId,
-    pdfUrl: response.pdfUrl || "",
+    shipperName: getPartnerLabel(normalized.shipperId, "chủ hàng"),
+    carrierName: getPartnerLabel(normalized.carrierId, "nhà xe"),
+    partnerId: isShipper ? normalized.carrierId : normalized.shipperId,
+    pdfUrl: normalized.pdfUrl || "",
     signatures,
   };
 }

@@ -223,8 +223,7 @@ export default function CreateAuctionScreen() {
         },
       });
 
-      const newAuctionId =
-        res?.id || res?._id || res?.data?._id || res?.data?.id;
+      const newAuctionId = res?.id;
       if (!newAuctionId) {
         throw new Error("The auction service did not return an auction ID.");
       }

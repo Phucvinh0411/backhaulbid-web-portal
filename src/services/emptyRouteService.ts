@@ -1,4 +1,5 @@
 import { apiService } from "./apiService";
+import { mapEmptyRoute, mapEmptyRoutes } from "./mappers/fleetMapper";
 
 // ─── Response Model (từ backend) ──────────────────────────────────────────────
 export interface EmptyRoute {
@@ -56,14 +57,16 @@ class EmptyRouteService {
    * Yêu cầu vai trò CARRIER và xe đã VERIFIED.
    */
   async createEmptyRoute(data: EmptyRouteRequest): Promise<EmptyRoute> {
-    return apiService.post<EmptyRoute>('/api/v1/empty-routes', data);
+    const response = await apiService.post<EmptyRoute>('/api/v1/empty-routes', data);
+    return mapEmptyRoute(response) as EmptyRoute;
   }
 
   /**
    * Lấy danh sách tuyến chạy rỗng của công ty đang đăng nhập.
    */
   async getEmptyRoutesByCompany(): Promise<EmptyRoute[]> {
-    return apiService.get<EmptyRoute[]>('/api/v1/empty-routes');
+    const response = await apiService.get<EmptyRoute[]>('/api/v1/empty-routes');
+    return mapEmptyRoutes(response) as EmptyRoute[];
   }
 
   /**

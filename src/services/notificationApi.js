@@ -1,11 +1,10 @@
 import { apiService } from "./apiService";
+import { mapNotifications } from "./mappers/notificationMapper";
 
 export const notificationApi = {
-  /**
-   * Tạo thông báo mới qua notification service
-   * @param {{ userId: string, title: string, message: string, referenceId?: string, type?: string }} notificationData
-   */
-  createNotification: async (notificationData) => {
-    return apiService.post("/api/v1/notifications/internal/create", notificationData);
-  },
+  listMine: (config) =>
+    apiService.get("/api/v1/notifications/mine", undefined, config).then(mapNotifications),
+
+  markAllRead: (config) =>
+    apiService.post("/api/v1/notifications/mark-all-read", {}, config),
 };

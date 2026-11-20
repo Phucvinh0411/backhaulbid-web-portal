@@ -1,47 +1,34 @@
 import { appApiService } from "./apiService";
+import {
+  mapAuction,
+  mapAuctionListResponse,
+  mapBidListResponse,
+} from "./mappers/auctionMapper";
 
 /**
- * Service to interact with Bidding/Auction APIs.
+ * Service to interact with Bidding/Auction APIs via Next.js origin proxy routes.
  */
 class AuctionService {
-  /**
-   * Fetch all auctions for the current shipper.
-   * @param params Query parameters (page, limit, status, etc.)
-   */
   async getShipperAuctions(params = {}) {
-    return appApiService.get("/api/bidding/auctions", params);
+    return appApiService.get("/api/bidding/auctions", params).then(mapAuctionListResponse);
   }
 
-  /**
-   * Fetch a specific auction by ID.
-   * @param id Auction ID
-   */
-  async getAuctionById(id) {
-    return appApiService.get(`/api/bidding/auctions/${id}`);
+  async getAuctionById(id: string) {
+    return appApiService.get(`/api/bidding/auctions/${id}`).then(mapAuction);
   }
 
-  /**
-   * Fetch bids for an auction
-   */
-  async listBids(id, params = {}) {
-    return appApiService.get(`/api/bidding/auctions/${id}/bids`, params);
+  async listBids(id: string, params = {}) {
+    return appApiService.get(`/api/bidding/auctions/${id}/bids`, params).then(mapBidListResponse);
   }
 
-  /**
-   * Create a new auction (shipper only).
-   * @param payload Auction creation payload
-   */
-  async createAuction(payload) {
-    return appApiService.post("/api/bidding/auctions", payload);
+  async createAuction(payload: object) {
+    return appApiService.post("/api/bidding/auctions", payload).then(mapAuction);
   }
 
-  /**
-   * Cancel an auction.
-   * @param id Auction ID
-   * @param reason Reason for cancellation
-   */
-  async cancelAuction(id, reason) {
-    return appApiService.post(`/api/bidding/auctions/${id}/cancel`, reason ? { reason } : {});
+  async cancelAuction(id: string, reason?: string) {
+    return appApiService
+      .post(`/api/bidding/auctions/${id}/cancel`, reason ? { reason } : {})
+      .then(mapAuction);
   }
 }
 

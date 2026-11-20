@@ -11,6 +11,7 @@ import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { ErrorState, HighlightPanel, ListSkeleton, Panel, StatusBadge } from "@/components/ui";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { getAuction, listBids, placeBid } from "@/services/biddingApi";
+import { mapBid } from "@/services/mappers/auctionMapper";
 import useAuctionSocket from "@/hooks/useAuctionSocket";
 import useCurrentAccount from "@/hooks/useCurrentAccount";
 import { AUCTION_TYPE_META, MY_BID_OUTCOME_META, getAuctionPhase, getAuctionPhaseMeta, getMyBidOutcome } from "@/lib/statusMeta";
@@ -109,11 +110,12 @@ export default function CarrierAuctionScreen({ id }) {
         unsubscribers.push(
           on("bidPlaced", (payload) => {
             if (!payload || payload.auctionId !== id || payload.sealed || !payload.bid) return;
-            const bid = payload.bid;
+            const bid = mapBid(payload.bid);
+            if (!bid?.id) return;
             setBids((current) =>
               current.items.some((item) => item.id === bid.id)
                 ? current
-                : { ...current, items: [{ id: bid.id, carrierId: bid.carrierId, amount: toAmount(bid.bidAmount), time: bid.bidTime }, ...current.items] },
+                : { ...current, items: [{ id: bid.id, carrierId: bid.carrierId, amount: bid.amount, time: bid.time }, ...current.items] },
             );
           }),
           on("auctionStatusChanged", (payload) => {
