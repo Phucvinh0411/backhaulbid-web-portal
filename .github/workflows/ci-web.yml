@@ -1,16 +1,26 @@
-name: CI - Web Portal (Vite/React)
+name: CI - Web Portal (Next.js)
 
 on:
   push:
     branches:
+      - main
       - develop
   pull_request:
     branches:
+      - main
       - develop
+      - deploy
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-and-lint:
-    name: Lint & Build
+  lint-test-build:
+    name: Lint, Test & Build
     runs-on: ubuntu-latest
 
     steps:
@@ -21,7 +31,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -29,5 +39,12 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-      - name: Build Vite project
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build Next.js project
+        env:
+          CI: 'true'
+          NEXT_PUBLIC_GATEWAY_URL: http://localhost:8080
+          NEXT_PUBLIC_BIDDING_SOCKET_PATH: /bidding-socket
         run: npm run build
