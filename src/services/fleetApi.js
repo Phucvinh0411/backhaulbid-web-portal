@@ -1,5 +1,10 @@
 import { apiService } from "./apiService";
 import {
+  getDriverLicenseDocumentPath,
+  getVehicleDocumentPath,
+  openAuthorizedBlobInNewTab,
+} from "../lib/fleetDocuments";
+import {
   VEHICLE_TYPE_LABELS,
   mapDriver,
   mapDrivers,
@@ -8,7 +13,19 @@ import {
   mapVehicles,
 } from "./mappers/fleetMapper";
 
-export { VEHICLE_TYPE_LABELS };
+export { VEHICLE_TYPE_LABELS, getDriverLicenseDocumentPath, getVehicleDocumentPath };
+
+const QUIET_BLOB = { skipGlobalNotification: true, responseType: "blob" };
+
+export const openVehicleDocument = (vehicleId, kind) =>
+  openAuthorizedBlobInNewTab(() =>
+    apiService.get(getVehicleDocumentPath(vehicleId, kind), undefined, QUIET_BLOB),
+  );
+
+export const openDriverLicenseDocument = (driverId) =>
+  openAuthorizedBlobInNewTab(() =>
+    apiService.get(getDriverLicenseDocumentPath(driverId), undefined, QUIET_BLOB),
+  );
 
 export const getMyVehicles = () =>
   apiService.get("/api/v1/vehicles/mine").then(mapVehicles);

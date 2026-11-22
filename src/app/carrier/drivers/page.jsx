@@ -38,6 +38,7 @@ import {
   createDriver,
   deleteDriver,
   getMyDrivers,
+  openDriverLicenseDocument,
   updateDriver,
 } from "@/services/fleetApi";
 import { mediaApi } from "@/services/mediaApi";
@@ -986,10 +987,17 @@ export default function DriversPage() {
             <Box className="w-full h-40 bg-surface-sunken rounded-lg border border-line flex items-center justify-center relative overflow-hidden group p-2">
               {selectedDriver.licenseImageUrl ? (
                 <Button
-                  component="a"
-                  href={selectedDriver.licenseImageUrl}
-                  target="_blank"
-                  rel="noreferrer"
+                  onClick={async () => {
+                    try {
+                      await openDriverLicenseDocument(selectedDriver.id);
+                    } catch (error) {
+                      notify.error(
+                        error?.message === "POPUP_BLOCKED"
+                          ? "Trình duyệt đang chặn cửa sổ bật lên."
+                          : getApiErrorMessage(error, "Không thể mở ảnh bằng lái."),
+                      );
+                    }
+                  }}
                   size="small"
                   variant="outlined"
                 >

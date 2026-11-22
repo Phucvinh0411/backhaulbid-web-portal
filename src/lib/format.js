@@ -96,4 +96,13 @@ export function formatWeight(value) {
   return amount && amount > 0 ? `${numberFormatter.format(amount)} tấn` : UNKNOWN;
 }
 
+/** Compact chart tick for VND values so Y-axis labels stay readable in narrow gutters. */
+export function formatCurrencyAxisTick(value) {
+  const amount = Number(value) || 0;
+  if (Math.abs(amount) >= 1_000_000) {
+    return `${(amount / 1_000_000).toFixed(1).replace(/\.0$/, "")}tr`;
+  }
+  return `${Math.round(amount / 1000)}k`;
+}
+
 export { UNKNOWN };

@@ -16,6 +16,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Alert,
+  LinearProgress,
 } from "@mui/material";
 import {
   AreaChart,
@@ -38,7 +39,6 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import RouteIcon from "@mui/icons-material/Route";
 
 import { PageHeader, StatCard } from "@/components/common";
-import { ListSkeleton } from "@/components/ui";
 import ActionInbox from "@/components/dashboard/ActionInbox";
 import AppCard from "@/components/common/AppCard";
 import { tokens } from "@/theme/theme";
@@ -93,18 +93,6 @@ export default function DashboardScreen() {
     }
   };
 
-  if (loading) {
-    return <ListSkeleton rows={4} height={120} label="Đang tải tổng quan..." />;
-  }
-
-  if (error) {
-    return (
-      <Box className="p-4">
-        <Alert severity="error">{error}</Alert>
-      </Box>
-    );
-  }
-
   return (
     <Box className="w-full flex flex-col gap-4">
       <PageHeader
@@ -126,6 +114,9 @@ export default function DashboardScreen() {
         }
       />
       <ActionInbox role="shipper" />
+
+      {loading && <LinearProgress aria-label="Đang tải số liệu tổng quan" />}
+      {error && <Alert severity="error">{error}</Alert>}
 
       {/* KPI Cards */}
       <Box>

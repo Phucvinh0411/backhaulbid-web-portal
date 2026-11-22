@@ -70,6 +70,15 @@ function translateKnownMessage(message, status, code) {
   if (status === 404 || /not found/i.test(normalized)) {
     return "Không tìm thấy dữ liệu cần xử lý. Vui lòng tải lại trang rồi thử lại.";
   }
+  if (status === 409) {
+    if (/identity is already verified|already verified/i.test(normalized)) {
+      return "Tài khoản đã hoàn tất xác thực eKYC trước đó.";
+    }
+    return "Thao tác bị xung đột với trạng thái dữ liệu hiện tại. Vui lòng tải lại trang rồi thử lại.";
+  }
+  if (status === 502 || status === 503 || status === 504 || /service unavailable|gateway timeout|timed out/i.test(normalized)) {
+    return "Dịch vụ liên quan đang quá tải hoặc tạm gián đoạn. Vui lòng thử lại sau ít giây.";
+  }
   if (/contact phone is invalid/i.test(normalized)) {
     return "Số điện thoại người liên hệ không hợp lệ (cần từ 8 đến 30 chữ số).";
   }
@@ -116,5 +125,14 @@ export function getApiErrorMessage(error, fallback = "Không thể thực hiện
   const code = payload?.code || payload?.error?.code;
   const status = error?.response?.status || payload?.error?.details?.status;
   const message = translateKnownMessage(getRawMessage(error), status, code);
-  return message || fallback;
+  if (message) return message;
+  if (error?.response && status) {
+    if (status >= 500) {
+      return "Máy chủ đang gặp sự cố tạm thời. Vui lòng thử lại sau ít giây.";
+    }
+    if (fallback === "Không thể kết nối tới máy chủ.") {
+      return `Yêu cầu chưa thể xử lý (mã lỗi ${status}). Vui lòng kiểm tra dữ liệu và thử lại.`;
+    }
+  }
+  return fallback;
 }

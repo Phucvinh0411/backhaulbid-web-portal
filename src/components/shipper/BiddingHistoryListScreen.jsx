@@ -355,7 +355,9 @@ export default function BiddingHistoryListScreen() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Search Box */}
             <TextField
+              hiddenLabel
               placeholder="Tìm kiếm mã, mặt hàng, địa điểm..."
+              inputProps={{ "aria-label": "Tìm kiếm mã, mặt hàng, địa điểm" }}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full md:w-80"
@@ -641,6 +643,8 @@ export default function BiddingHistoryListScreen() {
                 Hiển thị
               </Typography>
               <Select
+                hiddenLabel
+                inputProps={{ "aria-label": "Số phiên mỗi trang" }}
                 value={rowsPerPage}
                 onChange={(e) => {
                   setRowsPerPage(Number(e.target.value));

@@ -29,8 +29,8 @@ import { getAdminDriverReviews, getAdminVehicleReviews } from "@/services/fleetA
 import { listAuctions } from "@/services/biddingApi";
 import { walletApi } from "@/services/walletApi";
 import { unwrapListData } from "@/services/responseData";
-
-const reviewTone = (status) => status === "PENDING" ? "warning" : status === "VERIFIED" ? "success" : "danger";
+import { getAdminStatusMeta } from "@/lib/statusMeta";
+import { shortId } from "@/lib/format";
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState({ accounts: [], openAuctions: [], pendingAuctions: [], vehicles: [], drivers: [], walletSummary: null });
@@ -62,10 +62,29 @@ export default function AdminDashboardPage() {
     };
   }, []);
 
+  const accountNameById = useMemo(
+    () => new Map(
+      data.accounts
+        .filter((account) => account?.id)
+        .map((account) => [
+          String(account.id),
+          account.companyName || account.fullName || account.phone || `Tài khoản #${shortId(account.id)}`,
+        ]),
+    ),
+    [data.accounts],
+  );
+
   const reviewRows = useMemo(() => [
-    ...data.vehicles.map((vehicle) => ({ id: vehicle.id, type: "Xe", subject: vehicle.licensePlate || "Chưa có biển số", owner: vehicle.carrierId || "Chưa cập nhật", status: vehicle.status || vehicle.verificationStatus })),
+    ...data.vehicles.map((vehicle) => ({
+      id: vehicle.id,
+      type: "Xe",
+      subject: vehicle.licensePlate || "Chưa có biển số",
+      owner: (vehicle.carrierId && accountNameById.get(String(vehicle.carrierId)))
+        || (vehicle.carrierId ? `Chủ xe #${shortId(vehicle.carrierId)}` : "Chưa cập nhật"),
+      status: vehicle.status || vehicle.verificationStatus,
+    })),
     ...data.drivers.map((driver) => ({ id: driver.id, type: "Tài xế", subject: driver.fullName || "Chưa có tên", owner: driver.phone || "Chưa cập nhật", status: driver.status })),
-  ], [data.drivers, data.vehicles]);
+  ], [accountNameById, data.drivers, data.vehicles]);
 
   if (loading) return <AdminPageShell><Box className="flex min-h-[320px] items-center justify-center gap-2 text-ink-muted"><CircularProgress size={24} /> Đang tải tổng quan admin...</Box></AdminPageShell>;
   if (error) return <AdminPageShell><Alert severity="error">{error}</Alert></AdminPageShell>;
@@ -88,10 +107,13 @@ export default function AdminDashboardPage() {
 
       <AdminSectionCard
         title="Hồ sơ đội xe cần xử lý"
-        subtitle={reviewRows.length ? `${reviewRows.length} hồ sơ đang ở trạng thái PENDING` : "Không có hồ sơ PENDING trong dữ liệu hiện tại."}
+        subtitle={reviewRows.length ? `${reviewRows.length} hồ sơ đang chờ duyệt` : "Không có hồ sơ chờ duyệt trong dữ liệu hiện tại."}
         action={<AdminSecondaryButton component={Link} href="/admin/fleet-verifications" size="small">Xem tất cả</AdminSecondaryButton>}
       >
-        {reviewRows.length === 0 ? <Box className="p-10 text-center text-ink-muted">Không có tác vụ cần xử lý.</Box> : <TableContainer><Table aria-label="Hồ sơ đội xe cần xử lý"><TableHead sx={{ bgcolor: "rgba(27, 73, 101, 0.04)" }}><TableRow><TableCell sx={{ fontWeight: 700 }}>Loại hồ sơ</TableCell><TableCell sx={{ fontWeight: 700 }}>Đối tượng</TableCell><TableCell sx={{ fontWeight: 700 }}>Chủ hồ sơ / liên hệ</TableCell><TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell><TableCell align="right" sx={{ fontWeight: 700 }}>Thao tác</TableCell></TableRow></TableHead><TableBody>{reviewRows.slice(0, 10).map((row) => <TableRow key={`${row.type}-${row.id}`} hover><TableCell>{row.type}</TableCell><TableCell sx={{ fontWeight: 700, color: "primary.main" }}>{row.subject}</TableCell><TableCell sx={{ color: "text.secondary" }}>{row.owner}</TableCell><TableCell><AdminStatusChip label={row.status || "PENDING"} tone={reviewTone(row.status)} /></TableCell><TableCell align="right"><AdminSecondaryButton component={Link} href="/admin/fleet-verifications" size="small">Mở duyệt</AdminSecondaryButton></TableCell></TableRow>)}</TableBody></Table></TableContainer>}
+        {reviewRows.length === 0 ? <Box className="p-10 text-center text-ink-muted">Không có tác vụ cần xử lý.</Box> : <TableContainer><Table aria-label="Hồ sơ đội xe cần xử lý"><TableHead sx={{ bgcolor: "rgba(27, 73, 101, 0.04)" }}><TableRow><TableCell sx={{ fontWeight: 700 }}>Loại hồ sơ</TableCell><TableCell sx={{ fontWeight: 700 }}>Đối tượng</TableCell><TableCell sx={{ fontWeight: 700 }}>Chủ hồ sơ / liên hệ</TableCell><TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell><TableCell align="right" sx={{ fontWeight: 700 }}>Thao tác</TableCell></TableRow></TableHead><TableBody>{reviewRows.slice(0, 10).map((row) => {
+          const statusMeta = getAdminStatusMeta(row.status || "PENDING");
+          return <TableRow key={`${row.type}-${row.id}`} hover><TableCell>{row.type}</TableCell><TableCell sx={{ fontWeight: 700, color: "primary.main" }}>{row.subject}</TableCell><TableCell sx={{ color: "text.secondary" }}>{row.owner}</TableCell><TableCell><AdminStatusChip label={statusMeta.label} tone={statusMeta.tone} /></TableCell><TableCell align="right"><AdminSecondaryButton component={Link} href="/admin/fleet-verifications" size="small">Mở duyệt</AdminSecondaryButton></TableCell></TableRow>;
+        })}</TableBody></Table></TableContainer>}
       </AdminSectionCard>
 
       <Box className="rounded-xl border border-line bg-surface-sunken p-4"><Typography variant="body2" className="text-ink-muted"><strong>Wallet sandbox:</strong> số liệu lấy từ giao dịch SUCCESS; việc chuyển tiền ra ngân hàng vẫn là quy trình duyệt thủ công.</Typography></Box>

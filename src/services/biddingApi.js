@@ -1,4 +1,5 @@
 import { apiService } from "./apiService";
+import { dedupeInFlight } from "@/lib/inFlightRequest";
 import {
   mapAuction,
   mapAuctionListResponse,
@@ -18,9 +19,9 @@ export const createAuction = (payload, config) =>
     .then(mapAuction);
 
 export const listAuctions = (params) =>
-  apiService
-    .get(biddingPath("/auctions"), params)
-    .then(mapAuctionListResponse);
+  dedupeInFlight(`bidding:auctions:${JSON.stringify(params || {})}`, () =>
+    apiService.get(biddingPath("/auctions"), params).then(mapAuctionListResponse),
+  );
 
 export const getAuction = (auctionId) =>
   apiService

@@ -36,6 +36,7 @@ import TextField from "@mui/material/TextField";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import ContractItem, { getContractStatusDesign } from "./ContractItem";
 import { contractApi } from "@/services/contractApi";
+import { carrierProfileApi } from "@/services/carrierProfileApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { mapContractResponses, getContractTrackingHref } from "@/services/contractMapper";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
@@ -106,7 +107,33 @@ export default function ContractsManagementScreen({
     setLoadError("");
     try {
       const response = await contractApi.listMine();
-      setItems(mapContractResponses(response, role));
+      const mapped = mapContractResponses(response, role);
+      setItems(mapped);
+
+      const uniquePartnerIds = [...new Set(mapped.map((contract) => contract.partnerId).filter(Boolean))];
+      if (uniquePartnerIds.length > 0) {
+        const companyEntries = await Promise.all(
+          uniquePartnerIds.map(async (partnerId) => {
+            const company = await carrierProfileApi
+              .getCompany(partnerId, { skipGlobalNotification: true })
+              .catch(() => null);
+            const data = company?.data ?? company;
+            return [String(partnerId), data?.companyName || null];
+          }),
+        );
+        const companyById = Object.fromEntries(companyEntries.filter(([, name]) => Boolean(name)));
+        if (Object.keys(companyById).length > 0) {
+          setItems((current) =>
+            current.map((contract) => {
+              const companyName = contract.partnerId ? companyById[String(contract.partnerId)] : null;
+              if (!companyName) return contract;
+              return role === "shipper"
+                ? { ...contract, carrierName: companyName }
+                : { ...contract, shipperName: companyName };
+            }),
+          );
+        }
+      }
     } catch (error) {
       const message = getApiErrorMessage(
         error,

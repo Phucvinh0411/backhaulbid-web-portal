@@ -1,5 +1,6 @@
 import { apiService } from "./apiService";
 import { normalizeContract, normalizeContracts } from "./contractMapper";
+import { dedupeInFlight } from "@/lib/inFlightRequest";
 import {
   mapCargoDocument,
   mapCargoDocumentsResponse,
@@ -25,7 +26,9 @@ import {
 
 export const contractApi = {
   listMine: (params) =>
-    apiService.get("/api/v1/contracts/mine", params).then(normalizeContracts),
+    dedupeInFlight(`contracts:mine:${JSON.stringify(params || {})}`, () =>
+      apiService.get("/api/v1/contracts/mine", params).then(normalizeContracts),
+    ),
   get: (contractId) =>
     apiService.get(`/api/v1/contracts/${contractId}`).then(normalizeContract),
   requestSignOtp: (contractId, config) =>

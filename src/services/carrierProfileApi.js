@@ -3,8 +3,8 @@ import { apiService } from "./apiService";
 const QUIET = { skipGlobalNotification: true };
 
 export const carrierProfileApi = {
-  getCompany: (carrierId) =>
-    apiService.get(`/api/v1/business-verifications/public/${encodeURIComponent(carrierId)}`),
+  getCompany: (carrierId, config) =>
+    apiService.get(`/api/v1/business-verifications/public/${encodeURIComponent(carrierId)}`, undefined, config),
   getVehicles: (carrierId) =>
     apiService.get(`/api/v1/vehicles/carrier/${encodeURIComponent(carrierId)}`),
   getDrivers: (carrierId) =>

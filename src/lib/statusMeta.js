@@ -202,3 +202,28 @@ export function getTripCompletionSummary(trip, events = []) {
     incidentCount: events.filter((event) => event.eventType === "INCIDENT_REPORTED").length,
   };
 }
+
+export const SEPAY_ORDER_STATUS_META = Object.freeze({
+  CREATED: { label: "Chờ chuyển khoản", tone: "warning", chipColor: "warning" },
+  PAID: { label: "Đã thanh toán", tone: "success", chipColor: "success" },
+  EXPIRED: { label: "Hết hạn", tone: "neutral", chipColor: "default" },
+  CANCELLED: { label: "Đã hủy", tone: "danger", chipColor: "error" },
+  FAILED: { label: "Thất bại", tone: "danger", chipColor: "error" },
+});
+
+export const getSepayOrderStatusMeta = (status) =>
+  SEPAY_ORDER_STATUS_META[status] || { label: status || "Chưa xác định", tone: "neutral", chipColor: "default" };
+
+export const ADMIN_STATUS_META = Object.freeze({
+  PENDING: { label: "Chờ duyệt", tone: "warning" },
+  VERIFIED: { label: "Đã xác minh", tone: "success" },
+  APPROVED: { label: "Đã duyệt", tone: "success" },
+  REJECTED: { label: "Từ chối", tone: "danger" },
+  ACTIVE: { label: "Đang hoạt động", tone: "success" },
+  INACTIVE: { label: "Ngừng hoạt động", tone: "warning" },
+  BLOCKED: { label: "Đã khóa", tone: "danger" },
+  EXPIRED: { label: "Hết hạn", tone: "neutral" },
+});
+
+export const getAdminStatusMeta = (status) =>
+  ADMIN_STATUS_META[status] || { label: status || "Chưa rõ", tone: "neutral" };

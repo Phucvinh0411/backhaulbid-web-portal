@@ -32,11 +32,15 @@ import {
 import {
   getAdminDriverReviews,
   getAdminVehicleReviews,
+  openDriverLicenseDocument,
+  openVehicleDocument,
   reviewAdminDriver,
   reviewAdminVehicle,
 } from "@/services/fleetApi";
+import { identityApi } from "@/services/identityApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
+import { shortId } from "@/lib/format";
 
 const STATUS_META = {
   PENDING: { label: "Chờ duyệt", tone: "warning" },
@@ -65,6 +69,7 @@ export default function FleetVerificationsPage() {
   const [tab, setTab] = useState("vehicles");
   const [status, setStatus] = useState("PENDING");
   const [rows, setRows] = useState([]);
+  const [accountNames, setAccountNames] = useState({});
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(null);
   const [detailRow, setDetailRow] = useState(null);
@@ -96,6 +101,44 @@ export default function FleetVerificationsPage() {
   useEffect(() => {
     void loadReviews();
   }, [notify, status, tab]);
+
+  useEffect(() => {
+    let active = true;
+    identityApi
+      .listAdminAccounts()
+      .then((accounts) => {
+        if (!active || !Array.isArray(accounts)) return;
+        const map = {};
+        accounts.forEach((account) => {
+          if (account?.id) {
+            map[String(account.id)] =
+              account.companyName || account.fullName || account.phone || `Tài khoản #${shortId(account.id)}`;
+          }
+        });
+        setAccountNames(map);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const getCarrierLabel = (carrierId) => {
+    if (!carrierId) return "—";
+    return accountNames[String(carrierId)] || `Chủ xe #${shortId(carrierId)}`;
+  };
+
+  const handleOpenDocument = async (loader) => {
+    try {
+      await loader();
+    } catch (error) {
+      if (error?.message === "POPUP_BLOCKED") {
+        notify.warning("Trình duyệt đang chặn cửa sổ bật lên. Vui lòng cho phép để xem tài liệu.");
+        return;
+      }
+      notify.error(getApiErrorMessage(error, "Không thể tải tài liệu đính kèm."));
+    }
+  };
 
   const changeTab = (nextTab) => {
     setTab(nextTab);
@@ -222,17 +265,15 @@ export default function FleetVerificationsPage() {
                           fontFamily: "monospace",
                         }}
                       >
-                        {row.id}
+                        #{shortId(row.id)}
                       </Typography>
                     </TableCell>
-                    <TableCell
-                      sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}
-                    >
-                      {tab === "vehicles" ? row.carrierId : "—"}
+                    <TableCell>
+                      {tab === "vehicles" ? getCarrierLabel(row.carrierId) : row.phone || "—"}
                     </TableCell>
                     <TableCell>
                       {tab === "vehicles"
-                        ? `${row.vehicleType || "Chưa rõ"} · ${row.payloadCapacity || "?"} tấn`
+                        ? `${row.vehicleTypeLabel || row.vehicleType || "Chưa rõ"} · ${row.capacity || "?"}`
                         : `${row.phone || "Chưa có SĐT"} · GPLX ${row.licenseNumber || "?"}`}
                     </TableCell>
                     <TableCell>
@@ -325,7 +366,7 @@ export default function FleetVerificationsPage() {
                 <strong>
                   {tab === "vehicles" ? "Chủ xe" : "Số điện thoại"}:
                 </strong>{" "}
-                {tab === "vehicles" ? detailRow.carrierId : detailRow.phone}
+                {tab === "vehicles" ? getCarrierLabel(detailRow.carrierId) : detailRow.phone}
               </Typography>
               {tab === "vehicles" ? (
                 <Box
@@ -338,10 +379,12 @@ export default function FleetVerificationsPage() {
                   {[
                     {
                       label: "Cà vẹt / đăng ký",
+                      kind: "registration",
                       url: detailRow.registrationDocumentUrl,
                     },
                     {
                       label: "Đăng kiểm",
+                      kind: "inspection",
                       url: detailRow.inspectionDocumentUrl,
                     },
                   ].map((document) => (
@@ -361,11 +404,8 @@ export default function FleetVerificationsPage() {
                       </Typography>
                       {document.url ? (
                         <Button
-                          component="a"
-                          href={document.url}
-                          target="_blank"
-                          rel="noreferrer"
                           size="small"
+                          onClick={() => handleOpenDocument(() => openVehicleDocument(detailRow.id, document.kind))}
                         >
                           Mở tài liệu
                         </Button>
@@ -392,11 +432,8 @@ export default function FleetVerificationsPage() {
                   </Typography>
                   {detailRow.licenseImageUrl ? (
                     <Button
-                      component="a"
-                      href={detailRow.licenseImageUrl}
-                      target="_blank"
-                      rel="noreferrer"
                       size="small"
+                      onClick={() => handleOpenDocument(() => openDriverLicenseDocument(detailRow.id))}
                     >
                       Mở tài liệu
                     </Button>

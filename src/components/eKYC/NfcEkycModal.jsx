@@ -6,10 +6,12 @@ import { Alert, Box, TextField, Typography } from "@mui/material";
 import { ActionButton } from "@/components/common";
 import { ResponsiveDialog } from "@/components/ui";
 import { apiService } from "@/services/apiService";
+import { getApiErrorMessage } from "@/services/errorMessage";
 import VerificationOverview from "./VerificationOverview";
 
 const PATH = "/api/v1/representative-verifications/sessions";
 const END = ["SUBMITTED", "CANCELLED", "EXPIRED"];
+const QUIET = { skipGlobalNotification: true };
 
 /** Ignores best-effort cancellation errors after a dialog has already closed. */
 function ignoreCancellationError() {}
@@ -20,6 +22,7 @@ export default function NfcEkycModal({ open = true, onClose, onComplete }) {
   const [qr, setQr] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [alreadyVerified, setAlreadyVerified] = useState("");
   const [busy, setBusy] = useState(false);
   const [remaining, setRemaining] = useState(0);
   const [generation, setGeneration] = useState(0);
@@ -34,16 +37,24 @@ export default function NfcEkycModal({ open = true, onClose, onComplete }) {
     let current = null;
     /** Requests a fresh QR pairing session from identity-service. */
     const create = async () => {
-      setBusy(true); setError(""); setSession(null); setQr(""); setCode("");
+      setBusy(true); setError(""); setAlreadyVerified(""); setSession(null); setQr(""); setCode("");
       try {
-        current = await apiService.post(PATH);
-        if (!live) { void apiService.post(`${PATH}/${current.sessionId}/cancel`).catch(ignoreCancellationError); return; }
+        current = await apiService.post(PATH, undefined, QUIET);
+        if (!live) { void apiService.post(`${PATH}/${current.sessionId}/cancel`, undefined, QUIET).catch(ignoreCancellationError); return; }
         active.current = current;
         setRemaining(Math.max(0, Math.ceil((Date.parse(current.expiresAt) - Date.now()) / 1000)));
         const image = await QRCode.toDataURL(current.qrPayload, { width: 256, margin: 2, errorCorrectionLevel: "M" });
         if (!live) return;
         setQr(image); setSession(current);
-      } catch (e) { if (live) setError(e?.response?.data?.message || "Không tạo được mã xác thực. Vui lòng thử lại."); }
+      } catch (e) {
+        if (!live) return;
+        const msg = getApiErrorMessage(e, "Không tạo được mã xác thực. Vui lòng thử lại.");
+        if (e?.response?.status === 409) {
+          setAlreadyVerified(msg);
+        } else {
+          setError(msg);
+        }
+      }
       finally { if (live) setBusy(false); }
     };
     /** Refreshes pairing and capture status while the session remains active. */
@@ -51,7 +62,7 @@ export default function NfcEkycModal({ open = true, onClose, onComplete }) {
       if (!live || !current || polling || END.includes(current.state)) return;
       polling = true;
       try {
-        const status = await apiService.get(`${PATH}/${current.sessionId}`);
+        const status = await apiService.get(`${PATH}/${current.sessionId}`, undefined, QUIET);
         if (!live) return;
         current = status; active.current = status; setSession(status);
         if (status.state !== "CREATED") setQr("");
@@ -70,7 +81,7 @@ export default function NfcEkycModal({ open = true, onClose, onComplete }) {
     /** Cancels timers and revokes an unfinished session when the modal unmounts. */
     return function cancelSessionEffect() {
       live = false; clearTimeout(createTimer); clearInterval(timer); setQr("");
-      if (current && !END.includes(current.state)) void apiService.post(`${PATH}/${current.sessionId}/cancel`).catch(ignoreCancellationError);
+      if (current && !END.includes(current.state)) void apiService.post(`${PATH}/${current.sessionId}/cancel`, undefined, QUIET).catch(ignoreCancellationError);
       active.current = null;
     };
   }, [open, generation]);
@@ -78,7 +89,7 @@ export default function NfcEkycModal({ open = true, onClose, onComplete }) {
   /** Confirms the pairing code displayed by the companion app. */
   const approve = async () => {
     setBusy(true); setError("");
-    try { setSession(await apiService.post(`${PATH}/${session.sessionId}/approve`, { confirmationCode: code })); }
+    try { setSession(await apiService.post(`${PATH}/${session.sessionId}/approve`, { confirmationCode: code }, QUIET)); }
     catch { setError("Mã không khớp hoặc phiên đã kết thúc. Kiểm tra mã trên điện thoại của bạn."); }
     finally { setBusy(false); }
   };
@@ -86,7 +97,7 @@ export default function NfcEkycModal({ open = true, onClose, onComplete }) {
   /** Cancels unfinished work and closes the dialog after a successful revoke. */
   const close = async () => {
     if (active.current && !END.includes(active.current.state)) {
-      try { await apiService.post(`${PATH}/${active.current.sessionId}/cancel`); }
+      try { await apiService.post(`${PATH}/${active.current.sessionId}/cancel`, undefined, QUIET); }
       catch { setError("Chưa hủy được phiên trên máy chủ. Kiểm tra mạng rồi thử lại."); return; }
     }
     if (session?.state === "SUBMITTED") onComplete?.();
@@ -112,9 +123,9 @@ export default function NfcEkycModal({ open = true, onClose, onComplete }) {
       actions={
         <>
           <ActionButton variant="secondary" onClick={close}>
-            {session?.state === "SUBMITTED" ? "Đóng" : "Hủy xác thực"}
+            {session?.state === "SUBMITTED" || alreadyVerified ? "Đóng" : "Hủy xác thực"}
           </ActionButton>
-          {((!session && !busy) || ["CANCELLED", "EXPIRED"].includes(session?.state)) && (
+          {((!session && !busy && !alreadyVerified) || ["CANCELLED", "EXPIRED"].includes(session?.state)) && (
             <ActionButton variant="primary" onClick={restartSession}>
               Tạo mã mới
             </ActionButton>
@@ -134,6 +145,7 @@ export default function NfcEkycModal({ open = true, onClose, onComplete }) {
         <Typography variant="body2" color="text.secondary">
           Kết quả cập nhật theo từng bước kiểm tra. Sau khi hoàn tất, bạn có thể xem lại thông tin và ảnh hồ sơ.
         </Typography>
+        {alreadyVerified && <Alert severity="info" role="status">{alreadyVerified}</Alert>}
         {error && <Alert severity="error" role="alert">{error}</Alert>}
         {busy && !session && <Alert severity="info" role="status">Đang tạo phiên xác thực…</Alert>}
         {qr && session?.state === "CREATED" && (

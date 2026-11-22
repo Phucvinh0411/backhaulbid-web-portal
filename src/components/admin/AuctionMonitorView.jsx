@@ -33,6 +33,7 @@ import {
   AdminToolbar,
 } from "@/components/admin/AdminUI";
 import { tokens } from "@/theme/theme";
+import { formatCurrencyAxisTick } from "@/lib/format";
 import { ResponsiveDialog } from "@/components/ui";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
@@ -482,14 +483,14 @@ function SessionDetailDialog({ session, open, onClose, onFlag, onStop }) {
         <Box sx={{ height: 220, border: "1px solid var(--color-line)", borderRadius: 2, bgcolor: "var(--color-surface)", p: 1 }}>
           {bids.length ? (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={bids} margin={{ top: 12, right: 16, left: 4, bottom: 8 }}>
+              <LineChart data={bids} margin={{ top: 12, right: 16, left: 8, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={tokens.line} />
                 <XAxis dataKey="time" axisLine={false} tickLine={false} />
                 <YAxis
-                  tickFormatter={(value) => `${Math.round(value / 1000)}k`}
+                  tickFormatter={formatCurrencyAxisTick}
                   axisLine={false}
                   tickLine={false}
-                  width={52}
+                  width={64}
                 />
                 <RechartsTooltip content={<ChartTooltip />} />
                 <Line

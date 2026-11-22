@@ -1,9 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { dedupeInFlight } from "@/lib/inFlightRequest";
 
 const ACCOUNT_SESSION_EVENT = "account-session-changed";
 let cached = null;
+
+async function fetchCurrentAccountOnce() {
+  return dedupeInFlight("auth:me", async () => {
+    let response = await fetch("/api/auth/me", { cache: "no-store" });
+    if (response.status === 401) {
+      const refreshRes = await fetch("/api/auth/refresh", { method: "POST" }).catch(() => null);
+      if (refreshRes?.ok) {
+        response = await fetch("/api/auth/me", { cache: "no-store" });
+      }
+    }
+    const payload = response.ok ? await response.json() : null;
+    const data = payload?.data;
+    if (!data) return null;
+    return {
+      accountId: data.accountId || data.id,
+      role: data.role,
+      phone: data.phone,
+      name: data.fullName || data.companyName || data.phone,
+    };
+  });
+}
 
 export function clearCurrentAccountCache() {
   cached = null;
@@ -36,25 +58,12 @@ export default function useCurrentAccount() {
     let active = true;
     (async () => {
       try {
-        let response = await fetch("/api/auth/me", { cache: "no-store" });
-        if (response.status === 401) {
-          const refreshRes = await fetch("/api/auth/refresh", { method: "POST" }).catch(() => null);
-          if (refreshRes?.ok) {
-            response = await fetch("/api/auth/me", { cache: "no-store" });
-          }
-        }
-        const payload = response.ok ? await response.json() : null;
-        const data = payload?.data;
-        if (!data) {
+        const accountData = await fetchCurrentAccountOnce();
+        if (!accountData) {
           if (active) setAccount(null);
           return;
         }
-        cached = {
-          accountId: data.accountId || data.id,
-          role: data.role,
-          phone: data.phone,
-          name: data.fullName || data.companyName || data.phone,
-        };
+        cached = accountData;
         if (active) setAccount(cached);
       } catch {
         // Ignore background account fetch error

@@ -40,6 +40,7 @@ import { getApiErrorMessage } from "@/services/errorMessage";
 import { getPageItems, getPageMeta, toWithdrawalApiStatus } from "@/services/responseData";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import WalletDetailDialog, { WalletDetailRow } from "@/components/wallet/WalletDetailDialog";
+import { getSepayOrderStatusMeta } from "@/lib/statusMeta";
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(amount) || 0);
@@ -256,7 +257,7 @@ export default function AdminWalletsPage() {
             textColor="primary"
             indicatorColor="primary"
           >
-            <Tab value="PENDING" label="Chờ xử lý (PENDING)" sx={{ fontWeight: 600 }} />
+            <Tab value="PENDING" label="Chờ xử lý" sx={{ fontWeight: 600 }} />
             <Tab value="COMPLETED" label="Đã hoàn thành" sx={{ fontWeight: 600 }} />
             <Tab value="REJECTED" label="Đã từ chối" sx={{ fontWeight: 600 }} />
             <Tab value="ALL" label="Tất cả" sx={{ fontWeight: 600 }} />
@@ -308,6 +309,7 @@ export default function AdminWalletsPage() {
                             size="small"
                             startIcon={<CheckCircleOutlineIcon />}
                             onClick={() => handleOpenApprove(item)}
+                            sx={{ whiteSpace: "nowrap", flexShrink: 0 }}
                           >
                             Duyệt
                           </AdminPrimaryButton>
@@ -316,6 +318,7 @@ export default function AdminWalletsPage() {
                             color="error"
                             startIcon={<CancelOutlinedIcon />}
                             onClick={() => handleOpenReject(item)}
+                            sx={{ whiteSpace: "nowrap", flexShrink: 0 }}
                           >
                             Từ chối
                           </AdminSecondaryButton>
@@ -381,7 +384,12 @@ export default function AdminWalletsPage() {
                     ) : "---"}
                   </TableCell>
                   <TableCell className="tabular" sx={{ fontWeight: 700 }}>{formatCurrency(item.amount)}</TableCell>
-                  <TableCell><AdminStatusChip label={item.status} tone={item.status === "PAID" ? "success" : item.status === "FAILED" ? "danger" : "warning"} /></TableCell>
+                  <TableCell>
+                    {(() => {
+                      const statusMeta = getSepayOrderStatusMeta(item.status);
+                      return <AdminStatusChip label={statusMeta.label} tone={statusMeta.tone} />;
+                    })()}
+                  </TableCell>
                   <TableCell className="tabular">{formatDate(item.updatedAt || item.createdAt)}</TableCell>
                   <TableCell align="right">
                     <Button size="small" onClick={() => handleOpenTopUpDetail(item)}>Xem đơn</Button>

@@ -154,9 +154,9 @@ const theme = createTheme({
     // Soft-filled inputs (DESIGN.md): label inside the field, no border at rest,
     // navy 2 px ring on focus, danger ring on error. Explicit variant="outlined" still works.
     MuiTextField: { defaultProps: { variant: "filled", size: "small", InputLabelProps: { shrink: true } } },
-    MuiFormControl: { defaultProps: { variant: "filled" } },
+    MuiFormControl: { defaultProps: { variant: "filled", size: "small" } },
     // Labels always sit shrunk inside the field, so an empty value must still show its "Tất cả" option.
-    MuiSelect: { defaultProps: { variant: "filled", displayEmpty: true }, styleOverrides: { icon: { color: tokens.inkMuted } } },
+    MuiSelect: { defaultProps: { variant: "filled", size: "small", displayEmpty: true }, styleOverrides: { icon: { color: tokens.inkMuted } } },
     MuiFilledInput: {
       defaultProps: { disableUnderline: true },
       styleOverrides: {
@@ -169,8 +169,26 @@ const theme = createTheme({
           "&.Mui-focused": { backgroundColor: tokens.surface, borderColor: tokens.brand },
           "&.Mui-error": { borderColor: tokens.danger },
           "&.Mui-disabled": { backgroundColor: tokens.canvas },
+          // Fields without a floating InputLabel (e.g. standalone selects/search inputs) keep symmetric
+          // vertical padding instead of reserving dead top space that pushes values to the bottom edge.
+          ":where(.MuiFormControl-root:not(:has(> .MuiInputLabel-root))) &": {
+            "&:not(.MuiInputBase-multiline) .MuiFilledInput-input": { paddingTop: 16, paddingBottom: 17 },
+            "&.MuiInputBase-sizeSmall:not(.MuiInputBase-multiline) .MuiFilledInput-input": { paddingTop: 8, paddingBottom: 9 },
+            "&.MuiInputBase-multiline": { paddingTop: 16, paddingBottom: 17 },
+            "&.MuiInputBase-sizeSmall.MuiInputBase-multiline": { paddingTop: 8, paddingBottom: 9 },
+          },
         },
         input: { "@media (pointer: coarse)": { fontSize: 16 } },
+      },
+    },
+    MuiInputAdornment: {
+      styleOverrides: {
+        root: {
+          // Keep start adornments centered vertically when no floating label is present.
+          ":where(.MuiFormControl-root:not(:has(> .MuiInputLabel-root))) &.MuiInputAdornment-positionStart": {
+            marginTop: 0,
+          },
+        },
       },
     },
     MuiOutlinedInput: {
@@ -188,7 +206,7 @@ const theme = createTheme({
         input: { "@media (pointer: coarse)": { fontSize: 16 } },
       },
     },
-    MuiInputLabel: { styleOverrides: { root: { color: tokens.inkMuted, "&.Mui-focused": { color: tokens.brand } } } },
+    MuiInputLabel: { defaultProps: { shrink: true }, styleOverrides: { root: { color: tokens.inkMuted, "&.Mui-focused": { color: tokens.brand } } } },
     MuiFormHelperText: { styleOverrides: { root: { marginLeft: 2, marginRight: 0 } } },
     MuiChip: {
       styleOverrides: {

@@ -61,6 +61,7 @@ function StatusChip({ user }) {
     ACTIVE: ["Đang hoạt động", "success"],
     INACTIVE: ["Chưa kích hoạt", "warning"],
     BLOCKED: ["Đã khóa", "danger"],
+    EXPIRED: ["Hết hạn", "neutral"],
   };
   const [label, tone] = designs[status] || [status || "Chưa rõ", "neutral"];
   return <AdminStatusChip label={label} tone={tone} />;

@@ -40,6 +40,7 @@ import {
   createVehicle,
   deactivateVehicle,
   getMyVehicles,
+  openVehicleDocument,
   updateVehicle,
 } from "@/services/fleetApi";
 import { mediaApi } from "@/services/mediaApi";
@@ -1126,10 +1127,17 @@ export default function VehiclesPage() {
                 <Box className="w-full h-32 bg-surface-sunken rounded-lg border border-line flex items-center justify-center relative overflow-hidden group p-1">
                   {selectedVehicle.registrationDocumentUrl ? (
                     <Button
-                      component="a"
-                      href={selectedVehicle.registrationDocumentUrl}
-                      target="_blank"
-                      rel="noreferrer"
+                      onClick={async () => {
+                        try {
+                          await openVehicleDocument(selectedVehicle.id, "registration");
+                        } catch (error) {
+                          notify.error(
+                            error?.message === "POPUP_BLOCKED"
+                              ? "Trình duyệt đang chặn cửa sổ bật lên."
+                              : getApiErrorMessage(error, "Không thể mở ảnh cà vẹt."),
+                          );
+                        }
+                      }}
                       size="small"
                       variant="outlined"
                     >
@@ -1152,10 +1160,17 @@ export default function VehiclesPage() {
                 <Box className="w-full h-32 bg-surface-sunken rounded-lg border border-line flex items-center justify-center relative overflow-hidden group p-1">
                   {selectedVehicle.inspectionDocumentUrl ? (
                     <Button
-                      component="a"
-                      href={selectedVehicle.inspectionDocumentUrl}
-                      target="_blank"
-                      rel="noreferrer"
+                      onClick={async () => {
+                        try {
+                          await openVehicleDocument(selectedVehicle.id, "inspection");
+                        } catch (error) {
+                          notify.error(
+                            error?.message === "POPUP_BLOCKED"
+                              ? "Trình duyệt đang chặn cửa sổ bật lên."
+                              : getApiErrorMessage(error, "Không thể mở ảnh đăng kiểm."),
+                          );
+                        }
+                      }}
                       size="small"
                       variant="outlined"
                     >

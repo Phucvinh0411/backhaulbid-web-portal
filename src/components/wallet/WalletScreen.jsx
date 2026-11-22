@@ -34,6 +34,7 @@ import { ErrorState, ListSkeleton, ResponsiveDialog } from "@/components/ui";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { walletApi } from "@/services/walletApi";
+import { getSepayOrderStatusMeta } from "@/lib/statusMeta";
 import WalletDetailDialog, { WalletDetailRow } from "./WalletDetailDialog";
 
 const OUTFLOW_TYPES = new Set(["WITHDRAW", "FREEZE", "AUCTION_FEE", "PENALTY"]);
@@ -404,26 +405,32 @@ export default function WalletScreen({ role = "shipper", standalone = true }) {
              {topUpOrders.length === 0 ? (
                <Typography variant="body2" className="text-ink-subtle mt-2">Chưa có đơn nạp tiền.</Typography>
              ) : (
-               <Box className="mt-3 grid gap-2 md:grid-cols-2">
-                 {topUpOrders.map((item) => (
-                   <Box key={item.invoiceNumber} className="flex items-center justify-between rounded-xl border border-line p-3 gap-3">
-                     <Box>
-                       <Typography variant="body2" className="font-bold">{formatCurrency(item.amount)}</Typography>
-                       <Typography variant="caption" className="text-ink-muted">{item.invoiceNumber} · {item.status}</Typography>
-                     </Box>
-                     {item.status === "CREATED" && (
-                       <Button
-                         size="small"
-                         color="error"
-                         onClick={() => handleCancelTopUp(item.invoiceNumber)}
-                         disabled={topUpActionLoading === item.invoiceNumber}
-                       >
-                         {topUpActionLoading === item.invoiceNumber ? "Đang hủy..." : "Hủy"}
-                       </Button>
-                     )}
-                   </Box>
-                 ))}
-               </Box>
+                 <Box className="mt-3 grid gap-2 md:grid-cols-2">
+                   {topUpOrders.map((item) => {
+                     const statusMeta = getSepayOrderStatusMeta(item.status);
+                     return (
+                       <Box key={item.invoiceNumber} className="flex items-center justify-between rounded-xl border border-line p-3 gap-3">
+                         <Box>
+                           <Box className="flex items-center gap-2 flex-wrap">
+                             <Typography variant="body2" className="font-bold">{formatCurrency(item.amount)}</Typography>
+                             <Chip size="small" label={statusMeta.label} color={statusMeta.chipColor} variant="outlined" />
+                           </Box>
+                           <Typography variant="caption" className="text-ink-muted">{item.invoiceNumber}</Typography>
+                         </Box>
+                         {item.status === "CREATED" && (
+                           <Button
+                             size="small"
+                             color="error"
+                             onClick={() => handleCancelTopUp(item.invoiceNumber)}
+                             disabled={topUpActionLoading === item.invoiceNumber}
+                           >
+                             {topUpActionLoading === item.invoiceNumber ? "Đang hủy..." : "Hủy"}
+                           </Button>
+                         )}
+                       </Box>
+                     );
+                   })}
+                 </Box>
              )}
            </Box>
            <Box className="p-6 border-b border-line flex flex-col md:flex-row md:items-center justify-between gap-4">

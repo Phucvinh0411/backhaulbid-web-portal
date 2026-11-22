@@ -214,9 +214,11 @@ export function AdminStatusChip({ label, tone = "neutral", icon }) {
 export function AdminSearchField({ value, onChange, placeholder = "Tìm kiếm..." }) {
   return (
     <TextField
+      hiddenLabel
       value={value}
       onChange={onChange}
       placeholder={placeholder}
+      inputProps={{ "aria-label": placeholder }}
       sx={{
         minWidth: { xs: "100%", sm: 280 },
         "& .MuiFilledInput-root": {
@@ -235,12 +237,14 @@ export function AdminSearchField({ value, onChange, placeholder = "Tìm kiếm..
   );
 }
 
-export function AdminSelectField({ value, onChange, options, minWidth = 160 }) {
+export function AdminSelectField({ value, onChange, options, minWidth = 160, ariaLabel = "Lọc trạng thái" }) {
   return (
     <TextField
       select
+      hiddenLabel
       value={value}
       onChange={onChange}
+      inputProps={{ "aria-label": ariaLabel }}
       sx={{
         minWidth: { xs: "100%", sm: minWidth },
         "& .MuiFilledInput-root": {

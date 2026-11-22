@@ -91,7 +91,7 @@ export const useShipperDashboard = (timeFilter) => {
             console.warn("Failed to load auctions:", err);
             return [];
           }),
-          contractApi.listMine({ page: 1, pageSize: 100 }).catch((err) => {
+          contractApi.listMine().catch((err) => {
             console.warn("Failed to load contracts:", err);
             return [];
           }),

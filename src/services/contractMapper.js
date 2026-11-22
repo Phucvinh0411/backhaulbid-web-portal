@@ -1,4 +1,5 @@
 import { mapTrip } from "./mappers/tripMapper.js";
+import { shortId } from "../lib/format.js";
 import { toId, toIsoString, toNumber, unwrapData, unwrapList } from "./mappers/primitives.js";
 
 function formatCurrency(value) {
@@ -30,7 +31,7 @@ function formatDate(value) {
 }
 
 function getPartnerLabel(id, roleLabel) {
-  return id ? `Mã ${roleLabel}: ${id}` : `Chưa cập nhật ${roleLabel}`;
+  return id ? `${roleLabel} #${shortId(id)}` : `Chưa cập nhật ${roleLabel.toLowerCase()}`;
 }
 
 function mapStatus(status, tripStatus) {
@@ -78,6 +79,9 @@ export function normalizeContract(response) {
     shipperId: raw.shipperId ?? null,
     carrierId: raw.carrierId ?? null,
     contractCode: raw.contractCode ?? null,
+    shipperName: raw.shipperName ?? null,
+    carrierName: raw.carrierName ?? null,
+    cargoType: raw.cargoType ?? trip?.cargoType ?? null,
     pdfUrl: raw.pdfUrl ?? "",
     pdfHashSha256: raw.pdfHashSha256 ?? null,
     status: raw.status ?? "DRAFT",
@@ -117,7 +121,7 @@ export function mapContractResponse(response = {}, role = "carrier") {
     destination: trip.deliveryLocation || "Chưa cập nhật điểm giao",
     pickupAddress: trip.pickupLocation || "",
     deliveryAddress: trip.deliveryLocation || "",
-    cargoType: "Chưa cập nhật thông tin hàng hóa",
+    cargoType: normalized.cargoType || trip.cargoType || "Vận chuyển hàng hóa",
     agreedPrice: normalized.agreedPrice,
     value: formatCurrency(trip.agreedPrice),
     date: formatDate(normalized.createdAt || trip.createdAt),
@@ -131,8 +135,8 @@ export function mapContractResponse(response = {}, role = "carrier") {
       : actorSigned
         ? "Bạn đã ký. Đang chờ đối tác ký."
         : "Bạn được mời ký hợp đồng.",
-    shipperName: getPartnerLabel(normalized.shipperId, "chủ hàng"),
-    carrierName: getPartnerLabel(normalized.carrierId, "nhà xe"),
+    shipperName: normalized.shipperName || getPartnerLabel(normalized.shipperId, "Chủ hàng"),
+    carrierName: normalized.carrierName || getPartnerLabel(normalized.carrierId, "Nhà xe"),
     partnerId: isShipper ? normalized.carrierId : normalized.shipperId,
     pdfUrl: normalized.pdfUrl || "",
     signatures,

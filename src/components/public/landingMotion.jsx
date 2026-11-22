@@ -58,7 +58,7 @@ export function BackhaulRoute() {
         {/* Pickup at the shipper's warehouse */}
         <motion.g {...play({ opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1 }, 0.2, 0.4)} style={{ transformOrigin: "260px 110px" }}>
           <rect x="248" y="98" width="24" height="24" rx="6" fill="var(--color-surface)" />
-          <text x="260" y="146" textAnchor="middle" className="max-sm:hidden fill-[var(--color-surface)] text-[14px] font-semibold">Kho chủ hàng · lấy hàng</text>
+          <text x="260" y="54" textAnchor="middle" className="max-sm:hidden fill-[var(--color-surface)] text-[14px] font-semibold">Kho chủ hàng · lấy hàng</text>
         </motion.g>
 
         {/* B: delivery warehouse */}
