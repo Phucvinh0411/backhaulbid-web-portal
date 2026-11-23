@@ -121,7 +121,7 @@ export default function TripCargoDocumentsSection({ trip }) {
       )}
 
       <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
-        <TextField select size="small" label="Loại chứng từ" value={kind} onChange={(event) => setKind(event.target.value)} sx={{ minWidth: 200 }} disabled={busy}>
+        <TextField id="trip-cargo-document-kind" name="cargoDocumentKind" select size="small" label="Loại chứng từ" value={kind} onChange={(event) => setKind(event.target.value)} sx={{ minWidth: 200 }} disabled={busy}>
           {SELECTABLE_VALUE_DOCUMENT_KINDS.map((value) => (
             <MenuItem key={value} value={value}>{VALUE_DOCUMENT_KIND_LABEL[value]}</MenuItem>
           ))}

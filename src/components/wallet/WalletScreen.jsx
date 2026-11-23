@@ -554,6 +554,7 @@ export default function WalletScreen({ role = "shipper", standalone = true, init
             onPageChange={(event, nextPage) => setPage(nextPage)}
             onRowsPerPageChange={(event) => { setRowsPerPage(Number(event.target.value)); setPage(0); }}
             labelRowsPerPage="Số dòng:"
+            SelectProps={{ inputProps: { id: "wallet-transactions-rows-per-page", name: "rowsPerPage" } }}
             sx={{ "& .MuiTablePagination-toolbar": { flexWrap: "wrap", px: 1 }, "& .MuiTablePagination-spacer": { flex: "1 1 0" } }}
             labelDisplayedRows={({ from, to, count }) => `${from}-${to} trong ${count}`}
           />

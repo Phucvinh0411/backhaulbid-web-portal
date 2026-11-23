@@ -136,9 +136,18 @@ describe("web portal api mappers", () => {
     const address = mapAddress({ id: "a-1", province: "TP.HCM", latitude: "10.8", longitude: "106.7" });
     assert.equal(address.latitude, 10.8);
 
-    const trip = mapTrip({ id: "t-1", agreedPrice: "12000000", lateMinutes: "15", status: "IN_TRANSIT" });
+    const trip = mapTrip({
+      id: "t-1",
+      agreedPrice: "12000000",
+      lateMinutes: "15",
+      status: "IN_TRANSIT",
+      driverName: "Trương Văn Lực",
+      vehiclePlate: "51C-905.31",
+    });
     assert.equal(trip.agreedPrice, 12000000);
     assert.equal(trip.lateMinutes, 15);
+    assert.equal(trip.driverName, "Trương Văn Lực");
+    assert.equal(trip.vehiclePlate, "51C-905.31");
 
     const normalizedContract = normalizeContract({
       id: "con-1",

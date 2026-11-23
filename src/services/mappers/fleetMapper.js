@@ -59,6 +59,7 @@ export function mapDriver(response) {
 
   return {
     id: toId(raw),
+    carrierId: raw.carrierId ?? null,
     fullName: raw.fullName ?? "",
     phone: raw.phone ?? "",
     licenseNumber: raw.licenseNumber ?? "",

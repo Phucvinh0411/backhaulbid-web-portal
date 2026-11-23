@@ -40,6 +40,8 @@ export function mapTrip(response) {
     vehicleId: raw.vehicleId ?? null,
     driverId: raw.driverId ?? null,
     driverAccountId: raw.driverAccountId ?? null,
+    driverName: raw.driverName ?? null,
+    vehiclePlate: raw.vehiclePlate ?? null,
     hasAssignmentPin: Boolean(raw.hasAssignmentPin),
     auctionId: raw.auctionId ?? null,
     winningBidId: raw.winningBidId ?? null,

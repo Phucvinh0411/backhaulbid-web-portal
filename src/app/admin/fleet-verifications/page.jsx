@@ -236,8 +236,8 @@ export default function FleetVerificationsPage() {
                 <TableRow>
                   {[
                     "Đối tượng",
-                    "Chủ xe",
-                    "Thông tin",
+                    tab === "vehicles" ? "Chủ xe" : "Chủ xe / SĐT tài xế",
+                    tab === "vehicles" ? "Thông tin" : "Số GPLX",
                     "Trạng thái",
                     "Thao tác",
                   ].map((label) => (
@@ -269,12 +269,16 @@ export default function FleetVerificationsPage() {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      {getCarrierLabel(row.carrierId)}
+                      {tab === "vehicles"
+                        ? getCarrierLabel(row.carrierId)
+                        : row.carrierId
+                          ? getCarrierLabel(row.carrierId)
+                          : (row.phone || "—")}
                     </TableCell>
                     <TableCell>
                       {tab === "vehicles"
                         ? `${row.vehicleTypeLabel || row.vehicleType || "Chưa rõ"} · ${row.capacity || "?"}`
-                        : `${row.phone || "Chưa có SĐT"} · GPLX ${row.licenseNumber || "?"}`}
+                        : `GPLX ${row.licenseNumber || "?"}`}
                     </TableCell>
                     <TableCell>
                       <ReviewStatusChip status={row.status} />
