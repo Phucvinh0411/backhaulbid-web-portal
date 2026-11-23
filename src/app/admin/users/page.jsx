@@ -333,6 +333,9 @@ export default function AdminUsersPage() {
             setRowsPerPage(parseInt(event.target.value, 10));
             setPage(0);
           }}
+          labelRowsPerPage="Số dòng mỗi trang:"
+          labelDisplayedRows={({ from, to, count }) => `${from}–${to} trên tổng ${count}`}
+          SelectProps={{ inputProps: { id: "admin-users-rows-per-page", name: "rowsPerPage" } }}
         />
       </AdminSectionCard>
 

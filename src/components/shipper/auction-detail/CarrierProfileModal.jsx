@@ -3,6 +3,7 @@
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
+import Skeleton from "@mui/material/Skeleton";
 import Link from "next/link";
 
 import StarIcon from "@mui/icons-material/Star";
@@ -43,7 +44,7 @@ export default function CarrierProfileModal({
       maxWidth="md"
       actions={
         <div className="flex w-full flex-wrap items-center justify-between gap-2">
-          {carrier.hotline && carrier.hotline !== "Chưa cập nhật" ? (
+          {!loading && carrier?.hotline && carrier.hotline !== "Chưa cập nhật" ? (
             <Button
               variant="outlined"
               color="success"
@@ -57,7 +58,7 @@ export default function CarrierProfileModal({
             <span />
           )}
           <div className="flex flex-wrap gap-2">
-            {carrier.code && carrier.code !== "Chưa cập nhật" && (
+            {!loading && carrier?.code && carrier.code !== "Chưa cập nhật" && (
               <Button
                 component={Link}
                 href={`/shipper/carriers/${carrier.code}`}
@@ -71,7 +72,7 @@ export default function CarrierProfileModal({
             <Button onClick={onClose} variant="text" size="small">
               Đóng
             </Button>
-            {shipmentStatus === "active_bids" && (
+            {!loading && carrier && shipmentStatus === "active_bids" && (
               <Button
                 onClick={() => {
                   onClose();
@@ -88,6 +89,13 @@ export default function CarrierProfileModal({
         </div>
       }
     >
+      {loading || !carrier ? (
+        <div className="space-y-4 py-1" role="status" aria-label="Đang tải hồ sơ nhà xe">
+          <Skeleton variant="rounded" height={116} />
+          <Skeleton variant="rounded" height={150} />
+          <Skeleton variant="rounded" height={120} />
+        </div>
+      ) : (
       <div className="space-y-5">
         {/* Carrier Banner Card */}
         <div className="bg-ink text-white p-5 rounded-xl space-y-3 relative overflow-hidden shadow-md">
@@ -344,6 +352,7 @@ export default function CarrierProfileModal({
           </div>
         </div>
       </div>
+      )}
     </ResponsiveDialog>
   );
 }

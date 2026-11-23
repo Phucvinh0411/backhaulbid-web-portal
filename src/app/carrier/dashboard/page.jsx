@@ -41,6 +41,7 @@ import { getMyVehicles } from "@/services/fleetApi";
 import { contractApi } from "@/services/contractApi";
 import { listAuctions, listMyRegistrations } from "@/services/biddingApi";
 import { tokens } from "@/theme/theme";
+import { shortId } from "@/lib/format";
 import { unwrapListData } from "@/services/responseData";
 import useAccountVerification from "@/hooks/useAccountVerification";
 
@@ -99,6 +100,7 @@ const mapTrip = (trip) => ({
 
 const mapAuction = (auction) => ({
   id: auction.id,
+  title: auction.title || "",
   route: `${auction.originLocationName || auction.origin || "Chưa cập nhật"} - ${auction.destinationLocationName || auction.destination || "Chưa cập nhật"}`,
   price: Number(auction.maxPrice) || 0,
   endTime: auction.endTime,
@@ -322,7 +324,15 @@ export default function CarrierDashboard() {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={tokens.line} />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: tokens.inkSubtle, fontSize: 12, fontWeight: 600 }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: tokens.inkSubtle, fontSize: 12, fontWeight: 600 }} tickFormatter={formatShortCurrency} dx={-5} />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        allowDecimals={false}
+                        domain={[0, (dataMax) => Math.max(Number(dataMax) || 0, 1_000_000)]}
+                        tick={{ fill: tokens.inkSubtle, fontSize: 12, fontWeight: 600 }}
+                        tickFormatter={formatShortCurrency}
+                        dx={-5}
+                      />
                       <RechartsTooltip formatter={(value) => [formatCurrency(value), "Giá trị chuyến"]} contentStyle={{ borderRadius: "12px", border: "1px solid var(--color-line)", boxShadow: "0 8px 30px rgba(27,73,101,0.1)" }} />
                       <Area type="monotone" dataKey="revenue" stroke={tokens.brand} strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
                     </AreaChart>
@@ -385,8 +395,8 @@ export default function CarrierDashboard() {
                       const timeInfo = formatRemaining(auction.endTime);
                       return (
                         <Box className="flex justify-between items-start gap-2 mb-2 relative z-10">
-                          <Typography variant="subtitle2" className="font-bold text-[var(--color-brand)] truncate max-w-[150px]">
-                            {String(auction.id).slice(0, 12)}
+                          <Typography variant="subtitle2" className="font-bold text-[var(--color-brand)] truncate max-w-[175px]">
+                            #{shortId(auction.id)}{auction.title ? ` · ${auction.title}` : ""}
                           </Typography>
                           <Typography
                             variant="caption"

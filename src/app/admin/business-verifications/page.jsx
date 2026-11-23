@@ -331,6 +331,9 @@ export default function AdminBusinessVerificationsPage() {
                 setPageSize(Number(event.target.value));
                 setPage(0);
               }}
+              labelRowsPerPage="Số dòng mỗi trang:"
+              labelDisplayedRows={({ from, to, count }) => `${from}–${to} trên tổng ${count}`}
+              SelectProps={{ inputProps: { id: "admin-business-rows-per-page", name: "rowsPerPage" } }}
             />
           </>
         )}

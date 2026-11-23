@@ -32,6 +32,7 @@ import {
   normalizeComplaintCollection,
 } from "@/components/complaints/complaintPresentation";
 import { complaintApi } from "@/services/complaintApi";
+import { identityApi } from "@/services/identityApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { shortId } from "@/lib/format";
 
@@ -54,6 +55,35 @@ export default function AdminComplaintsPage() {
   const [resolveError, setResolveError] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
+  const [accountLabels, setAccountLabels] = useState({});
+
+  useEffect(() => {
+    let active = true;
+    identityApi
+      .listAdminAccounts()
+      .then((accounts) => {
+        if (!active || !Array.isArray(accounts)) return;
+        const map = {};
+        for (const account of accounts) {
+          if (!account?.id) continue;
+          const base = account.companyName || account.fullName || account.phone;
+          map[String(account.id)] =
+            account.companyName && account.fullName
+              ? `${account.companyName} (${account.fullName})`
+              : base || `Tài khoản #${shortId(account.id)}`;
+        }
+        setAccountLabels(map);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const formatParty = useCallback(
+    (id) => (id ? accountLabels[String(id)] || `Tài khoản #${shortId(id)}` : "Chưa cập nhật"),
+    [accountLabels],
+  );
 
   const loadList = useCallback(async () => {
     setListState("loading");
@@ -178,7 +208,7 @@ export default function AdminComplaintsPage() {
                 InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
               />
               <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: "1fr 1fr" }}>
-                <TextField id="admin-complaints-category" name="category" select label="Loại vấn đề" value={category} onChange={(event) => setCategory(event.target.value)}>
+                <TextField select label="Loại vấn đề" InputLabelProps={{ htmlFor: undefined }} SelectProps={{ inputProps: { id: "admin-complaints-category-native", name: "category" } }} value={category} onChange={(event) => setCategory(event.target.value)}>
                   <MenuItem value="">Tất cả loại</MenuItem>
                   {COMPLAINT_CATEGORIES.map((item) => (
                     <MenuItem key={item.code} value={item.code}>
@@ -187,7 +217,7 @@ export default function AdminComplaintsPage() {
                   ))}
                   <MenuItem value={UNCATEGORIZED}>Chưa phân loại</MenuItem>
                 </TextField>
-                <TextField id="admin-complaints-status" name="status" select label="Trạng thái" value={status} onChange={(event) => setStatus(event.target.value)}>
+                <TextField select label="Trạng thái" InputLabelProps={{ htmlFor: undefined }} SelectProps={{ inputProps: { id: "admin-complaints-status-native", name: "status" } }} value={status} onChange={(event) => setStatus(event.target.value)}>
                   <MenuItem value="OPEN">Đang mở</MenuItem>
                   <MenuItem value="">Tất cả</MenuItem>
                   {Object.entries(COMPLAINT_STATUS_META).map(([code, meta]) => (
@@ -271,9 +301,9 @@ export default function AdminComplaintsPage() {
                 <KeyValueList
                   items={[
                     { label: "Loại vấn đề", value: getComplaintCategoryMeta(selected.category).label },
-                    { label: "Chuyến", value: selected.tripId || "Không gắn chuyến", numeric: true },
-                    { label: "Người gửi", value: selected.reporterId, numeric: true },
-                    { label: "Bên bị khiếu nại", value: selected.respondentId, numeric: true },
+                    { label: "Chuyến", value: selected.tripId ? `#${shortId(selected.tripId)}` : "Không gắn chuyến" },
+                    { label: "Người gửi", value: formatParty(selected.reporterId) },
+                    { label: "Bên bị khiếu nại", value: formatParty(selected.respondentId) },
                   ]}
                 />
                 {selected.evidenceUrl ? (

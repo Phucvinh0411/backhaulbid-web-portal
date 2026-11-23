@@ -319,7 +319,15 @@ export default function ProfileScreen({ role }) {
   }, [isAdmin, role, tab]);
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <PageHeader title="Hồ sơ" subtitle="Thông tin tài khoản, doanh nghiệp và người đại diện nằm trong các mục bên dưới. eKYC và hồ sơ xác minh được quản lý riêng trong Xác minh tài khoản." breadcrumbs={[{ label: config.label, path: config.dashboard }, { label: "Hồ sơ" }]} />
+      <PageHeader
+        title="Hồ sơ"
+        subtitle={
+          isAdmin
+            ? "Thông tin tài khoản quản trị viên và ảnh đại diện cá nhân."
+            : "Thông tin tài khoản, doanh nghiệp và người đại diện nằm trong các mục bên dưới. eKYC và hồ sơ xác minh được quản lý riêng trong Xác minh tài khoản."
+        }
+        breadcrumbs={[{ label: config.label, path: config.dashboard }, { label: "Hồ sơ" }]}
+      />
 
       <AppCard component="section" sx={{ p: { xs: 2, sm: 3 }, display: "flex", alignItems: { xs: "flex-start", sm: "center" }, flexWrap: "wrap", gap: 2 }}>
         <Box sx={{ position: "relative", width: 56, height: 56, flexShrink: 0 }}>

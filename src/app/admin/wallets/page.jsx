@@ -36,6 +36,8 @@ import {
   AdminToolbar,
 } from "@/components/admin/AdminUI";
 import { walletApi } from "@/services/walletApi";
+import { identityApi } from "@/services/identityApi";
+import { shortId } from "@/lib/format";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { getPageItems, getPageMeta, toWithdrawalApiStatus } from "@/services/responseData";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
@@ -70,6 +72,33 @@ export default function AdminWalletsPage() {
   const [walletDetail, setWalletDetail] = useState(null);
   const [topUpDetail, setTopUpDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [accountLabels, setAccountLabels] = useState({});
+
+  useEffect(() => {
+    let active = true;
+    identityApi
+      .listAdminAccounts()
+      .then((accounts) => {
+        if (!active || !Array.isArray(accounts)) return;
+        const map = {};
+        for (const account of accounts) {
+          if (!account?.id) continue;
+          const label =
+            account.companyName && account.fullName
+              ? `${account.fullName} · ${account.companyName}`
+              : account.companyName || account.fullName || account.phone;
+          map[String(account.id)] = label || `Tài khoản #${shortId(account.id)}`;
+        }
+        setAccountLabels(map);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const formatAccountName = (accountId) =>
+    accountId ? accountLabels[String(accountId)] || `Tài khoản #${shortId(accountId)}` : "Chưa cập nhật";
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -476,7 +505,8 @@ export default function AdminWalletsPage() {
         {topUpDetail ? (
           <Box>
             <WalletDetailRow label="Mã hóa đơn" value={topUpDetail.invoiceNumber} />
-            <WalletDetailRow label="Mã tài khoản" value={topUpDetail.accountId} />
+            <WalletDetailRow label="Chủ tài khoản" value={formatAccountName(topUpDetail.accountId)} />
+            <WalletDetailRow label="Mã tài khoản" value={topUpDetail.accountId ? `#${shortId(topUpDetail.accountId)}` : "---"} />
             <WalletDetailRow label="Số tiền" value={formatCurrency(topUpDetail.amount)} />
             <WalletDetailRow label="Nhà cung cấp" value={topUpDetail.provider} />
             <WalletDetailRow label="Trạng thái" value={topUpDetail.status} />
@@ -487,7 +517,8 @@ export default function AdminWalletsPage() {
           </Box>
         ) : walletDetail ? (
           <Box>
-            <WalletDetailRow label="Mã tài khoản" value={walletDetail.accountId} />
+            <WalletDetailRow label="Chủ tài khoản" value={formatAccountName(walletDetail.accountId)} />
+            <WalletDetailRow label="Mã tài khoản" value={walletDetail.accountId ? `#${shortId(walletDetail.accountId)}` : "---"} />
             <WalletDetailRow label="Số dư" value={formatCurrency(walletDetail.balance)} />
             <WalletDetailRow label="Đang tạm giữ" value={formatCurrency(walletDetail.frozenBalance)} />
             <WalletDetailRow label="Số dư khả dụng" value={formatCurrency(walletDetail.availableBalance)} />

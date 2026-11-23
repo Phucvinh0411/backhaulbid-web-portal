@@ -85,13 +85,13 @@ function SourcePanel({ title, source, retry, children }) {
   return <Box component="section" aria-label={title}>{children(source.data)}</Box>;
 }
 
-function StatusTable({ title, statuses }) {
+function StatusTable({ title, statuses, labelOverrides }) {
   const rows = statusRows(statuses);
   return <AppCard component="section" sx={{ p: { xs: 1.5, sm: 2.5 } }}>
     <Typography component="h2" sx={{ fontSize: 16, fontWeight: 700, mb: 1.5 }}>{title}</Typography>
     {rows.length ? <TableContainer><Table size="small" aria-label={title}>
       <TableHead><TableRow><TableCell>Trạng thái</TableCell><TableCell align="right">Số lượng</TableCell></TableRow></TableHead>
-      <TableBody>{rows.map(({ status, count }) => <TableRow key={status}><TableCell>{STATUS_LABEL[status] || status}</TableCell><TableCell align="right" className="tabular">{formatStatisticCount(count)}</TableCell></TableRow>)}</TableBody>
+      <TableBody>{rows.map(({ status, count }) => <TableRow key={status}><TableCell>{labelOverrides?.[status] || STATUS_LABEL[status] || status}</TableCell><TableCell align="right" className="tabular">{formatStatisticCount(count)}</TableCell></TableRow>)}</TableBody>
     </Table></TableContainer> : <Typography color="text.secondary" variant="body2">Chưa có dữ liệu trạng thái trong kỳ này.</Typography>}
   </AppCard>;
 }
@@ -157,9 +157,9 @@ function DomainContent({ role, topic, sources, retry }) {
       { title: "Tài xế", value: formatStatisticCount(data.driverCount), subtitle: `${formatStatisticCount(data.verifiedDriverCount)} đã xác minh`, icon: GroupsOutlinedIcon },
       { title: "Điểm uy tín", value: formatStatisticCount(data.reputation), subtitle: "Nguồn uy tín fleet service", icon: BusinessOutlinedIcon },
     ]} />
-    {data.vehicleByStatus ? <Box sx={{ mt: 2 }}><StatusTable title="Phương tiện theo trạng thái" statuses={data.vehicleByStatus} /></Box> : null}
-    {data.driverByStatus ? <Box sx={{ mt: 2 }}><StatusTable title="Tài xế theo trạng thái" statuses={data.driverByStatus} /></Box> : null}
-    {data.byVehicleStatus ? <Box sx={{ mt: 2 }}><StatusTable title="Đội xe của bạn theo trạng thái" statuses={data.byVehicleStatus} /></Box> : null}
+    {data.vehicleByStatus ? <Box sx={{ mt: 2 }}><StatusTable title="Phương tiện theo trạng thái" statuses={data.vehicleByStatus} labelOverrides={{ PENDING: "Chờ duyệt" }} /></Box> : null}
+    {data.driverByStatus ? <Box sx={{ mt: 2 }}><StatusTable title="Tài xế theo trạng thái" statuses={data.driverByStatus} labelOverrides={{ PENDING: "Chờ duyệt" }} /></Box> : null}
+    {data.byVehicleStatus ? <Box sx={{ mt: 2 }}><StatusTable title="Đội xe của bạn theo trạng thái" statuses={data.byVehicleStatus} labelOverrides={{ PENDING: "Chờ duyệt" }} /></Box> : null}
   </>}</SourcePanel>;
 
   if (topic === "accounts") return <SourcePanel title="Tài khoản" source={sources.accounts} retry={retry.accounts}>{(data) => <>
@@ -182,7 +182,7 @@ function DomainContent({ role, topic, sources, retry }) {
       { title: "Tổng giá trị sổ cái SUCCESS", value: formatStatisticCurrency(data.successfulLedgerAmount), subtitle: "Không phải doanh thu/lợi nhuận", icon: AccountBalanceWalletOutlinedIcon, tooltip: "Tổng amount giao dịch SUCCESS theo loại; đây là luồng sổ cái, không phải doanh thu của nền tảng." },
     ]} />
     <Box sx={{ mt: 2 }}><TrendChart title="Giao dịch SUCCESS theo thời gian" points={data.successfulSeries} label="Giao dịch" /></Box>
-    <Box sx={{ mt: 2 }}><StatusTable title="Giao dịch theo trạng thái" statuses={data.transactionsByStatus} /></Box>
+    <Box sx={{ mt: 2 }}><StatusTable title="Giao dịch theo trạng thái" statuses={data.transactionsByStatus} labelOverrides={{ PENDING: "Đang chờ" }} /></Box>
     <Box sx={{ mt: 2 }}><StatusTable title="Giao dịch SUCCESS theo loại" statuses={Object.fromEntries(Object.entries(data.successfulByType || {}).map(([type, item]) => [type, item.count]))} /></Box>
   </>}</SourcePanel>;
 
@@ -200,7 +200,7 @@ function DomainContent({ role, topic, sources, retry }) {
     ]} />}</SourcePanel></Grid>
     <Grid item xs={12} md={6}><SourcePanel title="Khiếu nại" source={sources.complaints} retry={retry.complaints}>{(data) => <>
       <Metrics items={[{ title: "Khiếu nại cần xử lý", value: formatStatisticCount(data.openCount), subtitle: "Đang chờ hoặc xử lý", icon: GroupsOutlinedIcon, href: "/admin/complaints" }]} />
-      <Box sx={{ mt: 2 }}><StatusTable title="Khiếu nại hiện tại theo trạng thái" statuses={data.complaintsByStatus} /></Box>
+      <Box sx={{ mt: 2 }}><StatusTable title="Khiếu nại hiện tại theo trạng thái" statuses={data.complaintsByStatus} labelOverrides={{ PENDING: "Chờ xử lý" }} /></Box>
     </>}</SourcePanel></Grid>
   </Grid>;
 

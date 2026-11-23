@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import TextField from "@mui/material/TextField";
@@ -54,6 +54,11 @@ export default function AdminSettingsPage() {
   const [maintenance, setMaintenance] = useState(false);
   const [settings, setSettings] = useState({});
   const [serverHealth, setServerHealth] = useState(null);
+  const isHttps = useSyncExternalStore(
+    () => () => {},
+    () => window.location.protocol === "https:",
+    () => null,
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -197,9 +202,11 @@ export default function AdminSettingsPage() {
                         Chứng chỉ SSL / Giao thức
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600, color: "success.main" }}>
-                        {typeof window !== "undefined" && window.location.protocol === "https:"
-                          ? "HTTPS / TLS đang kích hoạt"
-                          : "HTTP nội bộ"}
+                        {isHttps === null
+                          ? "Đang kiểm tra..."
+                          : isHttps
+                            ? "HTTPS / TLS đang kích hoạt"
+                            : "HTTP nội bộ"}
                       </Typography>
                     </Box>
                   </Box>

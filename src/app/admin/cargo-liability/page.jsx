@@ -230,6 +230,9 @@ export default function AdminCargoLiabilityPage() {
                 setPageSize(Number(event.target.value));
                 setPage(0);
               }}
+              labelRowsPerPage="Số dòng mỗi trang:"
+              labelDisplayedRows={({ from, to, count }) => `${from}–${to} trên tổng ${count}`}
+              SelectProps={{ inputProps: { id: "admin-cargo-liability-rows-per-page", name: "rowsPerPage" } }}
             />
           </>
         )}
