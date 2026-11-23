@@ -123,7 +123,7 @@ function MapControls({ points, fitKey, routeKey, currentPoint, following, onTogg
   const fit = () => {
     if (!points.length) return;
     if (points.length === 1) map.setView(points[0], 14);
-    else map.fitBounds(points, { padding: [44, 44], maxZoom: 15 });
+    else map.fitBounds(points, { paddingTopLeft: [44, 56], paddingBottomRight: [148, 44], maxZoom: 15 });
   };
   useEffect(() => {
     const anchorsChanged = fitKey !== fitted.current.anchors;
@@ -235,8 +235,8 @@ export default function Map({
           <Popup>Đoạn đường xe đã đi qua (GPS)</Popup>
         </Polyline>
       ))}
-      {pickup && <Marker position={pickup} icon={icons.pickup}><Tooltip permanent direction="top" offset={[0, -16]}>A · Lấy hàng</Tooltip><Popup><strong>A · Lấy hàng</strong><br />{pickupPoint?.label || pickupPoint?.address}</Popup></Marker>}
-      {delivery && <Marker position={delivery} icon={icons.delivery}><Tooltip permanent direction="top" offset={[0, -16]}>B · Giao hàng</Tooltip><Popup><strong>B · Giao hàng</strong><br />{deliveryPoint?.label || deliveryPoint?.address}</Popup></Marker>}
+      {pickup && <Marker position={pickup} icon={icons.pickup}><Tooltip direction="top" offset={[0, -16]}>A · Lấy hàng</Tooltip><Popup><strong>A · Lấy hàng</strong><br />{pickupPoint?.label || pickupPoint?.address}</Popup></Marker>}
+      {delivery && <Marker position={delivery} icon={icons.delivery}><Tooltip direction="top" offset={[0, -16]}>B · Giao hàng</Tooltip><Popup><strong>B · Giao hàng</strong><br />{deliveryPoint?.label || deliveryPoint?.address}</Popup></Marker>}
       {current && <AnimatedVehicleMarker position={current} currentPos={currentPos} heading={heading} />}
     </MapContainer>
     {route.kind === "NONE" && <Box role="status" sx={{ position: "absolute", bottom: 16, left: 16, right: 16, zIndex: 1000, p: 1.5, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: 2, boxShadow: "var(--shadow-level-2)", pointerEvents: "none", fontSize: "0.875rem" }}>

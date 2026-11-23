@@ -1,6 +1,14 @@
 import { cargoLiabilityLabel } from "../lib/cargoLiabilityPresentation.js";
+import { getVehicleTypeLabel } from "../lib/statusMeta.js";
 
 const UNKNOWN = "Chưa cập nhật";
+const VEHICLE_STATUS_LABELS = {
+  VERIFIED: "Đã duyệt",
+  PENDING: "Chờ duyệt",
+  REJECTED: "Từ chối",
+  INACTIVE: "Ngừng hoạt động",
+  DRAFT: "Bản nháp",
+};
 
 const formatPayload = (value) =>
   value === null || value === undefined ? UNKNOWN : `${value} tấn`;
@@ -64,10 +72,10 @@ export function mapCarrierProfile({ company, vehicles = [], drivers = [], review
     fleet: vehicles.map((vehicle) => ({
       id: vehicle.id,
       plate: vehicle.licensePlate || UNKNOWN,
-      type: vehicle.vehicleType || UNKNOWN,
+      type: getVehicleTypeLabel(vehicle.vehicleType) || UNKNOWN,
       brand: vehicle.bodyType || UNKNOWN,
       payload: formatPayload(vehicle.payloadCapacity),
-      status: vehicle.status || UNKNOWN,
+      status: VEHICLE_STATUS_LABELS[vehicle.status] || vehicle.status || UNKNOWN,
     })),
     drivers: drivers.map((driver) => ({
       id: driver.id,

@@ -3,5 +3,5 @@
 import WalletScreen from "@/components/wallet/WalletScreen";
 
 export default function WalletOverviewPage() {
-  return <WalletScreen role="shipper" standalone={true} />;
+  return <WalletScreen role="shipper" standalone={true} initialView="overview" />;
 }

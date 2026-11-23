@@ -33,7 +33,7 @@ import {
   AdminToolbar,
 } from "@/components/admin/AdminUI";
 import { tokens } from "@/theme/theme";
-import { formatCurrencyAxisTick } from "@/lib/format";
+import { formatCountdown as formatSecondsCountdown, formatCurrencyAxisTick, shortId } from "@/lib/format";
 import { ResponsiveDialog } from "@/components/ui";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
@@ -48,11 +48,7 @@ const formatCurrency = (amount) =>
 
 const formatCountdown = (msRemaining) => {
   if (!Number.isFinite(msRemaining) || msRemaining <= 0) return "00:00:00";
-  const totalSeconds = Math.floor(msRemaining / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
+  return formatSecondsCountdown(Math.floor(msRemaining / 1000));
 };
 
 const formatDateTime = (value) => {
@@ -113,7 +109,7 @@ function ChartTooltip({ active, payload, label }) {
   );
 }
 
-function BidFeed({ bids, highlightLatest = false, dark = false }) {
+function BidFeed({ bids, highlightLatest = false, dark = false, carrierNames = {} }) {
   const latest = [...bids].slice(-4).reverse();
 
   if (!latest.length) {
@@ -150,7 +146,7 @@ function BidFeed({ bids, highlightLatest = false, dark = false }) {
           >
             <span className={`font-mono text-xs ${dark ? "text-on-band-soft" : "text-ink-subtle"}`}>{bid.time}</span>
             <span className="flex-1 truncate font-medium">
-              {bid.carrierId ? `Nhà xe ${String(bid.carrierId).slice(0, 8)}` : "Nhà xe ẩn danh"}
+              {bid.carrierId ? carrierNames[String(bid.carrierId)] || `Nhà xe #${shortId(bid.carrierId)}` : "Nhà xe ẩn danh"}
             </span>
             <span className="font-mono font-bold text-success">
               {formatCurrency(bid.bid)}
@@ -199,7 +195,7 @@ function LightActionButton({ children, tone = "primary", disabled = false, onCli
   );
 }
 
-function SessionCard({ session, now, onDetail, onFlag, onStop }) {
+function SessionCard({ session, now, onDetail, onFlag, onStop, carrierNames = {} }) {
   const bids = session.bidHistory || [];
   const sealed = session.auctionType === "SEALED";
   const isOpen = session.status === "OPEN";
@@ -225,7 +221,7 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
             >
               {isCancelled ? "Đã hủy" : "Hoàn thành"}
             </span>
-            <span className="font-mono text-xs font-bold text-ink-subtle">{session.id}</span>
+            <span className="font-mono text-xs font-bold text-ink-subtle" title={session.id}>#{shortId(session.id)}</span>
           </div>
           <div>
             <Typography variant="subtitle1" className="!font-bold !text-ink">
@@ -276,7 +272,7 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
             </div>
           </div>
           <div>
-            <div className="font-mono text-xs font-medium text-ink-muted">{session.id}</div>
+            <div className="font-mono text-xs font-medium text-ink-muted" title={session.id}>#{shortId(session.id)}</div>
             <Typography variant="subtitle1" className="!font-bold !text-ink">
               {session.title}
             </Typography>
@@ -347,7 +343,7 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
         </div>
 
         <div>
-          <div className="font-mono text-xs font-medium text-on-band-soft">{session.id}</div>
+          <div className="font-mono text-xs font-medium text-on-band-soft" title={session.id}>#{shortId(session.id)}</div>
           <Typography variant="subtitle1" className="!font-bold !text-white">
             {session.title}
           </Typography>
@@ -388,7 +384,7 @@ function SessionCard({ session, now, onDetail, onFlag, onStop }) {
           </div>
         </div>
 
-        <BidFeed bids={bids} highlightLatest={highlightLatest} dark />
+        <BidFeed bids={bids} highlightLatest={highlightLatest} dark carrierNames={carrierNames} />
 
         <div className="flex items-center gap-2">
           <DarkActionButton onClick={() => onDetail(session.id)}>
@@ -434,8 +430,8 @@ function SessionDetailDialog({ session, open, onClose, onFlag, onStop }) {
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             {session.title}
           </Typography>
-          <Typography variant="caption" className="tabular" sx={{ color: "var(--color-ink-muted)", display: "block" }}>
-            {session.id} · {session.route}
+          <Typography variant="caption" className="tabular" sx={{ color: "var(--color-ink-muted)", display: "block" }} title={session.id}>
+            #{shortId(session.id)} · {session.route}
           </Typography>
         </Box>
       }
@@ -529,7 +525,7 @@ function EmptyState({ filtered, query }) {
   );
 }
 
-export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAuction, live = false }) {
+export default function AuctionMonitorView({ sessions, carrierNames = {}, onCancelAuction, onFlagAuction, onLoadSessionBids, live = false }) {
   const notify = useGlobalNotification();
   const [selectedId, setSelectedId] = useState("");
   const [detailOpen, setDetailOpen] = useState(false);
@@ -583,6 +579,10 @@ export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAu
     setSelectedId(sessionId);
     setActionError("");
     setDetailOpen(true);
+    const target = sessions.find((session) => session.id === sessionId);
+    if (target && !target.bidsLoaded) {
+      onLoadSessionBids?.(sessionId);
+    }
   };
 
   const requestFlag = (sessionId) => {
@@ -631,7 +631,7 @@ export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAu
   return (
     <>
       <Box className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        <AdminMetricCard title="Tổng phiên theo dõi" value={sessions.length} helper="OPEN + PENDING" icon={GavelIcon} />
+        <AdminMetricCard title="Tổng phiên theo dõi" value={sessions.length} helper="Đang mở & chờ mở" icon={GavelIcon} />
         <AdminMetricCard title="Đang mở" value={openCount} helper="Có thể nhận báo giá" icon={InsightsOutlinedIcon} tone="success" />
         <AdminMetricCard title="Lượt báo giá" value={bidCount} helper={`${bidderCount} lượt tham gia theo phiên`} icon={GroupsOutlinedIcon} tone="info" />
         <AdminMetricCard title="Cần rà soát" value={flaggedCount} helper="Cờ gian lận" icon={FlagOutlinedIcon} tone={flaggedCount ? "danger" : "neutral"} />
@@ -672,6 +672,7 @@ export default function AuctionMonitorView({ sessions, onCancelAuction, onFlagAu
                   key={session.id}
                   session={session}
                   now={now}
+                  carrierNames={carrierNames}
                   onDetail={openDetail}
                   onFlag={requestFlag}
                   onStop={requestStop}

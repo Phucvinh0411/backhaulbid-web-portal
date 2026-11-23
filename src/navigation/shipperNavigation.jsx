@@ -67,7 +67,7 @@ const shipperNavigation = [
 
 /** Bottom navigation on phones: the shipper's recurring questions first. */
 export const shipperMobileNavigation = [
-  { title: "Việc cần làm", path: "/shipper/dashboard", icon: DashboardIcon },
+  { title: "Tổng quan", path: "/shipper/dashboard", icon: DashboardIcon },
   { title: "Phiên", path: "/shipper/bidding/sessions", match: ["/shipper/bidding"], icon: GavelIcon },
   { title: "Chuyến", path: "/shipper/tracking", icon: LocalShippingIcon },
   { title: "Khiếu nại", path: "/shipper/complaints", icon: ReportProblemIcon },

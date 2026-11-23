@@ -162,7 +162,7 @@ export const useShipperDashboard = (timeFilter) => {
       id: contract.trip?.id || contract.tripId || contract.contractCode || contract.id,
       goodsType: contract.trip?.cargoType || contract.cargoType || "Chuyến vận chuyển",
       route: `${contract.trip?.pickupLocation || "Chưa cập nhật"} → ${contract.trip?.deliveryLocation || "Chưa cập nhật"}`,
-      driverName: contract.trip?.driverName || "Chưa cập nhật",
+      driverName: contract.trip?.driverName || (contract.trip?.driverId ? "Đã phân công tài xế" : "Chưa phân công"),
       driverPlate: contract.trip?.vehiclePlate || "Chưa cập nhật",
       progress: calculateTripProgress(contract.trip?.status),
       status: contract.trip?.status || contract.status,
@@ -175,6 +175,7 @@ export const useShipperDashboard = (timeFilter) => {
     contracts
       .filter((contract) => ["SIGNED", "COMPLETED", "ACTIVE"].includes(contract.status))
       .filter((contract) => isInTimeFilter(contract.createdAt || contract.trip?.createdAt, timeFilter))
+      .sort((a, b) => (getDate(a.createdAt || a.trip?.createdAt)?.getTime() || 0) - (getDate(b.createdAt || b.trip?.createdAt)?.getTime() || 0))
       .forEach((contract) => {
         const amount = getContractAmount(contract);
         const baseline = getContractBaseline(contract, auctionsById);

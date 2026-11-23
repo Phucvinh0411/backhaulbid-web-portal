@@ -446,7 +446,13 @@ export default function AdminUsersPage() {
                   <Typography variant="body2">
                     Trạng thái eKYC/doanh nghiệp:{" "}
                     <strong>
-                      {selectedUser.verificationStatus || "Chưa có dữ liệu"}
+                      {({
+                        PENDING: "Chờ duyệt",
+                        VERIFIED: "Đã xác minh",
+                        REJECTED: "Từ chối",
+                        EXPIRED: "Hết hạn",
+                        NOT_SUBMITTED: "Chưa nộp",
+                      }[selectedUser.verificationStatus] || selectedUser.verificationStatus || "Chưa có dữ liệu")}
                     </strong>
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 1 }}>

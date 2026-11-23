@@ -66,7 +66,7 @@ export default function MobileBottomNav({ items = [], lockedPaths, onOpenMore })
                 {locked && <LockOutlinedIcon aria-hidden sx={{ fontSize: 12, color: "text.disabled" }} />}
               </Box>
             )}
-            <Box component="span" sx={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", px: 0.5 }}>
+            <Box component="span" sx={{ maxWidth: "100%", fontSize: "0.7rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", px: 0.25 }}>
               {item.title}
             </Box>
           </Box>

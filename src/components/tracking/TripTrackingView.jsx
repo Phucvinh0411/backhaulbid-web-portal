@@ -12,7 +12,7 @@ import { ErrorState, ForbiddenState, KeyValueList, ListSkeleton, Panel, Responsi
 import { contractApi } from "@/services/contractApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { getTripCompletionSummary, getTripStatusMeta } from "@/lib/statusMeta";
-import { formatDateTime, formatMoney, shortId } from "@/lib/format";
+import { formatAddress, formatDateTime, formatMoney, shortId } from "@/lib/format";
 import { toMediaViewUrl } from "@/lib/mediaUrl";
 import { GATEWAY_URL } from "@/config/clientConfig";
 import TripActions from "./TripActions";
@@ -192,7 +192,7 @@ export default function TripTrackingView({ tripId, role = "shipper", allowLateCa
             <Box sx={{ display: "grid", gap: 2 }}>
               {[["A", "Lấy hàng", pickupPoint || trip.pickupPoint || tracking?.pickupPoint, trip.pickupLocation], ["B", "Giao hàng", deliveryPoint || trip.deliveryPoint || tracking?.deliveryPoint, trip.deliveryLocation]].map(([letter, title, point, address]) => <Box key={letter} sx={{ display: "grid", gridTemplateColumns: "32px minmax(0,1fr)", gap: 1.5 }}>
                 <Box sx={{ width: 32, height: 32, display: "grid", placeItems: "center", borderRadius: "50%", bgcolor: letter === "A" ? "var(--color-brand-soft)" : "success.light", color: letter === "A" ? "primary.main" : "success.dark", fontWeight: 700 }}>{letter}</Box>
-                <Box sx={{ minWidth: 0 }}><Typography variant="caption" sx={{ color: "text.secondary" }}>{title}</Typography><Typography variant="body2" sx={{ fontWeight: 600, overflowWrap: "anywhere" }}>{point?.label || address || "Chưa có địa chỉ"}</Typography>{point?.address && point.address !== point.label && <Typography variant="body2" sx={{ color: "text.secondary", overflowWrap: "anywhere" }}>{point.address}</Typography>}</Box>
+                <Box sx={{ minWidth: 0 }}><Typography variant="caption" sx={{ color: "text.secondary" }}>{title}</Typography><Typography variant="body2" sx={{ fontWeight: 600, overflowWrap: "anywhere" }}>{formatAddress(point?.label || address, "Chưa có địa chỉ")}</Typography>{point?.address && point.address !== point.label && <Typography variant="body2" sx={{ color: "text.secondary", overflowWrap: "anywhere" }}>{formatAddress(point.address)}</Typography>}</Box>
               </Box>)}
             </Box>
           </Panel>
@@ -238,10 +238,20 @@ export default function TripTrackingView({ tripId, role = "shipper", allowLateCa
         <KeyValueList
           columns={3}
           items={[
-            { label: "Điểm lấy hàng", value: trip.pickupLocation || "Chưa xác định" },
-            { label: "Điểm giao hàng", value: trip.deliveryLocation || "Chưa xác định" },
+            { label: "Điểm lấy hàng", value: formatAddress(trip.pickupLocation, "Chưa xác định") },
+            { label: "Điểm giao hàng", value: formatAddress(trip.deliveryLocation, "Chưa xác định") },
             { label: "Giá hợp đồng", value: formatMoney(trip.agreedPrice), numeric: true, strong: true },
-            { label: "Tài xế", value: trip.driverConnected ? "Đã nhận chuyến bằng mã" : trip.driverId ? "Đã phân công, chờ nhập mã nhận chuyến" : "Chưa phân công" },
+            {
+              label: "Tài xế",
+              value: trip.driverName
+                ? `${trip.driverName} (${trip.driverConnected ? "đã nhận chuyến" : "chờ nhận chuyến"})`
+                : trip.driverConnected
+                  ? "Đã nhận chuyến bằng mã"
+                  : trip.driverId
+                    ? "Đã phân công, chờ nhập mã nhận chuyến"
+                    : "Chưa phân công",
+            },
+            { label: "Biển số xe", value: trip.vehiclePlate, hidden: !trip.vehiclePlate },
             { label: "Tạo lúc", value: formatDateTime(trip.createdAt), numeric: true },
             { label: "Đã giao lúc", value: formatDateTime(trip.deliveredAt), numeric: true, hidden: !trip.deliveredAt },
           ]}

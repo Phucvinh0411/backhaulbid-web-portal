@@ -35,7 +35,7 @@ export default function DriversRosterCard({ drivers = [] }) {
           </Typography>
         </div>
         <span className="text-xs font-bold px-3 py-1 rounded-full bg-success-soft text-success border border-success-soft">
-          Đủ điều kiện bằng lái FC / C
+          Hồ sơ tài xế
         </span>
       </div>
 
@@ -45,7 +45,7 @@ export default function DriversRosterCard({ drivers = [] }) {
           <TableHead className="bg-surface-sunken">
             <TableRow>
               <TableCell className="!font-bold !text-ink-muted !text-xs !py-3">Họ &amp; tên tài xế</TableCell>
-              <TableCell className="!font-bold !text-ink-muted !text-xs !py-3">Hạng bằng lái</TableCell>
+              <TableCell className="!font-bold !text-ink-muted !text-xs !py-3">Số GPLX</TableCell>
               <TableCell className="!font-bold !text-ink-muted !text-xs !py-3">Hồ sơ an toàn</TableCell>
               <TableCell className="!font-bold !text-ink-muted !text-xs !py-3 text-right">Số điện thoại trực tiếp</TableCell>
             </TableRow>

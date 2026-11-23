@@ -269,7 +269,7 @@ export default function FleetVerificationsPage() {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      {tab === "vehicles" ? getCarrierLabel(row.carrierId) : row.phone || "—"}
+                      {getCarrierLabel(row.carrierId)}
                     </TableCell>
                     <TableCell>
                       {tab === "vehicles"

@@ -25,7 +25,7 @@ export const useSocket = (options: UseSocketOptions = {}) => {
     // Connect through the api-gateway so JWT cookies are exchanged for
     // authenticated headers before the request reaches bidding-service.
     const instance = io(GATEWAY_URL, {
-      transports: ['polling', 'websocket'],
+      transports: ['websocket'],
       path: BIDDING_SOCKET_PATH,
       withCredentials: true,
       autoConnect: true,

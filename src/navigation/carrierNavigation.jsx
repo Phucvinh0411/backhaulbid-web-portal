@@ -59,9 +59,9 @@ const carrierNavigation = [
 
 /** Bottom navigation on phones: what needs action now, then the auction funnel and trips. */
 export const carrierMobileNavigation = [
-  { title: "Việc cần làm", path: "/carrier/dashboard", icon: DashboardIcon },
+  { title: "Tổng quan", path: "/carrier/dashboard", icon: DashboardIcon },
   { title: "Tìm phiên", path: "/carrier/auctions", icon: ExploreIcon },
-  { title: "Phiên của tôi", path: "/carrier/my-auctions", icon: GavelIcon },
+  { title: "Phiên tôi", path: "/carrier/my-auctions", icon: GavelIcon },
   { title: "Chuyến", path: "/carrier/transports", icon: LocalShippingIcon },
 ];
 

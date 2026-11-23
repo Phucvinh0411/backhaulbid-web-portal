@@ -78,7 +78,7 @@ export default function Header({ userInfo, role = "admin" }) {
 
     const socket = io(GATEWAY_URL, {
       path: "/notification-socket",
-      transports: ["polling", "websocket"],
+      transports: ["websocket"],
       withCredentials: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 2000,

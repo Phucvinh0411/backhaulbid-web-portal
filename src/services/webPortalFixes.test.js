@@ -4,7 +4,9 @@ import { getApiErrorMessage } from "./errorMessage.js";
 import { getSepayOrderStatusMeta, getAdminStatusMeta } from "../lib/statusMeta.js";
 import { getVehicleDocumentPath, getDriverLicenseDocumentPath } from "../lib/fleetDocuments.js";
 import { dedupeInFlight } from "../lib/inFlightRequest.js";
-import { formatCurrencyAxisTick } from "../lib/format.js";
+import { formatAddress, formatCurrencyAxisTick } from "../lib/format.js";
+import { getHandoverState } from "../components/tracking/tripHandoverPresentation.js";
+import { mapCarrierProfile } from "./carrierProfileMapper.js";
 
 describe("web portal error localization, status labels, media proxies & chart ticks", () => {
   it("translates 409 already-verified eKYC errors and 503 outages cleanly without false network message", () => {
@@ -90,5 +92,34 @@ describe("web portal error localization, status labels, media proxies & chart ti
     assert.equal(formatCurrencyAxisTick(9_500_000), "9.5tr");
     assert.equal(formatCurrencyAxisTick(12_000_000), "12tr");
     assert.equal(formatCurrencyAxisTick(750_000), "750k");
+  });
+
+  it("distinguishes missing handover photos from non-pickup trip status", () => {
+    const withPhotos = getHandoverState({
+      handover: { photoPaths: ["/api/v1/trips/t1/handover/photos/0"] },
+      tripStatus: "IN_TRANSIT",
+    });
+    assert.equal(withPhotos.canConfirm, false);
+    assert.doesNotMatch(withPhotos.message, /chưa có ảnh hàng hóa/i);
+
+    const withoutPhotos = getHandoverState({
+      handover: { photoPaths: [] },
+      tripStatus: "WAITING_PICKUP",
+    });
+    assert.equal(withoutPhotos.canConfirm, false);
+    assert.match(withoutPhotos.message, /chưa có ảnh hàng hóa/i);
+  });
+
+  it("deduplicates consecutive repeated province names and translates carrier fleet metadata", () => {
+    assert.equal(formatAddress("TP. Thuận An, Bình Dương, Bình Dương"), "TP. Thuận An, Bình Dương");
+    assert.equal(formatAddress("Q. Hải Châu, Đà Nẵng, Đà Nẵng"), "Q. Hải Châu, Đà Nẵng");
+
+    const mapped = mapCarrierProfile({
+      company: { companyName: "Phúc An", verificationStatus: "VERIFIED" },
+      vehicles: [{ id: "v1", licensePlate: "51C-468.25", vehicleType: "TRUCK_MEDIUM", bodyType: "Thùng kín", payloadCapacity: 8, status: "VERIFIED" }],
+      drivers: [],
+    });
+    assert.equal(mapped.fleet[0].type, "Xe tải trung");
+    assert.equal(mapped.fleet[0].status, "Đã duyệt");
   });
 });

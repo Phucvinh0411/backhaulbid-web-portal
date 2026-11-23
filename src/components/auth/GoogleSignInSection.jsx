@@ -28,6 +28,10 @@ const ONBOARDING_ROLES = [
   { value: "CARRIER", title: "Chủ xe", hint: "Đặt giá và quản lý đội xe", Icon: LocalShippingOutlinedIcon },
 ];
 
+// Google GSI warns if initialize() runs on every route mount between /login and /register.
+let initializedGsiClientId = null;
+let activeCredentialHandler = null;
+
 export default function GoogleSignInSection({ mode = "login" }) {
   const router = useRouter();
   const notify = useGlobalNotification();
@@ -110,6 +114,7 @@ export default function GoogleSignInSection({ mode = "login" }) {
 
   useEffect(() => {
     credentialHandlerRef.current = handleCredential;
+    activeCredentialHandler = handleCredential;
   });
 
   useEffect(() => {
@@ -119,11 +124,14 @@ export default function GoogleSignInSection({ mode = "login" }) {
     const renderButton = () => {
       if (!active || !buttonRef.current || !window.google?.accounts?.id) return;
       buttonRef.current.innerHTML = "";
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        auto_select: false,
-        callback: (response) => credentialHandlerRef.current?.(response?.credential),
-      });
+      if (initializedGsiClientId !== clientId) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          auto_select: false,
+          callback: (response) => activeCredentialHandler?.(response?.credential),
+        });
+        initializedGsiClientId = clientId;
+      }
       const width = Math.min(Math.max(buttonRef.current.clientWidth || 400, 260), 400);
       window.google.accounts.id.renderButton(buttonRef.current, {
         type: "standard",

@@ -105,4 +105,19 @@ export function formatCurrencyAxisTick(value) {
   return `${Math.round(amount / 1000)}k`;
 }
 
+/** Removes consecutive duplicate comma-separated location segments (e.g. "Bình Dương, Bình Dương"). */
+export function formatAddress(value, fallback = UNKNOWN) {
+  const raw = String(value || "").trim();
+  if (!raw) return fallback;
+  const parts = raw.split(",").map((part) => part.trim()).filter(Boolean);
+  const deduped = [];
+  for (const part of parts) {
+    const prev = deduped.at(-1);
+    if (!prev || prev.toLocaleLowerCase("vi") !== part.toLocaleLowerCase("vi")) {
+      deduped.push(part);
+    }
+  }
+  return deduped.join(", ") || fallback;
+}
+
 export { UNKNOWN };

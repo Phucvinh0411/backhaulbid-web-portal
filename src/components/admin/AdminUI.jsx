@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
@@ -212,13 +213,16 @@ export function AdminStatusChip({ label, tone = "neutral", icon }) {
 }
 
 export function AdminSearchField({ value, onChange, placeholder = "Tìm kiếm..." }) {
+  const inputId = useId();
   return (
     <TextField
+      id={inputId}
+      name="adminSearch"
       hiddenLabel
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      inputProps={{ "aria-label": placeholder }}
+      inputProps={{ id: `${inputId}-input`, name: "adminSearch", "aria-label": placeholder }}
       sx={{
         minWidth: { xs: "100%", sm: 280 },
         "& .MuiFilledInput-root": {
@@ -238,13 +242,16 @@ export function AdminSearchField({ value, onChange, placeholder = "Tìm kiếm..
 }
 
 export function AdminSelectField({ value, onChange, options, minWidth = 160, ariaLabel = "Lọc trạng thái" }) {
+  const selectId = useId();
   return (
     <TextField
+      id={selectId}
+      name="adminFilter"
       select
       hiddenLabel
       value={value}
       onChange={onChange}
-      inputProps={{ "aria-label": ariaLabel }}
+      inputProps={{ id: `${selectId}-input`, name: "adminFilter", "aria-label": ariaLabel }}
       sx={{
         minWidth: { xs: "100%", sm: minWidth },
         "& .MuiFilledInput-root": {

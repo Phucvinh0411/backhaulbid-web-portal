@@ -170,13 +170,15 @@ export default function AdminComplaintsPage() {
           <Panel padded={false}>
             <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
               <TextField
+                id="admin-complaints-search"
+                name="query"
                 label="Tìm mã, chuyến, tiêu đề"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
               />
               <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: "1fr 1fr" }}>
-                <TextField select label="Loại vấn đề" value={category} onChange={(event) => setCategory(event.target.value)}>
+                <TextField id="admin-complaints-category" name="category" select label="Loại vấn đề" value={category} onChange={(event) => setCategory(event.target.value)}>
                   <MenuItem value="">Tất cả loại</MenuItem>
                   {COMPLAINT_CATEGORIES.map((item) => (
                     <MenuItem key={item.code} value={item.code}>
@@ -185,7 +187,7 @@ export default function AdminComplaintsPage() {
                   ))}
                   <MenuItem value={UNCATEGORIZED}>Chưa phân loại</MenuItem>
                 </TextField>
-                <TextField select label="Trạng thái" value={status} onChange={(event) => setStatus(event.target.value)}>
+                <TextField id="admin-complaints-status" name="status" select label="Trạng thái" value={status} onChange={(event) => setStatus(event.target.value)}>
                   <MenuItem value="OPEN">Đang mở</MenuItem>
                   <MenuItem value="">Tất cả</MenuItem>
                   {Object.entries(COMPLAINT_STATUS_META).map(([code, meta]) => (

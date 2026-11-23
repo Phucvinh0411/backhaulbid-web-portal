@@ -21,11 +21,23 @@ import { MY_BID_OUTCOME_META, getAccessStatusMeta, getMyBidOutcome } from "@/lib
 import { formatMoney } from "@/lib/format";
 
 const GROUPS = [
-  { value: "ACTION", label: "Cần xử lý", statuses: ["PAYMENT_INCOMPLETE", "AUCTION_OPEN"] },
-  { value: "UPCOMING", label: "Sắp diễn ra", statuses: ["WAITING_FOR_START"] },
-  { value: "DONE", label: "Đã kết thúc", statuses: ["AUCTION_COMPLETED", "AUCTION_CANCELLED", "REGISTRATION_CANCELLED", "REGISTRATION_CLOSED"] },
-  { value: "ALL", label: "Tất cả", statuses: null },
+  { value: "ACTION", label: "Cần xử lý" },
+  { value: "UPCOMING", label: "Sắp diễn ra" },
+  { value: "DONE", label: "Đã kết thúc" },
+  { value: "ALL", label: "Tất cả" },
 ];
+const DONE_ACCESS = new Set(["AUCTION_COMPLETED", "AUCTION_CANCELLED", "REGISTRATION_CANCELLED", "REGISTRATION_CLOSED"]);
+
+function resolveAuctionGroup(row) {
+  const accessStatus = row?.access?.accessStatus;
+  if (accessStatus === "PAYMENT_INCOMPLETE" || accessStatus === "AUCTION_OPEN") return "ACTION";
+  if (accessStatus === "WAITING_FOR_START") return "UPCOMING";
+  if (DONE_ACCESS.has(accessStatus)) return "DONE";
+  const auctionStatus = row?.auction?.status;
+  if (auctionStatus === "COMPLETED" || auctionStatus === "CANCELLED") return "DONE";
+  if (auctionStatus === "PENDING") return "UPCOMING";
+  return "ACTION";
+}
 const URGENCY = { AUCTION_OPEN: 0, PAYMENT_INCOMPLETE: 1, WAITING_FOR_START: 2 };
 const CANCELLABLE = new Set(["WAITING_FOR_START", "PAYMENT_INCOMPLETE"]);
 
@@ -81,15 +93,14 @@ export default function CarrierMyAuctionsPage() {
   const counts = useMemo(() => {
     const result = {};
     GROUPS.forEach((item) => {
-      result[item.value] = item.statuses ? rows.filter((row) => item.statuses.includes(row.access?.accessStatus)).length : rows.length;
+      result[item.value] = item.value === "ALL" ? rows.length : rows.filter((row) => resolveAuctionGroup(row) === item.value).length;
     });
     return result;
   }, [rows]);
 
   const visible = useMemo(() => {
-    const selected = GROUPS.find((item) => item.value === group);
     return rows
-      .filter((row) => !selected.statuses || selected.statuses.includes(row.access?.accessStatus))
+      .filter((row) => group === "ALL" || resolveAuctionGroup(row) === group)
       .sort((a, b) => (URGENCY[a.access?.accessStatus] ?? 9) - (URGENCY[b.access?.accessStatus] ?? 9) || new Date(b.registration?.registeredAt) - new Date(a.registration?.registeredAt));
   }, [group, rows]);
 

@@ -329,7 +329,9 @@ export default function AccountSettingsScreen({ role = "carrier" }) {
                   )}
                 </Box>
 
-                <VerificationOverview refreshKey={ekyc.status} verificationMethod={ekyc.verificationMethod} onRetry={() => setOpenEkycModal(true)} />
+                {ekyc.status !== "loading" && ekyc.status !== "unverified" && (
+                  <VerificationOverview refreshKey={ekyc.status} verificationMethod={ekyc.verificationMethod} onRetry={() => setOpenEkycModal(true)} />
+                )}
                 <Box className="mt-5 flex items-start gap-2 text-ink-muted">
                   <LockOutlinedIcon fontSize="small" className="mt-0.5" />
                   <Typography variant="caption">

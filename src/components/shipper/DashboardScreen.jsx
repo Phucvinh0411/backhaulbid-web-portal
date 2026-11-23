@@ -301,8 +301,8 @@ export default function DashboardScreen() {
                             <LocalShippingIcon fontSize="small" />
                           </Box>
                           <Box>
-                            <Typography variant="subtitle2" className="font-bold text-ink">
-                              {shipment.id} ({shipment.goodsType})
+                            <Typography variant="subtitle2" className="font-bold text-ink" title={`Mã chuyến: ${shipment.id}`}>
+                              {formatDisplayId(shipment.id)} ({shipment.goodsType})
                             </Typography>
                             <Typography variant="body2" className="text-ink-muted font-medium">
                               {shipment.route}

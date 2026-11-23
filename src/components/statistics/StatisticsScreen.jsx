@@ -44,7 +44,9 @@ const CUSTOM_RANGE_ERROR = {
   "max-range-exceeded": "Khoảng tùy chỉnh tối đa là 24 tháng.",
 };
 const STATUS_LABEL = {
-  PENDING: "Chờ mở", OPEN: "Đang mở", COMPLETED: "Đã kết thúc", CANCELLED: "Đã hủy",
+  PENDING: "Chờ mở", OPEN: "Đang mở", PROCESSING: "Đang xử lý", RESOLVED: "Đã giải quyết",
+  COMPLETED: "Đã kết thúc", CANCELLED: "Đã hủy", DISMISSED: "Từ chối",
+  SHIPPER_WIN: "Chủ hàng thắng", CARRIER_WIN: "Chủ xe thắng", BOTH: "Hai bên thỏa thuận",
   WAITING_PICKUP: "Chờ lấy hàng", PICKED_UP: "Đã lấy hàng", IN_TRANSIT: "Đang vận chuyển",
   DELIVERED: "Đã giao", SIGNED: "Đã ký", DRAFT: "Bản nháp", WAITING_SIGNATURE: "Chờ ký",
   EXPIRED: "Hết hạn", ACTIVE: "Đang hoạt động", INACTIVE: "Ngừng hoạt động", BLOCKED: "Đã khóa",

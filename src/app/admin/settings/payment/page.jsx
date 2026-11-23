@@ -139,6 +139,7 @@ export default function PaymentSettingsPage() {
 
                 <SettingRow label="Cổng thanh toán mặc định" helper="Phương thức nạp/rút tiền hệ thống">
                   <TextField name="paymentGateway" defaultValue={settings.paymentGateway ?? ""} select fullWidth size="small" disabled={loading}>
+                    <MenuItem value="sepay">Cổng thanh toán SePay</MenuItem>
                     <MenuItem value="vnpay">Cổng thanh toán VNPay</MenuItem>
                     <MenuItem value="momo">Ví điện tử MoMo</MenuItem>
                     <MenuItem value="bank">Chuyển khoản Ngân hàng tự động</MenuItem>

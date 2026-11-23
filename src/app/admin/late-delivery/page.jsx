@@ -9,19 +9,37 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import { contractApi } from "@/services/contractApi";
+import { identityApi } from "@/services/identityApi";
+import { shortId } from "@/lib/format";
 
 const rowsFrom = (value) => Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
 const money = (value) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
+const SETTLEMENT_STATUS_LABELS = { COMPLETED: "Hoàn thành", FAILED: "Lỗi", PENDING: "Đang chờ" };
 
 export default function AdminLateDeliveryPage() {
   const [rows, setRows] = useState([]);
+  const [accountNames, setAccountNames] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setRows(rowsFrom(await contractApi.listDelaySettlementsForAdmin()));
+      const [settlementRows, accounts] = await Promise.all([
+        contractApi.listDelaySettlementsForAdmin(),
+        identityApi.listAdminAccounts().catch(() => []),
+      ]);
+      setRows(rowsFrom(settlementRows));
+      if (Array.isArray(accounts)) {
+        const map = {};
+        accounts.forEach((account) => {
+          if (account?.id) {
+            map[String(account.id)] =
+              account.companyName || account.fullName || account.phone || `#${shortId(account.id)}`;
+          }
+        });
+        setAccountNames(map);
+      }
       setError("");
     } catch (requestError) {
       setError(requestError?.response?.data?.message || "Không thể tải các khoản xử lý giao trễ.");
@@ -55,13 +73,13 @@ export default function AdminLateDeliveryPage() {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id} className="border-t border-line">
-                  <td className="p-4"><div className="font-bold">{String(row.tripId).slice(0, 8)}</div><div className="text-xs text-ink-muted">Phiên {row.auctionId || "—"}</div><div className="text-xs">Bậc {row.tier} · {row.lateMinutes} phút</div></td>
-                  <td className="p-4 font-mono text-xs">{row.shipperId}</td>
-                  <td className="p-4 font-mono text-xs">{row.carrierId}</td>
+                  <td className="p-4"><div className="font-bold">Chuyến #{shortId(row.tripId)}</div><div className="text-xs text-ink-muted">Phiên #{shortId(row.auctionId)}</div><div className="text-xs">Bậc {row.tier} · {row.lateMinutes} phút</div></td>
+                  <td className="p-4 text-sm">{accountNames[String(row.shipperId)] || `#${shortId(row.shipperId)}`}</td>
+                  <td className="p-4 text-sm">{accountNames[String(row.carrierId)] || `#${shortId(row.carrierId)}`}</td>
                   <td className="p-4">{row.cumulativePenaltyPercent}% tiền cọc</td>
                   <td className="p-4"><div>{money(row.totalCompensationAmount)} tổng mức</div><div className="text-xs text-ink-muted">+{money(row.incrementalCompensationAmount)} ở bậc này</div></td>
                   <td className="p-4">−{row.pointsDeducted} điểm</td>
-                  <td className="p-4"><div className="flex flex-wrap gap-1"><Chip size="small" label={`Ví: ${row.walletStatus}`} color={row.walletStatus === "COMPLETED" ? "success" : "warning"} /><Chip size="small" label={`Uy tín: ${row.reputationStatus}`} color={row.reputationStatus === "COMPLETED" ? "success" : "warning"} /><Chip size="small" label={`Thông báo: ${row.notificationStatus}`} color={row.notificationStatus === "COMPLETED" ? "success" : "warning"} /></div>{row.lastError && <div className="mt-2 max-w-sm text-xs text-danger">{row.lastError}</div>}</td>
+                  <td className="p-4"><div className="flex flex-wrap gap-1"><Chip size="small" label={`Ví: ${SETTLEMENT_STATUS_LABELS[row.walletStatus] || row.walletStatus}`} color={row.walletStatus === "COMPLETED" ? "success" : row.walletStatus === "FAILED" ? "error" : "warning"} /><Chip size="small" label={`Uy tín: ${SETTLEMENT_STATUS_LABELS[row.reputationStatus] || row.reputationStatus}`} color={row.reputationStatus === "COMPLETED" ? "success" : row.reputationStatus === "FAILED" ? "error" : "warning"} /><Chip size="small" label={`Thông báo: ${SETTLEMENT_STATUS_LABELS[row.notificationStatus] || row.notificationStatus}`} color={row.notificationStatus === "COMPLETED" ? "success" : row.notificationStatus === "FAILED" ? "error" : "warning"} /></div>{row.lastError && <div className="mt-2 max-w-sm text-xs text-danger">{row.lastError}</div>}</td>
                 </tr>
               ))}
             </tbody>

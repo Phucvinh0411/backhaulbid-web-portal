@@ -408,8 +408,18 @@ export default function AdminBusinessVerificationsPage() {
                   Số CCCD 12 số: {selected.ekycRepresentative.citizenId || "Chưa có"}
                 </Typography>
                 <Typography variant="body2">
-                  Kết quả eKYC: {selected.ekycRepresentative.status} ·{" "}
-                  {selected.ekycRepresentative.verificationMethod || "chưa có phương thức"}
+                  Kết quả eKYC:{" "}
+                  {({ VERIFIED: "Đã xác minh", PENDING: "Chờ duyệt", REJECTED: "Từ chối", EXPIRED: "Hết hạn" }[
+                    selected.ekycRepresentative.status
+                  ] || selected.ekycRepresentative.status)}{" "}
+                  ·{" "}
+                  {({
+                    NFC_AUTO: "NFC tự động",
+                    LOCAL_NFC_DEVELOPMENT: "NFC phát triển",
+                    MANUAL_DOCUMENT_REVIEW: "Duyệt hồ sơ thủ công",
+                  }[selected.ekycRepresentative.verificationMethod] ||
+                    selected.ekycRepresentative.verificationMethod ||
+                    "chưa có phương thức")}
                 </Typography>
                 {selected.ekycRepresentative.evidenceAvailable ? (
                   <Box className="mt-3 grid grid-cols-3 gap-2">

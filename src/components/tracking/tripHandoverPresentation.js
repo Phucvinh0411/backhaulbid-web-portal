@@ -30,13 +30,20 @@ export function getHandoverState({ handover, tripStatus }) {
     return { state: "CONFIRMED", canConfirm: false, message: "Chủ hàng đã xác nhận bàn giao hàng cho tài xế." };
   }
   const hasPhotos = Array.isArray(handover.photoPaths) && handover.photoPaths.length > 0;
-  const canConfirm = tripStatus === "WAITING_PICKUP" && hasPhotos;
+  if (!hasPhotos) {
+    return {
+      state: "PENDING_CONFIRMATION",
+      canConfirm: false,
+      message: "Biên bản chưa có ảnh hàng hóa nên chưa xác nhận được.",
+    };
+  }
+  const canConfirm = tripStatus === "WAITING_PICKUP";
   return {
     state: "PENDING_CONFIRMATION",
     canConfirm,
     message: canConfirm
       ? "Kiểm tra biên bản và ảnh, rồi xác nhận đã giao hàng cho tài xế."
-      : "Biên bản chưa có ảnh hàng hóa nên chưa xác nhận được.",
+      : "Chủ hàng chưa xác nhận bàn giao trước khi lấy hàng.",
   };
 }
 

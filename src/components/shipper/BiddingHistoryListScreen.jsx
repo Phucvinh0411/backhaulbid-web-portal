@@ -355,9 +355,11 @@ export default function BiddingHistoryListScreen() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Search Box */}
             <TextField
+              id="bidding-history-search"
+              name="searchTerm"
               hiddenLabel
               placeholder="Tìm kiếm mã, mặt hàng, địa điểm..."
-              inputProps={{ "aria-label": "Tìm kiếm mã, mặt hàng, địa điểm" }}
+              inputProps={{ id: "bidding-history-search-input", name: "searchTerm", "aria-label": "Tìm kiếm mã, mặt hàng, địa điểm" }}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full md:w-80"
@@ -381,8 +383,10 @@ export default function BiddingHistoryListScreen() {
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
               {/* Origin Filter */}
               <FormControl className="min-w-[150px] flex-1 md:flex-initial">
-                <InputLabel id="origin-select-label">Điểm xuất phát</InputLabel>
+                <InputLabel id="origin-select-label" htmlFor="origin-select">Điểm xuất phát</InputLabel>
                 <Select
+                  id="origin-select"
+                  name="originFilter"
                   labelId="origin-select-label"
                   value={originFilter}
                   label="Điểm xuất phát"
@@ -399,8 +403,10 @@ export default function BiddingHistoryListScreen() {
 
               {/* Destination Filter */}
               <FormControl className="min-w-[150px] flex-1 md:flex-initial">
-                <InputLabel id="dest-select-label">Điểm giao hàng</InputLabel>
+                <InputLabel id="dest-select-label" htmlFor="dest-select">Điểm giao hàng</InputLabel>
                 <Select
+                  id="dest-select"
+                  name="destFilter"
                   labelId="dest-select-label"
                   value={destFilter}
                   label="Điểm giao hàng"
