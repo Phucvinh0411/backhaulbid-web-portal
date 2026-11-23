@@ -56,6 +56,7 @@ export function mapTrip(response) {
     lateMinutes: toNumber(raw.lateMinutes, 0),
     canCancelForLateDelivery: Boolean(raw.canCancelForLateDelivery),
     status: raw.status ?? "WAITING_PICKUP",
+    contractStatus: raw.contractStatus ?? null,
     cancellationReason: raw.cancellationReason ?? null,
     createdAt: toIsoString(raw.createdAt),
     updatedAt: toIsoString(raw.updatedAt),

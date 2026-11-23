@@ -141,11 +141,13 @@ describe("web portal api mappers", () => {
       agreedPrice: "12000000",
       lateMinutes: "15",
       status: "IN_TRANSIT",
+      contractStatus: "SIGNED",
       driverName: "Trương Văn Lực",
       vehiclePlate: "51C-905.31",
     });
     assert.equal(trip.agreedPrice, 12000000);
     assert.equal(trip.lateMinutes, 15);
+    assert.equal(trip.contractStatus, "SIGNED");
     assert.equal(trip.driverName, "Trương Văn Lực");
     assert.equal(trip.vehiclePlate, "51C-905.31");
 
