@@ -7,7 +7,7 @@ import Typography from "@mui/material/Typography";
 import { PageHeader } from "@/components/common";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/ui";
-import TripList, { TRIP_GROUPS, getTripNextStep } from "@/components/tracking/TripList";
+import TripList, { isContractReadyForDriver, TRIP_GROUPS, getTripNextStep } from "@/components/tracking/TripList";
 import { contractApi } from "@/services/contractApi";
 import { getMyDrivers, getMyVehicles } from "@/services/fleetApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
@@ -52,7 +52,9 @@ export default function CarrierTransportsPage() {
     return trips.filter(selected.match).sort((a, b) => urgency(a) - urgency(b) || new Date(b.createdAt) - new Date(a.createdAt));
   }, [group, trips]);
 
-  const needsDriver = trips.filter((trip) => trip.status === "WAITING_PICKUP" && !trip.driverId).length;
+  const needsDriver = trips.filter(
+    (trip) => trip.status === "WAITING_PICKUP" && !trip.driverId && isContractReadyForDriver(trip),
+  ).length;
 
   return (
     <Box>

@@ -236,19 +236,32 @@ export default function TripActions({ trip, role, proofs = [], onChanged }) {
   let body = null;
   if (role === "carrier" && !closed) {
     const steps = getExecutorJourneySteps(trip.status);
+    const waitingContractSignature = Boolean(trip.contractStatus && trip.contractStatus !== "SIGNED");
     body = (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-        {trip.status === "WAITING_PICKUP" && !trip.driverId && (
+        {trip.status === "WAITING_PICKUP" && !trip.driverId && waitingContractSignature && (
+          <Alert
+            severity="info"
+            action={
+              <Button color="inherit" size="small" component={Link} href="/carrier/contracts">
+                Mở hợp đồng
+              </Button>
+            }
+          >
+            Hợp đồng chưa hoàn tất ký kết (đang chờ ký). Hoàn tất ký hợp đồng trước khi phân công tài xế.
+          </Alert>
+        )}
+        {trip.status === "WAITING_PICKUP" && !trip.driverId && !waitingContractSignature && (
           <Alert severity="warning" action={<Button color="inherit" size="small" onClick={() => setDialog("assign")}>Phân công</Button>}>
             Chuyến chưa có tài xế.
           </Alert>
         )}
-        {trip.status === "WAITING_PICKUP" && trip.driverId && !trip.driverConnected && (
+        {trip.status === "WAITING_PICKUP" && trip.driverId && !trip.driverConnected && !waitingContractSignature && (
           <Alert severity="info">Chờ tài xế nhập mã nhận chuyến trong app. Nếu mã hết hạn hoặc thất lạc, cấp lại mã.</Alert>
         )}
         {trip.status === "DELIVERED" && <Typography variant="body2">Đã giao. Đang chờ chủ hàng xác nhận để hoàn thành chuyến.</Typography>}
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", "& > *": { flex: { xs: "1 1 100%", sm: "0 0 auto" } } }}>
-          {steps.map((step) =>
+          {!waitingContractSignature && steps.map((step) =>
             step.requiresProof ? (
               <Button key={step.eventType} variant={step.primary ? "contained" : "outlined"} onClick={() => setDialog("proof")} disabled={busy}>
                 {step.label}
@@ -259,12 +272,12 @@ export default function TripActions({ trip, role, proofs = [], onChanged }) {
               </Button>
             ),
           )}
-          {trip.status === "WAITING_PICKUP" && trip.driverId && (
+          {trip.status === "WAITING_PICKUP" && trip.driverId && !waitingContractSignature && (
             <Button variant="outlined" color="inherit" onClick={() => setDialog("assign")} disabled={busy}>
               Đổi tài xế
             </Button>
           )}
-          {trip.driverId && ["WAITING_PICKUP", "PICKED_UP", "IN_TRANSIT"].includes(trip.status) && (
+          {trip.driverId && ["WAITING_PICKUP", "PICKED_UP", "IN_TRANSIT"].includes(trip.status) && !waitingContractSignature && (
             <Button variant="outlined" color="inherit" onClick={() => setDialog("reissue")} disabled={busy}>
               Cấp lại mã nhận chuyến
             </Button>

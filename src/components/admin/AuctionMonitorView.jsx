@@ -195,7 +195,7 @@ function LightActionButton({ children, tone = "primary", disabled = false, onCli
   );
 }
 
-function SessionCard({ session, now, onDetail, onFlag, onStop, carrierNames = {} }) {
+function SessionCard({ session, now, onDetail, onFlag, onUnflag, actionLoading = false, onStop, carrierNames = {} }) {
   const bids = session.bidHistory || [];
   const sealed = session.auctionType === "SEALED";
   const isOpen = session.status === "OPEN";
@@ -294,8 +294,12 @@ function SessionCard({ session, now, onDetail, onFlag, onStop, carrierNames = {}
             <LightActionButton onClick={() => onDetail(session.id)}>
               <RemoveRedEyeOutlinedIcon className="!text-[0.95rem]" /> Chi tiết
             </LightActionButton>
-            <LightActionButton tone="amber" disabled={session.fraudFlag} onClick={() => onFlag(session.id)}>
-              <FlagOutlinedIcon className="!text-[0.95rem]" /> {session.fraudFlag ? "Đã gắn cờ" : "Gắn cờ"}
+            <LightActionButton
+              tone="amber"
+              disabled={actionLoading}
+              onClick={() => (session.fraudFlag ? onUnflag(session.id) : onFlag(session.id))}
+            >
+              <FlagOutlinedIcon className="!text-[0.95rem]" /> {session.fraudFlag ? "Gỡ cờ" : "Gắn cờ"}
             </LightActionButton>
           </div>
         </div>
@@ -390,8 +394,12 @@ function SessionCard({ session, now, onDetail, onFlag, onStop, carrierNames = {}
           <DarkActionButton onClick={() => onDetail(session.id)}>
             <RemoveRedEyeOutlinedIcon className="!text-[0.95rem]" /> Chi tiết
           </DarkActionButton>
-          <DarkActionButton tone="amber" disabled={session.fraudFlag} onClick={() => onFlag(session.id)}>
-            <FlagOutlinedIcon className="!text-[0.95rem]" /> {session.fraudFlag ? "Đã gắn cờ" : "Gắn cờ"}
+          <DarkActionButton
+            tone="amber"
+            disabled={actionLoading}
+            onClick={() => (session.fraudFlag ? onUnflag(session.id) : onFlag(session.id))}
+          >
+            <FlagOutlinedIcon className="!text-[0.95rem]" /> {session.fraudFlag ? "Gỡ cờ" : "Gắn cờ"}
           </DarkActionButton>
           <DarkActionButton tone="rose" onClick={() => onStop(session.id)}>
             <BlockIcon className="!text-[0.95rem]" /> Dừng phiên
@@ -415,7 +423,7 @@ function InfoItem({ label, value, emphasize = false }) {
   );
 }
 
-function SessionDetailDialog({ session, open, onClose, onFlag, onStop }) {
+function SessionDetailDialog({ session, open, onClose, onFlag, onUnflag, actionLoading, onStop }) {
   if (!session) return null;
   const bids = session.bidHistory || [];
 
@@ -440,10 +448,10 @@ function SessionDetailDialog({ session, open, onClose, onFlag, onStop }) {
           <AdminSecondaryButton onClick={onClose}>Đóng</AdminSecondaryButton>
           <AdminSecondaryButton
             startIcon={<FlagOutlinedIcon />}
-            onClick={() => onFlag(session.id)}
-            disabled={session.fraudFlag}
+            onClick={() => (session.fraudFlag ? onUnflag(session.id) : onFlag(session.id))}
+            disabled={actionLoading}
           >
-            {session.fraudFlag ? "Đã gắn cờ" : "Gắn cờ gian lận"}
+            {session.fraudFlag ? "Gỡ cờ rà soát" : "Gắn cờ gian lận"}
           </AdminSecondaryButton>
           <AdminPrimaryButton
             startIcon={<BlockIcon />}
@@ -525,7 +533,7 @@ function EmptyState({ filtered, query }) {
   );
 }
 
-export default function AuctionMonitorView({ sessions, carrierNames = {}, onCancelAuction, onFlagAuction, onLoadSessionBids, live = false }) {
+export default function AuctionMonitorView({ sessions, carrierNames = {}, onCancelAuction, onFlagAuction, onUnflagAuction, onLoadSessionBids, live = false }) {
   const notify = useGlobalNotification();
   const [selectedId, setSelectedId] = useState("");
   const [detailOpen, setDetailOpen] = useState(false);
@@ -628,6 +636,12 @@ export default function AuctionMonitorView({ sessions, carrierNames = {}, onCanc
     );
   };
 
+  const handleUnflag = (sessionId) => {
+    if (!onUnflagAuction || actionLoading) return;
+    setSelectedId(sessionId);
+    runAction(() => onUnflagAuction(sessionId), () => setDetailOpen(false));
+  };
+
   return (
     <>
       <Box className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -675,6 +689,8 @@ export default function AuctionMonitorView({ sessions, carrierNames = {}, onCanc
                   carrierNames={carrierNames}
                   onDetail={openDetail}
                   onFlag={requestFlag}
+                  onUnflag={handleUnflag}
+                  actionLoading={actionLoading}
                   onStop={requestStop}
                 />
               ))}
@@ -688,6 +704,8 @@ export default function AuctionMonitorView({ sessions, carrierNames = {}, onCanc
         open={detailOpen && Boolean(selectedSession)}
         onClose={() => setDetailOpen(false)}
         onFlag={requestFlag}
+        onUnflag={handleUnflag}
+        actionLoading={actionLoading}
         onStop={requestStop}
       />
 
@@ -714,7 +732,7 @@ export default function AuctionMonitorView({ sessions, carrierNames = {}, onCanc
         }
       >
         <Typography variant="body2">
-          Phiên {selectedSession?.id} sẽ chuyển sang trạng thái đã hủy và không nhận thêm đăng ký hoặc báo giá.
+          Phiên #{shortId(selectedSession?.id)} sẽ chuyển sang trạng thái đã hủy và không nhận thêm đăng ký hoặc báo giá.
         </Typography>
       </ResponsiveDialog>
 
@@ -737,7 +755,7 @@ export default function AuctionMonitorView({ sessions, carrierNames = {}, onCanc
         }
       >
         <Typography variant="body2" sx={{ mb: 2 }}>
-          Lưu lý do rà soát phiên {selectedSession?.id}.
+          Lưu lý do rà soát phiên #{shortId(selectedSession?.id)}.
         </Typography>
         <TextField
           autoFocus

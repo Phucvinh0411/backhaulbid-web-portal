@@ -33,6 +33,7 @@ import {
 } from "@/components/admin/AdminUI";
 import { identityApi } from "@/services/identityApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
+import { shortId } from "@/lib/format";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 const typeOptions = [
@@ -267,9 +268,10 @@ export default function AdminUsersPage() {
                         </Typography>
                         <Typography
                           variant="caption"
-                          sx={{ color: "text.secondary", fontWeight: 600 }}
+                          title={row.id}
+                          sx={{ color: "text.secondary", fontWeight: 600, fontFamily: "monospace" }}
                         >
-                          {row.id}
+                          #{shortId(row.id)}
                         </Typography>
                       </Box>
                     </Box>

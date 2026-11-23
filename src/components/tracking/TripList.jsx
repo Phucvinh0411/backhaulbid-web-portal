@@ -9,9 +9,15 @@ import { RouteLine, StatusBadge } from "@/components/ui";
 import { getTripStatusMeta } from "@/lib/statusMeta";
 import { formatAddress, formatDateTime, formatMoney, shortId } from "@/lib/format";
 
+/** Whether a WAITING_PICKUP trip already has a signed contract allowing driver assignment. */
+export function isContractReadyForDriver(trip) {
+  return !trip?.contractStatus || trip.contractStatus === "SIGNED";
+}
+
 /** The next step for a trip from the given role's point of view (null when nothing is pending). */
 export function getTripNextStep(trip, role) {
   if (role === "carrier") {
+    if (trip.status === "WAITING_PICKUP" && !isContractReadyForDriver(trip)) return { label: "Chờ ký hợp đồng", tone: "warning" };
     if (trip.status === "WAITING_PICKUP" && !trip.driverId) return { label: "Cần phân công tài xế", tone: "danger" };
     if (trip.status === "WAITING_PICKUP" && trip.driverId && !trip.driverConnected) return { label: "Chờ tài xế nhập mã nhận chuyến", tone: "warning" };
     if (trip.status === "WAITING_PICKUP") return { label: "Chờ lấy hàng", tone: "warning" };

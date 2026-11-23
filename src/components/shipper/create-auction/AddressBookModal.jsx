@@ -11,6 +11,7 @@ import PhoneIcon from "@mui/icons-material/PhoneInTalkOutlined";
 import { ResponsiveDialog } from "@/components/ui";
 import { addressBookApi } from "@/services/addressBookApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
+import { formatAddress } from "@/lib/format";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 export default function AddressBookModal({ open, onClose, onSelectAddress, targetType }) {
@@ -104,7 +105,7 @@ export default function AddressBookModal({ open, onClose, onSelectAddress, targe
               </span>
               <p className="text-[0.75rem] text-ink-muted font-medium flex items-center gap-1">
                 <LocationOnIcon className="!text-[0.8rem] text-info shrink-0" />
-                {addr.detail}, {addr.province}
+                {formatAddress([addr.detail, addr.province].filter(Boolean).join(", "))}
               </p>
               <div className="flex items-center gap-3 pt-1 text-[0.72rem] text-ink-subtle font-medium">
                 <span className="flex items-center gap-1">

@@ -7,6 +7,14 @@ import { dedupeInFlight } from "../lib/inFlightRequest.js";
 import { formatAddress, formatCurrencyAxisTick } from "../lib/format.js";
 import { getHandoverState } from "../components/tracking/tripHandoverPresentation.js";
 import { mapCarrierProfile } from "./carrierProfileMapper.js";
+import {
+  formatPaymentMethodLabel,
+  formatTransactionDescription,
+  formatTransactionReference,
+  formatTransactionShortId,
+  formatTransactionStatusLabel,
+  formatTransactionTypeLabel,
+} from "./walletFormatters.js";
 
 describe("web portal error localization, status labels, media proxies & chart ticks", () => {
   it("translates 409 already-verified eKYC errors and 503 outages cleanly without false network message", () => {
@@ -121,5 +129,40 @@ describe("web portal error localization, status labels, media proxies & chart ti
     });
     assert.equal(mapped.fleet[0].type, "Xe tải trung");
     assert.equal(mapped.fleet[0].status, "Đã duyệt");
+  });
+
+  it("localizes wallet transaction fields, shortens UUIDs, and reclassifies auction creation fee labels", () => {
+    const auctionFeeTx = {
+      id: "74b956f4-1111-2222-3333-444455556666",
+      type: "PENALTY",
+      status: "SUCCESS",
+      paymentMethod: "INTERNAL_WALLET",
+      referenceCode: "auction_creation_fee_e19a385f-aaaa-bbbb-cccc-ddddeeeeffff:forfeit",
+      description: "Forfeit auction deposit hold 83685e5a-1111-2222-3333-444455556666",
+    };
+    assert.equal(formatTransactionShortId(auctionFeeTx.id), "#74B956F4");
+    assert.equal(formatTransactionTypeLabel(auctionFeeTx), "Phí tạo phiên đấu giá");
+    assert.equal(formatTransactionStatusLabel(auctionFeeTx.status), "Thành công");
+    assert.equal(formatPaymentMethodLabel(auctionFeeTx.paymentMethod), "Ví nội bộ BackhaulBid");
+    assert.equal(formatTransactionReference(auctionFeeTx.referenceCode), "Phiên #E19A385F");
+    assert.equal(formatTransactionDescription(auctionFeeTx), "Thanh toán phí tạo phiên đấu giá #E19A385F");
+
+    const withdrawHoldTx = {
+      id: "12345678-1111-2222-3333-444455556666",
+      type: "FREEZE",
+      referenceCode: "WITHDRAWAL_HOLD:abcdef12-1111-2222-3333-444455556666",
+      description: "Hold for withdrawal request abcdef12-1111-2222-3333-444455556666",
+    };
+    assert.equal(formatTransactionTypeLabel(withdrawHoldTx), "Tạm giữ yêu cầu rút tiền");
+    assert.equal(formatTransactionReference(withdrawHoldTx.referenceCode), "Yêu cầu rút #ABCDEF12");
+    assert.equal(formatTransactionDescription(withdrawHoldTx), "Tạm giữ số dư cho yêu cầu rút tiền #ABCDEF12");
+
+    const withdrawReleaseTx = {
+      type: "UNFREEZE",
+      referenceCode: "WITHDRAWAL_RELEASE:abcdef12-1111-2222-3333-444455556666",
+      description: "Hoàn tạm giữ do từ chối yêu cầu rút tiền #ABCDEF12",
+    };
+    assert.equal(formatTransactionTypeLabel(withdrawReleaseTx), "Hoàn tạm giữ yêu cầu rút tiền");
+    assert.equal(formatTransactionStatusLabel("CANCELLED"), "Đã hủy");
   });
 });

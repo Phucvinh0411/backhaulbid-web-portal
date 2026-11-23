@@ -36,26 +36,25 @@ import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { walletApi } from "@/services/walletApi";
 import { getSepayOrderStatusMeta } from "@/lib/statusMeta";
+import {
+  formatPaymentMethodLabel,
+  formatTransactionDescription,
+  formatTransactionReference,
+  formatTransactionShortId,
+  formatTransactionStatusLabel,
+  formatTransactionTypeLabel,
+} from "@/services/walletFormatters";
 import WalletDetailDialog, { WalletDetailRow } from "./WalletDetailDialog";
 
 const OUTFLOW_TYPES = new Set(["WITHDRAW", "FREEZE", "AUCTION_FEE", "PENALTY"]);
-const TRANSACTION_LABELS = {
-  DEPOSIT: "Nạp tiền vào ví",
-  WITHDRAW: "Yêu cầu rút tiền",
-  FREEZE: "Tạm giữ tiền đặt cọc",
-  UNFREEZE: "Hoàn trả tiền đặt cọc",
-  AUCTION_FEE: "Phí tham gia phiên đấu giá",
-  REFUND: "Hoàn tiền",
-  TRANSFER: "Điều chuyển số dư",
-  PENALTY: "Khấu trừ tiền phạt",
-};
 
 function toTableTransaction(transaction) {
   const type = String(transaction.type || "").toUpperCase();
   const amount = Math.abs(Number(transaction.amount || 0));
   return {
     id: transaction.id,
-    typeName: TRANSACTION_LABELS[type] || transaction.description || "Giao dịch ví",
+    shortCode: formatTransactionShortId(transaction.id),
+    typeName: formatTransactionTypeLabel(transaction),
     amount: OUTFLOW_TYPES.has(type) ? -amount : amount,
     time: transaction.createdAt,
     status: String(transaction.status || "").toLowerCase(),
@@ -283,6 +282,7 @@ export default function WalletScreen({ role = "shipper", standalone = true, init
     const result = transactions.filter((transaction) => {
       const term = searchTerm.toLowerCase();
       const matchesSearch = transaction.id.toLowerCase().includes(term)
+        || (transaction.shortCode || "").toLowerCase().includes(term)
         || transaction.typeName.toLowerCase().includes(term);
       return matchesSearch && (statusTab === "all" || transaction.status === statusTab);
     });
@@ -528,7 +528,9 @@ export default function WalletScreen({ role = "shipper", standalone = true, init
                   <TableRow><TableCell colSpan={6} align="center" className="!py-12 text-ink-subtle">Chưa có giao dịch phù hợp.</TableCell></TableRow>
                 ) : paginatedTransactions.map((transaction) => (
                   <TableRow key={transaction.id} className="hover:bg-surface-sunken/40 transition-colors">
-                    <TableCell className="!font-mono !font-bold text-ink-subtle !border-line">{transaction.id}</TableCell>
+                    <TableCell className="!font-mono !font-bold text-ink-subtle !border-line" title={transaction.id}>
+                      {transaction.shortCode}
+                    </TableCell>
                     <TableCell className="!font-bold text-ink !border-line">{transaction.typeName}</TableCell>
                     <TableCell align="right" className={`!font-mono !font-bold !border-line ${transaction.amount > 0 ? "!text-[var(--color-success)]" : "!text-danger"}`}>
                       {transaction.amount > 0 ? `+${formatCurrency(transaction.amount)}` : formatCurrency(transaction.amount)}
@@ -620,13 +622,13 @@ export default function WalletScreen({ role = "shipper", standalone = true, init
       >
         {transactionDetail && (
           <Box>
-            <WalletDetailRow label="Mã giao dịch" value={transactionDetail.id} />
-            <WalletDetailRow label="Loại giao dịch" value={transactionDetail.type} />
+            <WalletDetailRow label="Mã giao dịch" value={formatTransactionShortId(transactionDetail.id)} />
+            <WalletDetailRow label="Loại giao dịch" value={formatTransactionTypeLabel(transactionDetail)} />
             <WalletDetailRow label="Số tiền" value={formatCurrency(transactionDetail.amount)} />
-            <WalletDetailRow label="Trạng thái" value={transactionDetail.status} />
-            <WalletDetailRow label="Phương thức" value={transactionDetail.paymentMethod} />
-            <WalletDetailRow label="Mã tham chiếu" value={transactionDetail.referenceCode} />
-            <WalletDetailRow label="Nội dung" value={transactionDetail.description} />
+            <WalletDetailRow label="Trạng thái" value={formatTransactionStatusLabel(transactionDetail.status)} />
+            <WalletDetailRow label="Phương thức" value={formatPaymentMethodLabel(transactionDetail.paymentMethod)} />
+            <WalletDetailRow label="Mã tham chiếu" value={formatTransactionReference(transactionDetail.referenceCode)} />
+            <WalletDetailRow label="Nội dung" value={formatTransactionDescription(transactionDetail)} />
             <WalletDetailRow label="Thời gian" value={transactionDetail.createdAt ? new Date(transactionDetail.createdAt).toLocaleString("vi-VN") : undefined} />
           </Box>
         )}

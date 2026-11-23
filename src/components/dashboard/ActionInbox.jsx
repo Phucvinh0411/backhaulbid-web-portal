@@ -97,7 +97,8 @@ async function carrierTasks() {
       }),
     );
   asList(tripsResponse).forEach((trip) => {
-    const noDriver = trip.status === "WAITING_PICKUP" && !trip.driverId;
+    const contractReady = !trip.contractStatus || trip.contractStatus === "SIGNED";
+    const noDriver = trip.status === "WAITING_PICKUP" && !trip.driverId && contractReady;
     if (!noDriver && trip.status !== "IN_TRANSIT" && trip.status !== "PICKED_UP") return;
     tasks.push({
       key: `trip-${trip.id}`,

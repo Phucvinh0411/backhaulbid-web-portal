@@ -95,6 +95,11 @@ export const flagAuction = (auctionId, payload) =>
     .post(biddingPath(`/auctions/${auctionId}/fraud-flag`), payload)
     .then(mapAuction);
 
+export const unflagAuction = (auctionId) =>
+  apiService
+    .delete(biddingPath(`/auctions/${auctionId}/fraud-flag`))
+    .then(mapAuction);
+
 // The owner's value documents of an auction, with the carrier-coverage checklist. Only the auction's shipper and an
 // admin get it; the response never carries a storage key or URL.
 export const listAuctionValueDocuments = (auctionId) =>

@@ -22,7 +22,7 @@ import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import VerifiedOutlinedIcon from "@mui/icons-material/VerifiedOutlined";
 import PageHeader from "@/components/common/PageHeader";
 import { getApiErrorMessage } from "@/services/errorMessage";
-import { loadAccountProfile, loadBusinessProfile, loadRepresentativeProfile, updateAccountAvatar, updateAccountEmail } from "@/services/profileApi";
+import { loadAccountProfile, loadBusinessProfile, loadRepresentativeProfile, requestEmailChangeOtp, updateAccountAvatar, updateAccountEmail, updateAccountPassword } from "@/services/profileApi";
 import { mediaApi } from "@/services/mediaApi";
 import { GATEWAY_URL } from "@/config/clientConfig";
 import { toMediaViewUrl } from "@/lib/mediaUrl";
@@ -50,9 +50,10 @@ function statusProps(status) {
   return STATUS[String(status || "NOT_SUBMITTED").toUpperCase()] || { label: "Chưa xác định", color: "default" };
 }
 
-function VerificationStatus({ status }) {
+function VerificationStatus({ status, prefix }) {
   const props = statusProps(status);
-  return <Chip size="small" label={props.label} color={props.color} icon={props.color === "success" ? <VerifiedOutlinedIcon /> : undefined} />;
+  const label = prefix ? `${prefix}: ${props.label}` : props.label;
+  return <Chip size="small" label={label} color={props.color} icon={props.color === "success" ? <VerifiedOutlinedIcon /> : undefined} />;
 }
 
 function Field({ label, value, unavailable = "Chưa cập nhật" }) {
@@ -88,34 +89,146 @@ function ErrorCard({ message, onRetry }) {
   return <Alert severity="error" action={<Button color="inherit" size="small" startIcon={<RefreshOutlinedIcon />} onClick={onRetry}>Thử lại</Button>}>{message}</Alert>;
 }
 
+const STRICT_EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,10}$/;
+
 function AccountPanel({ accountState, account, role, onRetry, onEmailUpdated }) {
   const [editingEmail, setEditingEmail] = useState(false);
   const [emailInput, setEmailInput] = useState("");
+  const [otpSentEmail, setOtpSentEmail] = useState("");
+  const [maskedEmailTarget, setMaskedEmailTarget] = useState("");
+  const [otpInput, setOtpInput] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [sendingOtp, setSendingOtp] = useState(false);
   const [savingEmail, setSavingEmail] = useState(false);
   const [emailFeedback, setEmailFeedback] = useState(null);
+
+  const [editingPassword, setEditingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordFeedback, setPasswordFeedback] = useState(null);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return undefined;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   if (accountState === "loading") return <LoadingCard />;
   if (accountState === "error") return <ErrorCard message="Không thể tải thông tin tài khoản." onRetry={onRetry} />;
   const isGoogleLinked = account.authProvider === "GOOGLE";
+  const normalizedInputEmail = emailInput.trim().toLowerCase();
+  const otpPendingForCurrentInput = Boolean(otpSentEmail && otpSentEmail === normalizedInputEmail);
 
-  const handleSaveEmail = async (event) => {
-    event.preventDefault();
+  const closeEmailEditor = () => {
+    setEditingEmail(false);
+    setOtpSentEmail("");
+    setMaskedEmailTarget("");
+    setOtpInput("");
+    setResendCooldown(0);
+  };
+
+  const closePasswordEditor = () => {
+    setEditingPassword(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+  };
+
+  const handleRequestOtp = async () => {
     const trimmed = emailInput.trim();
     if (!trimmed) {
       setEmailFeedback({ severity: "error", message: "Vui lòng nhập địa chỉ email." });
       return;
     }
+    if (!STRICT_EMAIL_REGEX.test(trimmed)) {
+      setEmailFeedback({ severity: "error", message: "Email không đúng định dạng (ví dụ: ten@tenmien.vn)." });
+      return;
+    }
+    if (account.email && trimmed.toLowerCase() === account.email.trim().toLowerCase()) {
+      setEmailFeedback({ severity: "info", message: "Email mới đang trùng với email hiện tại." });
+      return;
+    }
+    setSendingOtp(true);
+    setEmailFeedback(null);
+    try {
+      const result = await requestEmailChangeOtp(trimmed);
+      setOtpSentEmail(trimmed.toLowerCase());
+      setMaskedEmailTarget(result?.maskedEmail || trimmed);
+      setOtpInput("");
+      setResendCooldown(Number(result?.resendAfterSeconds || 60));
+      setEmailFeedback({
+        severity: "info",
+        message: `Đã gửi mã OTP 6 chữ số tới ${result?.maskedEmail || trimmed} (hiệu lực ${result?.expiresMinutes || 10} phút).`,
+      });
+    } catch (error) {
+      setEmailFeedback({ severity: "error", message: getApiErrorMessage(error, "Không thể gửi mã OTP tới email mới.") });
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleSaveEmail = async (event) => {
+    event.preventDefault();
+    const trimmed = emailInput.trim();
+    if (!otpPendingForCurrentInput) {
+      await handleRequestOtp();
+      return;
+    }
+    const cleanOtp = otpInput.trim();
+    if (!/^\d{6}$/.test(cleanOtp)) {
+      setEmailFeedback({ severity: "error", message: "Vui lòng nhập đủ 6 chữ số mã OTP đã gửi tới email mới." });
+      return;
+    }
     setSavingEmail(true);
     setEmailFeedback(null);
     try {
-      const updated = await updateAccountEmail(trimmed);
+      const updated = await updateAccountEmail(trimmed, cleanOtp);
       onEmailUpdated?.(updated);
-      setEditingEmail(false);
-      setEmailFeedback({ severity: "success", message: "Đã cập nhật email nhận OTP ký hợp đồng." });
+      closeEmailEditor();
+      setEmailFeedback({ severity: "success", message: "Đã xác minh OTP và cập nhật email nhận thông báo." });
     } catch (error) {
-      setEmailFeedback({ severity: "error", message: getApiErrorMessage(error, "Không thể cập nhật email.") });
+      setEmailFeedback({ severity: "error", message: getApiErrorMessage(error, "Không thể xác minh OTP để cập nhật email.") });
     } finally {
       setSavingEmail(false);
+    }
+  };
+
+  const handleSavePassword = async (event) => {
+    event.preventDefault();
+    if (!currentPassword.trim()) {
+      setPasswordFeedback({ severity: "error", message: "Vui lòng nhập mật khẩu hiện tại." });
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordFeedback({ severity: "error", message: "Mật khẩu mới cần tối thiểu 8 ký tự." });
+      return;
+    }
+    if (encodeURIComponent(newPassword).replace(/%[A-F\d]{2}/gi, "U").length > 72) {
+      setPasswordFeedback({ severity: "error", message: "Mật khẩu mới không được vượt quá 72 byte." });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordFeedback({ severity: "error", message: "Xác nhận mật khẩu mới không khớp." });
+      return;
+    }
+    if (newPassword === currentPassword) {
+      setPasswordFeedback({ severity: "error", message: "Mật khẩu mới phải khác mật khẩu hiện tại." });
+      return;
+    }
+    setSavingPassword(true);
+    setPasswordFeedback(null);
+    try {
+      await updateAccountPassword(currentPassword, newPassword);
+      closePasswordEditor();
+      setPasswordFeedback({ severity: "success", message: "Đã đổi mật khẩu thành công." });
+    } catch (error) {
+      setPasswordFeedback({ severity: "error", message: getApiErrorMessage(error, "Không thể đổi mật khẩu.") });
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -123,18 +236,39 @@ function AccountPanel({ accountState, account, role, onRetry, onEmailUpdated }) 
     <AppCard component="section" sx={{ p: { xs: 2, sm: 3 } }}>
       <SectionHeading
         title="Thông tin tài khoản"
-        action={!isGoogleLinked && !editingEmail ? (
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => {
-              setEmailInput(account.email || "");
-              setEmailFeedback(null);
-              setEditingEmail(true);
-            }}
-          >
-            {account.email ? "Đổi email" : "Thêm email"}
-          </Button>
+        action={!isGoogleLinked ? (
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            {!editingEmail && (
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  closePasswordEditor();
+                  setEmailInput(account.email || "");
+                  setEmailFeedback(null);
+                  setPasswordFeedback(null);
+                  setEditingEmail(true);
+                }}
+              >
+                {account.email ? "Đổi email" : "Thêm email"}
+              </Button>
+            )}
+            {!editingPassword && (
+              <Button
+                size="small"
+                variant="outlined"
+                color="inherit"
+                onClick={() => {
+                  closeEmailEditor();
+                  setPasswordFeedback(null);
+                  setEmailFeedback(null);
+                  setEditingPassword(true);
+                }}
+              >
+                Đổi mật khẩu
+              </Button>
+            )}
+          </Box>
         ) : undefined}
       />
       {!account.email && (
@@ -143,6 +277,7 @@ function AccountPanel({ accountState, account, role, onRetry, onEmailUpdated }) 
         </Alert>
       )}
       {emailFeedback && <Alert severity={emailFeedback.severity} sx={{ mb: 2 }}>{emailFeedback.message}</Alert>}
+      {passwordFeedback && <Alert severity={passwordFeedback.severity} sx={{ mb: 2 }}>{passwordFeedback.message}</Alert>}
       <Description rows={[
         { label: "Họ và tên", value: account.name !== "Tài khoản" ? account.name : null },
         { label: "Số điện thoại", value: account.phone },
@@ -150,21 +285,96 @@ function AccountPanel({ accountState, account, role, onRetry, onEmailUpdated }) 
         { label: "Vai trò", value: roleLabel[account.role] || role.label },
       ]} />
       {editingEmail && (
-        <Box component="form" onSubmit={handleSaveEmail} sx={{ mt: 2.5, pt: 2, borderTop: "1px solid", borderColor: "divider", display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "flex-start" }}>
-          <TextField
-            label="Email nhận OTP ký hợp đồng"
-            type="email"
-            size="small"
-            value={emailInput}
-            onChange={(event) => setEmailInput(event.target.value)}
-            sx={{ minWidth: { xs: "100%", sm: 280 }, flex: 1 }}
-            disabled={savingEmail}
-          />
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Button type="submit" variant="contained" disabled={savingEmail}>
-              {savingEmail ? "Đang lưu..." : "Lưu email"}
+        <Box component="form" onSubmit={handleSaveEmail} sx={{ mt: 2.5, pt: 2, borderTop: "1px solid", borderColor: "divider", display: "flex", flexDirection: "column", gap: 1.5 }}>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "flex-start" }}>
+            <TextField
+              label="Email nhận OTP ký hợp đồng"
+              type="email"
+              size="small"
+              value={emailInput}
+              onChange={(event) => {
+                setEmailInput(event.target.value);
+                if (otpSentEmail && event.target.value.trim().toLowerCase() !== otpSentEmail) {
+                  setOtpSentEmail("");
+                  setOtpInput("");
+                }
+              }}
+              sx={{ minWidth: { xs: "100%", sm: 280 }, flex: 1 }}
+              disabled={sendingOtp || savingEmail}
+            />
+            <Button
+              type="button"
+              variant="outlined"
+              disabled={sendingOtp || savingEmail || (otpPendingForCurrentInput && resendCooldown > 0)}
+              onClick={handleRequestOtp}
+            >
+              {sendingOtp
+                ? "Đang gửi OTP..."
+                : otpPendingForCurrentInput
+                  ? (resendCooldown > 0 ? `Gửi lại (${resendCooldown}s)` : "Gửi lại OTP")
+                  : "Gửi mã OTP"}
             </Button>
-            <Button variant="text" disabled={savingEmail} onClick={() => setEditingEmail(false)}>
+          </Box>
+          {otpPendingForCurrentInput && (
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center" }}>
+              <TextField
+                label={`Mã OTP 6 số (${maskedEmailTarget || emailInput})`}
+                size="small"
+                value={otpInput}
+                onChange={(event) => setOtpInput(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                inputProps={{ inputMode: "numeric", maxLength: 6 }}
+                sx={{ width: { xs: "100%", sm: 240 } }}
+                disabled={savingEmail}
+              />
+              <Button type="submit" variant="contained" disabled={savingEmail}>
+                {savingEmail ? "Đang xác nhận..." : "Xác nhận đổi email"}
+              </Button>
+            </Box>
+          )}
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button variant="text" size="small" disabled={sendingOtp || savingEmail} onClick={closeEmailEditor}>
+              Hủy
+            </Button>
+          </Box>
+        </Box>
+      )}
+      {editingPassword && (
+        <Box component="form" onSubmit={handleSavePassword} sx={{ mt: 2.5, pt: 2, borderTop: "1px solid", borderColor: "divider", display: "flex", flexDirection: "column", gap: 1.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Đổi mật khẩu đăng nhập</Typography>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" }, gap: 1.5 }}>
+            <TextField
+              label="Mật khẩu hiện tại"
+              type="password"
+              size="small"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              disabled={savingPassword}
+              autoComplete="current-password"
+            />
+            <TextField
+              label="Mật khẩu mới (tối thiểu 8 ký tự)"
+              type="password"
+              size="small"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              disabled={savingPassword}
+              autoComplete="new-password"
+            />
+            <TextField
+              label="Nhập lại mật khẩu mới"
+              type="password"
+              size="small"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              disabled={savingPassword}
+              autoComplete="new-password"
+            />
+          </Box>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button type="submit" variant="contained" disabled={savingPassword}>
+              {savingPassword ? "Đang lưu..." : "Lưu mật khẩu"}
+            </Button>
+            <Button variant="text" disabled={savingPassword} onClick={closePasswordEditor}>
               Hủy
             </Button>
           </Box>
@@ -341,7 +551,7 @@ export default function ProfileScreen({ role }) {
           {accountResult.state === "loading" ? <Skeleton width={180} height={30} /> : <Typography sx={{ fontSize: 20, fontWeight: 700, overflowWrap: "anywhere" }}>{account?.name || "Tài khoản"}</Typography>}
           <Typography sx={{ fontSize: 14, color: "text.secondary", mt: 0.25 }}>{account?.phone || config.label}</Typography>
         </Box>
-        {!isAdmin && <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}><VerificationStatus status={companyStatus} /><VerificationStatus status={representativeStatus} /></Box>}
+        {!isAdmin && <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}><VerificationStatus status={companyStatus} prefix="Doanh nghiệp" /><VerificationStatus status={representativeStatus} prefix="eKYC" /></Box>}
         {avatarFeedback && <Alert severity={avatarFeedback.severity} sx={{ flexBasis: "100%", py: 0 }}>{avatarFeedback.message}</Alert>}
       </AppCard>
 

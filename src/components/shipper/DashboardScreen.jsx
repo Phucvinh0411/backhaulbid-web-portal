@@ -114,6 +114,14 @@ export default function DashboardScreen() {
         }
       />
       <ActionInbox role="shipper" />
+      {verificationLocked && (
+        <Alert
+          severity="info"
+          action={<Button component={Link} href="/shipper/settings" color="inherit" size="small">Xác minh</Button>}
+        >
+          {AUCTION_LOCK_REASON}.
+        </Alert>
+      )}
 
       {loading && <LinearProgress aria-label="Đang tải số liệu tổng quan" />}
       {error && <Alert severity="error">{error}</Alert>}

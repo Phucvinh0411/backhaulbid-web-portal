@@ -98,6 +98,11 @@ export default function EmptyRouteDialog({ open, onClose, onSuccess, vehicles = 
   // ── Thời gian ──
   const [expectedTime, setExpectedTime]           = useState("");
   const [expectedArrivalTime, setExpectedArrivalTime] = useState("");
+  const minLocalDateTime = useMemo(() => {
+    const now = new Date();
+    const offsetMs = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
+  }, [open]);
 
   // ── Bán kính tìm kiếm (km) ──
   const [searchRadius, setSearchRadius]           = useState(50);
@@ -654,30 +659,30 @@ export default function EmptyRouteDialog({ open, onClose, onSuccess, vehicles = 
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TextField
-              label="Thời gian xe bắt đầu rỗng (Khởi hành)"
-              type="datetime-local"
-              fullWidth
-              required
-              InputLabelProps={{ shrink: true }}
-              inputProps={{ min: new Date().toISOString().slice(0, 16) }}
-              value={expectedTime}
-              onChange={(e) => setExpectedTime(e.target.value)}
-              disabled={loading}
-              helperText="Mốc thời gian xe sẵn sàng nhận hàng trên đường về"
-            />
-            <TextField
-              label="Thời gian dự kiến đến nơi (Hạn chót)"
-              type="datetime-local"
-              fullWidth
-              required
-              InputLabelProps={{ shrink: true }}
-              inputProps={{ min: expectedTime || new Date().toISOString().slice(0, 16) }}
-              value={expectedArrivalTime}
-              onChange={(e) => setExpectedArrivalTime(e.target.value)}
-              disabled={loading}
-              helperText="Hạn chót xe phải có mặt tại điểm đến mong muốn"
-            />
+              <TextField
+                label="Thời gian xe bắt đầu rỗng (Khởi hành)"
+                type="datetime-local"
+                fullWidth
+                required
+                InputLabelProps={{ shrink: true }}
+                inputProps={{ min: minLocalDateTime }}
+                value={expectedTime}
+                onChange={(e) => setExpectedTime(e.target.value)}
+                disabled={loading}
+                helperText="Mốc thời gian xe sẵn sàng nhận hàng trên đường về"
+              />
+              <TextField
+                label="Thời gian dự kiến đến nơi (Hạn chót)"
+                type="datetime-local"
+                fullWidth
+                required
+                InputLabelProps={{ shrink: true }}
+                inputProps={{ min: expectedTime || minLocalDateTime }}
+                value={expectedArrivalTime}
+                onChange={(e) => setExpectedArrivalTime(e.target.value)}
+                disabled={loading}
+                helperText="Hạn chót xe phải có mặt tại điểm đến mong muốn"
+              />
           </div>
 
           {tripDurationText && (
@@ -901,10 +906,12 @@ function GrabSearchBox({
           </div>
 
           {suggestions.map((item, idx) => (
-            <div
+            <button
               key={`${item.title}-${idx}`}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => handleSelect(item)}
-              className="px-3 py-2.5 hover:bg-surface-sunken cursor-pointer flex items-start gap-2.5 transition-colors border-b border-line last:border-b-0"
+              className="w-full text-left px-3 py-2.5 hover:bg-surface-sunken cursor-pointer flex items-start gap-2.5 transition-colors border-b border-line last:border-b-0"
             >
               <div className="w-7 h-7 rounded-lg bg-info-soft text-info flex items-center justify-center shrink-0 mt-0.5 border border-info-soft">
                 <PlaceIcon sx={{ fontSize: 16 }} />
@@ -924,7 +931,7 @@ function GrabSearchBox({
                   {item.subtitle}
                 </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}

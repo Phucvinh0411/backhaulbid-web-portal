@@ -509,7 +509,7 @@ export default function AdminWalletsPage() {
             <WalletDetailRow label="Mã tài khoản" value={topUpDetail.accountId ? `#${shortId(topUpDetail.accountId)}` : "---"} />
             <WalletDetailRow label="Số tiền" value={formatCurrency(topUpDetail.amount)} />
             <WalletDetailRow label="Nhà cung cấp" value={topUpDetail.provider} />
-            <WalletDetailRow label="Trạng thái" value={topUpDetail.status} />
+            <WalletDetailRow label="Trạng thái" value={getSepayOrderStatusMeta(topUpDetail.status).label} />
             <WalletDetailRow label="Mã giao dịch ngân hàng" value={topUpDetail.providerTransactionId} />
             <WalletDetailRow label="Tạo lúc" value={formatDate(topUpDetail.createdAt)} />
             <WalletDetailRow label="Thanh toán lúc" value={formatDate(topUpDetail.paidAt)} />

@@ -8,7 +8,7 @@ import Typography from "@mui/material/Typography";
 import { AdminPageHeader, AdminPageShell, AdminPrimaryButton } from "@/components/admin/AdminUI";
 import AuctionMonitorView from "@/components/admin/AuctionMonitorView";
 import useAuctionSocket from "@/hooks/useAuctionSocket";
-import { cancelAuction, flagAuction, listAuctions, listBids } from "@/services/biddingApi";
+import { cancelAuction, flagAuction, listAuctions, listBids, unflagAuction } from "@/services/biddingApi";
 import { identityApi } from "@/services/identityApi";
 import { getPageItems, unwrapListData } from "@/services/responseData";
 import { getVehicleTypeLabel } from "@/lib/statusMeta";
@@ -312,6 +312,16 @@ export default function AdminOperationsPage() {
               current.map((session) =>
                 session.id === auctionId
                   ? { ...session, fraudFlag: true, fraudReason: reason }
+                  : session,
+              ),
+            );
+          }}
+          onUnflagAuction={async (auctionId) => {
+            await unflagAuction(auctionId);
+            setSessions((current) =>
+              current.map((session) =>
+                session.id === auctionId
+                  ? { ...session, fraudFlag: false, fraudReason: "" }
                   : session,
               ),
             );

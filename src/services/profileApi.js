@@ -22,8 +22,16 @@ export async function updateAccountAvatar(avatarUrl) {
   return unwrap(await apiService.patch("/api/v1/accounts/me/avatar", { avatarUrl }, QUIET));
 }
 
-export async function updateAccountEmail(email) {
-  return unwrap(await apiService.patch("/api/v1/accounts/me/email", { email }, QUIET));
+export async function requestEmailChangeOtp(email) {
+  return unwrap(await apiService.post("/api/v1/accounts/me/email/otp", { email }, QUIET));
+}
+
+export async function updateAccountEmail(email, otp) {
+  return unwrap(await apiService.patch("/api/v1/accounts/me/email", { email, otp }, QUIET));
+}
+
+export async function updateAccountPassword(currentPassword, newPassword) {
+  return unwrap(await apiService.patch("/api/v1/accounts/me/password", { currentPassword, newPassword }, QUIET));
 }
 
 export async function loadBusinessProfile() {

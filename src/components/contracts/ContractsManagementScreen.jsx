@@ -36,9 +36,11 @@ import TextField from "@mui/material/TextField";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import ContractItem, { getContractStatusDesign } from "./ContractItem";
 import { contractApi } from "@/services/contractApi";
+import { getAuction } from "@/services/biddingApi";
 import { carrierProfileApi } from "@/services/carrierProfileApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { mapContractResponses, getContractTrackingHref } from "@/services/contractMapper";
+import { shortId } from "@/lib/format";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import useAccountVerification from "@/hooks/useAccountVerification";
 
@@ -110,7 +112,14 @@ export default function ContractsManagementScreen({
       const mapped = mapContractResponses(response, role);
       setItems(mapped);
 
-      const uniquePartnerIds = [...new Set(mapped.map((contract) => contract.partnerId).filter(Boolean))];
+      const uniquePartnerIds = role === "shipper"
+        ? [...new Set(
+            mapped
+              .filter((contract) => !contract.carrierName || contract.carrierName.startsWith("Nhà xe #"))
+              .map((contract) => contract.partnerId)
+              .filter(Boolean),
+          )]
+        : [];
       if (uniquePartnerIds.length > 0) {
         const companyEntries = await Promise.all(
           uniquePartnerIds.map(async (partnerId) => {
@@ -127,9 +136,7 @@ export default function ContractsManagementScreen({
             current.map((contract) => {
               const companyName = contract.partnerId ? companyById[String(contract.partnerId)] : null;
               if (!companyName) return contract;
-              return role === "shipper"
-                ? { ...contract, carrierName: companyName }
-                : { ...contract, shipperName: companyName };
+              return { ...contract, carrierName: companyName };
             }),
           );
         }
@@ -176,6 +183,26 @@ export default function ContractsManagementScreen({
   const openDetails = (contract) => {
     setSelectedContract(contract);
     setOpenDetailDrawer(true);
+    const isGenericCargo = !contract?.cargoType || contract.cargoType === "Vận chuyển hàng hóa";
+    const auctionId = contract?.auctionId;
+    if (isGenericCargo && auctionId && /^[0-9a-f-]{36}$/i.test(auctionId)) {
+      getAuction(auctionId)
+        .then((auction) => {
+          const cargoLabel = auction?.cargoName || auction?.cargoType || auction?.title;
+          if (!cargoLabel) return;
+          setSelectedContract((current) =>
+            current && current.backendId === contract.backendId
+              ? { ...current, cargoType: cargoLabel }
+              : current,
+          );
+          setItems((current) =>
+            current.map((item) =>
+              item.backendId === contract.backendId ? { ...item, cargoType: cargoLabel } : item,
+            ),
+          );
+        })
+        .catch(() => {});
+    }
   };
 
   useEffect(() => {
@@ -458,7 +485,11 @@ export default function ContractsManagementScreen({
               <DetailRow label="Mã hợp đồng" value={selectedContract.id} />
               <DetailRow
                 label="Mã phiên đấu giá"
-                value={selectedContract.auctionId}
+                value={
+                  selectedContract.auctionId && selectedContract.auctionId !== "Chưa có mã phiên"
+                    ? `#${shortId(selectedContract.auctionId)}`
+                    : selectedContract.auctionId
+                }
               />
               <DetailRow
                 label={partnerLabel}

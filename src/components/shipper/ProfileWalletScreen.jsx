@@ -306,8 +306,8 @@ export default function ProfileWalletScreen() {
             freeSolo
             options={PROVINCE_NAMES}
             value={addressForm.province || ""}
-            onChange={(event, newValue) => setAddressForm((old) => ({ ...old, province: newValue || "", ...(old.province !== (newValue || "") ? { latitude: null, longitude: null, coordinateSource: null, coordinateConfirmedAt: null } : {}) }))}
-            onInputChange={(event, newInputValue) => setAddressForm((old) => ({ ...old, province: newInputValue, ...(old.province !== newInputValue ? { latitude: null, longitude: null, coordinateSource: null, coordinateConfirmedAt: null } : {}) }))}
+            onChange={(event, newValue) => setAddressForm((old) => ({ ...old, province: newValue || "" }))}
+            onInputChange={(event, newInputValue) => setAddressForm((old) => ({ ...old, province: newInputValue }))}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -326,7 +326,7 @@ export default function ProfileWalletScreen() {
             fullWidth
             required
             value={addressForm.detail}
-            onChange={(e) => setAddressForm({ ...addressForm, detail: e.target.value, latitude: null, longitude: null, coordinateSource: null, coordinateConfirmedAt: null })}
+            onChange={(e) => setAddressForm((old) => ({ ...old, detail: e.target.value }))}
             placeholder="VD: Số 123 Đường Nguyễn Thị Minh Khai, Phường 6, Quận 3"
           />
 

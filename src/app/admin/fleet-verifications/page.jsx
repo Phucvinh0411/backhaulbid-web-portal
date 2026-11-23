@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import DialogActions from "@mui/material/DialogActions";
@@ -76,15 +76,37 @@ export default function FleetVerificationsPage() {
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const loadReviews = async () => {
+  const accountsLoadedRef = useRef(false);
+
+  const loadReviews = useCallback(async () => {
     setLoading(true);
     try {
-      const data =
+      const [data, accounts] = await Promise.all([
         tab === "vehicles"
-          ? await getAdminVehicleReviews(status)
-          : await getAdminDriverReviews(
-              status === "INACTIVE" ? "EXPIRED" : status,
-            );
+          ? getAdminVehicleReviews(status)
+          : getAdminDriverReviews(status === "INACTIVE" ? "EXPIRED" : status),
+        accountsLoadedRef.current
+          ? Promise.resolve(null)
+          : identityApi
+              .listAdminAccounts()
+              .then((res) => {
+                if (Array.isArray(res) && res.length > 0) {
+                  accountsLoadedRef.current = true;
+                }
+                return res;
+              })
+              .catch(() => null),
+      ]);
+      if (Array.isArray(accounts)) {
+        const map = {};
+        accounts.forEach((account) => {
+          if (account?.id) {
+            map[String(account.id)] =
+              account.companyName || account.fullName || account.phone || `Tài khoản #${shortId(account.id)}`;
+          }
+        });
+        setAccountNames(map);
+      }
       setRows(Array.isArray(data) ? data : []);
     } catch (loadError) {
       notify.error(
@@ -96,32 +118,11 @@ export default function FleetVerificationsPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    void loadReviews();
   }, [notify, status, tab]);
 
   useEffect(() => {
-    let active = true;
-    identityApi
-      .listAdminAccounts()
-      .then((accounts) => {
-        if (!active || !Array.isArray(accounts)) return;
-        const map = {};
-        accounts.forEach((account) => {
-          if (account?.id) {
-            map[String(account.id)] =
-              account.companyName || account.fullName || account.phone || `Tài khoản #${shortId(account.id)}`;
-          }
-        });
-        setAccountNames(map);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
+    void loadReviews();
+  }, [loadReviews]);
 
   const getCarrierLabel = (carrierId) => {
     if (!carrierId) return "—";
