@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
@@ -43,6 +44,7 @@ import { getPageItems, getPageMeta, toWithdrawalApiStatus } from "@/services/res
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import WalletDetailDialog, { WalletDetailRow } from "@/components/wallet/WalletDetailDialog";
 import { getSepayOrderStatusMeta } from "@/lib/statusMeta";
+import { useNativeInputSync } from "@/hooks/useNativeInputSync";
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(amount) || 0);
@@ -68,6 +70,8 @@ export default function AdminWalletsPage() {
   const [openApproveDialog, setOpenApproveDialog] = useState(false);
   const [openRejectDialog, setOpenRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const rejectReasonInputRef = useNativeInputSync(setRejectionReason);
+  const [dialogError, setDialogError] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [walletDetail, setWalletDetail] = useState(null);
   const [topUpDetail, setTopUpDetail] = useState(null);
@@ -144,12 +148,14 @@ export default function AdminWalletsPage() {
 
   const handleOpenApprove = (item) => {
     setSelectedItem(item);
+    setDialogError("");
     setOpenApproveDialog(true);
   };
 
   const handleConfirmApprove = async () => {
     if (!selectedItem) return;
     setActionLoading(true);
+    setDialogError("");
     try {
       await walletApi.approveAdminWithdrawal(selectedItem.id);
       notify.success(`Đã phê duyệt yêu cầu rút tiền ${formatCurrency(selectedItem.amount)} thành công!`);
@@ -157,7 +163,9 @@ export default function AdminWalletsPage() {
       setSelectedItem(null);
       await loadData();
     } catch (err) {
-      notify.error(getApiErrorMessage(err, "Không thể duyệt yêu cầu rút tiền."));
+      const msg = getApiErrorMessage(err, "Không thể duyệt yêu cầu rút tiền.");
+      setDialogError(msg);
+      notify.error(msg);
     } finally {
       setActionLoading(false);
     }
@@ -166,6 +174,7 @@ export default function AdminWalletsPage() {
   const handleOpenReject = (item) => {
     setSelectedItem(item);
     setRejectionReason("");
+    setDialogError("");
     setOpenRejectDialog(true);
   };
 
@@ -206,10 +215,13 @@ export default function AdminWalletsPage() {
   const handleConfirmReject = async () => {
     if (!selectedItem) return;
     if (!rejectionReason.trim()) {
-      notify.warning("Vui lòng nhập lý do từ chối yêu cầu rút tiền.");
+      const msg = "Vui lòng nhập lý do từ chối yêu cầu rút tiền.";
+      setDialogError(msg);
+      notify.warning(msg);
       return;
     }
     setActionLoading(true);
+    setDialogError("");
     try {
       await walletApi.rejectAdminWithdrawal(selectedItem.id, rejectionReason.trim());
       notify.success("Đã từ chối yêu cầu rút tiền. Số tiền đã được hoàn lại ví của người dùng.");
@@ -217,7 +229,9 @@ export default function AdminWalletsPage() {
       setSelectedItem(null);
       await loadData();
     } catch (err) {
-      notify.error(getApiErrorMessage(err, "Không thể từ chối yêu cầu rút tiền."));
+      const msg = getApiErrorMessage(err, "Không thể từ chối yêu cầu rút tiền.");
+      setDialogError(msg);
+      notify.error(msg);
     } finally {
       setActionLoading(false);
     }
@@ -434,6 +448,7 @@ export default function AdminWalletsPage() {
       <AdminDialog open={openApproveDialog} onClose={() => !actionLoading && setOpenApproveDialog(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, color: "var(--color-brand)" }}>Xác nhận Chuyển tiền Rút</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
+          {dialogError && <Alert severity="error" sx={{ mb: 2 }}>{dialogError}</Alert>}
           {selectedItem && (
             <Box className="space-y-3">
               <Typography variant="body2" sx={{ color: "var(--color-ink-muted)" }}>
@@ -462,12 +477,15 @@ export default function AdminWalletsPage() {
       <AdminDialog open={openRejectDialog} onClose={() => !actionLoading && setOpenRejectDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, color: "var(--color-danger)" }}>Từ chối Yêu cầu Rút tiền</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
+          {dialogError && <Alert severity="error" sx={{ mb: 2 }}>{dialogError}</Alert>}
           {selectedItem && (
             <Box className="space-y-3">
               <Typography variant="body2" sx={{ color: "var(--color-ink-muted)" }}>
                 Khi từ chối, số tiền <strong>{formatCurrency(selectedItem.amount)}</strong> sẽ tự động được hoàn trả vào số dư khả dụng của người dùng.
               </Typography>
               <TextField
+                id="admin-wallet-rejection-reason"
+                name="rejectionReason"
                 fullWidth
                 multiline
                 rows={3}
@@ -476,6 +494,8 @@ export default function AdminWalletsPage() {
                 required
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
+                onInput={(e) => setRejectionReason(e.target.value)}
+                inputRef={rejectReasonInputRef}
                 sx={{ mt: 1 }}
               />
             </Box>

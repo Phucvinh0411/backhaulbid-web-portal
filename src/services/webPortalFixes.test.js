@@ -165,4 +165,12 @@ describe("web portal error localization, status labels, media proxies & chart ti
     assert.equal(formatTransactionTypeLabel(withdrawReleaseTx), "Hoàn tạm giữ yêu cầu rút tiền");
     assert.equal(formatTransactionStatusLabel("CANCELLED"), "Đã hủy");
   });
+
+  it("translates registration duplicate phone/email and wallet conflict errors into Vietnamese", () => {
+    const dupPhone = { response: { status: 400, data: { message: "Phone number already exists" } } };
+    assert.equal(getApiErrorMessage(dupPhone), "Số điện thoại này đã được đăng ký.");
+
+    const dupEmail = { response: { status: 400, data: { message: "Email already exists" } } };
+    assert.equal(getApiErrorMessage(dupEmail), "Email này đã được sử dụng.");
+  });
 });

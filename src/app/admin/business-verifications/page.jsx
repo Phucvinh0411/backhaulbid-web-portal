@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useNativeInputSync } from "@/hooks/useNativeInputSync";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -132,6 +133,7 @@ export default function AdminBusinessVerificationsPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [selected, setSelected] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const reasonInputRef = useNativeInputSync(setRejectionReason);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -468,9 +470,13 @@ export default function AdminBusinessVerificationsPage() {
 
           {selected?.status === "PENDING" && (
             <TextField
+              id="business-verifications-rejection-reason"
+              name="rejectionReason"
               label="Lý do từ chối (bắt buộc nếu từ chối)"
               value={rejectionReason}
               onChange={(event) => setRejectionReason(event.target.value)}
+              onInput={(event) => setRejectionReason(event.target.value)}
+              inputRef={reasonInputRef}
               multiline
               rows={3}
               inputProps={{ maxLength: 500 }}

@@ -91,6 +91,12 @@ function translateKnownMessage(message, status, code) {
   if (/address label is required/i.test(normalized)) {
     return "Vui lòng nhập tên địa chỉ kho.";
   }
+  if (/phone number already exists|số điện thoại này đã được đăng ký/i.test(normalized)) {
+    return "Số điện thoại này đã được đăng ký.";
+  }
+  if (/email already exists|email này đã được sử dụng/i.test(normalized)) {
+    return "Email này đã được sử dụng.";
+  }
   if (/coordinates must be a complete pair/i.test(normalized)) {
     return "Tọa độ vị trí kho không hợp lệ hoặc thiếu kinh độ/vĩ độ.";
   }

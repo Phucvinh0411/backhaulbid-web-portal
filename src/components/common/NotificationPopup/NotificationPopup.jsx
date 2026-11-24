@@ -166,7 +166,7 @@ export default function NotificationPopup({
         position: "fixed",
         top: 88,
         right: 16,
-        zIndex: (theme) => theme.zIndex.snackbar,
+        zIndex: (theme) => Math.max(theme.zIndex.snackbar || 1400, (theme.zIndex.modal || 1300) + 100),
         display: "flex",
         flexDirection: "column",
         gap: 1.25,
