@@ -11,7 +11,7 @@ import { listAuctions, listMyRegistrations } from "@/services/biddingApi";
 import { contractApi } from "@/services/contractApi";
 import { unwrapListData } from "@/services/responseData";
 import { getShipperNextStep } from "@/lib/statusMeta";
-import { formatDateTime, shortId } from "@/lib/format";
+import { formatContractCode, formatDateTime, shortId } from "@/lib/format";
 
 const QUIET = { skipGlobalNotification: true };
 const asList = (value) => (Array.isArray(value) ? value : value?.data || []);
@@ -46,7 +46,7 @@ async function shipperTasks() {
         tone: "danger",
         label: "Ký hợp đồng",
         title: route(contract.trip?.pickupLocation, contract.trip?.deliveryLocation),
-        detail: `Hợp đồng ${contract.contractCode || shortId(contract.id)}${contract.signingDeadlineAt ? ` · hạn ${formatDateTime(contract.signingDeadlineAt)}` : ""}`,
+        detail: `Hợp đồng ${formatContractCode(contract.contractCode || contract.id)}${contract.signingDeadlineAt ? ` · hạn ${formatDateTime(contract.signingDeadlineAt)}` : ""}`,
         href: "/shipper/contracts",
       }),
     );
@@ -92,7 +92,7 @@ async function carrierTasks() {
         tone: "danger",
         label: "Ký hợp đồng",
         title: route(contract.trip?.pickupLocation, contract.trip?.deliveryLocation),
-        detail: `Hợp đồng ${contract.contractCode || shortId(contract.id)}${contract.signingDeadlineAt ? ` · hạn ${formatDateTime(contract.signingDeadlineAt)}` : ""}`,
+        detail: `Hợp đồng ${formatContractCode(contract.contractCode || contract.id)}${contract.signingDeadlineAt ? ` · hạn ${formatDateTime(contract.signingDeadlineAt)}` : ""}`,
         href: "/carrier/contracts",
       }),
     );

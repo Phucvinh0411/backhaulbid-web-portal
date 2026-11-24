@@ -38,7 +38,7 @@ import {
 } from "@/components/admin/AdminUI";
 import { walletApi } from "@/services/walletApi";
 import { identityApi } from "@/services/identityApi";
-import { shortId } from "@/lib/format";
+import { getPaginationItemAriaLabel, shortId } from "@/lib/format";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { getPageItems, getPageMeta, toWithdrawalApiStatus } from "@/services/responseData";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
@@ -400,6 +400,8 @@ export default function AdminWalletsPage() {
           }}
           labelRowsPerPage="Số dòng mỗi trang:"
           labelDisplayedRows={({ from, to, count }) => `${from}-${to} trên tổng ${count}`}
+          getItemAriaLabel={getPaginationItemAriaLabel}
+          SelectProps={{ inputProps: { id: "admin-wallets-rows-per-page", name: "rowsPerPage", "aria-label": "Số dòng mỗi trang" } }}
           sx={{ mt: 2 }}
         />
       </AdminSectionCard>

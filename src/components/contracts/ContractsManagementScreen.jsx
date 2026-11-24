@@ -40,7 +40,7 @@ import { getAuction } from "@/services/biddingApi";
 import { carrierProfileApi } from "@/services/carrierProfileApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { mapContractResponses, getContractTrackingHref } from "@/services/contractMapper";
-import { shortId } from "@/lib/format";
+import { formatContractCode, shortId } from "@/lib/format";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import useAccountVerification from "@/hooks/useAccountVerification";
 
@@ -65,6 +65,12 @@ function getPartnerName(contract, role) {
 function getTrackingHref(contract, isShipper) {
   return getContractTrackingHref(contract, isShipper ? "shipper" : "carrier");
 }
+
+function extractAuctionCargoLabel(auction) {
+  return auction?.goodsType || auction?.cargoName || auction?.cargoType || auction?.title || null;
+}
+
+const isGenericCargo = (contract) => !contract?.cargoType || contract.cargoType === "Vận chuyển hàng hóa";
 
 export default function ContractsManagementScreen({
   role = "carrier",
@@ -120,23 +126,44 @@ export default function ContractsManagementScreen({
               .filter(Boolean),
           )]
         : [];
-      if (uniquePartnerIds.length > 0) {
-        const companyEntries = await Promise.all(
-          uniquePartnerIds.map(async (partnerId) => {
-            const company = await carrierProfileApi
-              .getCompany(partnerId, { skipGlobalNotification: true })
-              .catch(() => null);
-            const data = company?.data ?? company;
-            return [String(partnerId), data?.companyName || null];
-          }),
-        );
+      const uniqueAuctionIds = [
+        ...new Set(
+          mapped
+            .filter((contract) => isGenericCargo(contract) && contract.auctionId && /^[0-9a-f-]{36}$/i.test(String(contract.auctionId)))
+            .map((contract) => String(contract.auctionId)),
+        ),
+      ];
+      if (uniquePartnerIds.length > 0 || uniqueAuctionIds.length > 0) {
+        const [companyEntries, auctionEntries] = await Promise.all([
+          Promise.all(
+            uniquePartnerIds.map(async (partnerId) => {
+              const company = await carrierProfileApi
+                .getCompany(partnerId, { skipGlobalNotification: true })
+                .catch(() => null);
+              const data = company?.data ?? company;
+              return [String(partnerId), data?.companyName || null];
+            }),
+          ),
+          Promise.all(
+            uniqueAuctionIds.map(async (auctionId) => {
+              const auction = await getAuction(auctionId, { skipGlobalNotification: true }).catch(() => null);
+              return [auctionId, extractAuctionCargoLabel(auction)];
+            }),
+          ),
+        ]);
         const companyById = Object.fromEntries(companyEntries.filter(([, name]) => Boolean(name)));
-        if (Object.keys(companyById).length > 0) {
+        const cargoByAuctionId = Object.fromEntries(auctionEntries.filter(([, cargo]) => Boolean(cargo)));
+        if (Object.keys(companyById).length > 0 || Object.keys(cargoByAuctionId).length > 0) {
           setItems((current) =>
             current.map((contract) => {
               const companyName = contract.partnerId ? companyById[String(contract.partnerId)] : null;
-              if (!companyName) return contract;
-              return { ...contract, carrierName: companyName };
+              const cargoLabel = contract.auctionId ? cargoByAuctionId[String(contract.auctionId)] : null;
+              if (!companyName && !cargoLabel) return contract;
+              return {
+                ...contract,
+                ...(companyName ? { carrierName: companyName } : {}),
+                ...(cargoLabel && isGenericCargo(contract) ? { cargoType: cargoLabel } : {}),
+              };
             }),
           );
         }
@@ -183,12 +210,11 @@ export default function ContractsManagementScreen({
   const openDetails = (contract) => {
     setSelectedContract(contract);
     setOpenDetailDrawer(true);
-    const isGenericCargo = !contract?.cargoType || contract.cargoType === "Vận chuyển hàng hóa";
     const auctionId = contract?.auctionId;
-    if (isGenericCargo && auctionId && /^[0-9a-f-]{36}$/i.test(auctionId)) {
-      getAuction(auctionId)
+    if (isGenericCargo(contract) && auctionId && /^[0-9a-f-]{36}$/i.test(auctionId)) {
+      getAuction(auctionId, { skipGlobalNotification: true })
         .then((auction) => {
-          const cargoLabel = auction?.cargoName || auction?.cargoType || auction?.title;
+          const cargoLabel = extractAuctionCargoLabel(auction);
           if (!cargoLabel) return;
           setSelectedContract((current) =>
             current && current.backendId === contract.backendId
@@ -393,10 +419,12 @@ export default function ContractsManagementScreen({
                         variant="body2"
                         className="!font-bold text-[var(--color-brand)]"
                       >
-                        {contract.id}
+                        {formatContractCode(contract.id)}
                       </Typography>
                       <Typography variant="caption" className="text-ink-muted">
-                        {contract.auctionId}
+                        {contract.auctionId && contract.auctionId !== "Chưa có mã phiên"
+                          ? `Phiên #${shortId(contract.auctionId)}`
+                          : contract.auctionId}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -482,7 +510,7 @@ export default function ContractsManagementScreen({
               <Typography className="mb-2 !font-bold text-[var(--color-brand)]">
                 1. Thông tin hợp đồng
               </Typography>
-              <DetailRow label="Mã hợp đồng" value={selectedContract.id} />
+              <DetailRow label="Mã hợp đồng" value={formatContractCode(selectedContract.id)} />
               <DetailRow
                 label="Mã phiên đấu giá"
                 value={
@@ -604,7 +632,7 @@ export default function ContractsManagementScreen({
             <Box className="space-y-4">
               <Typography variant="body2" className="text-ink-muted">
                 Bạn đang thực hiện ký xác nhận hợp đồng{" "}
-                <strong>{selectedContract.id}</strong>. Hệ thống sẽ ghi nhận
+                <strong>{formatContractCode(selectedContract.id)}</strong>. Hệ thống sẽ ghi nhận
                 xác nhận của tài khoản bạn và tiếp tục quy trình vận chuyển
                 khi các bên đã ký đầy đủ.
               </Typography>

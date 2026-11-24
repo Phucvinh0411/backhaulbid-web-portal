@@ -5,6 +5,7 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import { AppCard } from "@/components/common";
 import { RouteLine, StatusBadge } from "@/components/ui";
+import { formatContractCode } from "@/lib/format";
 
 const STATUS_DESIGN = {
   PENDING_SIGNATURE: {
@@ -68,7 +69,7 @@ export default function ContractItem({ contract, partnerLabel = "Đối tác", t
     <AppCard component="article" sx={{ height: "100%" }}>
       <Box sx={{ p: { xs: 2, sm: 2.5 }, display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1, flexWrap: "wrap" }}>
-          <Typography variant="caption" sx={{ overflowWrap: "anywhere", color: "text.secondary" }}>{contract.id}</Typography>
+          <Typography variant="caption" sx={{ overflowWrap: "anywhere", color: "text.secondary" }}>{formatContractCode(contract.id)}</Typography>
           <StatusBadge label={getContractStatusDesign(contract.status).label} tone={TONES[contract.status] || "neutral"} />
         </Box>
         <RouteLine from={contract.origin} to={contract.destination} compact />

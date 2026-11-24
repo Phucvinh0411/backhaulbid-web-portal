@@ -31,6 +31,7 @@ import PageHeader from "@/components/common/PageHeader";
 import StatCard from "@/components/common/StatCard";
 import { statisticsApi } from "@/services/statisticsApi";
 import { STAT_RANGE_OPTIONS, buildStatisticsRange, formatStatisticCount, formatStatisticCurrency, statusRows, validateCustomStatisticsRange } from "@/services/statisticsPresentation";
+import { TRANSACTION_TYPE_LABELS } from "@/services/walletFormatters";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { tokens } from "@/theme/theme";
 
@@ -85,12 +86,12 @@ function SourcePanel({ title, source, retry, children }) {
   return <Box component="section" aria-label={title}>{children(source.data)}</Box>;
 }
 
-function StatusTable({ title, statuses, labelOverrides }) {
+function StatusTable({ title, statuses, labelOverrides, columnLabel = "Trạng thái" }) {
   const rows = statusRows(statuses);
   return <AppCard component="section" sx={{ p: { xs: 1.5, sm: 2.5 } }}>
     <Typography component="h2" sx={{ fontSize: 16, fontWeight: 700, mb: 1.5 }}>{title}</Typography>
     {rows.length ? <TableContainer><Table size="small" aria-label={title}>
-      <TableHead><TableRow><TableCell>Trạng thái</TableCell><TableCell align="right">Số lượng</TableCell></TableRow></TableHead>
+      <TableHead><TableRow><TableCell>{columnLabel}</TableCell><TableCell align="right">Số lượng</TableCell></TableRow></TableHead>
       <TableBody>{rows.map(({ status, count }) => <TableRow key={status}><TableCell>{labelOverrides?.[status] || STATUS_LABEL[status] || status}</TableCell><TableCell align="right" className="tabular">{formatStatisticCount(count)}</TableCell></TableRow>)}</TableBody>
     </Table></TableContainer> : <Typography color="text.secondary" variant="body2">Chưa có dữ liệu trạng thái trong kỳ này.</Typography>}
   </AppCard>;
@@ -137,7 +138,7 @@ function DomainContent({ role, topic, sources, retry }) {
   if (topic === "trips") return <SourcePanel title="Chuyến vận chuyển" source={sources.trips} retry={retry.trips}>{(data) => <>
     <Metrics items={[
       { title: "Tổng số chuyến", value: formatStatisticCount(data.total), subtitle: RANGE_LABEL[retry.range], icon: LocalShippingOutlinedIcon },
-      { title: "Giá trị hợp đồng đã ký", value: formatStatisticCurrency(data.agreedValue), subtitle: "Không đồng nghĩa với tiền đã thanh toán", icon: AccountBalanceWalletOutlinedIcon, tooltip: "Cộng agreedPrice của chuyến có hợp đồng SIGNED trong kỳ." },
+      { title: "Giá trị hợp đồng đã ký", value: formatStatisticCurrency(data.agreedValue), subtitle: "Không đồng nghĩa với tiền đã thanh toán", icon: AccountBalanceWalletOutlinedIcon, tooltip: "Cộng giá thỏa thuận của chuyến có hợp đồng đã ký trong kỳ." },
       ...(role === "admin" ? [{ title: "Chờ lấy hàng", value: formatStatisticCount(data.byStatus?.WAITING_PICKUP), subtitle: "Snapshot theo trạng thái hiện tại", icon: LocalShippingOutlinedIcon }] : []),
     ]} />
     <Box sx={{ mt: 2 }}><TrendChart title="Chuyến theo thời gian" points={data.series} label="Số chuyến" /></Box>
@@ -153,7 +154,7 @@ function DomainContent({ role, topic, sources, retry }) {
       { title: "Xe chờ duyệt", value: formatStatisticCount(data.vehicleByStatus?.PENDING), subtitle: "Hàng đợi hiện tại", icon: DirectionsCarOutlinedIcon },
     ] : [
       { title: "Phương tiện", value: formatStatisticCount(data.vehicleCount), subtitle: "Toàn bộ đội xe", icon: DirectionsCarOutlinedIcon },
-      { title: "Đang hoạt động", value: formatStatisticCount(data.activeVehicleCount), subtitle: "Trạng thái VERIFIED", icon: DirectionsCarOutlinedIcon },
+      { title: "Đang hoạt động", value: formatStatisticCount(data.activeVehicleCount), subtitle: "Đã xác minh", icon: DirectionsCarOutlinedIcon },
       { title: "Tài xế", value: formatStatisticCount(data.driverCount), subtitle: `${formatStatisticCount(data.verifiedDriverCount)} đã xác minh`, icon: GroupsOutlinedIcon },
       { title: "Điểm uy tín", value: formatStatisticCount(data.reputation), subtitle: "Nguồn uy tín fleet service", icon: BusinessOutlinedIcon },
     ]} />
@@ -179,11 +180,11 @@ function DomainContent({ role, topic, sources, retry }) {
       { title: "Giao dịch thành công", value: formatStatisticCount(data.transactionsByStatus?.SUCCESS), subtitle: RANGE_LABEL[retry.range], icon: AccountBalanceWalletOutlinedIcon },
       { title: "Đang xử lý", value: formatStatisticCount(data.transactionsByStatus?.PENDING), subtitle: "Trong kỳ đã chọn", icon: AccountBalanceWalletOutlinedIcon },
       { title: "Thất bại", value: formatStatisticCount(data.transactionsByStatus?.FAILED), subtitle: "Trong kỳ đã chọn", icon: AccountBalanceWalletOutlinedIcon },
-      { title: "Tổng giá trị sổ cái SUCCESS", value: formatStatisticCurrency(data.successfulLedgerAmount), subtitle: "Không phải doanh thu/lợi nhuận", icon: AccountBalanceWalletOutlinedIcon, tooltip: "Tổng amount giao dịch SUCCESS theo loại; đây là luồng sổ cái, không phải doanh thu của nền tảng." },
+      { title: "Tổng giá trị sổ cái thành công", value: formatStatisticCurrency(data.successfulLedgerAmount), subtitle: "Không phải doanh thu/lợi nhuận", icon: AccountBalanceWalletOutlinedIcon, tooltip: "Tổng số tiền giao dịch thành công theo loại; đây là luồng sổ cái, không phải doanh thu của nền tảng." },
     ]} />
-    <Box sx={{ mt: 2 }}><TrendChart title="Giao dịch SUCCESS theo thời gian" points={data.successfulSeries} label="Giao dịch" /></Box>
+    <Box sx={{ mt: 2 }}><TrendChart title="Giao dịch thành công theo thời gian" points={data.successfulSeries} label="Giao dịch" /></Box>
     <Box sx={{ mt: 2 }}><StatusTable title="Giao dịch theo trạng thái" statuses={data.transactionsByStatus} labelOverrides={{ PENDING: "Đang chờ" }} /></Box>
-    <Box sx={{ mt: 2 }}><StatusTable title="Giao dịch SUCCESS theo loại" statuses={Object.fromEntries(Object.entries(data.successfulByType || {}).map(([type, item]) => [type, item.count]))} /></Box>
+    <Box sx={{ mt: 2 }}><StatusTable title="Giao dịch thành công theo loại" columnLabel="Loại giao dịch" labelOverrides={TRANSACTION_TYPE_LABELS} statuses={Object.fromEntries(Object.entries(data.successfulByType || {}).map(([type, item]) => [type, item.count]))} /></Box>
   </>}</SourcePanel>;
 
   if (topic === "queues" && role === "admin") return <Grid container spacing={2}>

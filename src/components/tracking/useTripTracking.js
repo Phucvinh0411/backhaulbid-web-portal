@@ -2,8 +2,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { contractApi } from "@/services/contractApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
-import { isTripClosed } from "@/lib/statusMeta";
-import { mergeTrackingHistory } from "./trackingPresentation";
+import {
+  getTripTrackingPollIntervalMs,
+  mergeTrackingHistory,
+  shouldStopTripPolling,
+} from "./trackingPresentation";
 import useTripLocationStream from "./useTripLocationStream";
 
 const QUIET = { skipGlobalNotification: true };
@@ -30,7 +33,7 @@ export default function useTripTracking(tripId) {
       ]);
       if (scope.current !== context) return;
       if (history.nextCursor) context.cursor = history.nextCursor;
-      context.closed = isTripClosed(trip.status);
+      context.closed = shouldStopTripPolling(trip.status);
       setData((previous) => ({
         trip,
         tracking,
@@ -64,22 +67,20 @@ export default function useTripTracking(tripId) {
     };
   }, [load, tripId]);
 
-  const isRealtime =
-    data.trip?.status === "WAITING_PICKUP" ||
-    data.trip?.status === "PICKED_UP" ||
-    data.trip?.status === "IN_TRANSIT" ||
-    data.tracking?.trackingSession?.status === "ACTIVE";
+  const pollIntervalMs = getTripTrackingPollIntervalMs(
+    data.trip?.status,
+    data.tracking?.trackingSession?.status,
+  );
 
-  // Polling timer adjusts interval without resetting existing tracking state
+  // Polling runs only for active open trips and stops automatically once delivered or closed
   useEffect(() => {
-    if (!tripId) return undefined;
+    if (!tripId || !pollIntervalMs) return undefined;
     const refreshVisible = () => {
       if (document.visibilityState === "visible" && document.hasFocus() && !scope.current.closed) {
         void load();
       }
     };
-    const intervalMs = isRealtime ? 5000 : 15000;
-    const interval = window.setInterval(refreshVisible, intervalMs);
+    const interval = window.setInterval(refreshVisible, pollIntervalMs);
     document.addEventListener("visibilitychange", refreshVisible);
     window.addEventListener("focus", refreshVisible);
     return () => {
@@ -87,7 +88,7 @@ export default function useTripTracking(tripId) {
       document.removeEventListener("visibilitychange", refreshVisible);
       window.removeEventListener("focus", refreshVisible);
     };
-  }, [load, tripId, isRealtime]);
+  }, [load, tripId, pollIntervalMs]);
 
   // Realtime socket push from RabbitMQ -> notification-service
   useTripLocationStream(tripId, (payload) => {

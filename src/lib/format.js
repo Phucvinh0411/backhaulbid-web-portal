@@ -121,4 +121,33 @@ export function formatAddress(value, fallback = UNKNOWN) {
   return deduped.join(", ") || fallback;
 }
 
+const PREFIXED_UUID_REGEX = /^#?([a-z0-9]+)-([0-9a-f]{8})-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const RAW_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Shortens UUID-backed contract codes like AUC-<uuid> for readable UI labels without altering custom codes. */
+export function formatContractCode(code, fallback = "Chưa có mã hợp đồng") {
+  const raw = String(code ?? "").trim();
+  if (!raw) return fallback;
+  const prefixed = raw.match(PREFIXED_UUID_REGEX);
+  if (prefixed) {
+    return `#${prefixed[1].toUpperCase()}-${prefixed[2].toUpperCase()}`;
+  }
+  if (RAW_UUID_REGEX.test(raw)) {
+    return `#${shortId(raw)}`;
+  }
+  return raw;
+}
+
+/** Vietnamese accessibility labels for MUI TablePagination navigation buttons. */
+export function getPaginationItemAriaLabel(type) {
+  return (
+    {
+      first: "Trang đầu",
+      last: "Trang cuối",
+      next: "Trang tiếp theo",
+      previous: "Trang trước",
+    }[type] || ""
+  );
+}
+
 export { UNKNOWN };

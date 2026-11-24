@@ -4,11 +4,21 @@ import { getApiErrorMessage } from "./errorMessage.js";
 import { getSepayOrderStatusMeta, getAdminStatusMeta } from "../lib/statusMeta.js";
 import { getVehicleDocumentPath, getDriverLicenseDocumentPath } from "../lib/fleetDocuments.js";
 import { dedupeInFlight } from "../lib/inFlightRequest.js";
-import { formatAddress, formatCurrencyAxisTick } from "../lib/format.js";
+import {
+  formatAddress,
+  formatContractCode,
+  formatCurrencyAxisTick,
+  getPaginationItemAriaLabel,
+} from "../lib/format.js";
 import { getHandoverState } from "../components/tracking/tripHandoverPresentation.js";
+import {
+  getTripTrackingPollIntervalMs,
+  shouldStopTripPolling,
+} from "../components/tracking/trackingPresentation.js";
 import { validateCreateAuctionForm } from "../components/shipper/create-auction/createAuctionValidation.js";
 import { mapCarrierProfile } from "./carrierProfileMapper.js";
 import {
+  TRANSACTION_TYPE_LABELS,
   formatPaymentMethodLabel,
   formatTransactionDescription,
   formatTransactionReference,
@@ -225,5 +235,30 @@ describe("web portal error localization, status labels, media proxies & chart ti
       ),
       /không được trước thời gian nhận hàng/i,
     );
+  });
+
+  it("formats UUID-backed AUC contract codes compactly, localizes transaction types and pagination aria-labels, and stops polling on delivered/closed trips", () => {
+    assert.equal(
+      formatContractCode("AUC-9bd6194f-70d4-4399-9849-4138a27c68bd"),
+      "#AUC-9BD6194F",
+    );
+    assert.equal(formatContractCode("HD-2026-101"), "HD-2026-101");
+    assert.equal(formatContractCode("9bd6194f-70d4-4399-9849-4138a27c68bd"), "#9BD6194F");
+
+    assert.equal(getPaginationItemAriaLabel("previous"), "Trang trước");
+    assert.equal(getPaginationItemAriaLabel("next"), "Trang tiếp theo");
+
+    for (const type of ["DEPOSIT", "WITHDRAW", "FREEZE", "UNFREEZE", "TRANSFER", "REFUND", "PENALTY", "AUCTION_FEE"]) {
+      assert.ok(TRANSACTION_TYPE_LABELS[type] && !/[A-Z_]{3,}/.test(TRANSACTION_TYPE_LABELS[type]));
+    }
+
+    assert.equal(shouldStopTripPolling("DELIVERED"), true);
+    assert.equal(shouldStopTripPolling("COMPLETED"), true);
+    assert.equal(shouldStopTripPolling("CANCELLED"), true);
+    assert.equal(shouldStopTripPolling("IN_TRANSIT"), false);
+    assert.equal(getTripTrackingPollIntervalMs("DELIVERED", "INACTIVE"), null);
+    assert.equal(getTripTrackingPollIntervalMs("COMPLETED", "ACTIVE"), null);
+    assert.equal(getTripTrackingPollIntervalMs("IN_TRANSIT", "ACTIVE"), 10000);
+    assert.equal(getTripTrackingPollIntervalMs("WAITING_PICKUP", "INACTIVE"), 30000);
   });
 });

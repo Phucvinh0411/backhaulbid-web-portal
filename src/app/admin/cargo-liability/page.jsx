@@ -31,7 +31,7 @@ import {
   AdminStatusChip,
   AdminToolbar,
 } from "@/components/admin/AdminUI";
-import { formatDateTime, formatMoney } from "@/lib/format";
+import { formatDateTime, formatMoney, getPaginationItemAriaLabel } from "@/lib/format";
 import { formatIsoDateVi } from "@/lib/cargoLiabilityPresentation";
 import {
   fetchCargoLiabilityCertificate,
@@ -234,7 +234,8 @@ export default function AdminCargoLiabilityPage() {
               }}
               labelRowsPerPage="Số dòng mỗi trang:"
               labelDisplayedRows={({ from, to, count }) => `${from}–${to} trên tổng ${count}`}
-              SelectProps={{ inputProps: { id: "admin-cargo-liability-rows-per-page", name: "rowsPerPage" } }}
+              getItemAriaLabel={getPaginationItemAriaLabel}
+              SelectProps={{ inputProps: { id: "admin-cargo-liability-rows-per-page", name: "rowsPerPage", "aria-label": "Số dòng mỗi trang" } }}
             />
           </>
         )}

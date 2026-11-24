@@ -44,6 +44,7 @@ import AppCard from "@/components/common/AppCard";
 import { tokens } from "@/theme/theme";
 import { useShipperDashboard } from "@/hooks/useShipperDashboard";
 import useAccountVerification from "@/hooks/useAccountVerification";
+import { formatContractCode } from "@/lib/format";
 
 const AUCTION_LOCK_REASON = "Hoàn tất xác thực eKYC và doanh nghiệp để tạo phiên đấu giá";
 
@@ -74,7 +75,7 @@ const formatDisplayId = (id) => {
     return `#AUC2-${parts[2] || str.slice(10, 16)}`;
   }
   if (str.length > 14 && str.includes("-")) {
-    return `#${str.slice(0, 6)}...${str.slice(-4)}`;
+    return formatContractCode(str, str);
   }
   return str;
 };

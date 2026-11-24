@@ -32,6 +32,7 @@ import {
   AdminToolbar,
 } from "@/components/admin/AdminUI";
 import { axiosClient } from "@/configs/axiosClient";
+import { getPaginationItemAriaLabel } from "@/lib/format";
 import { BUSINESS_VERIFICATION_PATH } from "@/components/businessVerification/businessVerificationApi";
 
 const STATUS_OPTIONS = [
@@ -335,7 +336,8 @@ export default function AdminBusinessVerificationsPage() {
               }}
               labelRowsPerPage="Số dòng mỗi trang:"
               labelDisplayedRows={({ from, to, count }) => `${from}–${to} trên tổng ${count}`}
-              SelectProps={{ inputProps: { id: "admin-business-rows-per-page", name: "rowsPerPage" } }}
+              getItemAriaLabel={getPaginationItemAriaLabel}
+              SelectProps={{ inputProps: { id: "admin-business-rows-per-page", name: "rowsPerPage", "aria-label": "Số dòng mỗi trang" } }}
             />
           </>
         )}

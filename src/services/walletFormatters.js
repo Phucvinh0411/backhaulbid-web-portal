@@ -2,7 +2,7 @@ import { shortId } from "../lib/format.js";
 
 const UUID_REGEX = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 
-const DEFAULT_TRANSACTION_LABELS = {
+export const TRANSACTION_TYPE_LABELS = {
   DEPOSIT: "Nạp tiền vào ví",
   WITHDRAW: "Rút tiền về ngân hàng",
   FREEZE: "Tạm giữ tiền đặt cọc",
@@ -81,7 +81,7 @@ export function formatTransactionTypeLabel(transaction) {
   if (type === "TRANSFER" && (desc.includes("bồi thường") || ref.includes("delay"))) {
     return "Bồi thường giao hàng";
   }
-  return DEFAULT_TRANSACTION_LABELS[type] || (isWithdrawalHoldContext(transaction) ? "Giao dịch rút tiền" : "Giao dịch ví");
+  return TRANSACTION_TYPE_LABELS[type] || (isWithdrawalHoldContext(transaction) ? "Giao dịch rút tiền" : "Giao dịch ví");
 }
 
 export function formatTransactionStatusLabel(status) {

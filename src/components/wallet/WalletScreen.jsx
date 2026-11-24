@@ -38,6 +38,7 @@ import { ErrorState, ListSkeleton, ResponsiveDialog } from "@/components/ui";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 import { getApiErrorMessage } from "@/services/errorMessage";
 import { walletApi } from "@/services/walletApi";
+import { getPaginationItemAriaLabel } from "@/lib/format";
 import { getSepayOrderStatusMeta } from "@/lib/statusMeta";
 import {
   formatPaymentMethodLabel,
@@ -581,7 +582,8 @@ export default function WalletScreen({ role = "shipper", standalone = true, init
             onPageChange={(event, nextPage) => setPage(nextPage)}
             onRowsPerPageChange={(event) => { setRowsPerPage(Number(event.target.value)); setPage(0); }}
             labelRowsPerPage="Số dòng:"
-            SelectProps={{ inputProps: { id: "wallet-transactions-rows-per-page", name: "rowsPerPage" } }}
+            getItemAriaLabel={getPaginationItemAriaLabel}
+            SelectProps={{ inputProps: { id: "wallet-transactions-rows-per-page", name: "rowsPerPage", "aria-label": "Số dòng mỗi trang" } }}
             sx={{ "& .MuiTablePagination-toolbar": { flexWrap: "wrap", px: 1 }, "& .MuiTablePagination-spacer": { flex: "1 1 0" } }}
             labelDisplayedRows={({ from, to, count }) => `${from}-${to} trong ${count}`}
           />

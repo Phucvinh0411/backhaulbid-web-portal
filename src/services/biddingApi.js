@@ -23,9 +23,9 @@ export const listAuctions = (params) =>
     apiService.get(biddingPath("/auctions"), params).then(mapAuctionListResponse),
   );
 
-export const getAuction = (auctionId) =>
+export const getAuction = (auctionId, config) =>
   apiService
-    .get(biddingPath(`/auctions/${auctionId}`))
+    .get(biddingPath(`/auctions/${auctionId}`), undefined, config)
     .then(mapAuction);
 
 export const getAuctionAccess = (auctionId) =>

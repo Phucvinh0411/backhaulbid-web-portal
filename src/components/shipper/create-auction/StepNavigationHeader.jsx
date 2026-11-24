@@ -27,7 +27,28 @@ export default function StepNavigationHeader({ activeStep, setActiveStep }) {
         />
       </div>
 
-      <Stepper activeStep={activeStep} connector={<div className="hidden" />} className="w-full flex justify-between gap-4 overflow-x-auto pb-2">
+      <Stepper
+        activeStep={activeStep}
+        connector={<div className="hidden" />}
+        sx={{
+          width: "100%",
+          display: "grid",
+          gridTemplateColumns: { xs: "repeat(3, minmax(0, 1fr))", sm: "repeat(3, auto)" },
+          justifyContent: { sm: "space-between" },
+          alignItems: "start",
+          gap: { xs: 1, sm: 2 },
+          pb: 0.5,
+          "& .MuiStep-root": { p: 0, minWidth: 0 },
+          "& .MuiStepLabel-root": {
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: "center",
+            textAlign: { xs: "center", sm: "left" },
+            gap: { xs: 0.75, sm: 1 },
+          },
+          "& .MuiStepLabel-iconContainer": { p: 0 },
+          "& .MuiStepLabel-label": { width: "100%" },
+        }}
+      >
         {STEPS.map((step, idx) => {
           const isCompleted = idx < activeStep;
           const isActive = idx === activeStep;
@@ -51,7 +72,7 @@ export default function StepNavigationHeader({ activeStep, setActiveStep }) {
               >
                 <div className="cursor-pointer select-none">
                   <p
-                    className={`font-bold text-xs md:text-sm leading-tight whitespace-nowrap ${
+                    className={`font-bold text-[0.72rem] md:text-sm leading-tight whitespace-normal sm:whitespace-nowrap break-words ${
                       isActive
                         ? "text-[var(--color-brand)]"
                         : isCompleted

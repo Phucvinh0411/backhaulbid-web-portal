@@ -1,4 +1,15 @@
-import { JOURNEY_EVENT_LABELS } from "../../lib/statusMeta.js";
+import { isTripClosed, JOURNEY_EVENT_LABELS } from "../../lib/statusMeta.js";
+
+export const shouldStopTripPolling = (status) => isTripClosed(status) || status === "DELIVERED";
+
+/**
+ * Returns polling interval (ms) for trip tracking, or null when the trip is delivered/closed
+ * so stopped/delivered trips stop sending periodic 6-API bursts.
+ */
+export function getTripTrackingPollIntervalMs(tripStatus, trackingSessionStatus) {
+  if (!tripStatus || shouldStopTripPolling(tripStatus)) return null;
+  return trackingSessionStatus === "ACTIVE" ? 10000 : 30000;
+}
 
 export function coordinate(value) {
   const latitude = Array.isArray(value) ? value[0] : value?.latitude;

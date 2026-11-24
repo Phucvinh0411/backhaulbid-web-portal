@@ -158,15 +158,19 @@ export const useShipperDashboard = (timeFilter) => {
         ["WAITING_PICKUP", "PICKED_UP", "IN_TRANSIT", "DELIVERED"].includes(contract.trip?.status),
     );
 
-    const activeShipments = inTransitContracts.slice(0, 5).map((contract) => ({
-      id: contract.trip?.id || contract.tripId || contract.contractCode || contract.id,
-      goodsType: contract.trip?.cargoType || contract.cargoType || "Chuyến vận chuyển",
-      route: `${contract.trip?.pickupLocation || "Chưa cập nhật"} → ${contract.trip?.deliveryLocation || "Chưa cập nhật"}`,
-      driverName: contract.trip?.driverName || (contract.trip?.driverId ? "Đã phân công tài xế" : "Chưa phân công"),
-      driverPlate: contract.trip?.vehiclePlate || "Chưa cập nhật",
-      progress: calculateTripProgress(contract.trip?.status),
-      status: contract.trip?.status || contract.status,
-    }));
+    const activeShipments = inTransitContracts.slice(0, 5).map((contract) => {
+      const auctionId = contract.auctionId || contract.trip?.auctionId;
+      const auction = auctionId ? auctionsById.get(String(auctionId)) : null;
+      return {
+        id: contract.trip?.id || contract.tripId || contract.contractCode || contract.id,
+        goodsType: contract.trip?.cargoType || contract.cargoType || auction?.goodsType || auction?.title || "Vận chuyển hàng hóa",
+        route: `${contract.trip?.pickupLocation || "Chưa cập nhật"} → ${contract.trip?.deliveryLocation || "Chưa cập nhật"}`,
+        driverName: contract.trip?.driverName || (contract.trip?.driverId ? "Đã phân công tài xế" : "Chưa phân công"),
+        driverPlate: contract.trip?.vehiclePlate || "Chưa cập nhật",
+        progress: calculateTripProgress(contract.trip?.status),
+        status: contract.trip?.status || contract.status,
+      };
+    });
 
     let monthlySpend = 0;
     let estimatedSavings = 0;

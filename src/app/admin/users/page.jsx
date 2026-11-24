@@ -33,7 +33,7 @@ import {
 } from "@/components/admin/AdminUI";
 import { identityApi } from "@/services/identityApi";
 import { getApiErrorMessage } from "@/services/errorMessage";
-import { shortId } from "@/lib/format";
+import { getPaginationItemAriaLabel, shortId } from "@/lib/format";
 import { useGlobalNotification } from "@/components/common/NotificationPopup";
 
 const typeOptions = [
@@ -337,7 +337,8 @@ export default function AdminUsersPage() {
           }}
           labelRowsPerPage="Số dòng mỗi trang:"
           labelDisplayedRows={({ from, to, count }) => `${from}–${to} trên tổng ${count}`}
-          SelectProps={{ inputProps: { id: "admin-users-rows-per-page", name: "rowsPerPage" } }}
+          getItemAriaLabel={getPaginationItemAriaLabel}
+          SelectProps={{ inputProps: { id: "admin-users-rows-per-page", name: "rowsPerPage", "aria-label": "Số dòng mỗi trang" } }}
         />
       </AdminSectionCard>
 
