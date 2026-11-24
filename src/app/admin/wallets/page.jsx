@@ -64,6 +64,7 @@ export default function AdminWalletsPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
+  const [pendingCount, setPendingCount] = useState(null);
 
   // Dialog actions
   const [selectedItem, setSelectedItem] = useState(null);
@@ -107,20 +108,28 @@ export default function AdminWalletsPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      const apiStatus = toWithdrawalApiStatus(filterStatus);
       const [summaryRes, withdrawalsRes, topUpsRes] = await Promise.all([
         walletApi.getAdminSummary().catch(() => null),
         walletApi.getAdminWithdrawals({
-          status: toWithdrawalApiStatus(filterStatus),
+          status: apiStatus,
           page: page + 1,
           pageSize,
         }),
         walletApi.getAdminTopUps({ page: 1, pageSize: 10 }),
       ]);
 
-      if (summaryRes) setSummary(summaryRes);
+      if (summaryRes) {
+        setSummary(summaryRes);
+        if (summaryRes.pendingWithdrawalsCount !== null && summaryRes.pendingWithdrawalsCount !== undefined) {
+          setPendingCount(summaryRes.pendingWithdrawalsCount);
+        }
+      }
       if (withdrawalsRes) {
+        const nextTotal = getPageMeta(withdrawalsRes).totalItems;
         setWithdrawals(getPageItems(withdrawalsRes));
-        setTotalItems(getPageMeta(withdrawalsRes).totalItems);
+        setTotalItems(nextTotal);
+        if (apiStatus === "PENDING") setPendingCount(nextTotal);
       }
       if (topUpsRes) setTopUps(getPageItems(topUpsRes));
     } catch (err) {
@@ -272,7 +281,7 @@ export default function AdminWalletsPage() {
         <Grid item xs={12} sm={6} md={4}>
           <AdminMetricCard
             title="Yêu cầu chờ duyệt"
-            value={filterStatus === "PENDING" ? totalItems : summary?.pendingWithdrawalsCount ?? "—"}
+            value={pendingCount ?? summary?.pendingWithdrawalsCount ?? "—"}
             helper="Cần kiểm tra thủ công"
             icon={HourglassEmptyIcon}
             tone="warning"

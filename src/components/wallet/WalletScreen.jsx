@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import useAccountVerification from "@/hooks/useAccountVerification";
+import { useNativeInputSync } from "@/hooks/useNativeInputSync";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -10,7 +11,9 @@ import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import Grid from "@mui/material/Grid";
+import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
+import ClearIcon from "@mui/icons-material/ClearOutlined";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -115,6 +118,12 @@ export default function WalletScreen({ role = "shipper", standalone = true, init
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [transactionDetail, setTransactionDetail] = useState(null);
   const [transactionDetailLoading, setTransactionDetailLoading] = useState(false);
+
+  const handleSearchInput = useCallback((value) => {
+    setSearchTerm(value);
+    setPage(0);
+  }, []);
+  const searchInputRef = useNativeInputSync(handleSearchInput);
 
   useEffect(() => {
     let active = true;
@@ -269,6 +278,7 @@ export default function WalletScreen({ role = "shipper", standalone = true, init
         submitCheckoutForm(checkout);
         setPendingTopUp(checkout.invoiceNumber);
         setOpenWalletDialog(false);
+        await refreshWallet().catch(() => {});
         notify.info(`Đã tạo đơn nạp ${formatCurrency(amount)}. Hoàn tất thanh toán ở tab mới để cập nhật số dư.`);
       }
     } catch (error) {
@@ -480,9 +490,24 @@ export default function WalletScreen({ role = "shipper", standalone = true, init
                 label="Tìm giao dịch"
                 size="small"
                 value={searchTerm}
-                onChange={(event) => { setSearchTerm(event.target.value); setPage(0); }}
+                onChange={(event) => handleSearchInput(event.target.value)}
+                onInput={(event) => handleSearchInput(event.target.value)}
+                inputRef={searchInputRef}
                 className="w-full sm:w-60"
-                InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon className="text-ink-subtle" fontSize="small" /></InputAdornment> }}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start"><SearchIcon className="text-ink-subtle" fontSize="small" /></InputAdornment>,
+                  endAdornment: searchTerm ? (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        aria-label="Xóa từ khóa tìm kiếm"
+                        onClick={() => handleSearchInput("")}
+                      >
+                        <ClearIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                }}
               />
             </div>
           </Box>

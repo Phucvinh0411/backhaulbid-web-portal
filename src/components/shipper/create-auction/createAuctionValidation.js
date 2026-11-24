@@ -76,6 +76,29 @@ export const validateCreateAuctionForm = (form, now = new Date()) => {
     return "Thời điểm bắt đầu đấu giá phải trước thời điểm kết thúc đấu giá.";
   }
 
+  const earliestPickup = toDate(form.earliestPickup);
+  const latestPickup = toDate(form.latestPickup);
+  const earliestDelivery = toDate(form.earliestDelivery);
+  const latestDelivery = toDate(form.latestDelivery);
+  if (!earliestPickup || !latestPickup) {
+    return "Vui lòng nhập đầy đủ khung thời gian nhận hàng dự kiến ở Bước 2.";
+  }
+  if (!earliestDelivery || !latestDelivery) {
+    return "Vui lòng nhập đầy đủ khung thời gian giao hàng dự kiến ở Bước 2.";
+  }
+  if (earliestPickup > latestPickup) {
+    return "Thời gian nhận hàng sớm nhất không được sau nhận hàng trễ nhất.";
+  }
+  if (earliestDelivery > latestDelivery) {
+    return "Thời gian giao hàng sớm nhất không được sau giao hàng trễ nhất.";
+  }
+  if (earliestDelivery < earliestPickup || latestDelivery < earliestPickup) {
+    return "Khung thời gian giao hàng dự kiến không được trước thời gian nhận hàng.";
+  }
+  if (earliestPickup <= end) {
+    return "Thời gian nhận hàng dự kiến phải sau thời điểm kết thúc đấu giá.";
+  }
+
   return null;
 };
 

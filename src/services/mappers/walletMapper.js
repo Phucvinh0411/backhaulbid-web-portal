@@ -145,6 +145,11 @@ export function mapAdminWalletSummary(response) {
     raw.successfulTransactions ?? raw.totalTransactions,
     0,
   );
+  const pendingWithdrawalsCount =
+    raw.pendingWithdrawalsCount === undefined ||
+    raw.pendingWithdrawalsCount === null
+      ? null
+      : toNumber(raw.pendingWithdrawalsCount, 0);
 
   return {
     ...raw,
@@ -152,6 +157,7 @@ export function mapAdminWalletSummary(response) {
     deposits,
     withdrawals,
     successfulTransactions,
+    pendingWithdrawalsCount,
     totalPlatformFeeRevenue: auctionFees,
     totalDeposits: deposits,
     totalWithdrawals: withdrawals,

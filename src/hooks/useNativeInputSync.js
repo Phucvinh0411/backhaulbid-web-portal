@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Syncs native DOM `input` and `change` events into React state so programmatic
@@ -8,17 +8,19 @@ import { useCallback, useEffect, useState } from "react";
  */
 export function useNativeInputSync(onValue) {
   const [node, setNode] = useState(null);
+  const handlerRef = useRef(onValue);
+  handlerRef.current = onValue;
 
   useEffect(() => {
     if (!node) return undefined;
-    const sync = () => onValue(node.value);
+    const sync = () => handlerRef.current?.(node.value);
     node.addEventListener("input", sync);
     node.addEventListener("change", sync);
     return () => {
       node.removeEventListener("input", sync);
       node.removeEventListener("change", sync);
     };
-  }, [node, onValue]);
+  }, [node]);
 
   return useCallback((element) => {
     setNode(element);

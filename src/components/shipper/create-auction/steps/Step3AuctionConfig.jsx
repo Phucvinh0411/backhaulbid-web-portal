@@ -14,6 +14,7 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonthOutlined";
 import PaymentsIcon from "@mui/icons-material/PaymentsOutlined";
 import SecurityIcon from "@mui/icons-material/SecurityOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import SyncedDateTimeField from "@/components/ui/SyncedDateTimeField";
 import ScheduleReminder from "./route/ScheduleReminder";
 import { AUCTION_TIME_FIELDS, suggestAuctionSchedule } from "../auctionSchedule";
 
@@ -197,7 +198,7 @@ export default function Step3AuctionConfig({ form, updateForm }) {
                 type="text"
                 inputMode="numeric"
                 value={formatDisplayNumber(participationFeeQuote.amount)}
-                helperText={`Tự động tính theo giá trần (${participationFeeQuote.tier})`}
+                helperText="Tự động tính theo bậc giá trần"
                 InputProps={{
                   readOnly: true,
                   endAdornment: <InputAdornment position="end"><span className="text-xs font-bold text-ink-muted">đ</span></InputAdornment>,
@@ -288,44 +289,36 @@ export default function Step3AuctionConfig({ form, updateForm }) {
         <ScheduleReminder form={form} step="auction" />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TextField
-            fullWidth
-            type="datetime-local"
+          <SyncedDateTimeField
             label="Mở đăng ký tham gia"
-            name="regStartTime" value={form.regStartTime}
-            onChange={(e) => updateForm("regStartTime", e.target.value)}
-            max={form.regEndTime || undefined}
-            InputLabelProps={{ shrink: true }}
+            name="regStartTime"
+            value={form.regStartTime}
+            onValueChange={(val) => updateForm("regStartTime", val)}
+            inputProps={{ max: form.regEndTime || undefined }}
           />
 
-          <TextField
-            fullWidth
-            type="datetime-local"
+          <SyncedDateTimeField
             label="Đóng đăng ký tham gia"
-            name="regEndTime" value={form.regEndTime}
-            onChange={(e) => updateForm("regEndTime", e.target.value)}
-            min={form.regStartTime || undefined}
-            InputLabelProps={{ shrink: true }}
+            name="regEndTime"
+            value={form.regEndTime}
+            onValueChange={(val) => updateForm("regEndTime", val)}
+            inputProps={{ min: form.regStartTime || undefined }}
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TextField
-            fullWidth
-            type="datetime-local"
+          <SyncedDateTimeField
             label="Bắt đầu đấu giá trực tiếp"
-            name="startTime" value={form.startTime}
-            onChange={(e) => updateForm("startTime", e.target.value)}
-            InputLabelProps={{ shrink: true }}
+            name="startTime"
+            value={form.startTime}
+            onValueChange={(val) => updateForm("startTime", val)}
           />
 
-          <TextField
-            fullWidth
-            type="datetime-local"
+          <SyncedDateTimeField
             label="Kết thúc đấu giá (đóng thầu)"
-            name="endTime" value={form.endTime}
-            onChange={(e) => updateForm("endTime", e.target.value)}
-            InputLabelProps={{ shrink: true }}
+            name="endTime"
+            value={form.endTime}
+            onValueChange={(val) => updateForm("endTime", val)}
           />
         </div>
       </div>

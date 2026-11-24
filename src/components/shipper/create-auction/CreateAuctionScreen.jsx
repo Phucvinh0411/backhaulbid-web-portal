@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
@@ -123,9 +123,9 @@ export default function CreateAuctionScreen() {
   const [imageUploading, setImageUploading] = useState(false);
 
   // Address, province and pin live in one Place object, so they can never drift apart and need no manual resets.
-  const updateForm = (field, value) => {
+  const updateForm = useCallback((field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-  };
+  }, []);
 
   const handleOpenAddressBook = (target) => {
     setAddressTarget(target);

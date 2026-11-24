@@ -145,7 +145,7 @@ export default function TripTrackingView({ tripId, role = "shipper", allowLateCa
         </Alert>
       )}
 
-      {((role === "shipper" && trip.status === "DELIVERED") || (role === "carrier" && trip.status === "WAITING_PICKUP")) && <TripActions trip={trip} role={role} proofs={proofs} onChanged={loadTracking} />}
+      {((role === "shipper" && trip.status === "DELIVERED") || (role === "carrier" && trip.status === "WAITING_PICKUP")) && <TripActions trip={trip} role={role} proofs={proofs} events={events} onChanged={loadTracking} />}
 
       <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 7fr) minmax(0, 5fr)" }, alignItems: "start" }}>
         <Box sx={{ minWidth: 0, display: "grid", gap: 2 }}>
@@ -200,7 +200,7 @@ export default function TripTrackingView({ tripId, role = "shipper", allowLateCa
         <JourneyTimeline events={events} />
       </Box>
 
-      {!((role === "shipper" && trip.status === "DELIVERED") || (role === "carrier" && trip.status === "WAITING_PICKUP")) && <TripActions trip={trip} role={role} proofs={proofs} onChanged={loadTracking} />}
+      {!((role === "shipper" && trip.status === "DELIVERED") || (role === "carrier" && trip.status === "WAITING_PICKUP")) && <TripActions trip={trip} role={role} proofs={proofs} events={events} onChanged={loadTracking} />}
 
       {trip.expectedDeliveryAt && trip.lateMinutes > 0 && !completion && <Alert severity="warning" action={allowLateCancellation && trip.canCancelForLateDelivery ? <Button color="error" variant="contained" size="small" onClick={() => setConfirmLateCancel(true)}>Hủy chuyến do trễ</Button> : null}>
         <Typography variant="body2">{trip.latePolicyEnabled ? "Bồi thường giao trễ được trừ từ tiền đặt trước của chủ xe; điểm uy tín giảm theo bậc." : "Chuyến chưa có tiền đặt trước được giữ nên không áp dụng bồi thường tự động."}</Typography>

@@ -38,6 +38,7 @@ import { getApiErrorMessage }       from "@/services/errorMessage";
 import { ADDRESS_UNAVAILABLE_MESSAGE, reverseGeocode }           from "@/utils/geocoding";
 import { searchPlacesLikeGrab }     from "@/utils/vietnamPlaces";
 import { useGlobalNotification }    from "@/components/common/NotificationPopup";
+import SyncedDateTimeField          from "@/components/ui/SyncedDateTimeField";
 
 // ─── Dynamic import Leaflet map để tránh SSR ───
 const RoutePickerMap = dynamic(() => import("./RoutePickerMap"), {
@@ -659,27 +660,23 @@ export default function EmptyRouteDialog({ open, onClose, onSuccess, vehicles = 
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <TextField
+              <SyncedDateTimeField
                 label="Thời gian xe bắt đầu rỗng (Khởi hành)"
-                type="datetime-local"
-                fullWidth
+                name="expectedEmptyTime"
                 required
-                InputLabelProps={{ shrink: true }}
                 inputProps={{ min: minLocalDateTime }}
                 value={expectedTime}
-                onChange={(e) => setExpectedTime(e.target.value)}
+                onValueChange={setExpectedTime}
                 disabled={loading}
                 helperText="Mốc thời gian xe sẵn sàng nhận hàng trên đường về"
               />
-              <TextField
+              <SyncedDateTimeField
                 label="Thời gian dự kiến đến nơi (Hạn chót)"
-                type="datetime-local"
-                fullWidth
+                name="expectedArrivalTime"
                 required
-                InputLabelProps={{ shrink: true }}
                 inputProps={{ min: expectedTime || minLocalDateTime }}
                 value={expectedArrivalTime}
-                onChange={(e) => setExpectedArrivalTime(e.target.value)}
+                onValueChange={setExpectedArrivalTime}
                 disabled={loading}
                 helperText="Hạn chót xe phải có mặt tại điểm đến mong muốn"
               />

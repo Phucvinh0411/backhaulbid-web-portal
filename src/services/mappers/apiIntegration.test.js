@@ -196,11 +196,13 @@ describe("end-to-end frontend consumer compatibility with api mappers", () => {
       deposits: "20000000.00",
       withdrawals: "4000000.00",
       successfulTransactions: 42,
+      pendingWithdrawalsCount: 4,
     });
     assert.equal(summary.auctionFees, 500000);
     assert.equal(summary.deposits, 20000000);
     assert.equal(summary.withdrawals, 4000000);
     assert.equal(summary.successfulTransactions, 42);
+    assert.equal(summary.pendingWithdrawalsCount, 4);
 
     const txPage = mapWalletTransactionPage({
       data: [{ id: "tx-1", amount: "500000.00", type: "DEPOSIT", status: "SUCCESS" }],

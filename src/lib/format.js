@@ -99,6 +99,7 @@ export function formatWeight(value) {
 /** Compact chart tick for VND values so Y-axis labels stay readable in narrow gutters. */
 export function formatCurrencyAxisTick(value) {
   const amount = Number(value) || 0;
+  if (amount === 0) return "0 đ";
   if (Math.abs(amount) >= 1_000_000) {
     return `${(amount / 1_000_000).toFixed(1).replace(/\.0$/, "")}tr`;
   }

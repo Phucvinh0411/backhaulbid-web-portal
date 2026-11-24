@@ -6,6 +6,7 @@ import { getVehicleDocumentPath, getDriverLicenseDocumentPath } from "../lib/fle
 import { dedupeInFlight } from "../lib/inFlightRequest.js";
 import { formatAddress, formatCurrencyAxisTick } from "../lib/format.js";
 import { getHandoverState } from "../components/tracking/tripHandoverPresentation.js";
+import { validateCreateAuctionForm } from "../components/shipper/create-auction/createAuctionValidation.js";
 import { mapCarrierProfile } from "./carrierProfileMapper.js";
 import {
   formatPaymentMethodLabel,
@@ -97,6 +98,7 @@ describe("web portal error localization, status labels, media proxies & chart ti
   });
 
   it("formats chart Y-axis ticks compactly without overflowing narrow gutters", () => {
+    assert.equal(formatCurrencyAxisTick(0), "0 đ");
     assert.equal(formatCurrencyAxisTick(9_500_000), "9.5tr");
     assert.equal(formatCurrencyAxisTick(12_000_000), "12tr");
     assert.equal(formatCurrencyAxisTick(750_000), "750k");
@@ -172,5 +174,56 @@ describe("web portal error localization, status labels, media proxies & chart ti
 
     const dupEmail = { response: { status: 400, data: { message: "Email already exists" } } };
     assert.equal(getApiErrorMessage(dupEmail), "Email này đã được sử dụng.");
+  });
+
+  it("requires complete and consistent pickup and delivery time windows when creating an auction", () => {
+    const now = new Date("2026-11-24T10:00:00.000Z");
+    const baseValid = {
+      goodsName: "Hàng bách hóa",
+      goodsCategory: "Hàng tiêu dùng nhanh (FMCG)",
+      weight: 5,
+      requiredVehicleType: "TRUCK_MEDIUM",
+      valueDocuments: [],
+      requireCarrierCoverage: false,
+      fromPlace: { locationName: "Kho A", province: "TP. Hồ Chí Minh", address: "123 Lê Lợi" },
+      toPlace: { locationName: "Kho B", province: "Đà Nẵng", address: "456 Nguyễn Văn Linh" },
+      maxPrice: 10_000_000,
+      priceStep: 100_000,
+      isDepositRequired: true,
+      depositAmount: 1_000_000,
+      regStartTime: "2026-11-24T11:00:00.000Z",
+      regEndTime: "2026-11-25T10:00:00.000Z",
+      startTime: "2026-11-25T10:00:00.000Z",
+      endTime: "2026-11-25T12:00:00.000Z",
+      earliestPickup: "2026-11-26T14:00:00.000Z",
+      latestPickup: "2026-11-26T18:00:00.000Z",
+      earliestDelivery: "2026-11-27T08:00:00.000Z",
+      latestDelivery: "2026-11-27T18:00:00.000Z",
+    };
+
+    assert.equal(validateCreateAuctionForm(baseValid, now), null);
+    assert.match(
+      validateCreateAuctionForm({ ...baseValid, earliestPickup: "", latestPickup: "" }, now),
+      /nhận hàng/i,
+    );
+    assert.match(
+      validateCreateAuctionForm({ ...baseValid, earliestDelivery: "", latestDelivery: "" }, now),
+      /giao hàng/i,
+    );
+    assert.match(
+      validateCreateAuctionForm({ ...baseValid, earliestPickup: "2026-11-25T11:00:00.000Z" }, now),
+      /sau thời điểm kết thúc đấu giá/i,
+    );
+    assert.match(
+      validateCreateAuctionForm(
+        {
+          ...baseValid,
+          earliestDelivery: "2026-11-26T10:00:00.000Z",
+          latestDelivery: "2026-11-26T12:00:00.000Z",
+        },
+        now,
+      ),
+      /không được trước thời gian nhận hàng/i,
+    );
   });
 });

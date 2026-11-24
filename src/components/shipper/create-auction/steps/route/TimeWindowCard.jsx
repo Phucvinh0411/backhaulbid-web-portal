@@ -1,6 +1,6 @@
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AccessTimeIcon from "@mui/icons-material/AccessTimeOutlined";
+import SyncedDateTimeField from "@/components/ui/SyncedDateTimeField";
 import ScheduleReminder from "./ScheduleReminder";
 
 const WINDOW_ROWS = [
@@ -30,15 +30,13 @@ export default function TimeWindowCard({ form, updateForm }) {
       {WINDOW_ROWS.map((row) => (
         <div key={row[0].field} className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {row.map(({ field, label }) => (
-            <TextField
+            <SyncedDateTimeField
               key={field}
-              fullWidth
-              type="datetime-local"
+              required
               label={label}
               name={field}
               value={form[field]}
-              onChange={(event) => updateForm(field, event.target.value)}
-              InputLabelProps={{ shrink: true }}
+              onValueChange={(nextValue) => updateForm(field, nextValue)}
             />
           ))}
         </div>
